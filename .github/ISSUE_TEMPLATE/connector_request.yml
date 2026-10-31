@@ -1,0 +1,25 @@
+name: Marketplace connector request
+description: Ask for (or offer to build) support for a marketplace or channel
+labels: [connector]
+body:
+  - type: input
+    id: marketplace
+    attributes:
+      label: Marketplace or channel
+      placeholder: e.g. Bol.com, Kaufland, TikTok Shop
+    validations:
+      required: true
+  - type: input
+    id: region
+    attributes:
+      label: Region
+  - type: input
+    id: api-docs
+    attributes:
+      label: Link to API or feed documentation
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to build this connector

@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "types": ["vitest/globals", "node"],
+    "paths": {
+      "@crossmart/common": ["./libs/common/src/index.ts"],
+      "@crossmart/common/*": ["./libs/common/src/*"],
+      "@crossmart/connectors": ["./libs/connectors/src/index.ts"],
+      "@crossmart/connectors/*": ["./libs/connectors/src/*"],
+      "@crossmart/database": ["./libs/database/src/index.ts"],
+      "@crossmart/database/*": ["./libs/database/src/*"]
+    },
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/api/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/worker/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/mcp/tsconfig.app.json"
+    }
+  ]
+}
