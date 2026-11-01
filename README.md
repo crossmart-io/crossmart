@@ -29,6 +29,7 @@ from one dashboard or straight from Claude & ChatGPT.
 | `apps/api`        | REST API (NestJS)                                         |
 | `apps/worker`     | Background jobs: channel sync, orders, AI agents (BullMQ) |
 | `apps/mcp`        | MCP server that exposes the API to AI agents              |
+| `libs/core`       | Domain modules shared by the API and worker (tenancy, …)  |
 | `libs/common`     | Configuration, constants and shared utilities             |
 | `libs/database`   | Prisma schema, migrations and client                      |
 | `libs/connectors` | Marketplace connector SDK and connectors                  |
@@ -41,7 +42,7 @@ Requirements: Node.js 22+ (see `.nvmrc`), pnpm 10, Docker.
 
 ```bash
 pnpm install
-cp .env.example .env
+cp .env.example .env                  # then set BETTER_AUTH_SECRET: openssl rand -base64 32
 docker compose up -d postgres redis   # set POSTGRES_PORT / REDIS_PORT if 5432 / 6379 are taken
 pnpm db:migrate
 pnpm start:api                        # http://localhost:3000/api/docs
@@ -51,10 +52,17 @@ pnpm start:worker
 ## Self-hosting
 
 ```bash
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
 docker compose --profile app up -d --build
 ```
 
 This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
+
+## Authentication
+
+- **People** sign up and sign in through [Better Auth](https://www.better-auth.com) at `/api/auth/*` (email and password for now). The session is a cookie. Every new user gets an organization and a workspace they own.
+- **Programs** (the MCP server, scripts) use a workspace API key in the `x-api-key` header. Keys are created at `POST /api/v1/workspaces/{workspaceId}/api-keys`, carry a role no higher than their creator's, are shown once and stored only as a SHA-256 hash.
+- **Roles** per workspace: `OWNER`, `ADMIN`, `EDITOR`, `APPROVER`, `VIEWER`. Routes declare the permission they need; callers outside the workspace get `404`.
 
 ## Using Crossmart from Claude, ChatGPT or Cursor
 

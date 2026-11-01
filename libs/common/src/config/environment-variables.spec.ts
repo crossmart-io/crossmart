@@ -6,6 +6,8 @@ const VALID_ENVIRONMENT = {
   API_PORT: '8080',
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/crossmart',
   REDIS_URL: 'redis://localhost:6379',
+  BETTER_AUTH_SECRET: 'test-secret-that-is-at-least-32-characters',
+  BETTER_AUTH_URL: 'http://localhost:3000',
 };
 
 describe('validateEnvironment', () => {
@@ -29,5 +31,11 @@ describe('validateEnvironment', () => {
     const { DATABASE_URL: _databaseUrl, ...withoutDatabase } = VALID_ENVIRONMENT;
 
     expect(() => validateEnvironment(withoutDatabase)).toThrow(/DATABASE_URL/);
+  });
+
+  it('rejects an auth secret that is too short', () => {
+    expect(() =>
+      validateEnvironment({ ...VALID_ENVIRONMENT, BETTER_AUTH_SECRET: 'short' }),
+    ).toThrow(/BETTER_AUTH_SECRET/);
   });
 });

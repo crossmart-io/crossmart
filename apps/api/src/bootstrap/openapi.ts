@@ -10,6 +10,8 @@ import {
 } from '@crossmart/common';
 
 const JSON_INDENTATION = 2;
+/** Better Auth's default session cookie. */
+const SESSION_COOKIE_NAME = 'better-auth.session_token';
 
 export function buildOpenApiDocument(app: INestApplication, version: string): OpenAPIObject {
   const config = new DocumentBuilder()
@@ -18,6 +20,7 @@ export function buildOpenApiDocument(app: INestApplication, version: string): Op
     .setVersion(version)
     .setLicense('AGPL-3.0', 'https://www.gnu.org/licenses/agpl-3.0.html')
     .addApiKey({ type: 'apiKey', in: 'header', name: API_KEY_HEADER })
+    .addCookieAuth(SESSION_COOKIE_NAME)
     .build();
 
   return SwaggerModule.createDocument(app, config);

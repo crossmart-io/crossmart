@@ -1,0 +1,18 @@
+import type { WorkspaceRole } from '@crossmart/database';
+
+/** A workspace as seen by one member: the workspace plus that member's role in it. */
+export interface WorkspaceAccess {
+  id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  role: WorkspaceRole;
+}
+
+export interface WorkspaceMemberProfile {
+  userId: string;
+  name: string;
+  email: string;
+  role: WorkspaceRole;
+  joinedAt: Date;
+}

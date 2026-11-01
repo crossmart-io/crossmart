@@ -37,7 +37,9 @@
       "files": ["**/*.spec.ts", "**/*.e2e-spec.ts", "**/test/**"],
       "rules": {
         "eslint/no-magic-numbers": "off",
-        "eslint/max-lines-per-function": "off"
+        "eslint/max-lines-per-function": "off",
+        "typescript/explicit-function-return-type": "off",
+        "vitest/require-mock-type-parameters": "off"
       }
     },
     {

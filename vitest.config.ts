@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-const WORKSPACE_LIBRARIES = ['common', 'connectors', 'database'];
+const WORKSPACE_LIBRARIES = ['common', 'connectors', 'core', 'database'];
 
 const libraryAliases = WORKSPACE_LIBRARIES.map((library) => ({
   find: `@crossmart/${library}`,
