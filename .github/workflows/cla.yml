@@ -25,4 +25,5 @@ jobs:
           path-to-signatures: signatures/cla.json
           path-to-document: https://github.com/crossmart-io/crossmart/blob/main/CLA.md
           branch: cla-signatures
-          allowlist: yarivco88,dependabot[bot]
+          # "Claude *" matches AI co-author trailers (GitHub usernames cannot contain spaces).
+          allowlist: yarivco88,dependabot[bot],Claude *
