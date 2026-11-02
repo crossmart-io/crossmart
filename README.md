@@ -49,6 +49,15 @@ pnpm start:api                        # http://localhost:3000/api/docs
 pnpm start:worker
 ```
 
+### Demo data
+
+With the API running, `pnpm seed:demo` creates a local demo account and fills it with 23 products
+and 116 variants from invented brands: sizes and colours, stock with a few sell-outs, drafts, and
+products missing images or barcodes, so every screen has something to show. It goes through the
+public API, so the data passes the same validation as anything a seller enters. It prints the demo
+login when it is done (`DEMO_EMAIL` and `DEMO_PASSWORD` override it), and does nothing if that
+workspace already has products. Never run it against a server other people can reach.
+
 ## Self-hosting
 
 ```bash

@@ -34,16 +34,17 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "openapi:generate": "node dist/apps/api/main.js --openapi-only",
-    "lint": "oxlint --type-aware apps/ libs/",
-    "lint:fix": "oxlint --type-aware --fix apps/ libs/",
-    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
-    "format:check": "prettier --check \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "lint": "oxlint --type-aware apps/ libs/ tools/",
+    "lint:fix": "oxlint --type-aware --fix apps/ libs/ tools/",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"tools/**/*.ts\"",
+    "format:check": "prettier --check \"apps/**/*.ts\" \"libs/**/*.ts\" \"tools/**/*.ts\"",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "seed:demo": "tsx tools/demo-seed/main.ts"
   },
   "lint-staged": {
     "*.ts": [
@@ -103,6 +104,7 @@
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.2",
