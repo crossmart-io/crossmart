@@ -1,0 +1,44 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { toCursorPage } from '@crossmart/common';
+import type {
+  InventoryListQuery,
+  InventoryMovementPage,
+  InventoryPage,
+  MovementListQuery,
+} from '../entities/inventory-views.js';
+import { INVENTORY_ITEM_NOT_FOUND } from '../inventory.constants.js';
+import { toInventoryRow, toMovementView } from '../mappers/inventory-view.mapper.js';
+import { InventoryItemRepository } from '../repositories/inventory-item.repository.js';
+import { InventoryMovementRepository } from '../repositories/inventory-movement.repository.js';
+
+/** Stock of every variant, and the history of each one. */
+@Injectable()
+export class InventoryService {
+  constructor(
+    private readonly items: InventoryItemRepository,
+    private readonly movements: InventoryMovementRepository,
+  ) {}
+
+  async list(workspaceId: string, query: InventoryListQuery): Promise<InventoryPage> {
+    const { rows, nextCursor } = toCursorPage(
+      await this.items.listPage(workspaceId, query),
+      query.limit,
+    );
+    return { items: rows.map((record) => toInventoryRow(record)), nextCursor };
+  }
+
+  async history(
+    workspaceId: string,
+    inventoryItemId: string,
+    query: MovementListQuery,
+  ): Promise<InventoryMovementPage> {
+    if (!(await this.items.exists(workspaceId, inventoryItemId))) {
+      throw new NotFoundException(INVENTORY_ITEM_NOT_FOUND);
+    }
+    const { rows, nextCursor } = toCursorPage(
+      await this.movements.listPage(workspaceId, inventoryItemId, query),
+      query.limit,
+    );
+    return { items: rows.map((record) => toMovementView(record)), nextCursor };
+  }
+}

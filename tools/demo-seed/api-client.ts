@@ -1,4 +1,5 @@
 import type { NewProductBody } from './product-factory.js';
+import type { StockAdjustmentBody } from './stock-history.js';
 
 const API_PREFIX = '/api/v1';
 const SIGN_UP_PATH = '/api/auth/sign-up/email';
@@ -16,6 +17,20 @@ interface Workspace {
   id: string;
   name: string;
 }
+
+/** The fields of an inventory row the seed needs. */
+export interface InventoryRow {
+  inventoryItemId: string;
+  tracked: boolean;
+  onHand: number;
+}
+
+interface InventoryPage {
+  items: InventoryRow[];
+  nextCursor: string | null;
+}
+
+const INVENTORY_PAGE_LIMIT = 100;
 
 /** Talks to a running Crossmart API as a signed-in user, the way the web app does. */
 export class DemoApiClient {
@@ -67,15 +82,34 @@ export class DemoApiClient {
   }
 
   async createProduct(workspaceId: string, product: NewProductBody): Promise<void> {
-    const response = await fetch(
-      `${this.baseUrl}${API_PREFIX}/workspaces/${workspaceId}/products`,
-      {
-        method: 'POST',
-        headers: { cookie: this.cookie, 'content-type': 'application/json' },
-        body: JSON.stringify(product),
-      },
+    await this.postJson(`${API_PREFIX}/workspaces/${workspaceId}/products`, product);
+  }
+
+  /** Every inventory row of the workspace, following the cursor across pages. */
+  async inventoryRows(workspaceId: string): Promise<InventoryRow[]> {
+    const rows: InventoryRow[] = [];
+    let cursor: string | null = null;
+    do {
+      const query = new URLSearchParams({ limit: String(INVENTORY_PAGE_LIMIT) });
+      if (cursor) query.set('cursor', cursor);
+      const page: InventoryPage = await this.getJson<InventoryPage>(
+        `${API_PREFIX}/workspaces/${workspaceId}/inventory-items?${query.toString()}`,
+      );
+      rows.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor);
+    return rows;
+  }
+
+  async adjustStock(
+    workspaceId: string,
+    inventoryItemId: string,
+    adjustment: StockAdjustmentBody,
+  ): Promise<void> {
+    await this.postJson(
+      `${API_PREFIX}/workspaces/${workspaceId}/inventory-items/${inventoryItemId}/adjustments`,
+      adjustment,
     );
-    await this.readJson(response);
   }
 
   private post(path: string, body: unknown): Promise<Response> {
@@ -84,6 +118,15 @@ export class DemoApiClient {
       headers: { 'content-type': 'application/json', origin: this.baseUrl },
       body: JSON.stringify(body),
     });
+  }
+
+  private async postJson(path: string, body: unknown): Promise<unknown> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: { cookie: this.cookie, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return this.readJson(response);
   }
 
   private async getJson<Body>(path: string): Promise<Body> {

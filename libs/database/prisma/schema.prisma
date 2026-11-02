@@ -15,16 +15,17 @@ datasource db {
 // ─── Identity (owned by Better Auth; field names follow its schema) ───────────
 
 model User {
-  id            String            @id @default(uuid()) @db.Uuid
+  id            String              @id @default(uuid()) @db.Uuid
   name          String
-  email         String            @unique
-  emailVerified Boolean           @default(false) @map("email_verified")
+  email         String              @unique
+  emailVerified Boolean             @default(false) @map("email_verified")
   image         String?
   sessions      Session[]
   accounts      Account[]
   memberships   WorkspaceMember[]
   apiKeys       ApiKey[]
   activity      ActivityEvent[]
+  stockMoves    InventoryMovement[]
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
@@ -151,6 +152,7 @@ model ApiKey {
   expiresAt   DateTime?       @map("expires_at")
   revokedAt   DateTime?       @map("revoked_at")
   activity    ActivityEvent[]
+  stockMoves  InventoryMovement[]
   createdAt   DateTime        @default(now()) @map("created_at")
 
   @@index([workspaceId])
@@ -255,13 +257,25 @@ model ProductMedia {
 // ─── Inventory ────────────────────────────────────────────────────────────────
 
 enum InventoryMovementReason {
+  /// Stock a variant was created or imported with.
   OPENING_BALANCE
+  /// Stock changed by editing the product.
   ADJUSTMENT
+  /// A count that corrects the recorded stock.
+  CORRECTION
+  RECEIVED
+  RETURNED
+  DAMAGED
+  LOST
+  /// Sold outside a connected channel (a market stall, a wholesale order).
+  SOLD
 
   @@map("inventory_movement_reason")
 }
 
-/// Stock of one variant. `available` caches the sum of its movements and is updated atomically.
+/// Stock of one variant. On hand = `available` + `reserved`.
+/// `available` can be sold and is what channels receive; `reserved` is held for open orders.
+/// The movements sum to the stock on hand, and both columns are updated atomically with them.
 model InventoryItem {
   id          String              @id @default(uuid()) @db.Uuid
   workspaceId String              @map("workspace_id") @db.Uuid
@@ -269,14 +283,17 @@ model InventoryItem {
   variant     Variant             @relation(fields: [variantId], references: [id], onDelete: Cascade)
   tracked     Boolean             @default(true)
   available   Int                 @default(0)
+  reserved    Int                 @default(0)
   movements   InventoryMovement[]
   updatedAt   DateTime            @updatedAt @map("updated_at")
 
   @@index([workspaceId])
+  @@index([workspaceId, tracked, available])
   @@map("inventory_items")
 }
 
-/// Append-only stock ledger.
+/// Append-only ledger of changes to the stock on hand. Reservations move units between
+/// `available` and `reserved` and are not movements.
 model InventoryMovement {
   id              String                  @id @default(uuid()) @db.Uuid
   workspaceId     String                  @map("workspace_id") @db.Uuid
@@ -284,9 +301,20 @@ model InventoryMovement {
   inventoryItem   InventoryItem           @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   delta           Int
   reason          InventoryMovementReason
+  /// Stock on hand right after this movement.
+  quantityAfter   Int                     @map("quantity_after")
+  note            String?
+  /// The signed-in user who made the change; null for API keys, the system and deleted users.
+  actorUserId     String?                 @map("actor_user_id") @db.Uuid
+  actorUser       User?                   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  /// Set when the change came through an API key (an agent or a script).
+  apiKeyId        String?                 @map("api_key_id") @db.Uuid
+  apiKey          ApiKey?                 @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
   createdAt       DateTime                @default(now()) @map("created_at")
 
   @@index([inventoryItemId, createdAt])
+  @@index([actorUserId])
+  @@index([apiKeyId])
   @@map("inventory_movements")
 }
 

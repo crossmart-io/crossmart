@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { toCursorPage } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
@@ -35,13 +36,11 @@ export class ProductsService {
   ) {}
 
   async list(workspaceId: string, query: ProductListQuery): Promise<ProductPage> {
-    const records = await this.products.listPage(workspaceId, query);
-    const hasMore = records.length > query.limit;
-    const page = hasMore ? records.slice(0, query.limit) : records;
-    return {
-      items: page.map((record) => toProductSummary(record)),
-      nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
-    };
+    const { rows, nextCursor } = toCursorPage(
+      await this.products.listPage(workspaceId, query),
+      query.limit,
+    );
+    return { items: rows.map((record) => toProductSummary(record)), nextCursor };
   }
 
   stats(workspaceId: string): Promise<CatalogStats> {

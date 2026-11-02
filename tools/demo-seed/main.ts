@@ -10,6 +10,7 @@ import { DemoApiClient, type DemoAccount } from './api-client.js';
 import { DEMO_PRODUCTS } from './demo-catalog.js';
 import { photosFor, productBody } from './product-factory.js';
 import { DEMO_SEED, SeededRandom } from './seeded-random.js';
+import { stockHistoryFor } from './stock-history.js';
 import { swatchPng } from './swatch-png.js';
 
 const DEFAULT_API_URL = 'http://localhost:3000';
@@ -37,6 +38,23 @@ function accountFromEnv(): DemoAccount {
     email: process.env.DEMO_EMAIL ?? DEFAULT_ACCOUNT.email,
     password: process.env.DEMO_PASSWORD ?? DEFAULT_ACCOUNT.password,
   };
+}
+
+/** Gives some variants a delivery, sales and a count, so the inventory history has content. */
+async function seedStockHistory(
+  client: DemoApiClient,
+  workspaceId: string,
+  random: SeededRandom,
+): Promise<number> {
+  let movements = 0;
+  for (const row of await client.inventoryRows(workspaceId)) {
+    if (!row.tracked) continue;
+    for (const adjustment of stockHistoryFor(row.onHand, random)) {
+      await client.adjustStock(workspaceId, row.inventoryItemId, adjustment);
+      movements += 1;
+    }
+  }
+  return movements;
 }
 
 async function seed(): Promise<void> {
@@ -72,7 +90,9 @@ async function seed(): Promise<void> {
     );
   }
 
+  const movements = await seedStockHistory(client, workspace.id, random);
   report(`\nSeeded ${DEMO_PRODUCTS.length} products and ${variantsLabel(variantCount)}.`);
+  report(`Recorded ${movements} stock adjustments.`);
   report(`Sign in at the web app as ${account.email} / ${account.password}`);
 }
 

@@ -103,7 +103,7 @@ Key rules:
 - `workspace_id` lives on every tenant table, and Postgres RLS enforces it as defence in depth.
 - Channel-specific attributes are stored as JSONB, validated by the connector's schema.
 - Every state change by an agent goes through `Suggestion` and is then applied by the same service a user would call.
-- The inventory quantity is derived from the ledger (`InventoryMovement`), with a cached `available` column updated atomically.
+- Stock on hand is derived from the ledger (`InventoryMovement`). Each `InventoryItem` stores `available` (what can be sold, and what channels receive) and `reserved` (held for open orders); on hand = available + reserved. Both columns are updated atomically with the ledger, and every movement records the stock on hand after it, its reason and its author.
 
 ## 4. Connector SDK
 

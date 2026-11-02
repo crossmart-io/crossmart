@@ -13,6 +13,7 @@ type Transaction = Prisma.TransactionClient;
 interface CurrentStock {
   inventoryItemId: string;
   available: number;
+  reserved: number;
 }
 
 interface VariantEdit {
@@ -25,6 +26,7 @@ interface VariantEdit {
 /**
  * Replaces a product's content, variants and media in one transaction. Variants keep their
  * ids (and their listings, later) when edited; stock changes become ledger adjustments.
+ * The editor's quantity is the available stock: reserved units stay reserved.
  */
 @Injectable()
 export class ProductUpdateWriter {
@@ -63,12 +65,12 @@ export class ProductUpdateWriter {
   ): Promise<Map<string, CurrentStock>> {
     const items = await tx.inventoryItem.findMany({
       where: { variant: { productId } },
-      select: { id: true, variantId: true, available: true },
+      select: { id: true, variantId: true, available: true, reserved: true },
     });
     return new Map(
       items.map((item) => [
         item.variantId,
-        { inventoryItemId: item.id, available: item.available },
+        { inventoryItemId: item.id, available: item.available, reserved: item.reserved },
       ]),
     );
   }
@@ -99,6 +101,7 @@ export class ProductUpdateWriter {
           workspaceId,
           inventoryItemId: current.inventoryItemId,
           delta,
+          quantityAfter: variant.inventory.quantity + current.reserved,
           reason: InventoryMovementReason.ADJUSTMENT,
         },
       });

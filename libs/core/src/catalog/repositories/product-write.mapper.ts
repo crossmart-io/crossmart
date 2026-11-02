@@ -65,6 +65,7 @@ export function toNewVariantInput(
                 create: {
                   workspaceId,
                   delta: quantity,
+                  quantityAfter: quantity,
                   reason: InventoryMovementReason.OPENING_BALANCE,
                 },
               },
