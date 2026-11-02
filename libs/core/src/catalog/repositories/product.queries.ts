@@ -21,3 +21,23 @@ export type ProductSummaryRecord = Prisma.ProductGetPayload<{
 export type ProductDetailRecord = Prisma.ProductGetPayload<{
   include: typeof PRODUCT_DETAIL_INCLUDE;
 }>;
+
+/** What an update import needs to match a file's variants and keep the catalog's stock and images. */
+export const PRODUCT_UPDATE_TARGET_SELECT = {
+  id: true,
+  handle: true,
+  variants: {
+    select: {
+      id: true,
+      sku: true,
+      optionValues: true,
+      inventoryItem: { select: { tracked: true, available: true } },
+    },
+    orderBy: BY_POSITION,
+  },
+  media: { select: { url: true, altText: true }, orderBy: BY_POSITION },
+} satisfies Prisma.ProductSelect;
+
+export type ProductUpdateTargetRecord = Prisma.ProductGetPayload<{
+  select: typeof PRODUCT_UPDATE_TARGET_SELECT;
+}>;

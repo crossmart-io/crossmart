@@ -23,3 +23,14 @@ export const MAX_BULK_TAGS = 20;
 /** Saved views per workspace: enough for every team's lists, small enough to show as chips. */
 export const MAX_PRODUCT_VIEWS = 50;
 export const PRODUCT_VIEW_NAME_MAX_LENGTH = 60;
+
+/** Injection token for every registered `StockFileParser`. */
+export const STOCK_FILE_PARSERS = Symbol('STOCK_FILE_PARSERS');
+/** Injection token for the `CatalogImportStrategy` of every `CatalogImportMode`. */
+export const CATALOG_IMPORT_STRATEGIES = Symbol('CATALOG_IMPORT_STRATEGIES');
+export const IMPORT_FILE_NAME_MAX_LENGTH = 255;
+export const IMPORT_JOB_PAGE_DEFAULT_LIMIT = 20;
+export const IMPORT_JOB_PAGE_MAX_LIMIT = 100;
+/** What the history shows when a file fails for a reason that must not reach users. */
+export const IMPORT_UNEXPECTED_FAILURE_MESSAGE =
+  'The import failed unexpectedly. Please try again.';

@@ -7,8 +7,10 @@ import { CATALOG_GAP_FILTERS } from './catalog-gap.filters.js';
 import {
   PRODUCT_DETAIL_INCLUDE,
   PRODUCT_SUMMARY_INCLUDE,
+  PRODUCT_UPDATE_TARGET_SELECT,
   type ProductDetailRecord,
   type ProductSummaryRecord,
+  type ProductUpdateTargetRecord,
 } from './product.queries.js';
 import { toProductCreateInput } from './product-write.mapper.js';
 
@@ -68,6 +70,23 @@ export class ProductRepository {
       select: { sku: true },
     });
     return new Set(rows.flatMap((row) => (row.sku ? [row.sku] : [])));
+  }
+
+  /** The products with these handles, with what an update import matches against. */
+  findUpdateTargets(workspaceId: string, handles: string[]): Promise<ProductUpdateTargetRecord[]> {
+    return this.prisma.product.findMany({
+      where: { workspaceId, handle: { in: handles } },
+      select: PRODUCT_UPDATE_TARGET_SELECT,
+    });
+  }
+
+  /** The product that holds each of these SKUs in the workspace, by SKU. */
+  async findSkuOwners(workspaceId: string, skus: string[]): Promise<Map<string, string>> {
+    const rows = await this.prisma.variant.findMany({
+      where: { workspaceId, sku: { in: skus } },
+      select: { sku: true, productId: true },
+    });
+    return new Map(rows.flatMap((row) => (row.sku ? [[row.sku, row.productId] as const] : [])));
   }
 
   create(workspaceId: string, draft: ProductDraft): Promise<ProductDetailRecord> {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CatalogModule, MediaModule } from '@crossmart/core';
+import { ImportJobsController } from './controllers/import-jobs.controller.js';
 import { CatalogStatsController } from './controllers/catalog-stats.controller.js';
 import { ProductBulkActionsController } from './controllers/product-bulk-actions.controller.js';
 import { ProductImagesController } from './controllers/product-images.controller.js';
@@ -14,6 +15,7 @@ import { ProductsController } from './controllers/products.controller.js';
     ProductBulkActionsController,
     ProductViewsController,
     ProductImportsController,
+    ImportJobsController,
     ProductImagesController,
     CatalogStatsController,
   ],

@@ -26,6 +26,7 @@ model User {
   apiKeys       ApiKey[]
   activity      ActivityEvent[]
   stockMoves    InventoryMovement[]
+  importJobs    ImportJob[]
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
@@ -114,6 +115,7 @@ model Workspace {
   products       Product[]
   productViews   ProductView[]
   activity       ActivityEvent[]
+  importJobs     ImportJob[]
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
 
@@ -154,6 +156,7 @@ model ApiKey {
   activity    ActivityEvent[]
   stockMoves  InventoryMovement[]
   createdAt   DateTime        @default(now()) @map("created_at")
+  importJobs  ImportJob[]
 
   @@index([workspaceId])
   @@map("api_keys")
@@ -269,6 +272,8 @@ enum InventoryMovementReason {
   LOST
   /// Sold outside a connected channel (a market stall, a wholesale order).
   SOLD
+  /// Stock set by an inventory file import.
+  IMPORTED
 
   @@map("inventory_movement_reason")
 }
@@ -368,4 +373,74 @@ model ActivityEvent {
   @@index([workspaceId, subjectType, subjectId])
   @@index([subjectIds], type: Gin)
   @@map("activity_events")
+}
+
+// ─── Imports ──────────────────────────────────────────────────────────────────
+
+enum ImportJobStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("import_job_status")
+}
+
+enum ImportIssueOutcome {
+  /// The record was left as it was (already in the catalog, not found, stock not tracked).
+  SKIPPED
+  /// The record could not be imported (invalid value, unknown SKU, SKU clash).
+  FAILED
+
+  @@map("import_issue_outcome")
+}
+
+/// One uploaded file and what it did to the catalog: the workspace's import history.
+model ImportJob {
+  id           String           @id @default(uuid()) @db.Uuid
+  workspaceId  String           @map("workspace_id") @db.Uuid
+  workspace    Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// The signed-in user who sent the file; null for API keys and deleted users.
+  userId       String?          @map("user_id") @db.Uuid
+  user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// The API key that sent the file, if one did.
+  apiKeyId     String?          @map("api_key_id") @db.Uuid
+  apiKey       ApiKey?          @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  /// A `CatalogImportMode` value; validated by the API, kept as text so new modes need no migration.
+  mode         String
+  /// A `CatalogImportFormat` value, kept as text for the same reason.
+  format       String
+  fileName     String           @map("file_name")
+  status       ImportJobStatus  @default(PROCESSING)
+  createdCount Int              @default(0) @map("created_count")
+  updatedCount Int              @default(0) @map("updated_count")
+  skippedCount Int              @default(0) @map("skipped_count")
+  failedCount  Int              @default(0) @map("failed_count")
+  /// Why the whole file was rejected, when `status` is FAILED.
+  errorMessage String?          @map("error_message")
+  issues       ImportJobIssue[]
+  createdAt    DateTime         @default(now()) @map("created_at")
+  finishedAt   DateTime?        @map("finished_at")
+
+  @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("import_jobs")
+}
+
+/// A skipped or failed record of an import, in file order.
+model ImportJobIssue {
+  id          String             @id @default(uuid()) @db.Uuid
+  workspaceId String             @map("workspace_id") @db.Uuid
+  jobId       String             @map("job_id") @db.Uuid
+  job         ImportJob          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  position    Int
+  outcome     ImportIssueOutcome
+  /// An `ImportIssueCode` value, kept as text so new codes need no migration.
+  code        String
+  message     String
+  handle      String?
+  sku         String?
+  /// Spreadsheet row number, counting the header as row 1.
+  row         Int?
+
+  @@index([jobId, position])
+  @@map("import_job_issues")
 }

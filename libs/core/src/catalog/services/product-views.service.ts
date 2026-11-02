@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { findEnumValue } from '@crossmart/common';
 import type { ProductView } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -70,17 +71,13 @@ export class ProductViewsService {
   }
 }
 
-function toCatalogGap(value: string | null): CatalogGap | undefined {
-  return Object.values(CatalogGap).find((gap) => gap === value);
-}
-
 function toSavedView(record: ProductView): SavedProductView {
   return {
     id: record.id,
     name: record.name,
     search: record.search ?? undefined,
     status: record.status ?? undefined,
-    gap: toCatalogGap(record.gap),
+    gap: findEnumValue(CatalogGap, record.gap),
     createdAt: record.createdAt,
   };
 }
