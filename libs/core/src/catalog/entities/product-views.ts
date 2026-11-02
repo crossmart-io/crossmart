@@ -1,4 +1,5 @@
 import type { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import type { CatalogGap } from '../enums/catalog-gap.enum.js';
 
 export interface PriceRange {
   min: string;
@@ -74,11 +75,20 @@ export interface CatalogStats {
   variants: number;
   /** Tracked variants with nothing available. */
   outOfStockVariants: number;
+  /** How many products have each gap, in `CatalogGap` order. */
+  gaps: CatalogGapCount[];
+}
+
+export interface CatalogGapCount {
+  gap: CatalogGap;
+  products: number;
 }
 
 export interface ProductListQuery {
   search?: string;
   status?: ProductStatus;
+  /** Only products that have this gap. */
+  gap?: CatalogGap;
   cursor?: string;
   limit: number;
 }

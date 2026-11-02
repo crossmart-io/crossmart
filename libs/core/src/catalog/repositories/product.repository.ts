@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService, ProductStatus } from '@crossmart/database';
 import type { ProductDraft } from '../entities/product-draft.js';
-import type { CatalogStats, ProductListQuery } from '../entities/product-views.js';
+import type { CatalogGapCount, CatalogStats, ProductListQuery } from '../entities/product-views.js';
+import { CatalogGap } from '../enums/catalog-gap.enum.js';
+import { CATALOG_GAP_FILTERS } from './catalog-gap.filters.js';
 import {
   PRODUCT_DETAIL_INCLUDE,
   PRODUCT_SUMMARY_INCLUDE,
@@ -93,12 +95,13 @@ export class ProductRepository {
   }
 
   async countStats(workspaceId: string): Promise<CatalogStats> {
-    const [byStatus, variants, outOfStockVariants] = await Promise.all([
+    const [byStatus, variants, outOfStockVariants, gaps] = await Promise.all([
       this.prisma.product.groupBy({ by: ['status'], where: { workspaceId }, _count: true }),
       this.prisma.variant.count({ where: { workspaceId } }),
       this.prisma.inventoryItem.count({
         where: { workspaceId, tracked: true, available: { lte: 0 } },
       }),
+      this.countGaps(workspaceId),
     ]);
     const countOf = (status: ProductStatus): number =>
       byStatus.find((group) => group.status === status)?._count ?? 0;
@@ -109,7 +112,19 @@ export class ProductRepository {
       archivedProducts: countOf(ProductStatus.ARCHIVED),
       variants,
       outOfStockVariants,
+      gaps,
     };
+  }
+
+  private countGaps(workspaceId: string): Promise<CatalogGapCount[]> {
+    return Promise.all(
+      Object.values(CatalogGap).map(async (gap) => ({
+        gap,
+        products: await this.prisma.product.count({
+          where: { workspaceId, ...CATALOG_GAP_FILTERS[gap] },
+        }),
+      })),
+    );
   }
 
   /** Returns false when the product does not exist in this workspace. */
@@ -125,6 +140,7 @@ export class ProductRepository {
     return {
       workspaceId,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.gap ? CATALOG_GAP_FILTERS[query.gap] : {}),
       ...(search
         ? {
             OR: [

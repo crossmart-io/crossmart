@@ -3,7 +3,7 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
-import { CatalogImportFormat, ImportIssueCode } from '@crossmart/core';
+import { CatalogGap, CatalogImportFormat, ImportIssueCode } from '@crossmart/core';
 import { ProductStatus, WorkspaceRole } from '@crossmart/database';
 import { createTestApp, signUp } from './support/test-app.js';
 
@@ -239,6 +239,29 @@ describe('Catalog (e2e)', () => {
       archivedProducts: 0,
       variants: 17,
       outOfStockVariants: 2,
+      gaps: [
+        { gap: CatalogGap.Images, products: 8 },
+        { gap: CatalogGap.Description, products: 0 },
+        { gap: CatalogGap.Sku, products: 0 },
+        { gap: CatalogGap.Barcode, products: 8 },
+        { gap: CatalogGap.OutOfStock, products: 2 },
+      ],
     });
+  });
+
+  it('lists only the products that have a gap', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Gap Finder');
+    await importShopifyCsv(workspaceId, cookie);
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${workspaceId}/products`)
+      .query({ gap: CatalogGap.OutOfStock })
+      .set('Cookie', cookie);
+
+    expect(response.status).toBe(HttpStatus.OK);
+    expect(response.body.items.map((product: { handle: string }) => product.handle)).toEqual([
+      'merino-crew-sweater',
+      'stoneware-mug',
+    ]);
   });
 });
