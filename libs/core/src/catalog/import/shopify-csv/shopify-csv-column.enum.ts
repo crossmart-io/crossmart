@@ -1,3 +1,5 @@
+import { ProductDraftField } from '../../enums/product-draft-field.enum.js';
+
 /** Header names of Shopify's product CSV export (help.shopify.com/manual/products/import-export). */
 export enum ShopifyCsvColumn {
   Handle = 'Handle',
@@ -36,6 +38,29 @@ export const SHOPIFY_OPTION_COLUMNS = [
 ] as const;
 
 export const SHOPIFY_REQUIRED_COLUMNS = [ShopifyCsvColumn.Handle, ShopifyCsvColumn.Title] as const;
+/** An update file only needs to say which products it changes. */
+export const SHOPIFY_PARTIAL_REQUIRED_COLUMNS = [ShopifyCsvColumn.Handle] as const;
+
+/** The columns that carry each field. A file has a field when it has any of its columns. */
+export const SHOPIFY_FIELD_COLUMNS: Readonly<
+  Record<ProductDraftField, readonly ShopifyCsvColumn[]>
+> = {
+  [ProductDraftField.Title]: [ShopifyCsvColumn.Title],
+  [ProductDraftField.Description]: [ShopifyCsvColumn.BodyHtml],
+  [ProductDraftField.Vendor]: [ShopifyCsvColumn.Vendor],
+  [ProductDraftField.ProductType]: [ShopifyCsvColumn.Type],
+  [ProductDraftField.Tags]: [ShopifyCsvColumn.Tags],
+  [ProductDraftField.Status]: [ShopifyCsvColumn.Status, ShopifyCsvColumn.Published],
+  [ProductDraftField.Options]: [ShopifyCsvColumn.Option1Name],
+  [ProductDraftField.Sku]: [ShopifyCsvColumn.VariantSku],
+  [ProductDraftField.Barcode]: [ShopifyCsvColumn.VariantBarcode],
+  [ProductDraftField.Price]: [ShopifyCsvColumn.VariantPrice],
+  [ProductDraftField.CompareAtPrice]: [ShopifyCsvColumn.VariantCompareAtPrice],
+  [ProductDraftField.Weight]: [ShopifyCsvColumn.VariantGrams],
+  [ProductDraftField.RequiresShipping]: [ShopifyCsvColumn.VariantRequiresShipping],
+  [ProductDraftField.Taxable]: [ShopifyCsvColumn.VariantTaxable],
+  [ProductDraftField.OutOfStockPolicy]: [ShopifyCsvColumn.VariantInventoryPolicy],
+};
 
 /** What Shopify writes for the only variant of a product without options. */
 export const SHOPIFY_DEFAULT_OPTION_NAME = 'Title';

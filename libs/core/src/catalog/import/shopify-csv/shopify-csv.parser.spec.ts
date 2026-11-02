@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { BadRequestException } from '@nestjs/common';
 import { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
 import { ImportIssueCode } from '../../enums/import-issue-code.enum.js';
+import { ProductDraftField } from '../../enums/product-draft-field.enum.js';
 import { ShopifyCsvParser } from './shopify-csv.parser.js';
 
 const FIXTURE = readFileSync(new URL('./__fixtures__/products.csv', import.meta.url));
@@ -96,5 +97,53 @@ describe('ShopifyCsvParser edge cases', () => {
 
   it('refuses a file that is not a Shopify export', () => {
     expect(() => parser.parse(Buffer.from('sku,price\nA,1'))).toThrow(BadRequestException);
+  });
+});
+
+describe('ShopifyCsvParser partial parse, for updates', () => {
+  function partial(...lines: string[]) {
+    return parser.parse(Buffer.from(lines.join('\n')), { partial: true });
+  }
+
+  it('reports the fields the file has columns for', () => {
+    const { fields } = partial('Handle,Published,Variant SKU,Variant Barcode', 'mug,TRUE,M-1,');
+    expect([...fields].sort()).toEqual(
+      [ProductDraftField.Status, ProductDraftField.Sku, ProductDraftField.Barcode].sort(),
+    );
+  });
+
+  it('reads a file without the title and price columns, leaving validation to the merge', () => {
+    const { products, issues, variantRowsByHandle } = partial(
+      'Handle,Variant SKU',
+      'mug,MUG-1',
+      'mug,MUG-2',
+      'tee,TEE-1',
+    );
+    expect(issues).toEqual([]);
+    expect(products.map((product) => product.variants.map((variant) => variant.sku))).toEqual([
+      ['MUG-1', 'MUG-2'],
+      ['TEE-1'],
+    ]);
+    expect(variantRowsByHandle).toEqual(
+      new Map([
+        ['mug', [2, 3]],
+        ['tee', [4]],
+      ]),
+    );
+  });
+
+  it('still requires a value in a required column the file has', () => {
+    const { issues } = partial('Handle,Variant SKU,Variant Price', 'mug,MUG-1,');
+    expect(issues).toEqual([
+      expect.objectContaining({ code: ImportIssueCode.MissingValue, handle: 'mug', row: 2 }),
+    ]);
+  });
+
+  it('requires the title and price columns in a full parse', () => {
+    expect(() => parser.parse(Buffer.from('Handle,Variant SKU\nmug,MUG-1'))).toThrow(
+      BadRequestException,
+    );
+    const { issues } = parser.parse(Buffer.from('Handle,Title,Variant SKU\nmug,Mug,MUG-1'));
+    expect(issues).toEqual([expect.objectContaining({ code: ImportIssueCode.MissingValue })]);
   });
 });

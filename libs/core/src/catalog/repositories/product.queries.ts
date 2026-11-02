@@ -22,15 +22,29 @@ export type ProductDetailRecord = Prisma.ProductGetPayload<{
   include: typeof PRODUCT_DETAIL_INCLUDE;
 }>;
 
-/** What an update import needs to match a file's variants and keep the catalog's stock and images. */
+/** The catalog product an update import merges its file's changes into: everything it can keep. */
 export const PRODUCT_UPDATE_TARGET_SELECT = {
   id: true,
   handle: true,
+  title: true,
+  descriptionHtml: true,
+  vendor: true,
+  productType: true,
+  tags: true,
+  status: true,
+  optionNames: true,
   variants: {
     select: {
       id: true,
       sku: true,
+      barcode: true,
       optionValues: true,
+      price: true,
+      compareAtPrice: true,
+      weightGrams: true,
+      requiresShipping: true,
+      taxable: true,
+      outOfStockPolicy: true,
       inventoryItem: { select: { tracked: true, available: true } },
     },
     orderBy: BY_POSITION,

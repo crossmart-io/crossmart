@@ -2,6 +2,7 @@ import type { Actor } from '../../activity/entities/actor.js';
 import type { CatalogImportFormat } from '../enums/catalog-import-format.enum.js';
 import type { CatalogImportMode } from '../enums/catalog-import-mode.enum.js';
 import type { ImportIssueCode } from '../enums/import-issue-code.enum.js';
+import type { ProductDraftField } from '../enums/product-draft-field.enum.js';
 import type { ProductDraft } from './product-draft.js';
 
 /** A problem with one product or row of an import file. */
@@ -14,17 +15,33 @@ export interface ImportIssue {
   row?: number;
 }
 
+export interface CatalogParseOptions {
+  /**
+   * Reads the file as changes to existing products. A column the file lacks is neither
+   * required nor defaulted, and drafts are not validated: the update mode merges them into
+   * the catalog products first and validates the result.
+   */
+  partial?: boolean;
+}
+
 export interface CatalogParseResult {
   products: ProductDraft[];
   issues: ImportIssue[];
   /** The spreadsheet row each product starts on, by handle. */
   rowByHandle: ReadonlyMap<string, number>;
+  /** The spreadsheet row of each of a product's variants, in variant order, by handle. */
+  variantRowsByHandle: ReadonlyMap<string, readonly number[]>;
+  /**
+   * The fields the file has columns for. In a partial parse, the drafts' other fields hold
+   * placeholders that must not be written.
+   */
+  fields: ReadonlySet<ProductDraftField>;
 }
 
 /** Turns an uploaded file into product drafts. One implementation per `CatalogImportFormat`. */
 export interface CatalogFileParser {
   readonly format: CatalogImportFormat;
-  parse(content: Buffer): CatalogParseResult;
+  parse(content: Buffer, options?: CatalogParseOptions): CatalogParseResult;
 }
 
 /** The stock one row of an inventory file asks for. */

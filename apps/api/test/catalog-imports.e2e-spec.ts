@@ -113,9 +113,14 @@ describe('Catalog imports and history (e2e)', () => {
     });
     const after = (await getProduct(user, 'stoneware-mug')).body;
     expect(after.title).toBe('Stoneware Mug XL');
-    expect(after.variants).toEqual([
-      expect.objectContaining({ id: moss.id, price: '30.00', available: moss.available }),
-    ]);
+    expect(after.optionNames).toEqual(['Glaze']);
+    expect(after.variants).toEqual(
+      before.variants.map((variant: { id: string }) =>
+        variant.id === moss.id
+          ? { ...variant, price: '30.00' }
+          : expect.objectContaining({ id: variant.id }),
+      ),
+    );
     expect(after.media.length).toBe(before.media.length);
 
     const workspaceActivity = await request(app.getHttpServer())
@@ -134,6 +139,55 @@ describe('Catalog imports and history (e2e)', () => {
       ActivityAction.ProductsUpdatedByImport,
       ActivityAction.ProductsImported,
     ]);
+  });
+
+  it('changes only the columns of an update file and never deletes variants', async () => {
+    const user = await signUp(app, 'Partial updater');
+    await importShopify(user);
+    const before = (await getProduct(user, 'stoneware-mug')).body;
+
+    const updated = await upload(user, {
+      mode: CatalogImportMode.Update,
+      format: CatalogImportFormat.ShopifyCsv,
+      content: Buffer.from(
+        [
+          'Handle,Title,Status,Variant SKU,Variant Price',
+          'stoneware-mug,Speckled Stoneware Mug,active,HCS-SSM-OAT,25.00',
+          'stoneware-mug,,,NOT-A-MUG-SKU,9.00',
+        ].join('\n'),
+      ),
+    });
+
+    expect(updated.body).toMatchObject({
+      updatedProducts: 1,
+      skipped: [],
+      failed: [
+        expect.objectContaining({
+          code: ImportIssueCode.UnmatchedVariant,
+          sku: 'NOT-A-MUG-SKU',
+          row: 3,
+        }),
+      ],
+    });
+    const after = (await getProduct(user, 'stoneware-mug')).body;
+    const { title, descriptionHtml, vendor, productType, tags, status, optionNames } = before;
+    expect(after).toMatchObject({
+      title,
+      descriptionHtml,
+      vendor,
+      productType,
+      tags,
+      status,
+      optionNames,
+    });
+    expect(after.media.map((media: { url: string }) => media.url)).toEqual(
+      before.media.map((media: { url: string }) => media.url),
+    );
+    expect(after.variants).toEqual(
+      before.variants.map((variant: { sku: string }) =>
+        variant.sku === 'HCS-SSM-OAT' ? { ...variant, price: '25.00' } : variant,
+      ),
+    );
   });
 
   it('sets stock by SKU and reports each row it could not apply', async () => {

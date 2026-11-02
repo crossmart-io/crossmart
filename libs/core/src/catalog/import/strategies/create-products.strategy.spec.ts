@@ -5,6 +5,7 @@ import { CatalogImportFormat } from '../../enums/catalog-import-format.enum.js';
 import { ImportIssueCode } from '../../enums/import-issue-code.enum.js';
 import type { ProductRepository } from '../../repositories/product.repository.js';
 import { CatalogConflictsService } from '../../services/catalog-conflicts.service.js';
+import { parseResult } from './__testing__/parse-result.factory.js';
 import { productDraft } from './__testing__/product-draft.factory.js';
 import { CreateProductsStrategy } from './create-products.strategy.js';
 import { importRequest } from './__testing__/import-request.factory.js';
@@ -25,11 +26,7 @@ function createStrategy(parsed: ProductDraft[], parseIssues: ImportIssue[] = [])
   };
   const parser: CatalogFileParser = {
     format: CatalogImportFormat.ShopifyCsv,
-    parse: () => ({
-      products: parsed,
-      issues: parseIssues,
-      rowByHandle: new Map(parsed.map((draft, index) => [draft.handle, index + 2])),
-    }),
+    parse: () => parseResult(parsed, parseIssues),
   };
   const products = repository as unknown as ProductRepository;
   const strategy = new CreateProductsStrategy(
