@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -25,6 +26,7 @@ import { CreateProductDto } from '../dto/create-product.dto.js';
 import { ListProductsQueryDto } from '../dto/list-products-query.dto.js';
 import { ProductPageDto } from '../dto/product-summary.dto.js';
 import { ProductDto } from '../dto/product.dto.js';
+import { UpdateProductDto } from '../dto/update-product.dto.js';
 
 @ApiTags(CATALOG_TAG)
 @Controller(PRODUCTS_ROUTE)
@@ -62,6 +64,23 @@ export class ProductsController {
     @Body() body: CreateProductDto,
   ): Promise<ProductDto> {
     return ProductDto.from(await this.products.create(workspaceId, body.toDraft()));
+  }
+
+  @Put(`:${PRODUCT_ID_PARAM}`)
+  @RequirePermission(WorkspacePermission.EditCatalog)
+  @ApiOperation({
+    summary: 'Replace a product',
+    description:
+      'Variants sent with an id are edited, new ones are added and missing ones are removed. ' +
+      'Stock changes are written to the inventory ledger as adjustments.',
+  })
+  @ApiOkResponse({ type: ProductDto })
+  async update(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
+    @Body() body: UpdateProductDto,
+  ): Promise<ProductDto> {
+    return ProductDto.from(await this.products.update(workspaceId, productId, body.toDraft()));
   }
 
   @Delete(`:${PRODUCT_ID_PARAM}`)

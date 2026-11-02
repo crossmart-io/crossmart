@@ -147,4 +147,87 @@ describe('Catalog (e2e)', () => {
 
     expect(response.status).toBe(HttpStatus.BAD_REQUEST);
   });
+
+  it('edits a product: keeps variant ids, adds and removes variants, adjusts stock', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Editor');
+    const productsUrl = `/api/v1/workspaces/${workspaceId}/products`;
+    const created = await request(app.getHttpServer())
+      .post(productsUrl)
+      .set('Cookie', cookie)
+      .send({
+        title: 'Linen Shirt',
+        optionNames: ['Size'],
+        variants: [
+          { sku: 'LS-S', optionValues: ['S'], price: '60', quantity: 5 },
+          { sku: 'LS-M', optionValues: ['M'], price: '60', quantity: 5 },
+        ],
+      });
+    const [small, medium] = created.body.variants;
+
+    const updated = await request(app.getHttpServer())
+      .put(`${productsUrl}/${created.body.id}`)
+      .set('Cookie', cookie)
+      .send({
+        handle: created.body.handle,
+        title: 'Linen Shirt',
+        descriptionHtml: '<p>Breezy</p><script>alert(1)</script>',
+        status: ProductStatus.ACTIVE,
+        optionNames: ['Size'],
+        variants: [
+          { id: small.id, sku: 'LS-S', optionValues: ['S'], price: '55', quantity: 2 },
+          { sku: 'LS-L', optionValues: ['L'], price: '60', quantity: 7 },
+        ],
+      });
+
+    expect(updated.status).toBe(HttpStatus.OK);
+    expect(updated.body.descriptionHtml).toBe('<p>Breezy</p>');
+    expect(updated.body.variants.map((variant: { sku: string }) => variant.sku)).toEqual([
+      'LS-S',
+      'LS-L',
+    ]);
+    expect(updated.body.variants[0]).toMatchObject({ id: small.id, price: '55.00', available: 2 });
+    expect(updated.body.variants.some((variant: { id: string }) => variant.id === medium.id)).toBe(
+      false,
+    );
+  });
+
+  it('uploads a product image and serves it to other origins', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Photographer');
+    const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
+
+    const uploaded = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${workspaceId}/media/product-images`)
+      .set('Cookie', cookie)
+      .attach('file', png, 'photo.png');
+    expect(uploaded.status).toBe(HttpStatus.CREATED);
+    expect(uploaded.body.contentType).toBe('image/png');
+
+    const served = await request(app.getHttpServer()).get(new URL(uploaded.body.url).pathname);
+    expect(served.status).toBe(HttpStatus.OK);
+    expect(served.headers['cross-origin-resource-policy']).toBe('cross-origin');
+
+    const svg = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${workspaceId}/media/product-images`)
+      .set('Cookie', cookie)
+      .attach('file', Buffer.from('<svg onload="alert(1)"/>'), 'evil.png');
+    expect(svg.status).toBe(HttpStatus.BAD_REQUEST);
+  });
+
+  it('counts the catalog for the overview', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Counter');
+    await importShopifyCsv(workspaceId, cookie);
+
+    const stats = await request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${workspaceId}/catalog-stats`)
+      .set('Cookie', cookie);
+
+    expect(stats.body).toEqual({
+      products: 8,
+      activeProducts: 7,
+      draftProducts: 1,
+      archivedProducts: 0,
+      variants: 17,
+      outOfStockVariants: 2,
+    });
+  });
 });

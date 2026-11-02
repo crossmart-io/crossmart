@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { CORS_ORIGINS_SEPARATOR } from './config.constants.js';
 import { Environment } from './environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
@@ -43,5 +44,17 @@ export class AppConfigService {
 
   get authBaseUrl(): string {
     return this.configService.get('BETTER_AUTH_URL', { infer: true });
+  }
+
+  get storageDriver(): StorageDriver {
+    return this.configService.get('STORAGE_DRIVER', { infer: true });
+  }
+
+  get storageLocalDir(): string {
+    return this.configService.get('STORAGE_LOCAL_DIR', { infer: true });
+  }
+
+  get mediaPublicUrl(): string {
+    return this.configService.get('MEDIA_PUBLIC_URL', { infer: true });
   }
 }

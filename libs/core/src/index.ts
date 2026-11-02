@@ -17,3 +17,7 @@ export * from './catalog/enums/catalog-import-format.enum.js';
 export * from './catalog/enums/import-issue-code.enum.js';
 export * from './catalog/services/catalog-import.service.js';
 export * from './catalog/services/products.service.js';
+export * from './media/enums/image-content-type.enum.js';
+export * from './media/media.constants.js';
+export * from './media/media.module.js';
+export * from './media/services/media.service.js';

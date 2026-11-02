@@ -138,19 +138,13 @@ export class CreateMediaDto implements MediaDraft {
   altText?: string;
 }
 
-export class CreateProductDto {
+/** Everything about a product except its handle and variants, shared by create and update. */
+export abstract class ProductContentDto {
   @ApiProperty({ maxLength: PRODUCT_TITLE_MAX_LENGTH })
   @IsString()
   @IsNotEmpty()
   @MaxLength(PRODUCT_TITLE_MAX_LENGTH)
   title: string;
-
-  @ApiPropertyOptional({ description: 'Unique in the workspace. Defaults to the slugified title.' })
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(PRODUCT_HANDLE_MAX_LENGTH)
-  handle?: string;
 
   @ApiPropertyOptional({ maxLength: PRODUCT_DESCRIPTION_MAX_LENGTH })
   @IsOptional()
@@ -195,14 +189,6 @@ export class CreateProductDto {
   @MaxLength(PRODUCT_TEXT_MAX_LENGTH, { each: true })
   optionNames: string[] = [];
 
-  @ApiProperty({ type: [CreateVariantDto] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(MAX_VARIANTS_PER_PRODUCT)
-  @ValidateNested({ each: true })
-  @Type(() => CreateVariantDto)
-  variants: CreateVariantDto[];
-
   @ApiPropertyOptional({ type: [CreateMediaDto] })
   @IsOptional()
   @IsArray()
@@ -211,18 +197,42 @@ export class CreateProductDto {
   @Type(() => CreateMediaDto)
   media: CreateMediaDto[] = [];
 
-  toDraft(): ProductDraft {
+  protected toDraftWith(handle: string, variants: VariantDraft[]): ProductDraft {
     return {
-      handle: this.handle ?? slugify(this.title),
-      title: this.title.trim(),
+      handle,
+      title: this.title,
       descriptionHtml: this.descriptionHtml,
       vendor: this.vendor,
       productType: this.productType,
-      tags: [...new Set(this.tags.map((tag) => tag.trim()).filter(Boolean))],
+      tags: this.tags,
       status: this.status,
       optionNames: this.optionNames,
-      variants: this.variants.map((variant) => variant.toDraft()),
+      variants,
       media: this.media.map(({ url, altText }) => ({ url, altText })),
     };
+  }
+}
+
+export class CreateProductDto extends ProductContentDto {
+  @ApiPropertyOptional({ description: 'Unique in the workspace. Defaults to the slugified title.' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(PRODUCT_HANDLE_MAX_LENGTH)
+  handle?: string;
+
+  @ApiProperty({ type: [CreateVariantDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_VARIANTS_PER_PRODUCT)
+  @ValidateNested({ each: true })
+  @Type(() => CreateVariantDto)
+  variants: CreateVariantDto[];
+
+  toDraft(): ProductDraft {
+    return this.toDraftWith(
+      this.handle ?? slugify(this.title),
+      this.variants.map((variant) => variant.toDraft()),
+    );
   }
 }

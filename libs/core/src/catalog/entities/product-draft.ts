@@ -15,6 +15,8 @@ export interface ProductDraft {
 }
 
 export interface VariantDraft {
+  /** Set when editing an existing variant; absent for a new one. */
+  id?: string;
   sku?: string;
   barcode?: string;
   optionValues: string[];
@@ -30,7 +32,10 @@ export interface VariantDraft {
 
 export interface InventoryDraft {
   tracked: boolean;
-  /** Opening stock, written to the ledger as one movement. */
+  /**
+   * Stock on hand. For a new variant it is the opening balance; for an existing one the
+   * difference from the current stock is written to the ledger as an adjustment.
+   */
   quantity: number;
 }
 

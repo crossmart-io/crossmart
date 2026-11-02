@@ -17,13 +17,19 @@ export interface ConflictCheck {
 export class CatalogConflictsService {
   constructor(private readonly products: ProductRepository) {}
 
-  async check(workspaceId: string, drafts: ProductDraft[]): Promise<ConflictCheck> {
+  /** `exceptProductId` is the product being edited: its own handle and SKUs do not clash. */
+  async check(
+    workspaceId: string,
+    drafts: ProductDraft[],
+    exceptProductId?: string,
+  ): Promise<ConflictCheck> {
     const [existingHandles, takenSkus] = await Promise.all([
       this.products.findExistingHandles(
         workspaceId,
         drafts.map((draft) => draft.handle),
+        exceptProductId,
       ),
-      this.products.findExistingSkus(workspaceId, drafts.flatMap(skusOf)),
+      this.products.findExistingSkus(workspaceId, drafts.flatMap(skusOf), exceptProductId),
     ]);
     const result: ConflictCheck = { accepted: [], existing: [], skuConflicts: [] };
     for (const draft of drafts) {

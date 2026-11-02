@@ -22,7 +22,7 @@ import {
 import { CatalogImportService, IMPORT_MAX_FILE_BYTES, WorkspacePermission } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
-import { CATALOG_TAG, IMPORT_FILE_FIELD, PRODUCT_IMPORTS_ROUTE } from '../catalog.constants.js';
+import { CATALOG_TAG, UPLOAD_FILE_FIELD, PRODUCT_IMPORTS_ROUTE } from '../catalog.constants.js';
 import { CatalogImportResultDto, ImportProductsDto } from '../dto/catalog-import.dto.js';
 
 const MULTIPART_FORM_DATA = 'multipart/form-data';
@@ -33,9 +33,9 @@ const IMPORT_FORM_SCHEMA = {
     { $ref: getSchemaPath(ImportProductsDto) },
     {
       type: 'object',
-      required: [IMPORT_FILE_FIELD],
+      required: [UPLOAD_FILE_FIELD],
       properties: {
-        [IMPORT_FILE_FIELD]: { type: 'string', format: 'binary', description: 'The catalog file' },
+        [UPLOAD_FILE_FIELD]: { type: 'string', format: 'binary', description: 'The catalog file' },
       },
     },
   ],
@@ -50,7 +50,7 @@ export class ProductImportsController {
 
   @Post()
   @UseInterceptors(
-    FileInterceptor(IMPORT_FILE_FIELD, { limits: { fileSize: IMPORT_MAX_FILE_BYTES, files: 1 } }),
+    FileInterceptor(UPLOAD_FILE_FIELD, { limits: { fileSize: IMPORT_MAX_FILE_BYTES, files: 1 } }),
   )
   @ApiConsumes(MULTIPART_FORM_DATA)
   @ApiBody({ schema: IMPORT_FORM_SCHEMA })

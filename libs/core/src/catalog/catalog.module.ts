@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CATALOG_FILE_PARSERS } from './catalog.constants.js';
 import type { CatalogFileParser } from './entities/catalog-import.js';
 import { ShopifyCsvParser } from './import/shopify-csv/shopify-csv.parser.js';
+import { ProductUpdateWriter } from './repositories/product-update.writer.js';
 import { ProductRepository } from './repositories/product.repository.js';
 import { CatalogConflictsService } from './services/catalog-conflicts.service.js';
 import { CatalogImportService } from './services/catalog-import.service.js';
@@ -11,6 +12,7 @@ import { ProductsService } from './services/products.service.js';
 @Module({
   providers: [
     ProductRepository,
+    ProductUpdateWriter,
     CatalogConflictsService,
     ProductsService,
     CatalogImportService,

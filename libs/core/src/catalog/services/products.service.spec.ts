@@ -1,7 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OutOfStockPolicy, Prisma, ProductStatus } from '@crossmart/database';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type { ProductSummaryRecord } from '../repositories/product.queries.js';
+import type { ProductUpdateWriter } from '../repositories/product-update.writer.js';
 import type { ProductRepository } from '../repositories/product.repository.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
 import { ProductsService } from './products.service.js';
@@ -64,10 +65,18 @@ function createService(records: ProductSummaryRecord[] = []) {
     ),
     create: vi.fn<ProductRepository['create']>(),
     delete: vi.fn<ProductRepository['delete']>(() => Promise.resolve(false)),
+    findVariantIds: vi.fn<ProductRepository['findVariantIds']>(() =>
+      Promise.resolve(new Set(['variant-1'])),
+    ),
   };
+  const writer = { update: vi.fn<ProductUpdateWriter['update']>(() => Promise.resolve()) };
   const products = repository as unknown as ProductRepository;
-  const service = new ProductsService(products, new CatalogConflictsService(products));
-  return { service, repository };
+  const service = new ProductsService(
+    products,
+    writer as unknown as ProductUpdateWriter,
+    new CatalogConflictsService(products),
+  );
+  return { service, repository, writer };
 }
 
 describe('ProductsService.list', () => {
@@ -120,5 +129,39 @@ describe('ProductsService lookups', () => {
     const { service } = createService();
     await expect(service.get(WORKSPACE_ID, 'missing')).rejects.toThrow(NotFoundException);
     await expect(service.delete(WORKSPACE_ID, 'missing')).rejects.toThrow(NotFoundException);
+  });
+});
+
+describe('ProductsService.update', () => {
+  const PRODUCT_ID = 'product-1';
+
+  it('lets a product keep its own handle and SKUs', async () => {
+    const { service, repository, writer } = createService();
+    repository.findDetail.mockResolvedValue(null);
+
+    await service.update(WORKSPACE_ID, PRODUCT_ID, DRAFT).catch(() => undefined);
+
+    expect(repository.findExistingHandles).toHaveBeenCalledWith(WORKSPACE_ID, ['mug'], PRODUCT_ID);
+    expect(repository.findExistingSkus).toHaveBeenCalledWith(WORKSPACE_ID, ['MUG-1'], PRODUCT_ID);
+    expect(writer.update).toHaveBeenCalledWith(WORKSPACE_ID, PRODUCT_ID, expect.anything());
+  });
+
+  it('refuses a variant id from another product', async () => {
+    const { service, writer } = createService();
+    const foreignVariant = { ...DRAFT.variants[0]!, id: 'someone-elses-variant' };
+
+    await expect(
+      service.update(WORKSPACE_ID, PRODUCT_ID, { ...DRAFT, variants: [foreignVariant] }),
+    ).rejects.toThrow(BadRequestException);
+    expect(writer.update).not.toHaveBeenCalled();
+  });
+
+  it('is not found for a product outside the workspace', async () => {
+    const { service, repository } = createService();
+    repository.findVariantIds.mockResolvedValue(null);
+
+    await expect(service.update(WORKSPACE_ID, PRODUCT_ID, DRAFT)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
