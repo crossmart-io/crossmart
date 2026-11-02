@@ -19,7 +19,9 @@ function createStrategy(parsed: ProductDraft[], parseIssues: ImportIssue[] = [])
     findExistingSkus: vi.fn<ProductRepository['findExistingSkus']>(() =>
       Promise.resolve(new Set(['TAKEN'])),
     ),
-    createAll: vi.fn<ProductRepository['createAll']>(() => Promise.resolve()),
+    createAll: vi.fn<ProductRepository['createAll']>((_workspaceId, drafts) =>
+      Promise.resolve(drafts.map((draft) => `${draft.handle}-id`)),
+    ),
   };
   const parser: CatalogFileParser = {
     format: CatalogImportFormat.ShopifyCsv,
@@ -58,7 +60,12 @@ describe('CreateProductsStrategy', () => {
 
     const outcome = await strategy.run(WORKSPACE_ID, importRequest(CatalogImportFormat.ShopifyCsv));
 
-    expect(outcome).toMatchObject({ createdProducts: 1, createdVariants: 2, updatedProducts: 0 });
+    expect(outcome).toMatchObject({
+      createdProducts: 1,
+      createdVariants: 2,
+      updatedProducts: 0,
+      productIds: ['new-id'],
+    });
     expect(outcome.skipped).toEqual([expect.objectContaining({ handle: 'existing', row: 3 })]);
     expect(outcome.failed.map((issue) => [issue.handle, issue.row])).toEqual([
       ['broken', 9],

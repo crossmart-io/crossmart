@@ -3,7 +3,13 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
-import { CatalogImportFormat, CatalogImportMode, ImportIssueCode } from '@crossmart/core';
+import {
+  ActivityAction,
+  ActivitySubjectType,
+  CatalogImportFormat,
+  CatalogImportMode,
+  ImportIssueCode,
+} from '@crossmart/core';
 import {
   ImportIssueOutcome,
   ImportJobStatus,
@@ -111,6 +117,23 @@ describe('Catalog imports and history (e2e)', () => {
       expect.objectContaining({ id: moss.id, price: '30.00', available: moss.available }),
     ]);
     expect(after.media.length).toBe(before.media.length);
+
+    const workspaceActivity = await request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${user.workspaceId}/activity`)
+      .set('Cookie', user.cookie);
+    expect(workspaceActivity.body.items.map((event: { summary: string }) => event.summary)).toEqual(
+      [
+        'Updated 1 product from “catalog.csv”: 1 skipped',
+        expect.stringMatching(/^Imported \d+ products from “catalog.csv”/),
+      ],
+    );
+    const mugActivity = await request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${user.workspaceId}/products/${after.id}/activity`)
+      .set('Cookie', user.cookie);
+    expect(mugActivity.body.items.map((event: { action: string }) => event.action)).toEqual([
+      ActivityAction.ProductsUpdatedByImport,
+      ActivityAction.ProductsImported,
+    ]);
   });
 
   it('sets stock by SKU and reports each row it could not apply', async () => {
@@ -156,6 +179,16 @@ describe('Catalog imports and history (e2e)', () => {
       reason: InventoryMovementReason.IMPORTED,
       quantityAfter: 42,
       userName: 'Stocker',
+    });
+    const productActivity = await request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${user.workspaceId}/products/${mug.id}/activity`)
+      .set('Cookie', user.cookie);
+    expect(productActivity.body.items[0]).toMatchObject({
+      action: ActivityAction.StockImported,
+      summary: 'Set stock of 1 variant from “stock-מלאי.csv”: 1 skipped, 2 failed',
+      subject: { type: ActivitySubjectType.ImportJob, id: response.body.jobId },
+      itemCount: 1,
+      actor: { name: 'Stocker' },
     });
 
     const job = await request(app.getHttpServer())

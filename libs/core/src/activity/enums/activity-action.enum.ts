@@ -8,7 +8,12 @@ export enum ActivityAction {
   ProductDeleted = 'product_deleted',
   ProductsBulkUpdated = 'products_bulk_updated',
   ProductsBulkDeleted = 'products_bulk_deleted',
+  /** A create import: new products from a file. */
   ProductsImported = 'products_imported',
+  /** An update import: catalog products replaced from a file. */
+  ProductsUpdatedByImport = 'products_updated_by_import',
+  /** An inventory import: stock levels set from a file. */
+  StockImported = 'stock_imported',
   ProductViewCreated = 'product_view_created',
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',

@@ -73,7 +73,7 @@ Services that change workspace data record it in the activity log. They import `
 `ActivityRecorder` and call `record(workspaceId, actor, entry)` after the write, or `recordFailure(...)` when an
 operation worth reporting fails. Controllers pass the caller down as an `Actor` (`@CurrentActor()`). Recording never
 throws, so a log that cannot be written never fails the operation. A new action is a value in `ActivityAction` plus its
-wording in `activity-summary.ts`; actions are stored as text, so this needs no migration.
+wording in `activity-summary.ts`; actions are stored as text, so this needs no migration. A product's history is every event whose subject ids include it, whatever the event's subject: an import is about its `ImportJob`, and lists the products it created or changed.
 
 ## 3. Core domain model (initial)
 

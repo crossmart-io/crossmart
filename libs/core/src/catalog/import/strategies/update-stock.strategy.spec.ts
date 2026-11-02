@@ -44,6 +44,7 @@ describe('UpdateStockStrategy', () => {
       { reason: InventoryMovementReason.IMPORTED, actor: IMPORT_ACTOR },
     );
     expect(outcome.updatedVariants).toBe(1);
+    expect(outcome.productIds).toEqual(['product-mug']);
     expect(outcome.skipped).toEqual([
       expect.objectContaining({ code: ImportIssueCode.NotTracked, sku: 'GIFT-1', row: 3 }),
     ]);

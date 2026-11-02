@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ImportIssueOutcome, ImportJobStatus } from '@crossmart/database';
-import { IMPORT_UNEXPECTED_FAILURE_MESSAGE } from '../catalog.constants.js';
+import { UNEXPECTED_FAILURE_REASON } from '../../activity/activity.constants.js';
 import { CatalogImportFormat } from '../enums/catalog-import-format.enum.js';
 import { CatalogImportMode } from '../enums/catalog-import-mode.enum.js';
 import { ImportIssueCode } from '../enums/import-issue-code.enum.js';
@@ -80,7 +80,7 @@ describe('ImportJobsService', () => {
 
     expect(repository.fail.mock.calls).toEqual([
       [WORKSPACE_ID, 'job-1', 'Not a CSV'],
-      [WORKSPACE_ID, 'job-2', IMPORT_UNEXPECTED_FAILURE_MESSAGE],
+      [WORKSPACE_ID, 'job-2', UNEXPECTED_FAILURE_REASON],
     ]);
   });
 

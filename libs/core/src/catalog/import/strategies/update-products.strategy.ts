@@ -61,6 +61,7 @@ export class UpdateProductsStrategy implements CatalogImportStrategy {
     return {
       ...emptyOutcome(),
       updatedProducts: accepted.length,
+      productIds: accepted.map((replacement) => replacement.productId),
       skipped: withRows(notFound, rowByHandle),
       failed: withRows([...issues, ...skuConflicts], rowByHandle),
     };

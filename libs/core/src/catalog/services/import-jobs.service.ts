@@ -1,6 +1,7 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { toCursorPage } from '@crossmart/common';
 import { ImportIssueOutcome } from '@crossmart/database';
-import { IMPORT_UNEXPECTED_FAILURE_MESSAGE } from '../catalog.constants.js';
+import { toFailureReason } from '../../activity/rules/failure-reason.js';
 import type { ImportOutcome } from '../entities/catalog-import.js';
 import type {
   ImportJobCounts,
@@ -28,21 +29,17 @@ export class ImportJobsService {
     return this.jobs.complete(workspaceId, jobId, toCounts(outcome), toOutcomeIssues(outcome));
   }
 
-  /** Marks the job failed. Only messages meant for the caller (HTTP errors) are kept verbatim. */
+  /** Marks the job failed, with a reason that is safe to show, as the activity log stores it. */
   fail(workspaceId: string, jobId: string, error: unknown): Promise<void> {
-    const message =
-      error instanceof HttpException ? error.message : IMPORT_UNEXPECTED_FAILURE_MESSAGE;
-    return this.jobs.fail(workspaceId, jobId, message);
+    return this.jobs.fail(workspaceId, jobId, toFailureReason(error));
   }
 
   async list(workspaceId: string, query: ImportJobListQuery): Promise<ImportJobPage> {
-    const records = await this.jobs.listPage(workspaceId, query);
-    const hasMore = records.length > query.limit;
-    const page = hasMore ? records.slice(0, query.limit) : records;
-    return {
-      items: page.map((record) => toImportJobSummary(record)),
-      nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
-    };
+    const { rows, nextCursor } = toCursorPage(
+      await this.jobs.listPage(workspaceId, query),
+      query.limit,
+    );
+    return { items: rows.map((record) => toImportJobSummary(record)), nextCursor };
   }
 
   async get(workspaceId: string, jobId: string): Promise<ImportJobDetail> {

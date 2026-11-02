@@ -31,6 +31,3 @@ export const CATALOG_IMPORT_STRATEGIES = Symbol('CATALOG_IMPORT_STRATEGIES');
 export const IMPORT_FILE_NAME_MAX_LENGTH = 255;
 export const IMPORT_JOB_PAGE_DEFAULT_LIMIT = 20;
 export const IMPORT_JOB_PAGE_MAX_LIMIT = 100;
-/** What the history shows when a file fails for a reason that must not reach users. */
-export const IMPORT_UNEXPECTED_FAILURE_MESSAGE =
-  'The import failed unexpectedly. Please try again.';

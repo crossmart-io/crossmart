@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { ActivityOutcome } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
+import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type {
   CatalogImportRequest,
@@ -18,7 +19,7 @@ import type { ImportJobsService } from './import-jobs.service.js';
 const WORKSPACE_ID = 'ws-1';
 const JOB_ID = 'job-1';
 const ACTOR = Actor.user('user-1');
-const OUTCOME: ImportOutcome = { ...emptyOutcome(), updatedVariants: 3 };
+const OUTCOME: ImportOutcome = { ...emptyOutcome(), updatedVariants: 3, productIds: ['p-1'] };
 const UNKNOWN_SKU = { code: ImportIssueCode.UnknownSku, message: 'unknown', sku: 'X', row: 2 };
 
 function request(overrides: Partial<CatalogImportRequest> = {}): CatalogImportRequest {
@@ -59,7 +60,8 @@ describe('CatalogImportService', () => {
 
     const result = await service.importFile(WORKSPACE_ID, request());
 
-    expect(result).toEqual({ ...OUTCOME, jobId: JOB_ID, mode: CatalogImportMode.Inventory });
+    const { productIds: _productIds, ...counts } = OUTCOME;
+    expect(result).toEqual({ ...counts, jobId: JOB_ID, mode: CatalogImportMode.Inventory });
     expect(jobs.start).toHaveBeenCalledWith(WORKSPACE_ID, {
       mode: CatalogImportMode.Inventory,
       format: CatalogImportFormat.InventoryCsv,
@@ -80,9 +82,10 @@ describe('CatalogImportService', () => {
     expect(jobs.fail).toHaveBeenCalledWith(WORKSPACE_ID, JOB_ID, rejection);
     expect(jobs.complete).not.toHaveBeenCalled();
     expect(activity.entries[0]).toMatchObject({
-      action: ActivityAction.ProductsImported,
+      action: ActivityAction.StockImported,
       outcome: ActivityOutcome.FAILED,
       failureReason: 'The file is not a readable CSV',
+      subject: { type: ActivitySubjectType.ImportJob, id: JOB_ID, label: 'stock.csv' },
     });
   });
 
@@ -99,15 +102,22 @@ describe('CatalogImportService', () => {
     expect(activity.recorded).toEqual([]);
   });
 
-  it('logs how many records were applied, skipped and rejected', async () => {
+  it('logs the import with its file, counts and the products it touched', async () => {
     const { service, run, activity } = setup();
     run.mockResolvedValue({ ...OUTCOME, failed: [UNKNOWN_SKU] });
 
     await service.importFile(WORKSPACE_ID, request());
 
-    expect(activity.recorded[0]).toMatchObject({
+    expect(activity.recorded[0]).toEqual({
+      workspaceId: WORKSPACE_ID,
       actor: ACTOR,
-      entry: { action: ActivityAction.ProductsImported, itemCount: 3, detail: '1 failed' },
+      entry: {
+        action: ActivityAction.StockImported,
+        subject: { type: ActivitySubjectType.ImportJob, id: JOB_ID, label: 'stock.csv' },
+        relatedSubjectIds: ['p-1'],
+        itemCount: 3,
+        detail: '1 failed',
+      },
     });
     expect(activity.entries[0]?.outcome).toBeUndefined();
   });
@@ -120,7 +130,7 @@ describe('CatalogImportService', () => {
 
     expect(activity.entries[0]).toMatchObject({
       outcome: ActivityOutcome.FAILED,
-      failureReason: 'No product in the file could be imported',
+      failureReason: 'No stock level in the file could be set',
     });
   });
 });

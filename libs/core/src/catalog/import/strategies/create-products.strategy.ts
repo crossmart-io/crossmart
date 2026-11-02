@@ -38,9 +38,10 @@ export class CreateProductsStrategy implements CatalogImportStrategy {
     const { products, issues, rowByHandle } = findParser(this.parsers, format).parse(content);
     const drafts = products.map((draft) => normalizeDraft(draft));
     const { accepted, existing, skuConflicts } = await this.conflicts.check(workspaceId, drafts);
-    await this.createInBatches(workspaceId, accepted);
+    const productIds = await this.createInBatches(workspaceId, accepted);
     return {
       ...emptyOutcome(),
+      productIds,
       createdProducts: accepted.length,
       createdVariants: accepted.reduce((sum, draft) => sum + draft.variants.length, 0),
       skipped: withRows(existing, rowByHandle),
@@ -48,12 +49,12 @@ export class CreateProductsStrategy implements CatalogImportStrategy {
     };
   }
 
-  private async createInBatches(workspaceId: string, drafts: ProductDraft[]): Promise<void> {
+  private async createInBatches(workspaceId: string, drafts: ProductDraft[]): Promise<string[]> {
+    const productIds: string[] = [];
     for (let start = 0; start < drafts.length; start += IMPORT_PRODUCT_BATCH_SIZE) {
-      await this.products.createAll(
-        workspaceId,
-        drafts.slice(start, start + IMPORT_PRODUCT_BATCH_SIZE),
-      );
+      const batch = drafts.slice(start, start + IMPORT_PRODUCT_BATCH_SIZE);
+      productIds.push(...(await this.products.createAll(workspaceId, batch)));
     }
+    return productIds;
   }
 }

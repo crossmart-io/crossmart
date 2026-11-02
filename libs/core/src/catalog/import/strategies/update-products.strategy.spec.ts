@@ -69,7 +69,12 @@ describe('UpdateProductsStrategy', () => {
     const outcome = await strategy.run(WORKSPACE_ID, importRequest(CatalogImportFormat.ShopifyCsv));
 
     expect(repository.findUpdateTargets).toHaveBeenCalledWith(WORKSPACE_ID, ['mug', 'lamp']);
-    expect(outcome).toMatchObject({ updatedProducts: 1, createdProducts: 0, failed: [] });
+    expect(outcome).toMatchObject({
+      updatedProducts: 1,
+      createdProducts: 0,
+      failed: [],
+      productIds: ['mug-id'],
+    });
     expect(outcome.skipped).toEqual([
       expect.objectContaining({ code: ImportIssueCode.NotFound, handle: 'lamp', row: 3 }),
     ]);

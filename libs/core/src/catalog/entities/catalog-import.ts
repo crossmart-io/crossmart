@@ -56,9 +56,11 @@ export interface ImportOutcome {
   skipped: ImportIssue[];
   /** Records that could not be imported, with the reason. */
   failed: ImportIssue[];
+  /** Products the import created or changed, so each one's activity history shows it. */
+  productIds: string[];
 }
 
-export interface CatalogImportResult extends ImportOutcome {
+export interface CatalogImportResult extends Omit<ImportOutcome, 'productIds'> {
   /** The import history entry that records this import. */
   jobId: string;
   mode: CatalogImportMode;

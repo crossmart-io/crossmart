@@ -19,6 +19,7 @@ import { emptyOutcome } from '../import-issues.js';
 
 interface StockPlan {
   targets: StockTarget[];
+  productIds: Set<string>;
   skipped: ImportIssue[];
   failed: ImportIssue[];
 }
@@ -56,13 +57,14 @@ export class UpdateStockStrategy implements CatalogImportStrategy {
     return {
       ...emptyOutcome(),
       updatedVariants: plan.targets.length,
+      productIds: [...plan.productIds],
       skipped: plan.skipped,
       failed: [...issues, ...plan.failed].sort(byRow),
     };
   }
 
   private plan(levels: StockLevelDraft[], itemBySku: Map<string, StockItemBySku>): StockPlan {
-    const plan: StockPlan = { targets: [], skipped: [], failed: [] };
+    const plan: StockPlan = { targets: [], productIds: new Set(), skipped: [], failed: [] };
     for (const { sku, available, row } of levels) {
       const item = itemBySku.get(sku);
       if (!item) {
@@ -81,6 +83,7 @@ export class UpdateStockStrategy implements CatalogImportStrategy {
         });
       } else {
         plan.targets.push({ inventoryItemId: item.inventoryItemId, available });
+        plan.productIds.add(item.productId);
       }
     }
     return plan;

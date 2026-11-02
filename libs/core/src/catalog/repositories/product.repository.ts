@@ -97,8 +97,9 @@ export class ProductRepository {
   }
 
   /** Creates the drafts in one transaction: all of them or none. */
-  async createAll(workspaceId: string, drafts: ProductDraft[]): Promise<void> {
-    await this.prisma.$transaction(
+  /** Creates the products in one transaction and returns their ids, in draft order. */
+  async createAll(workspaceId: string, drafts: ProductDraft[]): Promise<string[]> {
+    const created = await this.prisma.$transaction(
       drafts.map((draft) =>
         this.prisma.product.create({
           data: toProductCreateInput(workspaceId, draft),
@@ -106,6 +107,7 @@ export class ProductRepository {
         }),
       ),
     );
+    return created.map((product) => product.id);
   }
 
   /** Ids of the product's variants, or null when the product is not in this workspace. */

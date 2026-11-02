@@ -22,5 +22,6 @@ export function emptyOutcome(): ImportOutcome {
     updatedVariants: 0,
     skipped: [],
     failed: [],
+    productIds: [],
   };
 }

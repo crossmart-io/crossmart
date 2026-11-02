@@ -7,7 +7,7 @@ import type {
   CatalogImportStrategy,
   ImportOutcome,
 } from '../entities/catalog-import.js';
-import { IMPORT_ACTIVITY_ENTRY, toImportActivityEntry } from '../rules/import-activity.js';
+import { toImportActivityEntry, toImportEntry } from '../rules/import-activity.js';
 import { ImportJobsService } from './import-jobs.service.js';
 
 /**
@@ -29,17 +29,19 @@ export class CatalogImportService {
     const strategy = this.strategyFor(request);
     const { mode, format, fileName, actor } = request;
     const jobId = await this.jobs.start(workspaceId, { mode, format, fileName, actor });
+    const file = { mode, jobId, fileName };
     let outcome: ImportOutcome;
     try {
       outcome = await strategy.run(workspaceId, request);
       await this.jobs.complete(workspaceId, jobId, outcome);
     } catch (error) {
       await this.jobs.fail(workspaceId, jobId, error);
-      await this.activity.recordFailure(workspaceId, actor, IMPORT_ACTIVITY_ENTRY, error);
+      await this.activity.recordFailure(workspaceId, actor, toImportEntry(file), error);
       throw error;
     }
-    await this.activity.record(workspaceId, actor, toImportActivityEntry(outcome));
-    return { ...outcome, jobId, mode };
+    await this.activity.record(workspaceId, actor, toImportActivityEntry(file, outcome));
+    const { productIds: _productIds, ...counts } = outcome;
+    return { ...counts, jobId, mode };
   }
 
   /** A mode that cannot read the format is a bad request, not a failed import. */
