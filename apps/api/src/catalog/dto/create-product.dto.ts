@@ -37,7 +37,12 @@ import {
 } from '../catalog.constants.js';
 
 const AMOUNT_MESSAGE = 'must be a non-negative amount with at most two decimals, e.g. "19.90"';
-const WEB_URL_OPTIONS = { protocols: ['http', 'https'], require_protocol: true };
+// Self-hosted installs serve images from hosts without a public TLD (localhost, intranet names).
+const WEB_URL_OPTIONS = {
+  protocols: ['http', 'https'],
+  require_protocol: true,
+  require_tld: false,
+};
 
 /** Validated amounts always normalize; the fallback only satisfies the type checker. */
 function toAmount(value: string): string {

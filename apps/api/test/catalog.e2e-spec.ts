@@ -202,6 +202,17 @@ describe('Catalog (e2e)', () => {
     expect(uploaded.status).toBe(HttpStatus.CREATED);
     expect(uploaded.body.contentType).toBe('image/png');
 
+    const product = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${workspaceId}/products`)
+      .set('Cookie', cookie)
+      .send({
+        title: 'Photographed Mug',
+        media: [{ url: uploaded.body.url, altText: 'A mug' }],
+        variants: [{ price: '12' }],
+      });
+    expect(product.status).toBe(HttpStatus.CREATED);
+    expect(product.body.media[0]).toMatchObject({ url: uploaded.body.url, altText: 'A mug' });
+
     const served = await request(app.getHttpServer()).get(new URL(uploaded.body.url).pathname);
     expect(served.status).toBe(HttpStatus.OK);
     expect(served.headers['cross-origin-resource-policy']).toBe('cross-origin');
