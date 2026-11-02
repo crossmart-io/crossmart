@@ -2,12 +2,13 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
-import { StockAdjustmentMode, StockLevel } from '@crossmart/core';
+import { ActivityAction, StockAdjustmentMode, StockLevel } from '@crossmart/core';
 import { InventoryMovementReason, PrismaService, WorkspaceRole } from '@crossmart/database';
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 interface InventoryRowBody {
   inventoryItemId: string;
+  productId: string;
   sku: string;
   onHand: number;
   reserved: number;
@@ -159,6 +160,64 @@ describe('Inventory (e2e)', () => {
         userName: null,
       },
     ]);
+  });
+
+  function movementsOf(user: SignedUpUser, inventoryItemId: string) {
+    return request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${user.workspaceId}/inventory-items/${inventoryItemId}/movements`)
+      .set('Cookie', user.cookie);
+  }
+
+  it('shows adjustments in the product’s activity and credits product edits in the ledger', async () => {
+    const seller = await signUp(app, 'Stock Narrator');
+    await createCatalog(seller);
+    const sand = await rowBySku(seller, 'MUG-SAND');
+    await adjust(seller, sand.inventoryItemId, {
+      mode: StockAdjustmentMode.Delta,
+      quantity: 12,
+      reason: InventoryMovementReason.RECEIVED,
+    });
+    await adjust(seller, sand.inventoryItemId, {
+      mode: StockAdjustmentMode.Set,
+      quantity: 15,
+      reason: InventoryMovementReason.CORRECTION,
+    });
+
+    const activity = await request(app.getHttpServer())
+      .get(`/api/v1/workspaces/${seller.workspaceId}/products/${sand.productId}/activity`)
+      .set('Cookie', seller.cookie);
+    expect(activity.body.items[0]).toMatchObject({
+      action: ActivityAction.InventoryAdjusted,
+      summary: 'Adjusted stock of “Stoneware Mug”: MUG-SAND +12, received',
+      actor: { name: 'Stock Narrator' },
+    });
+
+    const productUrl = `/api/v1/workspaces/${seller.workspaceId}/products/${sand.productId}`;
+    const product = await request(app.getHttpServer()).get(productUrl).set('Cookie', seller.cookie);
+    const edited = await request(app.getHttpServer())
+      .put(productUrl)
+      .set('Cookie', seller.cookie)
+      .send({
+        handle: product.body.handle,
+        title: product.body.title,
+        optionNames: ['Color'],
+        variants: product.body.variants.map((variant: { id: string; sku: string }) => ({
+          id: variant.id,
+          sku: variant.sku,
+          optionValues: [variant.sku === 'MUG-SAND' ? 'Sand' : 'Blue'],
+          price: '22',
+          quantity: variant.sku === 'MUG-SAND' ? 10 : 30,
+        })),
+      });
+    expect(edited.status).toBe(HttpStatus.OK);
+
+    const history = await movementsOf(seller, sand.inventoryItemId);
+    expect(history.body.items[0]).toMatchObject({
+      delta: -5,
+      reason: InventoryMovementReason.ADJUSTMENT,
+      quantityAfter: 10,
+      userName: 'Stock Narrator',
+    });
   });
 
   it('refuses impossible adjustments and system reasons', async () => {

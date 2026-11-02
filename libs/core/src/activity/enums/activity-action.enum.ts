@@ -13,4 +13,5 @@ export enum ActivityAction {
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',
   ApiKeyRevoked = 'api_key_revoked',
+  InventoryAdjusted = 'inventory_adjusted',
 }

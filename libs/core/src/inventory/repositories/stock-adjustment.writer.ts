@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 import type { StockAdjustment, StockSnapshot } from '../entities/stock-adjustment.js';
+import { toMovementActor } from '../mappers/movement-actor.mapper.js';
 
 type Transaction = Prisma.TransactionClient;
 
@@ -15,21 +16,21 @@ export type DeltaResolver = (stock: StockSnapshot) => number;
 export class StockAdjustmentWriter {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Returns false when the item is not in this workspace. */
+  /** Returns the units moved (0 when nothing changed), or null when the item is not in this workspace. */
   adjust(
     workspaceId: string,
     inventoryItemId: string,
     adjustment: StockAdjustment,
     resolveDelta: DeltaResolver,
-  ): Promise<boolean> {
+  ): Promise<number | null> {
     return this.prisma.$transaction(async (tx) => {
       const stock = await this.lock(tx, workspaceId, inventoryItemId);
-      if (!stock) return false;
+      if (!stock) return null;
       const delta = resolveDelta(stock);
       if (delta !== 0) {
         await this.write(tx, { workspaceId, inventoryItemId, adjustment, stock, delta });
       }
-      return true;
+      return delta;
     });
   }
 
@@ -60,8 +61,7 @@ export class StockAdjustmentWriter {
         reason: adjustment.reason,
         quantityAfter: stock.available + stock.reserved + delta,
         note: adjustment.note ?? null,
-        actorUserId: adjustment.actor.userId,
-        apiKeyId: adjustment.actor.apiKeyId,
+        ...toMovementActor(adjustment.actor),
       },
     });
   }

@@ -67,6 +67,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'API key revocation',
     describe: (entry) => `Revoked API key${named(entry)}`,
   },
+  [ActivityAction.InventoryAdjusted]: {
+    operation: 'Stock adjustment',
+    describe: (entry) => withDetail(`Adjusted stock of${named(entry)}`, entry),
+  },
 };
 
 /** The one-line, human-readable text of an event, as stored and shown in the log. */

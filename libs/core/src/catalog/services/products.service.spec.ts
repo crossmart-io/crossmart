@@ -173,7 +173,7 @@ describe('ProductsService.update', () => {
 
     expect(repository.findExistingHandles).toHaveBeenCalledWith(WORKSPACE_ID, ['mug'], PRODUCT_ID);
     expect(repository.findExistingSkus).toHaveBeenCalledWith(WORKSPACE_ID, ['MUG-1'], PRODUCT_ID);
-    expect(writer.update).toHaveBeenCalledWith(WORKSPACE_ID, PRODUCT_ID, expect.anything());
+    expect(writer.update).toHaveBeenCalledWith(WORKSPACE_ID, PRODUCT_ID, expect.anything(), ACTOR);
   });
 
   it('refuses a variant id from another product', async () => {

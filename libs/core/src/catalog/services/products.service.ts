@@ -75,7 +75,7 @@ export class ProductsService {
     this.assertValid(draft);
     await this.assertOwnVariants(workspaceId, productId, draft);
     await this.assertNoConflicts(workspaceId, draft, productId);
-    await this.updateWriter.update(workspaceId, productId, draft);
+    await this.updateWriter.update(workspaceId, productId, draft, actor);
     const product = await this.get(workspaceId, productId);
     await this.recordChange(workspaceId, actor, ActivityAction.ProductUpdated, product);
     return product;

@@ -22,3 +22,17 @@ export const MANUAL_MOVEMENT_REASONS: readonly InventoryMovementReason[] = [
 ];
 
 export const INVENTORY_ITEM_NOT_FOUND = 'Inventory item not found';
+
+/** How each reason reads in the activity log: "MUG-BLUE +5, received". */
+export const MOVEMENT_REASON_LABELS: Record<InventoryMovementReason, string> = {
+  [InventoryMovementReason.OPENING_BALANCE]: 'opening balance',
+  [InventoryMovementReason.ADJUSTMENT]: 'product edited',
+  [InventoryMovementReason.CORRECTION]: 'count correction',
+  [InventoryMovementReason.RECEIVED]: 'received',
+  [InventoryMovementReason.RETURNED]: 'returned',
+  [InventoryMovementReason.DAMAGED]: 'damaged',
+  [InventoryMovementReason.LOST]: 'lost',
+  [InventoryMovementReason.SOLD]: 'sold',
+};
+/** Separates option values when a variant without a SKU is named: "Blue / Large". */
+export const OPTION_VALUE_SEPARATOR = ' / ';

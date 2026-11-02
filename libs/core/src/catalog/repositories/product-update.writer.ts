@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InventoryMovementReason, type Prisma, PrismaService } from '@crossmart/database';
+import type { Actor } from '../../activity/entities/actor.js';
+import { toMovementActor } from '../../inventory/mappers/movement-actor.mapper.js';
 import type { ProductDraft, VariantDraft } from '../entities/product-draft.js';
 import {
   toMediaInputs,
@@ -26,20 +28,26 @@ interface VariantEdit {
 /**
  * Replaces a product's content, variants and media in one transaction. Variants keep their
  * ids (and their listings, later) when edited; stock changes become ledger adjustments.
- * The editor's quantity is the available stock: reserved units stay reserved.
+ * The editor's quantity is the available stock: reserved units stay reserved. Ledger entries
+ * are credited to the editor, like manual adjustments.
  */
 @Injectable()
 export class ProductUpdateWriter {
   constructor(private readonly prisma: PrismaService) {}
 
-  async update(workspaceId: string, productId: string, draft: ProductDraft): Promise<void> {
+  async update(
+    workspaceId: string,
+    productId: string,
+    draft: ProductDraft,
+    actor: Actor,
+  ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const stock = await this.readCurrentStock(tx, productId);
       await this.removeDroppedVariants(tx, productId, draft.variants);
       for (const [position, variant] of draft.variants.entries()) {
         const current = variant.id ? stock.get(variant.id) : undefined;
         if (variant.id && current) {
-          await this.updateVariant(tx, workspaceId, {
+          await this.updateVariant(tx, workspaceId, actor, {
             variantId: variant.id,
             variant,
             position,
@@ -87,6 +95,7 @@ export class ProductUpdateWriter {
   private async updateVariant(
     tx: Transaction,
     workspaceId: string,
+    actor: Actor,
     { variantId, variant, position, current }: VariantEdit,
   ): Promise<void> {
     await tx.variant.update({ where: { id: variantId }, data: toVariantFields(variant, position) });
@@ -103,6 +112,7 @@ export class ProductUpdateWriter {
           delta,
           quantityAfter: variant.inventory.quantity + current.reserved,
           reason: InventoryMovementReason.ADJUSTMENT,
+          ...toMovementActor(actor),
         },
       });
     }
