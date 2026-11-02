@@ -24,6 +24,7 @@ model User {
   accounts      Account[]
   memberships   WorkspaceMember[]
   apiKeys       ApiKey[]
+  activity      ActivityEvent[]
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
@@ -111,6 +112,7 @@ model Workspace {
   apiKeys        ApiKey[]
   products       Product[]
   productViews   ProductView[]
+  activity       ActivityEvent[]
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
 
@@ -136,19 +138,20 @@ model WorkspaceMember {
 
 /// A workspace-scoped key for the API and MCP. Only a SHA-256 hash of the secret is stored.
 model ApiKey {
-  id          String        @id @default(uuid()) @db.Uuid
-  workspaceId String        @map("workspace_id") @db.Uuid
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdById String        @map("created_by_id") @db.Uuid
-  createdBy   User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  id          String          @id @default(uuid()) @db.Uuid
+  workspaceId String          @map("workspace_id") @db.Uuid
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String          @map("created_by_id") @db.Uuid
+  createdBy   User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
   name        String
   role        WorkspaceRole
   prefix      String
-  hash        String        @unique
-  lastUsedAt  DateTime?     @map("last_used_at")
-  expiresAt   DateTime?     @map("expires_at")
-  revokedAt   DateTime?     @map("revoked_at")
-  createdAt   DateTime      @default(now()) @map("created_at")
+  hash        String          @unique
+  lastUsedAt  DateTime?       @map("last_used_at")
+  expiresAt   DateTime?       @map("expires_at")
+  revokedAt   DateTime?       @map("revoked_at")
+  activity    ActivityEvent[]
+  createdAt   DateTime        @default(now()) @map("created_at")
 
   @@index([workspaceId])
   @@map("api_keys")
@@ -285,4 +288,56 @@ model InventoryMovement {
 
   @@index([inventoryItemId, createdAt])
   @@map("inventory_movements")
+}
+
+// ─── Activity ─────────────────────────────────────────────────────────────────
+
+enum ActivityActorType {
+  USER
+  API_KEY
+  SYSTEM
+
+  @@map("activity_actor_type")
+}
+
+enum ActivityOutcome {
+  SUCCEEDED
+  FAILED
+
+  @@map("activity_outcome")
+}
+
+/// Append-only record of who changed what in a workspace, including operations that failed.
+/// UUIDv7 ids sort by time, so they break ties between events of the same millisecond.
+model ActivityEvent {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  workspaceId   String            @map("workspace_id") @db.Uuid
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actorType     ActivityActorType @map("actor_type")
+  /// Kept as null when the user is deleted, so the history survives them.
+  actorUserId   String?           @map("actor_user_id") @db.Uuid
+  actorUser     User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorApiKeyId String?           @map("actor_api_key_id") @db.Uuid
+  actorApiKey   ApiKey?           @relation(fields: [actorApiKeyId], references: [id], onDelete: SetNull)
+  /// An `ActivityAction` value; kept as text so features can add actions without a migration.
+  action        String
+  outcome       ActivityOutcome
+  /// An `ActivitySubjectType` value, kept as text for the same reason.
+  subjectType   String?           @map("subject_type")
+  subjectId     String?           @map("subject_id") @db.Uuid
+  /// The subject's name when the event happened, so deleted subjects still read well.
+  subjectLabel  String?           @map("subject_label")
+  /// Every subject a bulk event touched, so each one's history includes it.
+  subjectIds    String[]          @map("subject_ids") @db.Uuid
+  /// How many items the event covered (products changed, products imported).
+  itemCount     Int?              @map("item_count")
+  /// A short, user-facing reason for a failed outcome. Never holds secrets.
+  failureReason String?           @map("failure_reason")
+  summary       String
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([workspaceId, subjectType, subjectId])
+  @@index([subjectIds], type: Gin)
+  @@map("activity_events")
 }

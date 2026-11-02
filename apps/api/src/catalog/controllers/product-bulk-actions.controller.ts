@@ -1,7 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BulkProductActionsService, WorkspacePermission } from '@crossmart/core';
+import { type Actor, BulkProductActionsService, WorkspacePermission } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CATALOG_TAG, PRODUCT_BULK_ACTIONS_ROUTE } from '../catalog.constants.js';
 import { BulkProductActionDto, BulkProductResultDto } from '../dto/bulk-product-action.dto.js';
@@ -24,9 +25,10 @@ export class ProductBulkActionsController {
   async apply(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: BulkProductActionDto,
+    @CurrentActor() actor: Actor,
   ): Promise<BulkProductResultDto> {
     return BulkProductResultDto.from(
-      await this.bulkActions.apply(workspaceId, body.productIds, body.toChange()),
+      await this.bulkActions.apply(workspaceId, body.productIds, body.toChange(), actor),
     );
   }
 }

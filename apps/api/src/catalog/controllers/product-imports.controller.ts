@@ -19,8 +19,14 @@ import {
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { CatalogImportService, IMPORT_MAX_FILE_BYTES, WorkspacePermission } from '@crossmart/core';
+import {
+  type Actor,
+  CatalogImportService,
+  IMPORT_MAX_FILE_BYTES,
+  WorkspacePermission,
+} from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CATALOG_TAG, UPLOAD_FILE_FIELD, PRODUCT_IMPORTS_ROUTE } from '../catalog.constants.js';
 import { CatalogImportResultDto, ImportProductsDto } from '../dto/catalog-import.dto.js';
@@ -70,8 +76,14 @@ export class ProductImportsController {
       }),
     )
     file: Express.Multer.File,
+    @CurrentActor() actor: Actor,
   ): Promise<CatalogImportResultDto> {
-    const result = await this.catalogImport.importFile(workspaceId, body.format, file.buffer);
+    const result = await this.catalogImport.importFile(
+      workspaceId,
+      body.format,
+      file.buffer,
+      actor,
+    );
     return CatalogImportResultDto.from(result);
   }
 }

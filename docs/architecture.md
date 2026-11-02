@@ -44,6 +44,7 @@ crossmart/
 │   └── mcp/                 # MCP server
 ├── libs/
 │   ├── core/                # domain modules (shared by api + worker)
+│   │   ├── activity/        # activity log: who changed what, ActivityRecorder
 │   │   ├── catalog/         # products, variants, listings, channel content
 │   │   ├── inventory/       # ledger, reservations, policies
 │   │   ├── orders/
@@ -67,6 +68,12 @@ crossmart/
 
 Each domain module follows the NestJS feature layout:
 `<module>.module.ts`, `controllers/`, `services/`, `repositories/`, `dto/`, `entities/`, `enums/`, `<module>.constants.ts`.
+
+Services that change workspace data record it in the activity log. They import `ActivityModule`, inject
+`ActivityRecorder` and call `record(workspaceId, actor, entry)` after the write, or `recordFailure(...)` when an
+operation worth reporting fails. Controllers pass the caller down as an `Actor` (`@CurrentActor()`). Recording never
+throws, so a log that cannot be written never fails the operation. A new action is a value in `ActivityAction` plus its
+wording in `activity-summary.ts`; actions are stored as text, so this needs no migration.
 
 ## 3. Core domain model (initial)
 

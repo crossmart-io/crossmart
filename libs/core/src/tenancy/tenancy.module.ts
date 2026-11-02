@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ActivityModule } from '../activity/activity.module.js';
 import { ApiKeyRepository } from './repositories/api-key.repository.js';
 import { OrganizationRepository } from './repositories/organization.repository.js';
 import { WorkspaceMemberRepository } from './repositories/workspace-member.repository.js';
@@ -9,6 +10,7 @@ import { WorkspaceAccessService } from './services/workspace-access.service.js';
 
 /** Organizations, workspaces, members, roles and workspace API keys. */
 @Module({
+  imports: [ActivityModule],
   providers: [
     ApiKeyRepository,
     OrganizationRepository,

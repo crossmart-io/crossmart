@@ -14,6 +14,10 @@ import { toProductCreateInput } from './product-write.mapper.js';
 
 const INSENSITIVE = 'insensitive' as const;
 
+export interface DeletedProduct {
+  title: string;
+}
+
 @Injectable()
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -127,12 +131,13 @@ export class ProductRepository {
     );
   }
 
-  /** Returns false when the product does not exist in this workspace. */
-  async delete(workspaceId: string, productId: string): Promise<boolean> {
-    const { count } = await this.prisma.product.deleteMany({
-      where: { id: productId, workspaceId },
-    });
-    return count > 0;
+  /** Returns the deleted product's title, or null when it is not in this workspace. */
+  async delete(workspaceId: string, productId: string): Promise<DeletedProduct | null> {
+    const where = { id: productId, workspaceId };
+    const product = await this.prisma.product.findFirst({ where, select: { title: true } });
+    if (!product) return null;
+    const { count } = await this.prisma.product.deleteMany({ where });
+    return count > 0 ? product : null;
   }
 
   private toListFilter(workspaceId: string, query: ProductListQuery): Prisma.ProductWhereInput {

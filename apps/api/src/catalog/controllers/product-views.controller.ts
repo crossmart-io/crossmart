@@ -16,8 +16,9 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { ProductViewsService, WorkspacePermission } from '@crossmart/core';
+import { type Actor, ProductViewsService, WorkspacePermission } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CATALOG_TAG, PRODUCT_VIEWS_ROUTE, VIEW_ID_PARAM } from '../catalog.constants.js';
 import { CreateProductViewDto, ProductViewDto } from '../dto/product-view.dto.js';
@@ -44,8 +45,9 @@ export class ProductViewsController {
   async create(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: CreateProductViewDto,
+    @CurrentActor() actor: Actor,
   ): Promise<ProductViewDto> {
-    return ProductViewDto.from(await this.views.create(workspaceId, body));
+    return ProductViewDto.from(await this.views.create(workspaceId, body, actor));
   }
 
   @Delete(`:${VIEW_ID_PARAM}`)
@@ -56,7 +58,8 @@ export class ProductViewsController {
   async delete(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(VIEW_ID_PARAM, ParseUUIDPipe) viewId: string,
+    @CurrentActor() actor: Actor,
   ): Promise<void> {
-    await this.views.delete(workspaceId, viewId);
+    await this.views.delete(workspaceId, viewId, actor);
   }
 }
