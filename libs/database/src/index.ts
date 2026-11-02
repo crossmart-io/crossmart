@@ -13,6 +13,7 @@ export type {
   Organization,
   Product,
   ProductMedia,
+  ProductView,
   User,
   Variant,
   Workspace,

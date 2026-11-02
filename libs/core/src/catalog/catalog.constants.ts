@@ -12,3 +12,14 @@ export const IMPORT_PRODUCT_BATCH_SIZE = 50;
 
 /** Injection token for every registered `CatalogFileParser`. */
 export const CATALOG_FILE_PARSERS = Symbol('CATALOG_FILE_PARSERS');
+
+/** Products one bulk action may change; the list selects at most a few pages at a time. */
+export const MAX_BULK_PRODUCTS = 250;
+/** A price cut of more than 90% is almost always a typo. */
+export const MIN_PRICE_ADJUSTMENT_PERCENT = -90;
+export const MAX_PRICE_ADJUSTMENT_PERCENT = 500;
+export const MAX_BULK_TAGS = 20;
+
+/** Saved views per workspace: enough for every team's lists, small enough to show as chips. */
+export const MAX_PRODUCT_VIEWS = 50;
+export const PRODUCT_VIEW_NAME_MAX_LENGTH = 60;
