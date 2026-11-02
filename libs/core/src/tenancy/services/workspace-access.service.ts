@@ -23,8 +23,8 @@ export class WorkspaceAccessService {
     if (!workspace) {
       throw new NotFoundException('Workspace not found');
     }
-    const { id, organizationId, name, slug } = workspace;
-    return { id, organizationId, name, slug, role };
+    const { id, organizationId, name, slug, currency } = workspace;
+    return { id, organizationId, name, slug, currency, role };
   }
 
   listWorkspacesForUser(userId: string): Promise<WorkspaceAccess[]> {

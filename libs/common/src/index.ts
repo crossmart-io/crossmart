@@ -7,3 +7,4 @@ export * from './queues/queue-name.enum.js';
 export * from './queues/queues.module.js';
 export * from './crypto/secure-token.js';
 export * from './text/slugify.js';
+export * from './money/decimal-amount.js';

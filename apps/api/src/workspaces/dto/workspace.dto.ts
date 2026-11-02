@@ -16,6 +16,9 @@ export class WorkspaceDto {
   @ApiProperty()
   slug: string;
 
+  @ApiProperty({ example: 'USD', description: 'ISO 4217 code of the catalog prices' })
+  currency: string;
+
   @ApiProperty({
     enum: WorkspaceRole,
     enumName: WORKSPACE_ROLE_SCHEMA_NAME,

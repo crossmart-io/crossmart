@@ -30,6 +30,7 @@ export class WorkspaceMemberRepository {
       organizationId: workspace.organizationId,
       name: workspace.name,
       slug: workspace.slug,
+      currency: workspace.currency,
       role,
     }));
   }
