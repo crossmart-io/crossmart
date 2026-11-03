@@ -11,7 +11,9 @@ export enum ChannelProductState {
   Failed = 'failed',
   /** On the channel but no longer selected: the next sync delists it. */
   Removing = 'removing',
-  /** Neither selected nor on the channel. */
+  /** Removed from the store by hand and off the channel; adding it back undoes that. */
+  RemovedByHand = 'removed_by_hand',
+  /** Neither selected nor on the channel, and never removed by hand. */
   Excluded = 'excluded',
 }
 

@@ -10,8 +10,8 @@ import {
   type ListingSummary,
   type SyncRequestResult,
 } from '@crossmart/core';
-import { ListingStatus } from '@crossmart/database';
-import { LISTING_STATUS_SCHEMA_NAME } from '../listings.constants.js';
+import { ListingSource, ListingStatus } from '@crossmart/database';
+import { LISTING_SOURCE_SCHEMA_NAME, LISTING_STATUS_SCHEMA_NAME } from '../listings.constants.js';
 
 export class ListingSummaryDto implements ListingSummary {
   @ApiProperty({ format: 'uuid' })
@@ -19,6 +19,14 @@ export class ListingSummaryDto implements ListingSummary {
 
   @ApiProperty({ enum: ListingStatus, enumName: LISTING_STATUS_SCHEMA_NAME })
   status: ListingStatus;
+
+  @ApiProperty({
+    enum: ListingSource,
+    enumName: LISTING_SOURCE_SCHEMA_NAME,
+    description:
+      'How the product joined the store: by hand, by an import, or by the automatic rule',
+  })
+  source: ListingSource;
 
   @ApiProperty({ type: String, nullable: true, description: 'The product’s id on the channel' })
   externalId: string | null;

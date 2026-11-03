@@ -34,6 +34,9 @@ export class ChannelProductCountsDto implements ChannelProductCounts {
   @ApiProperty({ description: 'On the channel but no longer selected; the next sync delists them' })
   [ChannelProductState.Removing]: number;
 
+  @ApiProperty({ description: 'Removed by hand and off the channel; adding them back undoes it' })
+  [ChannelProductState.RemovedByHand]: number;
+
   @ApiProperty({ description: 'Neither selected nor on the channel' })
   [ChannelProductState.Excluded]: number;
 }

@@ -7,6 +7,7 @@ import { PRODUCT_SUMMARY_INCLUDE } from '../../catalog/repositories/product.quer
 const LISTING_SUMMARY_SELECT = {
   id: true,
   status: true,
+  source: true,
   externalId: true,
   externalUrl: true,
   lastError: true,
@@ -31,8 +32,6 @@ const CHANNEL_PRODUCT_INCLUDE = {
 type ChannelProductInclude = typeof CHANNEL_PRODUCT_INCLUDE;
 
 export type ChannelProductRecord = Prisma.ProductGetPayload<{ include: ChannelProductInclude }>;
-
-export type ListingSummaryRecord = ChannelProductRecord['listings'][number];
 
 /** Reads catalog products with their listings. Every condition is workspace-scoped. */
 @Injectable()

@@ -1,9 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ChannelType } from '@crossmart/connectors';
 import type { PriceRange, ProductPage, ProductStoreBadge, ProductSummary } from '@crossmart/core';
-import { ListingStatus, ProductStatus } from '@crossmart/database';
+import { ListingSource, ListingStatus, ProductStatus } from '@crossmart/database';
 import { CHANNEL_TYPE_SCHEMA_NAME } from '../../channels/channels.constants.js';
-import { LISTING_STATUS_SCHEMA_NAME } from '../../listings/listings.constants.js';
+import {
+  LISTING_SOURCE_SCHEMA_NAME,
+  LISTING_STATUS_SCHEMA_NAME,
+} from '../../listings/listings.constants.js';
 import { PRODUCT_STATUS_SCHEMA_NAME } from '../catalog.constants.js';
 
 export class PriceRangeDto implements PriceRange {
@@ -26,6 +29,9 @@ export class ProductStoreBadgeDto implements ProductStoreBadge {
 
   @ApiProperty({ enum: ListingStatus, enumName: LISTING_STATUS_SCHEMA_NAME })
   status: ListingStatus;
+
+  @ApiProperty({ enum: ListingSource, enumName: LISTING_SOURCE_SCHEMA_NAME })
+  source: ListingSource;
 }
 
 export class ProductSummaryDto implements ProductSummary {

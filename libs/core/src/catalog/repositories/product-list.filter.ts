@@ -1,4 +1,5 @@
-import type { Prisma } from '@crossmart/database';
+import { ListingStatus, type Prisma } from '@crossmart/database';
+import { ProductStoreFilter } from '../enums/product-store-filter.enum.js';
 import type { ProductFilters } from '../entities/product-views.js';
 import { CATALOG_GAP_FILTERS } from './catalog-gap.filters.js';
 
@@ -34,4 +35,29 @@ export function toProductListWhere(
     ...(vendor ? { vendor: { equals: vendor, mode: INSENSITIVE } } : {}),
     AND: [searchFilter(filters.search)],
   };
+}
+
+/** Listings that put a product in a store: anything but delisted. */
+const IN_STORE_LISTING = { status: { not: ListingStatus.DELISTED } } as const;
+
+/**
+ * The products table's store filter. A product is in a store while it has a listing there that
+ * is not delisted. `InStore` and `NotInStore` need `storeId`; the API refuses them without it.
+ */
+export function storeFilterWhere(
+  filter: ProductStoreFilter | undefined,
+  storeId: string | undefined,
+): Prisma.ProductWhereInput {
+  switch (filter) {
+    case undefined:
+      return {};
+    case ProductStoreFilter.InStore:
+      return { listings: { some: { ...IN_STORE_LISTING, connectionId: storeId } } };
+    case ProductStoreFilter.NotInStore:
+      return { listings: { none: { ...IN_STORE_LISTING, connectionId: storeId } } };
+    case ProductStoreFilter.InNoStore:
+      return { listings: { none: IN_STORE_LISTING } };
+    case ProductStoreFilter.WithErrors:
+      return { listings: { some: { status: ListingStatus.ERROR } } };
+  }
 }

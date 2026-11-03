@@ -56,10 +56,16 @@ A store gets only the products the merchant adds to it, plus those its automatic
   filters (tags, vendor, status, gaps, search). A product added this way leaves the store when
   the rule stops matching it.
 - **Removed by hand**: delisted at once, and the rule cannot add it back until it is added again.
+- **Changes apply at once**: saving the automatic rule publishes what it now adds and delists
+  what it now drops (only the difference), and the editor's preview says how many first. Saving a
+  pricing rule re-sends the prices of listed products. Sync now ("Resync everything") is only
+  for recovery.
 
 Each listing stores how it joined (`listings.source`: `MANUAL`, `IMPORT` or `RULE`). The store's
 Listings tab (`GET .../channel-connections/{id}/products`) shows each product's state there:
-listed, pending, failed or removing.
+listed, pending, failed or removing, plus `removed_by_hand` ones that can be added back. The
+products table filters by store (`storeFilter`: `in_store`, `not_in_store`, `in_no_store`,
+`with_errors`) and connections report `failedListings`.
 
 ## Publishing and stock
 

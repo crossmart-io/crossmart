@@ -34,3 +34,5 @@ export const CATALOG_STATS_ROUTE = 'workspaces/:workspaceId/catalog-stats';
 export const PRODUCT_IMAGES_ROUTE = 'workspaces/:workspaceId/media/product-images';
 export const IMAGE_CONTENT_TYPE_SCHEMA_NAME = 'ImageContentType';
 export const PRODUCT_FILTER_MAX_TAGS = 50;
+export const PRODUCT_STORE_FILTER_SCHEMA_NAME = 'ProductStoreFilter';
+export const PRODUCT_SORT_SCHEMA_NAME = 'ProductSort';

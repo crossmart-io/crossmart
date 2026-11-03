@@ -1,3 +1,4 @@
+import { SortDirection } from '@crossmart/common';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OutOfStockPolicy, Prisma, ProductStatus } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
@@ -11,12 +12,14 @@ import type { ProductRepository } from '../repositories/product.repository.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
 import { ProductChangeReporter } from './product-change.reporter.js';
 import { ProductsService } from './products.service.js';
+import { ProductSort } from '../enums/product-store-filter.enum.js';
 import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
 import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 
 const WORKSPACE_ID = 'ws-1';
 const UPDATED_AT = new Date('2026-11-02T10:00:00Z');
 const ACTOR = Actor.user('user-1');
+const LIST = { sort: ProductSort.Title, direction: SortDirection.Asc };
 
 function summaryRecord(id: string, prices: string[]): ProductSummaryRecord {
   return {
@@ -112,7 +115,7 @@ describe('ProductsService.list', () => {
       summaryRecord('c', ['5']),
     ]);
 
-    const page = await service.list(WORKSPACE_ID, { limit: 2 });
+    const page = await service.list(WORKSPACE_ID, { ...LIST, limit: 2 });
 
     expect(page.items.map((item) => item.id)).toEqual(['a', 'b']);
     expect(page.nextCursor).toBe('b');
@@ -121,7 +124,7 @@ describe('ProductsService.list', () => {
   it('summarizes prices and tracked stock', async () => {
     const { service } = createService([summaryRecord('a', ['22', '9.5', '40'])]);
 
-    const { items, nextCursor } = await service.list(WORKSPACE_ID, { limit: 25 });
+    const { items, nextCursor } = await service.list(WORKSPACE_ID, { ...LIST, limit: 25 });
 
     expect(nextCursor).toBeNull();
     expect(items[0]).toMatchObject({

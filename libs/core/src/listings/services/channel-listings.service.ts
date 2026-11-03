@@ -13,6 +13,11 @@ export class ChannelListingsService {
     private readonly listings: ListingSyncRepository,
   ) {}
 
+  /** How many listings failed in each store, so the stores that need attention stand out. */
+  failedCounts(workspaceId: string): Promise<Map<string, number>> {
+    return this.listings.countFailedByConnection(workspaceId);
+  }
+
   async list(
     workspaceId: string,
     connectionId: string,

@@ -40,6 +40,7 @@ function toStores(listings: ProductSummaryRecord['listings']): ProductStoreBadge
       channel: requireEnumValue(ChannelType, listing.connection.channel),
       storeName: listing.connection.displayName,
       status: listing.status,
+      source: listing.source,
     });
   }
   return [...byStore.values()];

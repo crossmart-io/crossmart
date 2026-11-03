@@ -1,6 +1,7 @@
+import { sortWithTiebreak } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService, ProductStatus } from '@crossmart/database';
-import { toProductListWhere } from './product-list.filter.js';
+import { storeFilterWhere, toProductListWhere } from './product-list.filter.js';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type { CatalogGapCount, CatalogStats, ProductListQuery } from '../entities/product-views.js';
 import { CatalogGap } from '../enums/catalog-gap.enum.js';
@@ -43,12 +44,17 @@ const CREATED_PRODUCT_SELECT = {
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** One page in title order, plus one extra row that tells the caller whether more exist. */
+  /** One page in the query's order, plus one extra row that says whether more exist. */
   listPage(workspaceId: string, query: ProductListQuery): Promise<ProductSummaryRecord[]> {
     return this.prisma.product.findMany({
-      where: toProductListWhere(workspaceId, query),
+      where: {
+        AND: [
+          toProductListWhere(workspaceId, query),
+          storeFilterWhere(query.storeFilter, query.storeId),
+        ],
+      },
       include: PRODUCT_SUMMARY_INCLUDE,
-      orderBy: [{ title: 'asc' }, { id: 'asc' }],
+      orderBy: sortWithTiebreak(query.sort, query.direction),
       take: query.limit + 1,
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     });

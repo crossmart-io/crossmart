@@ -7,15 +7,13 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
-  Query,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type Actor,
   ConnectionRulesService,
   PricingPreviewService,
-  ProductSelectionService,
-  ChannelConnectionsService,
+  SelectionApplier,
   WorkspacePermission,
 } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
@@ -28,33 +26,26 @@ import {
   LISTINGS_TAG,
   PRICING_PATH,
   PRICING_PREVIEW_PATH,
-  SELECTION_PATH,
-  SELECTION_PREVIEW_PATH,
 } from '../listings.constants.js';
 import { PricingPreviewDto, PricingPreviewRequestDto } from '../dto/price-resolution.dto.js';
 import { UpdatePricingDto } from '../dto/pricing-rule.dto.js';
-import {
-  SelectionPreviewDto,
-  SelectionPreviewQueryDto,
-  UpdateProductSelectionDto,
-} from '../dto/product-selection.dto.js';
 
-/** A connection's pricing rule and product selection, with previews of both. */
+/** A store's pricing rule, applied at once, with a preview on a real product. */
 @ApiTags(LISTINGS_TAG)
 @Controller(CONNECTION_ROUTE)
 export class ChannelRulesController {
   constructor(
     private readonly rules: ConnectionRulesService,
     private readonly pricingPreview: PricingPreviewService,
-    private readonly selection: ProductSelectionService,
-    private readonly connections: ChannelConnectionsService,
+    private readonly applier: SelectionApplier,
   ) {}
 
   @Put(PRICING_PATH)
   @RequirePermission(WorkspacePermission.ManageWorkspace)
   @ApiOperation({
     summary: 'Set the connection’s pricing rule',
-    description: 'Listings get the new prices on their next sync. A null rule removes it.',
+    description:
+      'The store’s listings get the new prices at once. A null rule sends catalog prices.',
   })
   @ApiOkResponse({ type: ChannelConnectionDto })
   async updatePricing(
@@ -64,9 +55,9 @@ export class ChannelRulesController {
     @CurrentActor() actor: Actor,
   ): Promise<ChannelConnectionDto> {
     const rule = body.rule ? body.rule.toRule() : null;
-    return ChannelConnectionDto.from(
-      await this.rules.updatePricing(workspaceId, connectionId, rule, actor),
-    );
+    const saved = await this.rules.updatePricing(workspaceId, connectionId, rule, actor);
+    await this.applier.applyPricing(workspaceId, connectionId);
+    return ChannelConnectionDto.from(saved);
   }
 
   @Post(PRICING_PREVIEW_PATH)
@@ -85,43 +76,6 @@ export class ChannelRulesController {
     const rule = body.rule ? body.rule.toRule() : null;
     return PricingPreviewDto.from(
       await this.pricingPreview.preview(workspaceId, connectionId, rule, body.productId),
-    );
-  }
-
-  @Put(SELECTION_PATH)
-  @RequirePermission(WorkspacePermission.ManageWorkspace)
-  @ApiOperation({
-    summary: 'Choose which products the connection lists',
-    description: '“Sync now” publishes newly selected products and delists the rest.',
-  })
-  @ApiOkResponse({ type: ChannelConnectionDto })
-  async updateSelection(
-    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
-    @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,
-    @Body() body: UpdateProductSelectionDto,
-    @CurrentActor() actor: Actor,
-  ): Promise<ChannelConnectionDto> {
-    const rule = body.rule ? body.rule.toRule() : null;
-    return ChannelConnectionDto.from(
-      await this.rules.updateSelection(workspaceId, connectionId, rule, actor),
-    );
-  }
-
-  @Post(SELECTION_PREVIEW_PATH)
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
-  @ApiOperation({ summary: 'The products a selection lists, with counts, saved or not' })
-  @ApiOkResponse({ type: SelectionPreviewDto })
-  async previewSelection(
-    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
-    @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,
-    @Body() body: UpdateProductSelectionDto,
-    @Query() query: SelectionPreviewQueryDto,
-  ): Promise<SelectionPreviewDto> {
-    await this.connections.get(workspaceId, connectionId);
-    const rule = body.rule ? body.rule.toRule() : null;
-    return SelectionPreviewDto.from(
-      await this.selection.preview({ workspaceId, connectionId, rule }, query),
     );
   }
 }

@@ -14,7 +14,12 @@ import {
   SyncJobKind,
   SyncJobQueue,
 } from '@crossmart/core';
-import { InventoryMovementReason, ListingStatus, ProductStatus } from '@crossmart/database';
+import {
+  InventoryMovementReason,
+  ListingSource,
+  ListingStatus,
+  ProductStatus,
+} from '@crossmart/database';
 import { RecordingSyncJobQueue } from './support/recording-sync-job.queue.js';
 import {
   answerGraphql,
@@ -405,6 +410,9 @@ describe('Listings (e2e)', () => {
       const lastCall = (operation: string) =>
         calls.filter((call) => call.query.includes(operation)).at(-1);
 
+      // Saving the rule already queued the product; this test follows a full resync instead.
+      queue.drain();
+
       // 1. "Publish": the selected product is queued and created with productSet.
       const sync = await request(server())
         .post(connectionPath(owner, connectionId, 'sync'))
@@ -493,6 +501,8 @@ describe('Listings (e2e)', () => {
         .put(connectionPath(owner, connectionId, 'product-selection'))
         .set('Cookie', owner.cookie)
         .send({ rule: { filter: null, includeProductIds: [], excludeProductIds: [] } });
+      // Saving the rule already queued the delisting; the resync below asks for it again.
+      queue.drain();
       const resync = await request(server())
         .post(connectionPath(owner, connectionId, 'sync'))
         .set('Cookie', owner.cookie);
@@ -615,7 +625,13 @@ describe('Listings (e2e)', () => {
         .query({ search: 'State Mug' })
         .set('Cookie', owner.cookie);
       expect(catalog.body.items[0].stores).toEqual([
-        { connectionId, channel: 'shopify', storeName: 'E2E Store', status: ListingStatus.ACTIVE },
+        {
+          connectionId,
+          channel: 'shopify',
+          storeName: 'E2E Store',
+          status: ListingStatus.ACTIVE,
+          source: ListingSource.MANUAL,
+        },
       ]);
       const live = await products({ state: ChannelProductState.Listed });
       expect(live.body.items).toMatchObject([
@@ -629,6 +645,11 @@ describe('Listings (e2e)', () => {
         .send({
           rule: { filter: { tags: ['live'] }, includeProductIds: [], excludeProductIds: [] },
         });
+      // The rule applies at once: the product it adds is queued to be published.
+      expect(queue.drain().map((job) => [job.productId, job.kind])).toEqual([
+        [bowl.id, SyncJobKind.Content],
+        [bowl.id, SyncJobKind.Inventory],
+      ]);
       const ruled = await products();
       expect(titles(ruled.body)).toEqual(['State Bowl', 'State Mug']);
       expect(ruled.body.items[0]).toMatchObject({
@@ -643,8 +664,10 @@ describe('Listings (e2e)', () => {
       ]);
       publishReplies(1);
       expect(await runQueued()).toEqual([SyncJobKind.Delist]);
-      const removed = await products({ state: ChannelProductState.Excluded });
-      expect(titles(removed.body)).toEqual(['State Cup', 'State Mug']);
+      const removed = await products({ state: ChannelProductState.RemovedByHand });
+      expect(titles(removed.body)).toEqual(['State Mug']);
+      const excluded = await products({ state: ChannelProductState.Excluded });
+      expect(titles(excluded.body)).toEqual(['State Cup']);
 
       // 5. Many products at once, as the products table adds them; foreign ids are refused.
       const bulk = await request(server())
@@ -669,7 +692,35 @@ describe('Listings (e2e)', () => {
       expect(titles(next.body)).toEqual(['State Bowl']);
       expect(stateCounts(next.body.counts)).toEqual({ listed: 0, pending: 3, removing: 0 });
 
-      // 6. The activity log names the product and the store.
+      // 6. The products table filters by store and sorts; previews say what a rule would change.
+      const catalogPage = (query: Record<string, string>) =>
+        request(server())
+          .get(`${base(owner)}/products`)
+          .query(query)
+          .set('Cookie', owner.cookie);
+      const inStore = await catalogPage({
+        storeFilter: 'in_store',
+        storeId: connectionId,
+        sort: 'title',
+        direction: 'desc',
+      });
+      expect(titles({ items: inStore.body.items.map((product: object) => ({ product })) })).toEqual(
+        ['State Mug', 'State Cup', 'State Bowl'],
+      );
+      expect((await catalogPage({ storeFilter: 'not_in_store' })).status).toBe(
+        HttpStatus.BAD_REQUEST,
+      );
+      const impact = await request(server())
+        .post(connectionPath(owner, connectionId, 'product-selection/preview'))
+        .set('Cookie', owner.cookie)
+        .send({ rule: { filter: {}, includeProductIds: [], excludeProductIds: [] } });
+      expect(impact.body).toMatchObject({ toPublish: 3, toRemove: 0 });
+      const store = await request(server())
+        .get(`${base(owner)}/channel-connections/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      expect(store.body.failedListings).toBe(0);
+
+      // 7. The activity log names the product and the store.
       const activity = await request(server())
         .get(`${base(owner)}/activity`)
         .query({ subjectType: 'product', subjectId: mug.id })

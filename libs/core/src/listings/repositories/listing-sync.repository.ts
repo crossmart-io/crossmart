@@ -209,6 +209,16 @@ export class ListingSyncRepository {
   }
 
   /** Products the connection lists now, for delisting and reconciliation. */
+  /** Listings whose last sync failed, per store of the workspace. */
+  async countFailedByConnection(workspaceId: string): Promise<Map<string, number>> {
+    const groups = await this.prisma.listing.groupBy({
+      by: ['connectionId'],
+      where: { workspaceId, status: ListingStatus.ERROR },
+      _count: { _all: true },
+    });
+    return new Map(groups.map((group) => [group.connectionId, group._count._all]));
+  }
+
   async listProductIdsOnChannel(workspaceId: string, connectionId: string): Promise<string[]> {
     const pairs = await this.findPairs({ workspaceId, connectionId });
     return pairs.map((pair) => pair.productId);

@@ -68,11 +68,15 @@ export class ChannelConnectionDto {
   @ApiProperty()
   updatedAt: Date;
 
-  static from(view: ChannelConnectionView): ChannelConnectionDto {
+  @ApiProperty({ description: 'Listings in this store whose last sync failed' })
+  failedListings: number;
+
+  static from(view: ChannelConnectionView, failedListings = 0): ChannelConnectionDto {
     const { settings, ...fields } = view;
     const { account, productSelection, pricing } = settings;
     return Object.assign(new ChannelConnectionDto(), {
       ...fields,
+      failedListings,
       shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
       productSelection: productSelection ? ProductSelectionRuleDto.from(productSelection) : null,
       pricing: pricing ? PricingRuleDto.from(pricing) : null,

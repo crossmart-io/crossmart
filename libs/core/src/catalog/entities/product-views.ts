@@ -1,6 +1,13 @@
+import type { SortDirection } from '@crossmart/common';
 import type { ChannelType } from '@crossmart/connectors';
-import type { ListingStatus, OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import type {
+  ListingSource,
+  ListingStatus,
+  OutOfStockPolicy,
+  ProductStatus,
+} from '@crossmart/database';
 import type { CatalogGap } from '../enums/catalog-gap.enum.js';
+import type { ProductSort, ProductStoreFilter } from '../enums/product-store-filter.enum.js';
 
 export interface PriceRange {
   min: string;
@@ -15,6 +22,7 @@ export interface ProductStoreBadge {
   storeName: string;
   /** Where its listing stands there: an error shows first when it has several. */
   status: ListingStatus;
+  source: ListingSource;
 }
 
 export interface ProductSummary {
@@ -111,6 +119,11 @@ export interface ProductFilters {
 }
 
 export interface ProductListQuery extends ProductFilters {
+  storeFilter?: ProductStoreFilter;
+  /** The store `InStore` and `NotInStore` are about. */
+  storeId?: string;
+  sort: ProductSort;
+  direction: SortDirection;
   cursor?: string;
   limit: number;
 }

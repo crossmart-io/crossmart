@@ -1,12 +1,17 @@
 import { ChannelType } from '@crossmart/connectors';
-import { ListingStatus, ProductStatus } from '@crossmart/database';
+import { ListingSource, ListingStatus, ProductStatus } from '@crossmart/database';
 import type { ProductSummaryRecord } from '../repositories/product.queries.js';
 import { toProductSummary } from './product-view.mapper.js';
 
 const AT = new Date('2026-11-03T10:00:00Z');
 
 function listing(connectionId: string, status: ListingStatus, displayName = 'Main store') {
-  return { connectionId, status, connection: { channel: ChannelType.Shopify, displayName } };
+  return {
+    connectionId,
+    status,
+    source: ListingSource.MANUAL,
+    connection: { channel: ChannelType.Shopify, displayName },
+  };
 }
 
 function record(listings: ProductSummaryRecord['listings']): ProductSummaryRecord {
@@ -45,12 +50,14 @@ describe('toProductSummary stores', () => {
         channel: ChannelType.Shopify,
         storeName: 'Main store',
         status: ListingStatus.ACTIVE,
+        source: ListingSource.MANUAL,
       },
       {
         connectionId: 'c-2',
         channel: ChannelType.Shopify,
         storeName: 'Outlet',
         status: ListingStatus.PENDING,
+        source: ListingSource.MANUAL,
       },
     ]);
   });

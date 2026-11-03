@@ -1,5 +1,5 @@
 import type { ChannelType } from '@crossmart/connectors';
-import type { ChannelConnectionStatus, ListingStatus } from '@crossmart/database';
+import type { ChannelConnectionStatus, ListingSource, ListingStatus } from '@crossmart/database';
 import type { ListingOverrideView } from './listing-override.js';
 import type { ResolvedPrice } from './price-resolution.js';
 
@@ -7,6 +7,8 @@ import type { ResolvedPrice } from './price-resolution.js';
 export interface ListingSummary {
   id: string;
   status: ListingStatus;
+  /** How the product joined the store: by hand, by an import, or by the automatic rule. */
+  source: ListingSource;
   externalId: string | null;
   externalUrl: string | null;
   lastError: string | null;

@@ -11,6 +11,7 @@ import { ChannelListingsService } from './services/channel-listings.service.js';
 import { ChannelProductsService } from './services/channel-products.service.js';
 import { StoreMembershipService } from './services/store-membership.service.js';
 import { StoreMembershipWriter } from './services/store-membership.writer.js';
+import { SelectionApplier } from './services/selection-applier.js';
 import { ChannelProductsRepository } from './repositories/channel-products.repository.js';
 import { ChannelPriceResolver } from './services/channel-price-resolver.js';
 import { ChannelSyncService } from './services/channel-sync.service.js';
@@ -66,6 +67,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ChannelListingsService,
     ChannelProductsService,
     StoreMembershipService,
+    SelectionApplier,
     StoreMembershipWriter,
     ChannelProductsRepository,
     ConnectionRulesService,
@@ -84,6 +86,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ChannelListingsService,
     ChannelProductsService,
     StoreMembershipService,
+    SelectionApplier,
     ConnectionRulesService,
     PricingPreviewService,
     ProductChannelsService,

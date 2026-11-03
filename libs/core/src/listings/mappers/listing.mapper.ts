@@ -9,13 +9,14 @@ import type { ListingRowRecord, ListingSyncRecord } from '../repositories/listin
 
 type ListingFields = Pick<
   ListingSyncRecord,
-  'id' | 'status' | 'externalId' | 'externalUrl' | 'lastError' | 'lastSyncedAt'
+  'id' | 'status' | 'source' | 'externalId' | 'externalUrl' | 'lastError' | 'lastSyncedAt'
 >;
 
 export function toListingSummary(record: ListingFields): ListingSummary {
   return {
     id: record.id,
     status: record.status,
+    source: record.source,
     externalId: record.externalId,
     externalUrl: record.externalUrl,
     lastError: record.lastError,

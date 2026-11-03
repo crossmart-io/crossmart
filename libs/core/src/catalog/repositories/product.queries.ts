@@ -17,6 +17,7 @@ export const PRODUCT_SUMMARY_INCLUDE = {
     select: {
       connectionId: true,
       status: true,
+      source: true,
       connection: { select: { channel: true, displayName: true } },
     },
     orderBy: { createdAt: 'asc' },

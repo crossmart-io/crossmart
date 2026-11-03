@@ -6,6 +6,7 @@ import {
   SELECTION_PREVIEW_MAX_LIMIT,
   type SelectionPreview,
   type SelectionPreviewQuery,
+  type SelectionImpact,
 } from '@crossmart/core';
 import { ProductSummaryDto } from '../../catalog/dto/product-summary.dto.js';
 import { ProductSelectionRuleDto } from '../../channels/dto/channel-settings.dto.js';
@@ -41,7 +42,7 @@ export class SelectionPreviewQueryDto implements SelectionPreviewQuery {
   limit: number = SELECTION_PREVIEW_DEFAULT_LIMIT;
 }
 
-export class SelectionPreviewDto implements SelectionPreview {
+export class SelectionPreviewDto implements SelectionPreview, SelectionImpact {
   @ApiProperty({ description: 'Products the selection lists' })
   total: number;
 
@@ -60,9 +61,16 @@ export class SelectionPreviewDto implements SelectionPreview {
   @ApiProperty({ type: String, nullable: true })
   nextCursor: string | null;
 
-  static from(preview: SelectionPreview): SelectionPreviewDto {
+  @ApiProperty({ description: 'Products saving this rule publishes now' })
+  toPublish: number;
+
+  @ApiProperty({ description: 'Products saving this rule delists now' })
+  toRemove: number;
+
+  static from(preview: SelectionPreview, impact: SelectionImpact): SelectionPreviewDto {
     return Object.assign(new SelectionPreviewDto(), {
       ...preview,
+      ...impact,
       items: preview.items.map((item) => ProductSummaryDto.from(item)),
     });
   }

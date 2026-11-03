@@ -37,9 +37,20 @@ const SELECTED_STATES: ReadonlySet<ChannelProductState> = new Set([
   ChannelProductState.Pending,
 ]);
 
+/** Products off the channel and unselected split by whether the merchant removed them by hand. */
+function handRemovalCondition(
+  scope: ChannelProductScope,
+  state: ChannelProductState,
+): Prisma.ProductWhereInput {
+  const removed = { id: { in: scope.rule?.excludeProductIds ?? [] } };
+  if (state === ChannelProductState.RemovedByHand) return removed;
+  return state === ChannelProductState.Excluded ? { NOT: removed } : {};
+}
+
 /**
- * The products of `scope` in `state`. The five states split the catalog: a failed listing wins,
- * then selected or not, crossed with on the channel or not.
+ * The products of `scope` in `state`. The states split the catalog: a failed listing wins, then
+ * selected or not, crossed with on the channel or not; unselected products off the channel are
+ * removed by hand or merely excluded.
  */
 export function channelProductStateWhere(
   scope: ChannelProductScope,
@@ -53,9 +64,19 @@ export function channelProductStateWhere(
   const selected = selectionWhere(scope);
   return {
     workspaceId,
-    AND: [listing, SELECTED_STATES.has(state) ? selected : { NOT: selected }],
+    AND: [
+      listing,
+      SELECTED_STATES.has(state) ? selected : { NOT: selected },
+      handRemovalCondition(scope, state),
+    ],
   };
 }
+
+/** States of products that are not in the store: lists of the store's products leave them out. */
+export const OUT_OF_STORE_STATES: readonly ChannelProductState[] = [
+  ChannelProductState.RemovedByHand,
+  ChannelProductState.Excluded,
+];
 
 interface ListingWithStatus {
   status: ListingStatus;
@@ -65,13 +86,15 @@ interface ListingWithStatus {
 export function channelProductStateOf(
   selected: boolean,
   listings: readonly ListingWithStatus[],
+  removedByHand = false,
 ): ChannelProductState {
   if (listings.some((listing) => listing.status === ListingStatus.ERROR)) {
     return ChannelProductState.Failed;
   }
   const onChannel = listings.some((listing) => ON_CHANNEL_STATUSES.includes(listing.status));
   if (selected) return onChannel ? ChannelProductState.Listed : ChannelProductState.Pending;
-  return onChannel ? ChannelProductState.Removing : ChannelProductState.Excluded;
+  if (onChannel) return ChannelProductState.Removing;
+  return removedByHand ? ChannelProductState.RemovedByHand : ChannelProductState.Excluded;
 }
 
 /** The listing a row shows: a failed one first, then one on the channel, else the latest. */
