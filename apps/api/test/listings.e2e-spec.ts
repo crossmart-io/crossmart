@@ -4,6 +4,7 @@ import type { App } from 'supertest/types.js';
 import { FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
 import {
   ActivityAction,
+  ChannelProductState,
   CompareAtMode,
   ListingSyncRunner,
   PriceRounding,
@@ -548,6 +549,84 @@ describe('Listings (e2e)', () => {
         action: ActivityAction.ListingSyncFailed,
         failureReason: 'Title is invalid',
       });
+    });
+  });
+
+  describe('channel products', () => {
+    it('shows every product once, with its state on the connection, as it moves', async () => {
+      const owner = await signUp(app, 'Channel Products');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const mug = await createProduct(owner, { title: 'State Mug', tags: ['live'] });
+      const bowl = await createProduct(owner, { title: 'State Bowl' });
+      await createProduct(owner, { title: 'State Cup' });
+      const selection = (excludeProductIds: string[]) =>
+        request(server())
+          .put(connectionPath(owner, connectionId, 'product-selection'))
+          .set('Cookie', owner.cookie)
+          .send({ rule: { filter: { tags: ['live'] }, includeProductIds: [], excludeProductIds } });
+      const products = (query: Record<string, string> = {}) =>
+        request(server())
+          .get(connectionPath(owner, connectionId, 'products'))
+          .query(query)
+          .set('Cookie', owner.cookie);
+      const stateOf = (body: { items: { product: { id: string }; state: string }[] }, id: string) =>
+        body.items.find((row) => row.product.id === id)?.state;
+      await selection([]);
+
+      // 1. Selected but not published yet: pending; the rest are excluded.
+      const before = await products();
+      expect(before.status).toBe(HttpStatus.OK);
+      expect(
+        before.body.items.map((row: { product: { title: string } }) => row.product.title),
+      ).toEqual(['State Bowl', 'State Cup', 'State Mug']);
+      expect(stateOf(before.body, mug.id)).toBe(ChannelProductState.Pending);
+      expect(stateOf(before.body, bowl.id)).toBe(ChannelProductState.Excluded);
+      expect(before.body.counts).toEqual({
+        [ChannelProductState.Listed]: 0,
+        [ChannelProductState.Pending]: 1,
+        [ChannelProductState.Failed]: 0,
+        [ChannelProductState.Removing]: 0,
+        [ChannelProductState.Excluded]: 2,
+      });
+
+      const newestTitleFirst = await products({ sort: 'title', direction: 'desc', limit: '2' });
+      expect(
+        newestTitleFirst.body.items.map((row: { product: { title: string } }) => row.product.title),
+      ).toEqual(['State Mug', 'State Cup']);
+      const nextPage = await products({
+        sort: 'title',
+        direction: 'desc',
+        limit: '2',
+        cursor: newestTitleFirst.body.nextCursor,
+      });
+      expect(
+        nextPage.body.items.map((row: { product: { title: string } }) => row.product.title),
+      ).toEqual(['State Bowl']);
+      expect(nextPage.body.nextCursor).toBeNull();
+
+      // 2. After the sync it is listed, with its listing.
+      answerGraphql(http, shop, (call) => shopifyReply(call, 'gid://shopify/Product/880001'), 2);
+      await request(server())
+        .post(connectionPath(owner, connectionId, 'sync'))
+        .set('Cookie', owner.cookie);
+      await runQueued();
+      const listed = await products({ state: ChannelProductState.Listed });
+      expect(listed.body.items).toHaveLength(1);
+      expect(listed.body.items[0]).toMatchObject({
+        product: { id: mug.id },
+        state: ChannelProductState.Listed,
+        listing: { status: ListingStatus.ACTIVE, externalId: 'gid://shopify/Product/880001' },
+      });
+
+      // 3. Removed from the selection, it is still on the channel until the next sync.
+      await selection([mug.id]);
+      const removing = await products({ search: 'mug' });
+      expect(removing.body.items).toMatchObject([
+        { product: { id: mug.id }, state: ChannelProductState.Removing },
+      ]);
+      expect(removing.body.counts[ChannelProductState.Removing]).toBe(1);
+      expect(removing.body.counts[ChannelProductState.Excluded]).toBe(0);
     });
   });
 
