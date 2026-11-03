@@ -19,7 +19,7 @@ import {
   SHOPIFY_AUTHORIZE_PATH,
   SHOPIFY_EXPIRING_TOKEN,
   SHOPIFY_REFRESH_GRANT,
-  SHOPIFY_REQUIRED_SCOPES,
+  SHOPIFY_REQUESTED_SCOPES,
   SHOPIFY_SCOPE_SEPARATOR,
   ShopifyOAuthParam,
 } from '../shopify.constants.js';
@@ -68,7 +68,7 @@ export class ShopifyOAuthClient {
     url.searchParams.set(ShopifyOAuthParam.ClientId, this.app.credentials().clientId);
     url.searchParams.set(
       ShopifyOAuthParam.Scope,
-      SHOPIFY_REQUIRED_SCOPES.join(SHOPIFY_SCOPE_SEPARATOR),
+      SHOPIFY_REQUESTED_SCOPES.join(SHOPIFY_SCOPE_SEPARATOR),
     );
     url.searchParams.set(ShopifyOAuthParam.RedirectUri, redirectUri);
     url.searchParams.set(ShopifyOAuthParam.State, state);

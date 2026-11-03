@@ -4,10 +4,12 @@ import type { ChannelSession } from '../auth/channel-session.js';
 export function fakeChannelSession(
   externalAccountId: string,
   token = 'test-access-token',
+  grantedScopes: readonly string[] = [],
 ): ChannelSession {
   return {
     connectionId: 'connection-1',
     externalAccountId,
+    grantedScopes,
     accessToken: () => Promise.resolve(token),
   };
 }

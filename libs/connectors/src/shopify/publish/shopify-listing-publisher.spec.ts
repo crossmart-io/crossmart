@@ -4,9 +4,12 @@ import type { HttpRequest } from '../../sdk/http/http-transport.js';
 import { fakeChannelSession } from '../../sdk/testing/fake-channel-session.js';
 import { fixtureResponse, loadFixture } from '../../sdk/testing/fixtures.js';
 import { createShopifyTestKit, FIXTURES, GRAPHQL_URL, SHOP } from '../shopify.fixtures.js';
+import { ShopifyScope } from '../shopify.constants.js';
 import { shirtDraft, VARIANT_M, VARIANT_S } from './shopify-listing.fixtures.js';
 
 const session = fakeChannelSession(SHOP);
+/** A store that approved the app with the Online Store permission. */
+const storefrontSession = fakeChannelSession(SHOP, undefined, [ShopifyScope.WritePublications]);
 const PRODUCT_GID = 'gid://shopify/Product/7001';
 
 interface GraphqlBody {
@@ -171,5 +174,61 @@ describe('Shopify listing publishing', () => {
       },
       { productId: 'P2', variants: [{ id: 'V3', price: '30.00', compareAtPrice: '40.00' }] },
     ]);
+  });
+
+  describe('the Online Store', () => {
+    it('shows a published product there, finding the publication once per connection', async () => {
+      const { connector, http } = createShopifyTestKit();
+      expectPublishCalls(http);
+      http
+        .expect(HttpMethod.Post, GRAPHQL_URL, fixtureResponse(FIXTURES, 'publications.json'))
+        .expect(
+          HttpMethod.Post,
+          GRAPHQL_URL,
+          fixtureResponse(FIXTURES, 'publishable-published.json'),
+        )
+        .expect(HttpMethod.Post, GRAPHQL_URL, fixtureResponse(FIXTURES, 'product-set-created.json'))
+        .expect(
+          HttpMethod.Post,
+          GRAPHQL_URL,
+          fixtureResponse(FIXTURES, 'publishable-published.json'),
+        );
+
+      await connector.publish(storefrontSession, shirtDraft());
+      await connector.update(storefrontSession, PRODUCT_GID, shirtDraft());
+
+      expect(bodyOf(http.requests[3]).variables).toEqual({
+        id: PRODUCT_GID,
+        input: [{ publicationId: 'gid://shopify/Publication/12' }],
+      });
+      http.assertDone();
+    });
+
+    it('skips stores that did not grant the permission, with no extra calls', async () => {
+      const { connector, http } = createShopifyTestKit();
+      expectPublishCalls(http);
+
+      await connector.publish(session, shirtDraft());
+
+      expect(http.requests).toHaveLength(2);
+      http.assertDone();
+    });
+
+    it('still returns the published product when Shopify refuses to show it', async () => {
+      const { connector, http } = createShopifyTestKit();
+      expectPublishCalls(http);
+      http
+        .expect(HttpMethod.Post, GRAPHQL_URL, fixtureResponse(FIXTURES, 'publications.json'))
+        .expect(
+          HttpMethod.Post,
+          GRAPHQL_URL,
+          fixtureResponse(FIXTURES, 'publishable-publish-user-errors.json'),
+        );
+
+      const published = await connector.publish(storefrontSession, shirtDraft());
+
+      expect(published.externalId).toBe(PRODUCT_GID);
+      http.assertDone();
+    });
   });
 });

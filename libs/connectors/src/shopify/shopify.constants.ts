@@ -1,18 +1,44 @@
+import { ChannelFeature, type OptionalScope } from '../sdk/channel-feature.enum.js';
+
 /** The Admin API version every request uses: the latest stable release (October 2026). */
 export const SHOPIFY_ADMIN_API_VERSION = '2026-10';
 
 export const SHOPIFY_DISPLAY_NAME = 'Shopify';
 
-/** Access scopes Crossmart requests. Least privilege: products, stock and locations only. */
+/** Access scopes Crossmart requests. Least privilege: products, stock, locations, sales channels. */
 export enum ShopifyScope {
   ReadProducts = 'read_products',
   WriteProducts = 'write_products',
   ReadInventory = 'read_inventory',
   WriteInventory = 'write_inventory',
   ReadLocations = 'read_locations',
+  /** Puts published products on the Online Store sales channel (covers `read_publications`). */
+  WritePublications = 'write_publications',
 }
 
-export const SHOPIFY_REQUIRED_SCOPES: readonly ShopifyScope[] = Object.values(ShopifyScope);
+export const SHOPIFY_REQUIRED_SCOPES: readonly ShopifyScope[] = [
+  ShopifyScope.ReadProducts,
+  ShopifyScope.WriteProducts,
+  ShopifyScope.ReadInventory,
+  ShopifyScope.WriteInventory,
+  ShopifyScope.ReadLocations,
+];
+/**
+ * Stores connected before the scope was added keep working without it; their products are
+ * created but not shown in the Online Store until the merchant approves the app again.
+ */
+export const SHOPIFY_OPTIONAL_SCOPES = [
+  { scope: ShopifyScope.WritePublications, feature: ChannelFeature.StorefrontVisibility },
+] as const satisfies readonly OptionalScope[];
+/** What the install asks for: the required scopes, then the optional ones. */
+export const SHOPIFY_REQUESTED_SCOPES: readonly ShopifyScope[] = [
+  ...SHOPIFY_REQUIRED_SCOPES,
+  ...SHOPIFY_OPTIONAL_SCOPES.map(({ scope }) => scope),
+];
+/** The sales channel a store's shoppers browse, as its publication is named in the Admin API. */
+export const SHOPIFY_ONLINE_STORE_NAME = 'Online Store';
+/** Publications read to find the Online Store; stores have a handful of sales channels. */
+export const SHOPIFY_PUBLICATIONS_PAGE_SIZE = 50;
 export const SHOPIFY_SCOPE_SEPARATOR = ',';
 /** A granted `write_x` scope implies `read_x`, and Shopify reports only the write scope. */
 export const SHOPIFY_READ_SCOPE_PREFIX = 'read_';
@@ -102,6 +128,8 @@ export const SHOPIFY_AVAILABLE_QUANTITY_NAME = 'available';
 export const SHOPIFY_INVENTORY_REASON = 'correction';
 /** How long the primary location is cached per connection before it is read again. */
 export const SHOPIFY_LOCATION_CACHE_TTL_MS = 10 * 60 * 1000;
+/** How long the Online Store publication is cached per connection. */
+export const SHOPIFY_PUBLICATION_CACHE_TTL_MS = SHOPIFY_LOCATION_CACHE_TTL_MS;
 /** The value Shopify gives that placeholder option. */
 export const SHOPIFY_DEFAULT_OPTION_VALUE = 'Default Title';
 /** Shopify positions start at 1. */

@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChannelType, isShopifySettings } from '@crossmart/connectors';
+import { ChannelFeature, ChannelType, isShopifySettings } from '@crossmart/connectors';
 import type { ChannelConnectionView } from '@crossmart/core';
 import { ChannelConnectionStatus } from '@crossmart/database';
 import {
   CHANNEL_CONNECTION_STATUS_SCHEMA_NAME,
+  CHANNEL_FEATURE_SCHEMA_NAME,
   CHANNEL_TYPE_SCHEMA_NAME,
 } from '../channels.constants.js';
 import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
@@ -31,6 +32,14 @@ export class ChannelConnectionDto {
 
   @ApiProperty({ type: [String] })
   grantedScopes: string[];
+
+  @ApiProperty({
+    enum: ChannelFeature,
+    enumName: CHANNEL_FEATURE_SCHEMA_NAME,
+    isArray: true,
+    description: 'What the connection cannot do until the merchant approves the app again',
+  })
+  missingFeatures: ChannelFeature[];
 
   @ApiProperty({
     type: ShopifySettingsDto,

@@ -151,6 +151,7 @@ export function connectionView(
     status: ChannelConnectionStatus.CONNECTED,
     statusReason: null,
     grantedScopes: [],
+    missingFeatures: [],
     settings: { account: null, productSelection: null, pricing: null },
     connectedAt: AT,
     disconnectedAt: null,

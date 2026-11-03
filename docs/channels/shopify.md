@@ -10,7 +10,7 @@ merchant back to the Channels page.
 |            |                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API        | GraphQL Admin API, version `2026-10` (`SHOPIFY_ADMIN_API_VERSION`)                                                                                                                            |
-| Scopes     | `read_products`, `write_products`, `read_inventory`, `write_inventory`, `read_locations`                                                                                                      |
+| Scopes     | `read_products`, `write_products`, `read_inventory`, `write_inventory`, `read_locations`; optional `write_publications`                                                                       |
 | Tokens     | Expiring offline tokens (`expiring=1`): 1 hour access token, 90 day refresh token. Refreshed 5 minutes before expiry, under a database lock. Public apps must use these from January 1, 2027. |
 | Callback   | `{API_PUBLIC_URL}/api/v1/channels/shopify/oauth/callback`                                                                                                                                     |
 | Webhooks   | `{API_PUBLIC_URL}/api/v1/webhooks/shopify`, verified with `X-Shopify-Hmac-Sha256` over the raw body                                                                                           |
@@ -75,6 +75,7 @@ products table filters by store (`storeFilter`: `in_store`, `not_in_store`, `in_
 | Operation       | Admin GraphQL                                                                                                                                                                                                                        |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Publish, update | `productSet` (synchronous), by product id on update: options, every variant (variants left out are deleted), images from public URLs, SKU, barcode, price, compare-at, cost, weight, stock policy. The handle is only set on create. |
+| Online Store    | `publishablePublish` to the Online Store publication after each publish and update (found with `publications`, cached for 10 minutes). Skipped without `write_publications`; a failure is logged and never fails the publish.        |
 | Opening stock   | `inventoryQuantities` of new variants, at the primary location                                                                                                                                                                       |
 | Stock           | `inventorySetQuantities` with `@idempotent` and `changeFromQuantity: null` (Crossmart's ledger is the source of truth), 250 items per call                                                                                           |
 | Prices          | `productVariantsBulkUpdate`, one call per product                                                                                                                                                                                    |
@@ -95,7 +96,7 @@ In a new app version, set:
 - **Embed app in Shopify admin**: off.
 - **Redirect URLs**: the callback above, for example
   `http://localhost:3000/api/v1/channels/shopify/oauth/callback`. It must match exactly.
-- **Scopes**: the five scopes above.
+- **Scopes**: the five required scopes above, plus `write_publications`. A store connected without it keeps working, but its products are not shown in the Online Store; its page asks an admin to approve the app again.
 - **Webhooks API version**: `2026-10`.
 
 ### Webhooks
@@ -109,7 +110,7 @@ in `shopify.app.toml` and deploy with `shopify app deploy`:
 embedded = false
 
 [access_scopes]
-scopes = "read_products,write_products,read_inventory,write_inventory,read_locations"
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,write_publications"
 
 [auth]
 redirect_urls = ["https://api.example.com/api/v1/channels/shopify/oauth/callback"]

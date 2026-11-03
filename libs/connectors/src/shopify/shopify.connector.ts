@@ -43,6 +43,7 @@ import {
   SHOPIFY_GRAPHQL_BUCKET_CAPACITY,
   SHOPIFY_GRAPHQL_BUCKET_NAME,
   SHOPIFY_GRAPHQL_RESTORE_PER_SECOND,
+  SHOPIFY_OPTIONAL_SCOPES,
   SHOPIFY_REQUIRED_SCOPES,
   ShopifyOAuthParam,
 } from './shopify.constants.js';
@@ -73,6 +74,7 @@ export class ShopifyConnector
     ChannelCapability.UpdateInventory,
   ]);
   readonly requiredScopes = SHOPIFY_REQUIRED_SCOPES;
+  readonly optionalScopes = SHOPIFY_OPTIONAL_SCOPES;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {
       name: SHOPIFY_GRAPHQL_BUCKET_NAME,

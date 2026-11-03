@@ -1,5 +1,6 @@
 import type { ChannelAuthStrategy } from './channel-auth-strategy.enum.js';
 import type { ChannelCapability } from './channel-capability.enum.js';
+import type { OptionalScope } from './channel-feature.enum.js';
 import type { ChannelAccountProfile, ChannelSettings } from './channel-settings.js';
 import type { ChannelType } from './channel-type.enum.js';
 import type { ChannelCredentials } from './auth/channel-credentials.js';
@@ -24,6 +25,8 @@ export interface ChannelConnector {
   readonly rateLimits: readonly RateLimitBucket[];
   /** Scopes the connector needs; a connection granted fewer cannot be completed. */
   readonly requiredScopes: readonly string[];
+  /** Scopes the connector asks for too, and what a connection without each cannot do. */
+  readonly optionalScopes?: readonly OptionalScope[];
 
   /** Whether this instance has what the connector needs (app credentials, for OAuth apps). */
   isConfigured(): boolean;

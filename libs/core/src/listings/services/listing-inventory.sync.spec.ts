@@ -42,6 +42,7 @@ function setup(held: ListingStockRecord[], maxBatchSize = 2) {
     openSession: vi.fn<SyncConnectionLoader['openSession']>().mockResolvedValue({
       connectionId: 'c',
       externalAccountId: 'a',
+      grantedScopes: [],
       accessToken: () => Promise.resolve('t'),
     }),
   };

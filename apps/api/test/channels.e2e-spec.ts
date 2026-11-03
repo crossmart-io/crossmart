@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
 import {
+  ChannelFeature,
   ChannelType,
   FakeHttpTransport,
   HttpMethod,
@@ -149,7 +150,7 @@ describe('Channels (e2e)', () => {
     );
     expect(url.searchParams.get('client_id')).toBe(env.SHOPIFY_CLIENT_ID);
     expect(url.searchParams.get('scope')).toBe(
-      'read_products,write_products,read_inventory,write_inventory,read_locations',
+      'read_products,write_products,read_inventory,write_inventory,read_locations,write_publications',
     );
     expect(url.searchParams.get('redirect_uri')).toBe(
       'http://localhost:3004/api/v1/channels/shopify/oauth/callback',
@@ -188,6 +189,8 @@ describe('Channels (e2e)', () => {
         currencyCode: 'USD',
         primaryLocation: { id: 'gid://shopify/Location/1' },
       },
+      // The fake store grants no `write_publications`, as stores connected before it did.
+      missingFeatures: [ChannelFeature.StorefrontVisibility],
     });
     const single = await request(app.getHttpServer())
       .get(`/api/v1/workspaces/${owner.workspaceId}/channel-connections/${connection.id}`)

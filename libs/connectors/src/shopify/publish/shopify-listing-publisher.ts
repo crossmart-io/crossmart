@@ -12,6 +12,7 @@ import { PRODUCT_STATUS_MUTATION } from '../graphql/product-status.mutation.js';
 import { ShopifyAdminClient } from '../graphql/shopify-admin.client.js';
 import { assertNoUserErrors } from '../graphql/shopify-user-error.js';
 import { VARIANT_PRICES_MUTATION } from '../graphql/variant-prices.mutation.js';
+import { ShopifyOnlineStore } from './shopify-online-store.js';
 import { toProductSetInput } from './shopify-product.mapper.js';
 import { toPublishedListing } from './shopify-published-listing.mapper.js';
 import { ChannelError } from '../../sdk/errors/channel-error.js';
@@ -22,14 +23,16 @@ const NO_PRODUCT = 'Shopify returned no product';
 
 /**
  * Publishes listings with `productSet`, which creates a product or replaces an existing one
- * (by id) in one call, so publishing again never makes a duplicate. Delisting archives the
- * product: it leaves the store's catalog and sales channels but keeps its orders and history.
+ * (by id) in one call, so publishing again never makes a duplicate, then shows it in the
+ * Online Store. Delisting archives the product: it leaves the store's catalog and sales
+ * channels but keeps its orders and history.
  */
 @Injectable()
 export class ShopifyListingPublisher implements ListingPublisher {
   constructor(
     private readonly admin: ShopifyAdminClient,
     private readonly locations: ShopifyLocations,
+    private readonly onlineStore: ShopifyOnlineStore,
   ) {}
 
   publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
@@ -78,6 +81,7 @@ export class ShopifyListingPublisher implements ListingPublisher {
     if (!productSet.product) {
       throw new ChannelError(ChannelType.Shopify, ChannelErrorCode.ChannelUnavailable, NO_PRODUCT);
     }
+    await this.onlineStore.show(session, productSet.product.id);
     return toPublishedListing(draft, productSet.product, session.externalAccountId);
   }
 

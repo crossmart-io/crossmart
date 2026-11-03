@@ -1,0 +1,26 @@
+{
+  "data": {
+    "publications": {
+      "nodes": [
+        {
+          "id": "gid://shopify/Publication/11",
+          "name": "Point of Sale",
+          "catalog": { "title": "Point of Sale" }
+        },
+        {
+          "id": "gid://shopify/Publication/12",
+          "name": "Online Store",
+          "catalog": { "title": "Online Store" }
+        },
+        { "id": "gid://shopify/Publication/13", "name": "Shop", "catalog": null }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 12,
+      "actualQueryCost": 4,
+      "throttleStatus": { "maximumAvailable": 2000, "currentlyAvailable": 1996, "restoreRate": 100 }
+    }
+  }
+}

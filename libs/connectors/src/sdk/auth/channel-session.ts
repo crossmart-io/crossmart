@@ -5,5 +5,7 @@
 export interface ChannelSession {
   readonly connectionId: string;
   readonly externalAccountId: string;
+  /** What the merchant granted, so optional features can be skipped without a failed call. */
+  readonly grantedScopes: readonly string[];
   accessToken(): Promise<string>;
 }

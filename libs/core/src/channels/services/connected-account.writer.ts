@@ -56,6 +56,7 @@ function issuedSession(authorization: ChannelAuthorization): ChannelSession {
   return {
     connectionId: authorization.externalAccountId,
     externalAccountId: authorization.externalAccountId,
+    grantedScopes: authorization.grantedScopes,
     accessToken: () => Promise.resolve(authorization.credentials.accessToken),
   };
 }

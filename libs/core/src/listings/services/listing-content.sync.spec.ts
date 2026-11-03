@@ -55,6 +55,7 @@ function setup(target: ListingTarget) {
     openSession: vi.fn<SyncConnectionLoader['openSession']>().mockResolvedValue({
       connectionId: CONNECTION_ID,
       externalAccountId: 'demo.myshopify.com',
+      grantedScopes: [],
       accessToken: () => Promise.resolve('token'),
     }),
   };
