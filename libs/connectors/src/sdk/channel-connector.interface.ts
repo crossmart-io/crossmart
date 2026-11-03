@@ -1,23 +1,66 @@
 import type { ChannelAuthStrategy } from './channel-auth-strategy.enum.js';
 import type { ChannelCapability } from './channel-capability.enum.js';
+import type { ChannelAccountProfile, ChannelSettings } from './channel-settings.js';
 import type { ChannelType } from './channel-type.enum.js';
+import type { ChannelCredentials } from './auth/channel-credentials.js';
+import type { ChannelSession } from './auth/channel-session.js';
+import type {
+  ChannelAuthorization,
+  OAuthAuthorizeRequest,
+  OAuthCallback,
+} from './auth/oauth-authorization.js';
+import type { RateLimitBucket } from './rate-limit-bucket.js';
 
 /**
- * Base contract every marketplace connector implements.
- * Capability-specific behaviour (publishing, inventory, orders...) is added through
- * dedicated interfaces as each capability is built, so a connector only implements
- * what its channel supports.
+ * Base contract every marketplace connector implements. Capability-specific behaviour
+ * (publishing, inventory, orders...) comes from the interfaces in `capabilities/`, which a
+ * connector implements only for what its channel supports, and declares in `capabilities`.
  */
 export interface ChannelConnector {
   readonly channel: ChannelType;
   readonly displayName: string;
   readonly authStrategy: ChannelAuthStrategy;
   readonly capabilities: ReadonlySet<ChannelCapability>;
+  readonly rateLimits: readonly RateLimitBucket[];
+  /** Scopes the connector needs; a connection granted fewer cannot be completed. */
+  readonly requiredScopes: readonly string[];
+
+  /** Whether this instance has what the connector needs (app credentials, for OAuth apps). */
+  isConfigured(): boolean;
+
+  /** Reads the account's name and settings, on connect and when they are refreshed. */
+  describeAccount(session: ChannelSession): Promise<ChannelAccountProfile>;
+
+  /** Validates settings read back from storage. Throws when they do not match the schema. */
+  parseSettings(raw: unknown): ChannelSettings;
 }
 
-export function supportsCapability(
-  connector: ChannelConnector,
-  capability: ChannelCapability,
-): boolean {
-  return connector.capabilities.has(capability);
+/** The merchant authorizes Crossmart's app on the channel (Shopify, eBay, Etsy). */
+export interface OAuthAppConnector extends ChannelConnector {
+  readonly authStrategy: ChannelAuthStrategy.OAuthApp;
+
+  /** The account id for what the merchant typed, or null when it is not valid. */
+  normalizeAccountHandle(accountHandle: string): string | null;
+
+  authorizationUrl(request: OAuthAuthorizeRequest): URL;
+
+  /** Verifies the callback (signature, account) and exchanges its code for credentials. */
+  completeAuthorization(callback: OAuthCallback): Promise<ChannelAuthorization>;
+
+  /** Exchanges a refresh token for new credentials. Throws `CredentialsRejected` when expired. */
+  refreshCredentials(
+    externalAccountId: string,
+    credentials: ChannelCredentials,
+  ): Promise<ChannelCredentials>;
+
+  /** Revokes Crossmart's access on the channel, where the channel supports it. */
+  revokeAccess(session: ChannelSession): Promise<void>;
+}
+
+/** The merchant pastes keys the channel issued them (Walmart, self-hosted installs). */
+export interface SellerCredentialsConnector extends ChannelConnector {
+  readonly authStrategy: ChannelAuthStrategy.SellerCredentials;
+
+  /** Checks the keys against the channel and returns the account they belong to. */
+  verifyCredentials(fields: Readonly<Record<string, string>>): Promise<ChannelAuthorization>;
 }
