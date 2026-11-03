@@ -32,12 +32,11 @@ import type {
 import { ChannelError } from '../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
-import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { APP_UNINSTALL_MUTATION } from './graphql/app-uninstall.mutation.js';
 import { SHOP_QUERY, type ShopData } from './graphql/shop.query.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
-import { ShopifyListingCapabilities } from './shopify-listing-capabilities.js';
+import { ShopifyStoreCapabilities } from './shopify-store-capabilities.js';
 import { isShopDomain, normalizeShopDomain } from './shop-domain.js';
 import {
   SHOPIFY_DISPLAY_NAME,
@@ -87,12 +86,11 @@ export class ShopifyConnector
     private readonly oauth: ShopifyOAuthClient,
     private readonly admin: ShopifyAdminClient,
     private readonly webhooks: ShopifyWebhookParser,
-    private readonly catalog: ShopifyCatalogReader,
-    private readonly listings: ShopifyListingCapabilities,
+    private readonly store: ShopifyStoreCapabilities,
   ) {}
 
   get maxBatchSize(): number {
-    return this.listings.inventory.maxBatchSize;
+    return this.store.inventory.maxBatchSize;
   }
 
   isConfigured(): boolean {
@@ -173,11 +171,11 @@ export class ShopifyConnector
     session: ChannelSession,
     cursor: string | null,
   ): Promise<ChannelPage<ExternalProduct>> {
-    return this.catalog.fetchProducts(session, cursor);
+    return this.store.catalog.fetchProducts(session, cursor);
   }
 
   publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
-    return this.listings.publisher.publish(session, draft);
+    return this.store.publisher.publish(session, draft);
   }
 
   update(
@@ -185,22 +183,22 @@ export class ShopifyConnector
     externalId: string,
     draft: ListingDraft,
   ): Promise<PublishedListing> {
-    return this.listings.publisher.update(session, externalId, draft);
+    return this.store.publisher.update(session, externalId, draft);
   }
 
   delist(session: ChannelSession, externalId: string): Promise<void> {
-    return this.listings.publisher.delist(session, externalId);
+    return this.store.publisher.delist(session, externalId);
   }
 
   updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void> {
-    return this.listings.publisher.updatePrices(session, updates);
+    return this.store.publisher.updatePrices(session, updates);
   }
 
   setQuantities(
     session: ChannelSession,
     updates: readonly InventoryQuantityUpdate[],
   ): Promise<InventoryUpdateFailure[]> {
-    return this.listings.inventory.setQuantities(session, updates);
+    return this.store.inventory.setQuantities(session, updates);
   }
 
   private toSettings({ shop, location }: ShopData): ShopifySettings {

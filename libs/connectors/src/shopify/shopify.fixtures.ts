@@ -9,7 +9,7 @@ import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
 import { ShopifyListingPublisher } from './publish/shopify-listing-publisher.js';
 import { ShopifyConnector } from './shopify.connector.js';
 import { ShopifyApp } from './shopify-app.js';
-import { ShopifyListingCapabilities } from './shopify-listing-capabilities.js';
+import { ShopifyStoreCapabilities } from './shopify-store-capabilities.js';
 import { ShopifySignatures } from './shopify-signatures.js';
 import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
 
@@ -43,8 +43,8 @@ export function createShopifyTestKit(
     oauth,
     admin,
     new ShopifyWebhookParser(signatures),
-    new ShopifyCatalogReader(admin),
-    new ShopifyListingCapabilities(
+    new ShopifyStoreCapabilities(
+      new ShopifyCatalogReader(admin),
       new ShopifyListingPublisher(admin, locations),
       new ShopifyInventorySync(admin, locations),
     ),

@@ -11,6 +11,7 @@ describe('external product mapping', () => {
       compareAtPrice: '12.00',
       weightGrams: 300,
       continueSellingWhenOutOfStock: true,
+      unitCost: '4.25',
     };
 
     const draft = toProductDraft(product);
@@ -27,10 +28,12 @@ describe('external product mapping', () => {
       sku: 'TOTE-L',
       compareAtPrice: '12.00',
       weightGrams: 300,
+      cost: '4.25',
       outOfStockPolicy: OutOfStockPolicy.CONTINUE_SELLING,
       inventory: { tracked: true, quantity: 0 },
     });
     expect(draft.variants[0]?.outOfStockPolicy).toBe(OutOfStockPolicy.STOP_SELLING);
+    expect(draft.variants[0]?.cost).toBeUndefined();
   });
 
   it('keeps products that are not for sale as drafts and inactive listings', () => {

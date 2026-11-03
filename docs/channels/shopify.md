@@ -30,11 +30,11 @@ page is written before the next is read and an import resumes from its stored cu
 
 For each Shopify product:
 
-| Case                                                      | What Crossmart does                                                                                                                                                             |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Already linked to this store (a listing with its GID)     | Refreshes the listing and its variant ids. Product content and stock stay as they are in Crossmart.                                                                             |
-| A catalog product has the same handle, or one of its SKUs | Links it: a listing maps each Shopify variant to the catalog variant with the same SKU or option values. Content and stock stay.                                                |
-| Nothing matches                                           | Creates the product (active, or a draft when it is not active on Shopify) and sets its stock through the inventory ledger (`IMPORTED`, credited to whoever started the import). |
+| Case                                                      | What Crossmart does                                                                                                                                                                                                               |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Already linked to this store (a listing with its GID)     | Refreshes the listing and its variant ids. Product content and stock stay as they are in Crossmart.                                                                                                                               |
+| A catalog product has the same handle, or one of its SKUs | Links it: a listing maps each Shopify variant to the catalog variant with the same SKU or option values. Content and stock stay.                                                                                                  |
+| Nothing matches                                           | Creates the product (active, or a draft when it is not active on Shopify), with each variant's "Cost per item" as its cost, and sets its stock through the inventory ledger (`IMPORTED`, credited to whoever started the import). |
 
 Every listing stores the Shopify product, variant and inventory item GIDs, so publishing and
 stock sync can update them later. Images keep their Shopify CDN URLs, as CSV imports do.
