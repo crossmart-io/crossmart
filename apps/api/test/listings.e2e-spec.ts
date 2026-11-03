@@ -537,6 +537,49 @@ describe('Listings (e2e)', () => {
       );
     });
 
+    it('archives a deleted product on the stores that hold it', async () => {
+      const owner = await signUp(app, 'Deleter');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const mug = await createProduct(owner, { title: 'Doomed Mug' });
+      const PRODUCT_GID = 'gid://shopify/Product/770001';
+      const calls: GraphqlCall[] = [];
+      const expectCalls = (count: number) =>
+        answerGraphql(
+          http,
+          shop,
+          (call) => {
+            calls.push(call);
+            return shopifyReply(call, PRODUCT_GID);
+          },
+          count,
+        );
+      await request(server())
+        .post(`${base(owner)}/products/${mug.id}/channels/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      expectCalls(3);
+      await runQueued();
+
+      const deleted = await request(server())
+        .delete(`${base(owner)}/products/${mug.id}`)
+        .set('Cookie', owner.cookie);
+      expect(deleted.status).toBe(HttpStatus.NO_CONTENT);
+      expectCalls(1);
+      expect(await runQueued()).toEqual([SyncJobKind.Delist]);
+
+      expect(calls.at(-1)?.variables).toEqual({
+        product: { id: PRODUCT_GID, status: 'ARCHIVED' },
+      });
+      http.assertDone();
+      const activity = await request(server())
+        .get(`${base(owner)}/activity`)
+        .set('Cookie', owner.cookie);
+      expect(activity.body.items[0]).toMatchObject({
+        action: ActivityAction.ListingDelisted,
+        subject: { label: 'Doomed Mug' },
+      });
+    });
+
     it('stores Shopify’s user errors on the listing and logs the failure', async () => {
       const owner = await signUp(app, 'Rejected Seller');
       const shop = newShop();

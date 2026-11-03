@@ -46,3 +46,9 @@ export interface ListingPair {
   connectionId: string;
   productId: string;
 }
+
+/** A listing a channel holds, with what delisting it needs once its product is deleted. */
+export interface HeldListing extends ListingPair {
+  externalId: string;
+  productTitle: string;
+}

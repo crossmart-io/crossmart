@@ -5,7 +5,7 @@ import {
   type ListingPublisher,
   supportsCapability,
 } from '@crossmart/connectors';
-import type { ListingSyncJob } from '../entities/listing-sync-job.js';
+import type { DeletedProductListing, ListingSyncJob } from '../entities/listing-sync-job.js';
 import { ListingDraftBuilder } from './listing-draft.builder.js';
 import { type SyncedListing, ListingSyncOutcomes } from './listing-sync-outcomes.js';
 import { type ListingTarget, ListingTargetResolver } from './listing-target.resolver.js';
@@ -46,7 +46,11 @@ export class ListingContentSync {
   async delist(job: ListingSyncJob): Promise<void> {
     const connection = await this.connections.load(job.workspaceId, job.connectionId);
     if (!canPublish(connection)) return;
-    await this.apply(job, connection, await this.targets.forDelist(job));
+    const target = await this.targets.forDelist(job);
+    if (target.action === ListingTargetAction.Skip && job.deleted) {
+      return this.takeDownDeleted(job, connection, job.deleted);
+    }
+    await this.apply(job, connection, target);
   }
 
   private apply(
@@ -98,6 +102,27 @@ export class ListingContentSync {
       await this.outcomes.delisted(synced);
     } catch (error) {
       await this.outcomes.failed(synced, error);
+    }
+  }
+
+  /** The product was deleted with its listing, so the job carries the id the channel gave it. */
+  private async takeDownDeleted(
+    job: ListingSyncJob,
+    connection: PublishingConnection,
+    deleted: DeletedProductListing,
+  ): Promise<void> {
+    const product = {
+      workspaceId: job.workspaceId,
+      productId: job.productId,
+      productTitle: deleted.productTitle,
+      storeName: connection.view.displayName,
+    };
+    try {
+      const session = await this.connections.openSession(job.workspaceId, job.connectionId);
+      await connection.connector.delist(session, deleted.externalId);
+      await this.outcomes.deletedDelisted(product);
+    } catch (error) {
+      await this.outcomes.deletedFailed(product, error);
     }
   }
 

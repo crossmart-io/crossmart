@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type {
   CatalogChangeListener,
   ProductsChangedEvent,
+  ProductsDeletingEvent,
   StockChangedEvent,
 } from '../entities/catalog-events.js';
 
@@ -27,6 +28,12 @@ export class CatalogEventBus {
   async stockChanged(event: StockChangedEvent): Promise<void> {
     if (event.inventoryItemIds.length === 0) return;
     await this.notify(event.workspaceId, (listener) => listener.onStockChanged(event));
+  }
+
+  /** Called before the products are deleted; a failing listener does not stop the delete. */
+  async productsDeleting(event: ProductsDeletingEvent): Promise<void> {
+    if (event.productIds.length === 0) return;
+    await this.notify(event.workspaceId, (listener) => listener.onProductsDeleting(event));
   }
 
   private async notify(

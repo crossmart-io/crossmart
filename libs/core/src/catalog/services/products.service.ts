@@ -89,6 +89,7 @@ export class ProductsService {
   }
 
   async delete(workspaceId: string, productId: string, actor: Actor): Promise<void> {
+    await this.changes.deleting(workspaceId, [productId]);
     const deleted = await this.products.delete(workspaceId, productId);
     if (!deleted) {
       throw new NotFoundException(PRODUCT_NOT_FOUND);

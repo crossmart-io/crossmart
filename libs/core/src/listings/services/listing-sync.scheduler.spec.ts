@@ -25,6 +25,11 @@ function setup() {
     findPairsForInventoryItems: vi
       .fn<ListingSyncRepository['findPairsForInventoryItems']>()
       .mockResolvedValue([{ connectionId: 'c1', productId: 'p2' }]),
+    findHeldForProducts: vi
+      .fn<ListingSyncRepository['findHeldForProducts']>()
+      .mockResolvedValue([
+        { connectionId: 'c1', productId: 'p1', externalId: 'gid://1', productTitle: 'Mug' },
+      ]),
   };
   const bus = new CatalogEventBus();
   const queue = new CapturingQueue();
@@ -97,6 +102,32 @@ describe('ListingSyncScheduler', () => {
       productIds: ['p9'],
       kinds: [CatalogChangeKind.Content],
     });
+
+    expect(queue.jobs).toEqual([]);
+  });
+
+  it('delists a product about to be deleted, keeping the id the channel gave it', async () => {
+    const { bus, queue, listings } = setup();
+
+    await bus.productsDeleting({ workspaceId: WS, productIds: ['p1'] });
+
+    expect(listings.findHeldForProducts).toHaveBeenCalledWith(WS, ['p1']);
+    expect(queue.jobs).toEqual([
+      {
+        kind: SyncJobKind.Delist,
+        workspaceId: WS,
+        connectionId: 'c1',
+        productId: 'p1',
+        deleted: { externalId: 'gid://1', productTitle: 'Mug' },
+      },
+    ]);
+  });
+
+  it('queues nothing when no channel holds the deleted product', async () => {
+    const { bus, queue, listings } = setup();
+    listings.findHeldForProducts.mockResolvedValue([]);
+
+    await bus.productsDeleting({ workspaceId: WS, productIds: ['p9'] });
 
     expect(queue.jobs).toEqual([]);
   });

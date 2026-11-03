@@ -56,6 +56,9 @@ A store gets only the products the merchant adds to it, plus those its automatic
   filters (tags, vendor, status, gaps, search). A product added this way leaves the store when
   the rule stops matching it.
 - **Removed by hand**: delisted at once, and the rule cannot add it back until it is added again.
+- **Deleted from the catalog**: archived on every store that holds it. The Shopify product id is
+  read before the delete and travels with the delist job, since the listing row is deleted with
+  the product. A rejected archive is logged as activity; outages are retried.
 - **Changes apply at once**: saving the automatic rule publishes what it now adds and delists
   what it now drops (only the difference), and the editor's preview says how many first. Saving a
   pricing rule re-sends the prices of listed products. Sync now ("Resync everything") is only

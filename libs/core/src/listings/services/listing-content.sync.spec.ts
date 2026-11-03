@@ -197,4 +197,59 @@ describe('ListingContentSync', () => {
     expect(publisher.publish).not.toHaveBeenCalled();
     expect(publisher.delist).not.toHaveBeenCalled();
   });
+
+  describe('a product deleted from the catalog', () => {
+    const deletedJob = () => ({
+      ...syncJob(),
+      deleted: { externalId: 'gid://shopify/Product/9', productTitle: 'Mug' },
+    });
+
+    it('is archived on the channel with the id its job kept, and logged', async () => {
+      const { sync, publisher, listings, activity } = setup({ action: ListingTargetAction.Skip });
+
+      await sync.delist(deletedJob());
+
+      expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/9');
+      expect(listings.markDelisted).not.toHaveBeenCalled();
+      expect(activity.entries).toEqual([
+        expect.objectContaining({
+          action: ActivityAction.ListingDelisted,
+          subject: expect.objectContaining({ label: 'Mug' }),
+        }),
+      ]);
+    });
+
+    it('logs a rejected delist, and rethrows an outage for the queue to retry', async () => {
+      const { sync, publisher, activity } = setup({ action: ListingTargetAction.Skip });
+      publisher.delist.mockRejectedValueOnce(
+        new ChannelError(ChannelType.Shopify, ChannelErrorCode.RequestRejected, 'Not found'),
+      );
+      const outage = new ChannelError(ChannelType.Shopify, ChannelErrorCode.RateLimited, 'Slow');
+      publisher.delist.mockRejectedValueOnce(outage);
+
+      await sync.delist(deletedJob());
+      await expect(sync.delist(deletedJob())).rejects.toBe(outage);
+
+      expect(activity.entries).toEqual([
+        expect.objectContaining({
+          action: ActivityAction.ListingSyncFailed,
+          failureReason: 'Not found',
+        }),
+      ]);
+    });
+
+    it('is delisted from its listing when the job ran before the delete', async () => {
+      const listing = { ...publishedListing(), externalId: 'gid://shopify/Product/1' };
+      const { sync, publisher, listings } = setup({
+        action: ListingTargetAction.Delist,
+        product: productDetail(),
+        listing,
+      });
+
+      await sync.delist(deletedJob());
+
+      expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/1');
+      expect(listings.markDelisted).toHaveBeenCalled();
+    });
+  });
 });

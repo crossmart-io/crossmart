@@ -6,6 +6,7 @@ import {
   LISTING_ROW_INCLUDE,
   LISTING_STOCK_INCLUDE,
   LISTING_SYNC_INCLUDE,
+  type HeldListing,
   type ListingPair,
   type ListingRowRecord,
   type ListingStockRecord,
@@ -195,6 +196,22 @@ export class ListingSyncRepository {
   /** The connections that list each of these products, for syncing a catalog change. */
   findPairsForProducts(workspaceId: string, productIds: string[]): Promise<ListingPair[]> {
     return this.findPairs({ workspaceId, productId: { in: productIds } });
+  }
+
+  /** The listings channels hold for these products, read before the products are deleted. */
+  async findHeldForProducts(workspaceId: string, productIds: string[]): Promise<HeldListing[]> {
+    const listings = await this.prisma.listing.findMany({
+      where: { workspaceId, productId: { in: productIds }, ...onChannel() },
+      select: {
+        connectionId: true,
+        productId: true,
+        externalId: true,
+        product: { select: { title: true } },
+      },
+    });
+    return listings.flatMap(({ externalId, product, ...pair }) =>
+      externalId ? [{ ...pair, externalId, productTitle: product.title }] : [],
+    );
   }
 
   /** The listings that hold any of these stock items, for fanning out a stock change. */

@@ -37,4 +37,9 @@ export class ProductChangeReporter {
       });
     }
   }
+
+  /** Lets listeners act on products before they are deleted, such as delisting them. */
+  deleting(workspaceId: string, productIds: string[]): Promise<void> {
+    return this.events.productsDeleting({ workspaceId, productIds });
+  }
 }

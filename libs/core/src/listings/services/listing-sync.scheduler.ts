@@ -2,6 +2,7 @@ import { Injectable, type OnModuleInit } from '@nestjs/common';
 import type {
   CatalogChangeListener,
   ProductsChangedEvent,
+  ProductsDeletingEvent,
   StockChangedEvent,
 } from '../../events/entities/catalog-events.js';
 import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
@@ -24,7 +25,7 @@ function jobKindsFor(kinds: readonly CatalogChangeKind[]): ListingJobKind[] {
 /**
  * Turns catalog and stock changes into sync jobs, for the listings the channels already hold
  * (new products are published from the connection's "Publish" action). A stock change fans
- * out only to the listings of the variants it touched.
+ * out only to the listings of the variants it touched. A deleted product is delisted.
  */
 @Injectable()
 export class ListingSyncScheduler implements CatalogChangeListener, OnModuleInit {
@@ -50,6 +51,21 @@ export class ListingSyncScheduler implements CatalogChangeListener, OnModuleInit
       event.inventoryItemIds,
     );
     await this.enqueue(event.workspaceId, pairs, [SyncJobKind.Inventory]);
+  }
+
+  /** Takes a deleted product off the channels that hold it, with ids kept from its listings. */
+  async onProductsDeleting(event: ProductsDeletingEvent): Promise<void> {
+    const held = await this.listings.findHeldForProducts(event.workspaceId, event.productIds);
+    if (held.length === 0) return;
+    await this.queue.enqueue(
+      held.map(({ connectionId, productId, externalId, productTitle }) => ({
+        kind: SyncJobKind.Delist,
+        workspaceId: event.workspaceId,
+        connectionId,
+        productId,
+        deleted: { externalId, productTitle },
+      })),
+    );
   }
 
   private async enqueue(

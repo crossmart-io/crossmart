@@ -170,6 +170,29 @@ describe('ProductsService.create and delete', () => {
   });
 });
 
+describe('ProductsService.delete', () => {
+  it('lets listeners delist the product before it is deleted', async () => {
+    const { service, repository, events } = createService();
+    const order: string[] = [];
+    const productsDeleting = vi.spyOn(events, 'productsDeleting').mockImplementation(() => {
+      order.push('deleting');
+      return Promise.resolve();
+    });
+    repository.delete.mockImplementation(() => {
+      order.push('delete');
+      return Promise.resolve({ title: 'Mug' });
+    });
+
+    await service.delete(WORKSPACE_ID, 'p-1', ACTOR);
+
+    expect(productsDeleting).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      productIds: ['p-1'],
+    });
+    expect(order).toEqual(['deleting', 'delete']);
+  });
+});
+
 describe('ProductsService lookups', () => {
   it('is not found outside the workspace', async () => {
     const { service } = createService();

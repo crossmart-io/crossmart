@@ -7,7 +7,11 @@ import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { ChannelConnectionRepository } from '../../channels/repositories/channel-connection.repository.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
-import { type FailedListing, ListingSyncFailures } from './listing-sync-failures.js';
+import {
+  type FailedListing,
+  ListingSyncFailures,
+  type StoreProduct,
+} from './listing-sync-failures.js';
 
 /** A listing a content sync wrote to, named for the activity log. */
 export type SyncedListing = FailedListing & { connectionId: string; wasPublished: boolean };
@@ -48,6 +52,15 @@ export class ListingSyncOutcomes {
     await this.record(listing, ActivityAction.ListingDelisted);
   }
 
+  /** A deleted product was taken off the store; its listing went with it. */
+  deletedDelisted(product: StoreProduct): Promise<void> {
+    return this.record(product, ActivityAction.ListingDelisted);
+  }
+
+  deletedFailed(product: StoreProduct, error: unknown): Promise<void> {
+    return this.failures.handleDeleted(product, error);
+  }
+
   /** A price or stock sync went through. */
   async synced(listingId: string): Promise<void> {
     await this.listings.recordSynced(listingId, new Date());
@@ -62,7 +75,7 @@ export class ListingSyncOutcomes {
     return this.failures.handle(listing, error);
   }
 
-  private record(listing: SyncedListing, action: ActivityAction): Promise<void> {
+  private record(listing: StoreProduct, action: ActivityAction): Promise<void> {
     return this.activity.record(listing.workspaceId, Actor.system(), {
       action,
       subject: {

@@ -22,12 +22,13 @@ function setup() {
   const activity = new InMemoryActivityRecorder();
   const events = new CatalogEventBus();
   const productsChanged = vi.spyOn(events, 'productsChanged');
+  const productsDeleting = vi.spyOn(events, 'productsDeleting');
   const service = new BulkProductActionsService(
     writer as unknown as ProductBulkWriter,
     activity,
     events,
   );
-  return { service, writer, activity, productsChanged };
+  return { service, writer, activity, productsChanged, productsDeleting };
 }
 
 describe('BulkProductActionsService', () => {
@@ -142,5 +143,28 @@ describe('BulkProductActionsService', () => {
       [CatalogChangeKind.Price],
       [CatalogChangeKind.Content],
     ]);
+  });
+
+  it('lets listeners delist products before a bulk delete, and only then', async () => {
+    const { service, productsDeleting } = setup();
+
+    await service.apply(
+      WORKSPACE_ID,
+      ['p1', 'p1', 'p2'],
+      { action: BulkProductAction.Delete },
+      ACTOR,
+    );
+    await service.apply(
+      WORKSPACE_ID,
+      ['p3'],
+      { action: BulkProductAction.AddTags, tags: ['x'] },
+      ACTOR,
+    );
+
+    expect(productsDeleting).toHaveBeenCalledTimes(1);
+    expect(productsDeleting).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      productIds: ['p1', 'p2'],
+    });
   });
 });

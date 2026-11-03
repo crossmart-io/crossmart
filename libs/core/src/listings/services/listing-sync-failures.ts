@@ -7,13 +7,17 @@ import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
 import { isRetryableSyncError, syncFailureReason } from '../rules/sync-failure-reason.js';
 
-/** The listing a failed sync was about, for its record and the activity log. */
-export interface FailedListing {
+/** A product on a store, named for the activity log. */
+export interface StoreProduct {
   workspaceId: string;
-  listingId: string;
   productId: string;
   productTitle: string;
   storeName: string;
+}
+
+/** The listing a failed sync was about, for its record and the activity log. */
+export interface FailedListing extends StoreProduct {
+  listingId: string;
 }
 
 /**
@@ -38,7 +42,22 @@ export class ListingSyncFailures {
     }
     this.logger.warn(`Sync of listing ${listing.listingId} was rejected: ${reason}`);
     await this.listings.recordFailure(listing.listingId, reason, ListingStatus.ERROR);
-    await this.activity.record(listing.workspaceId, Actor.system(), {
+    await this.recordFailed(listing, reason);
+  }
+
+  /**
+   * Delisting a deleted product failed. There is no listing left to mark, so a failure a retry
+   * may fix is rethrown, and the others are logged as activity for the merchant to act on.
+   */
+  async handleDeleted(product: StoreProduct, error: unknown): Promise<void> {
+    if (isRetryableSyncError(error)) throw error;
+    const reason = syncFailureReason(error);
+    this.logger.warn(`Delisting deleted product ${product.productId} was rejected: ${reason}`);
+    await this.recordFailed(product, reason);
+  }
+
+  private recordFailed(listing: StoreProduct, reason: string): Promise<void> {
+    return this.activity.record(listing.workspaceId, Actor.system(), {
       action: ActivityAction.ListingSyncFailed,
       outcome: ActivityOutcome.FAILED,
       subject: {

@@ -28,6 +28,9 @@ export class BulkProductActionsService {
     actor: Actor,
   ): Promise<BulkProductResult> {
     const ids = [...new Set(productIds)];
+    if (change.action === BulkProductAction.Delete) {
+      await this.events.productsDeleting({ workspaceId, productIds: ids });
+    }
     const affected = await this.write(workspaceId, ids, change);
     if (affected > 0) {
       await this.activity.record(workspaceId, actor, toActivityEntry(ids, change, affected));
@@ -36,7 +39,7 @@ export class BulkProductActionsService {
     return { affected };
   }
 
-  /** Deleted products need no sync: their listings go with them. */
+  /** Deleted products were delisted before the delete; their listings go with them. */
   private notifyChange(
     workspaceId: string,
     productIds: string[],
