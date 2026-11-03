@@ -81,13 +81,6 @@ export class ChannelConnectionRepository {
     return count === 0 ? null : this.findForWorkspace(workspaceId, connectionId);
   }
 
-  async markSynced(connectionId: string, syncedAt: Date): Promise<void> {
-    await this.prisma.channelConnection.update({
-      where: { id: connectionId },
-      data: { lastSyncedAt: syncedAt },
-    });
-  }
-
   /** Connections that hold working credentials, for scheduled reconciliation. */
   listConnected(): Promise<ChannelConnectionRecord[]> {
     return this.prisma.channelConnection.findMany({

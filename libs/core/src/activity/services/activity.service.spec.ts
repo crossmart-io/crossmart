@@ -69,7 +69,7 @@ describe('ActivityService', () => {
   });
 
   it('skips actions this version does not know', async () => {
-    const { service } = setup([record('known'), record('future', { action: 'listing_published' })]);
+    const { service } = setup([record('known'), record('future', { action: 'order_refunded' })]);
 
     const { items } = await service.list(WORKSPACE_ID, { limit: 25 });
 

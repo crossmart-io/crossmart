@@ -26,4 +26,18 @@ export enum ActivityAction {
   /** By the merchant, or by the channel when the app was uninstalled. */
   ChannelDisconnected = 'channel_disconnected',
   ChannelConnectFailed = 'channel_connect_failed',
+  /** A product was published to a channel for the first time. */
+  ListingPublished = 'listing_published',
+  /** A listing was updated with the product's current content. */
+  ListingUpdated = 'listing_updated',
+  /** Publishing or updating a listing failed; the listing shows why. */
+  ListingSyncFailed = 'listing_sync_failed',
+  /** A listing was taken off its channel, as the product is no longer selected. */
+  ListingDelisted = 'listing_delisted',
+  /** The merchant changed what one listing shows differently from the product. */
+  ListingOverrideUpdated = 'listing_override_updated',
+  ChannelPricingUpdated = 'channel_pricing_updated',
+  ChannelSelectionUpdated = 'channel_selection_updated',
+  /** The merchant asked to publish the selected products and sync the rest. */
+  ChannelSyncRequested = 'channel_sync_requested',
 }
