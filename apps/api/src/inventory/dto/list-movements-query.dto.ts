@@ -6,12 +6,16 @@ import {
   MOVEMENT_PAGE_MAX_LIMIT,
   type MovementListQuery,
 } from '@crossmart/core';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ListMovementsQueryDto implements MovementListQuery {
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

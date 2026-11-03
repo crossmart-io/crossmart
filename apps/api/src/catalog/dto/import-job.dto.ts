@@ -22,12 +22,16 @@ import {
   IMPORT_JOB_STATUS_SCHEMA_NAME,
 } from '../catalog.constants.js';
 import { ImportIssueDto } from './catalog-import.dto.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ListImportJobsQueryDto implements ImportJobListQuery {
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,
@@ -175,10 +179,14 @@ export class ImportJobPageDto implements ImportJobPage {
   @ApiProperty({ type: String, nullable: true, description: 'Null on the last page' })
   nextCursor: string | null;
 
+  @ApiProperty({ description: 'How many match in all, for page numbers' })
+  total: number;
+
   static from(page: ImportJobPage): ImportJobPageDto {
     return Object.assign(new ImportJobPageDto(), {
       items: page.items.map((item) => ImportJobDto.from(item)),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   }
 }

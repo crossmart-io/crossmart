@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { type SortDirection, sortWithTiebreak } from '@crossmart/common';
+import {
+  type SortDirection,
+  sortWithTiebreak,
+  type CountedRecords,
+  type PageRequest,
+  toPageWindow,
+} from '@crossmart/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 import type { ChannelProductSort } from '../enums/channel-product-state.enum.js';
 import { PRODUCT_SUMMARY_INCLUDE } from '../../catalog/repositories/product.queries.js';
@@ -43,17 +49,20 @@ export class ChannelProductsRepository {
   }
 
   /** One page in title order, plus one extra row that says whether more exist. */
-  listPage(
+  async listPage(
     where: Prisma.ProductWhereInput,
-    page: { limit: number; cursor?: string; sort: ChannelProductSort; direction: SortDirection },
-  ): Promise<ChannelProductRecord[]> {
-    return this.prisma.product.findMany({
-      where,
-      include: CHANNEL_PRODUCT_INCLUDE,
-      orderBy: sortWithTiebreak(page.sort, page.direction),
-      take: page.limit + 1,
-      ...(page.cursor ? { cursor: { id: page.cursor }, skip: 1 } : {}),
-    });
+    page: PageRequest & { sort: ChannelProductSort; direction: SortDirection },
+  ): Promise<CountedRecords<ChannelProductRecord>> {
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: CHANNEL_PRODUCT_INCLUDE,
+        orderBy: sortWithTiebreak(page.sort, page.direction),
+        ...toPageWindow(page),
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return { records, total };
   }
 
   /** Which of `productIds` match `where`, in one query for a whole page. */

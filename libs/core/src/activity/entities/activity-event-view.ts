@@ -34,6 +34,8 @@ export interface ActivityPage {
   items: ActivityEventView[];
   /** Pass as `cursor` to get older events; null on the last page. */
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 /** Newest first. Absent filters are not applied. */
@@ -46,5 +48,7 @@ export interface ActivityQuery {
   actorUserId?: string;
   actorApiKeyId?: string;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }

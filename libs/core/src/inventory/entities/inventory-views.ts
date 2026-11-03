@@ -25,6 +25,8 @@ export interface InventoryPage {
   items: InventoryRow[];
   /** Pass as `cursor` to get the next page; null on the last page. */
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface InventoryListQuery {
@@ -32,6 +34,8 @@ export interface InventoryListQuery {
   search?: string;
   stockLevel?: StockLevel;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }
 
@@ -53,9 +57,13 @@ export interface InventoryMovementView {
 export interface InventoryMovementPage {
   items: InventoryMovementView[];
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface MovementListQuery {
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }

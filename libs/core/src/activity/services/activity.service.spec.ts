@@ -33,7 +33,9 @@ function record(id: string, overrides: Partial<ActivityEventRecord> = {}): Activ
 
 function setup(records: ActivityEventRecord[]) {
   const repository = {
-    listPage: vi.fn<ActivityEventRepository['listPage']>().mockResolvedValue(records),
+    listPage: vi
+      .fn<ActivityEventRepository['listPage']>()
+      .mockResolvedValue({ records, total: records.length }),
   };
   const service = new ActivityService(repository as unknown as ActivityEventRepository);
   return { service, repository };

@@ -72,7 +72,9 @@ const DRAFT: ProductDraft = {
 
 function createService(records: ProductSummaryRecord[] = []) {
   const repository = {
-    listPage: vi.fn<ProductRepository['listPage']>(() => Promise.resolve(records)),
+    listPage: vi.fn<ProductRepository['listPage']>(() =>
+      Promise.resolve({ records, total: records.length }),
+    ),
     findDetail: vi.fn<ProductRepository['findDetail']>(() => Promise.resolve(null)),
     findExistingHandles: vi.fn<ProductRepository['findExistingHandles']>(() =>
       Promise.resolve(new Set<string>()),

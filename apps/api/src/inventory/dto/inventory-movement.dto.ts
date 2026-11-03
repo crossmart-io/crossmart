@@ -48,10 +48,14 @@ export class InventoryMovementPageDto implements InventoryMovementPage {
   @ApiProperty({ type: String, nullable: true, description: 'Null on the last page' })
   nextCursor: string | null;
 
+  @ApiProperty({ description: 'How many match in all, for page numbers' })
+  total: number;
+
   static from(page: InventoryMovementPage): InventoryMovementPageDto {
     return Object.assign(new InventoryMovementPageDto(), {
       items: page.items.map((item) => InventoryMovementDto.from(item)),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   }
 }

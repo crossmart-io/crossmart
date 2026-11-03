@@ -21,6 +21,8 @@ export interface ChannelProductPage {
   /** Products in each state, for the filter; they follow `search` but not `state`. */
   counts: ChannelProductCounts;
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface ChannelProductQuery {
@@ -30,5 +32,7 @@ export interface ChannelProductQuery {
   sort: ChannelProductSort;
   direction: SortDirection;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }

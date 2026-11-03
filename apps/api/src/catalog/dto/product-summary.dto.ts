@@ -90,10 +90,14 @@ export class ProductPageDto implements ProductPage {
   @ApiProperty({ type: String, nullable: true, description: 'Null on the last page' })
   nextCursor: string | null;
 
+  @ApiProperty({ description: 'How many match in all, for page numbers' })
+  total: number;
+
   static from(page: ProductPage): ProductPageDto {
     return Object.assign(new ProductPageDto(), {
       items: page.items.map((item) => ProductSummaryDto.from(item)),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   }
 }

@@ -12,6 +12,7 @@ import {
 } from '@crossmart/core';
 import { ListingSource, ListingStatus } from '@crossmart/database';
 import { LISTING_SOURCE_SCHEMA_NAME, LISTING_STATUS_SCHEMA_NAME } from '../listings.constants.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ListingSummaryDto implements ListingSummary {
   @ApiProperty({ format: 'uuid' })
@@ -70,10 +71,14 @@ export class ChannelListingPageDto implements ChannelListingPage {
   @ApiProperty({ type: String, nullable: true })
   nextCursor: string | null;
 
+  @ApiProperty({ description: 'How many match in all, for page numbers' })
+  total: number;
+
   static from(page: ChannelListingPage): ChannelListingPageDto {
     return Object.assign(new ChannelListingPageDto(), {
       items: page.items.map((row) => ChannelListingDto.fromRow(row)),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   }
 }
@@ -88,6 +93,9 @@ export class ListChannelListingsQueryDto implements ChannelListingQuery {
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

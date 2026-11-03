@@ -60,6 +60,8 @@ export interface ImportJobDetail extends ImportJobSummary {
 
 export interface ImportJobListQuery {
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }
 
@@ -67,6 +69,8 @@ export interface ImportJobPage {
   items: ImportJobSummary[];
   /** Pass as `cursor` to get the next page; null on the last page. */
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 /** What is known about an import before its file is read. */

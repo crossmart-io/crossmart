@@ -1,4 +1,4 @@
-import { sortWithTiebreak } from '@crossmart/common';
+import { sortWithTiebreak, type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService, ProductStatus } from '@crossmart/database';
 import { storeFilterWhere, toProductListWhere } from './product-list.filter.js';
@@ -44,20 +44,27 @@ const CREATED_PRODUCT_SELECT = {
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** One page in the query's order, plus one extra row that says whether more exist. */
-  listPage(workspaceId: string, query: ProductListQuery): Promise<ProductSummaryRecord[]> {
-    return this.prisma.product.findMany({
-      where: {
-        AND: [
-          toProductListWhere(workspaceId, query),
-          storeFilterWhere(query.storeFilter, query.storeId),
-        ],
-      },
-      include: PRODUCT_SUMMARY_INCLUDE,
-      orderBy: sortWithTiebreak(query.sort, query.direction),
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  /** One page in the query's order, plus one extra row that says whether more exist, and the total. */
+  async listPage(
+    workspaceId: string,
+    query: ProductListQuery,
+  ): Promise<CountedRecords<ProductSummaryRecord>> {
+    const where: Prisma.ProductWhereInput = {
+      AND: [
+        toProductListWhere(workspaceId, query),
+        storeFilterWhere(query.storeFilter, query.storeId),
+      ],
+    };
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: PRODUCT_SUMMARY_INCLUDE,
+        orderBy: sortWithTiebreak(query.sort, query.direction),
+        ...toPageWindow(query),
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return { records, total };
   }
 
   findDetail(workspaceId: string, productId: string): Promise<ProductDetailRecord | null> {

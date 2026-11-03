@@ -1,3 +1,4 @@
+import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { ListingSource, ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
@@ -241,18 +242,26 @@ export class ListingSyncRepository {
     return pairs.map((pair) => pair.productId);
   }
 
-  listPage(
+  async listPage(
     workspaceId: string,
     connectionId: string,
     query: ChannelListingQuery,
-  ): Promise<ListingRowRecord[]> {
-    return this.prisma.listing.findMany({
-      where: { workspaceId, connectionId, ...(query.status ? { status: query.status } : {}) },
-      include: LISTING_ROW_INCLUDE,
-      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  ): Promise<CountedRecords<ListingRowRecord>> {
+    const where: Prisma.ListingWhereInput = {
+      workspaceId,
+      connectionId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.listing.findMany({
+        where,
+        include: LISTING_ROW_INCLUDE,
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        ...toPageWindow(query),
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+    return { records, total };
   }
 
   private async findPairs(where: Prisma.ListingWhereInput): Promise<ListingPair[]> {

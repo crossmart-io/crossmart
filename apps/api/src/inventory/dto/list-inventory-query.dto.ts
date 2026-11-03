@@ -8,6 +8,7 @@ import {
   StockLevel,
 } from '@crossmart/core';
 import { INVENTORY_SEARCH_MAX_LENGTH, STOCK_LEVEL_SCHEMA_NAME } from '../inventory.constants.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ListInventoryQueryDto implements InventoryListQuery {
   @ApiPropertyOptional({ description: 'Matches the SKU or the product title' })
@@ -25,6 +26,9 @@ export class ListInventoryQueryDto implements InventoryListQuery {
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

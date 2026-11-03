@@ -1,3 +1,4 @@
+import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 import type { ActivityQuery } from '../entities/activity-event-view.js';
@@ -12,14 +13,21 @@ export class ActivityEventRepository {
   }
 
   /** One page, newest first, plus one extra row that tells the caller whether more exist. */
-  listPage(workspaceId: string, query: ActivityQuery): Promise<ActivityEventRecord[]> {
-    return this.prisma.activityEvent.findMany({
-      where: this.toFilter(workspaceId, query),
-      include: ACTIVITY_EVENT_INCLUDE,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  async listPage(
+    workspaceId: string,
+    query: ActivityQuery,
+  ): Promise<CountedRecords<ActivityEventRecord>> {
+    const where: Prisma.ActivityEventWhereInput = this.toFilter(workspaceId, query);
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.activityEvent.findMany({
+        where,
+        include: ACTIVITY_EVENT_INCLUDE,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        ...toPageWindow(query),
+      }),
+      this.prisma.activityEvent.count({ where }),
+    ]);
+    return { records, total };
   }
 
   private toFilter(workspaceId: string, query: ActivityQuery): Prisma.ActivityEventWhereInput {

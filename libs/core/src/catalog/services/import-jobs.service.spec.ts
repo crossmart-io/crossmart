@@ -90,12 +90,16 @@ describe('ImportJobsService', () => {
 
   it('pages newest first and says when more exist', async () => {
     const { service, repository } = setup();
-    repository.listPage.mockResolvedValue([record('job-3'), record('job-2'), record('job-1')]);
+    repository.listPage.mockResolvedValue({
+      records: [record('job-3'), record('job-2'), record('job-1')],
+      total: 3,
+    });
 
     const page = await service.list(WORKSPACE_ID, { limit: 2 });
 
     expect(page.items.map((item) => item.id)).toEqual(['job-3', 'job-2']);
     expect(page.nextCursor).toBe('job-2');
+    expect(page.total).toBe(3);
     expect(page.items[0]).toMatchObject({
       mode: CatalogImportMode.Inventory,
       counts: { updated: 3, failed: 1 },

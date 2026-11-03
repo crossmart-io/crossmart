@@ -14,6 +14,7 @@ import {
   ACTIVITY_OUTCOME_SCHEMA_NAME,
   ACTIVITY_SUBJECT_TYPE_SCHEMA_NAME,
 } from '../activity.constants.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 /** Filters shared by every activity list. */
 export class ActivityFilterQueryDto implements ActivityQuery {
@@ -35,6 +36,9 @@ export class ActivityFilterQueryDto implements ActivityQuery {
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

@@ -20,6 +20,7 @@ import {
   CHANNEL_PRODUCT_STATE_SCHEMA_NAME,
 } from '../listings.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ChannelProductCountsDto implements ChannelProductCounts {
   @ApiProperty({ description: 'Selected and on the channel' })
@@ -70,11 +71,15 @@ export class ChannelProductPageDto implements ChannelProductPage {
   @ApiProperty({ type: String, nullable: true })
   nextCursor: string | null;
 
+  @ApiProperty({ description: 'How many match in all, for page numbers' })
+  total: number;
+
   static from(page: ChannelProductPage): ChannelProductPageDto {
     return Object.assign(new ChannelProductPageDto(), {
       items: page.items.map((row) => ChannelProductDto.from(row)),
       counts: Object.assign(new ChannelProductCountsDto(), page.counts),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   }
 }
@@ -113,6 +118,9 @@ export class ListChannelProductsQueryDto implements ChannelProductQuery {
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

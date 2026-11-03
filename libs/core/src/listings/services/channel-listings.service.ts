@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { toCursorPage } from '@crossmart/common';
+import { toCountedPage } from '@crossmart/common';
 import type { ChannelListingPage, ChannelListingQuery } from '../entities/listing-views.js';
 import { toChannelListingRow } from '../mappers/listing.mapper.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
@@ -24,10 +24,10 @@ export class ChannelListingsService {
     query: ChannelListingQuery,
   ): Promise<ChannelListingPage> {
     await this.connections.require(workspaceId, connectionId);
-    const { rows, nextCursor } = toCursorPage(
+    const { rows, nextCursor, total } = toCountedPage(
       await this.listings.listPage(workspaceId, connectionId, query),
       query.limit,
     );
-    return { items: rows.map((row) => toChannelListingRow(row)), nextCursor };
+    return { items: rows.map((row) => toChannelListingRow(row)), nextCursor, total };
   }
 }

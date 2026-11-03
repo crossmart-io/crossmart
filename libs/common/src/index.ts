@@ -22,6 +22,7 @@ export * from './storage/storage-driver.enum.js';
 export * from './storage/storage.constants.js';
 export * from './storage/storage.module.js';
 export * from './pagination/cursor-page.js';
+export * from './pagination/page-window.js';
 export * from './pagination/sort.js';
 export * from './enums/enum-value.js';
 export * from './money/fixed-decimal.js';

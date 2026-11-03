@@ -1,5 +1,6 @@
+import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@crossmart/database';
+import { type Prisma, PrismaService } from '@crossmart/database';
 import type { MovementListQuery } from '../entities/inventory-views.js';
 import {
   MOVEMENT_INCLUDE,
@@ -12,17 +13,21 @@ export class InventoryMovementRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /** One page of an item's history, newest first, plus one extra row. */
-  listPage(
+  async listPage(
     workspaceId: string,
     inventoryItemId: string,
     query: MovementListQuery,
-  ): Promise<InventoryMovementRecord[]> {
-    return this.prisma.inventoryMovement.findMany({
-      where: { workspaceId, inventoryItemId },
-      include: MOVEMENT_INCLUDE,
-      orderBy: MOVEMENT_ORDER,
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  ): Promise<CountedRecords<InventoryMovementRecord>> {
+    const where: Prisma.InventoryMovementWhereInput = { workspaceId, inventoryItemId };
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.inventoryMovement.findMany({
+        where,
+        include: MOVEMENT_INCLUDE,
+        orderBy: MOVEMENT_ORDER,
+        ...toPageWindow(query),
+      }),
+      this.prisma.inventoryMovement.count({ where }),
+    ]);
+    return { records, total };
   }
 }

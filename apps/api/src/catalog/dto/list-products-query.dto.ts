@@ -32,6 +32,7 @@ import {
   PRODUCT_STORE_FILTER_SCHEMA_NAME,
 } from '../catalog.constants.js';
 import { SORT_DIRECTION_SCHEMA_NAME } from '../../common/api.constants.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 /** Store filters that are about one store, so they need its id. */
 const STORE_FILTERS_WITH_STORE: ReadonlySet<ProductStoreFilter | undefined> = new Set([
@@ -114,6 +115,9 @@ export class ListProductsQueryDto implements ProductListQuery {
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

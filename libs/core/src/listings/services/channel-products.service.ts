@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { toCursorPage } from '@crossmart/common';
+import { toCountedPage } from '@crossmart/common';
 import type { Prisma } from '@crossmart/database';
 import { toProductSummary } from '../../catalog/mappers/product-view.mapper.js';
 import { toProductListWhere } from '../../catalog/repositories/product-list.filter.js';
@@ -54,8 +54,8 @@ export class ChannelProductsService {
       this.count(scope, search),
       this.products.listPage({ AND: [where, search] }, query),
     ]);
-    const { rows, nextCursor } = toCursorPage(records, query.limit);
-    return { items: await this.toRows(scope, rows), counts, nextCursor };
+    const { rows, nextCursor, total } = toCountedPage(records, query.limit);
+    return { items: await this.toRows(scope, rows), counts, nextCursor, total };
   }
 
   private async count(

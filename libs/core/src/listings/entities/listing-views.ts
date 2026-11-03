@@ -26,11 +26,15 @@ export interface ChannelListingRow extends ListingSummary {
 export interface ChannelListingPage {
   items: ChannelListingRow[];
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface ChannelListingQuery {
   status?: ListingStatus;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }
 

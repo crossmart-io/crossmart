@@ -46,6 +46,8 @@ export interface ProductPage {
   items: ProductSummary[];
   /** Pass as `cursor` to get the next page; null on the last page. */
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface VariantView {
@@ -125,5 +127,7 @@ export interface ProductListQuery extends ProductFilters {
   sort: ProductSort;
   direction: SortDirection;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }

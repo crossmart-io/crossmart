@@ -99,10 +99,14 @@ export class ActivityPageDto implements ActivityPage {
   @ApiProperty({ type: String, nullable: true, description: 'Null on the last page' })
   nextCursor: string | null;
 
+  @ApiProperty({ description: 'How many match in all, for page numbers' })
+  total: number;
+
   static from(page: ActivityPage): ActivityPageDto {
     return Object.assign(new ActivityPageDto(), {
       items: page.items.map((item) => ActivityEventDto.from(item)),
       nextCursor: page.nextCursor,
+      total: page.total,
     });
   }
 }

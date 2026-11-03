@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { toCursorPage } from '@crossmart/common';
+import { toCountedPage } from '@crossmart/common';
 import { ImportIssueOutcome } from '@crossmart/database';
 import { toFailureReason } from '../../activity/rules/failure-reason.js';
 import type { ImportOutcome } from '../entities/catalog-import.js';
@@ -35,11 +35,11 @@ export class ImportJobsService {
   }
 
   async list(workspaceId: string, query: ImportJobListQuery): Promise<ImportJobPage> {
-    const { rows, nextCursor } = toCursorPage(
+    const { rows, nextCursor, total } = toCountedPage(
       await this.jobs.listPage(workspaceId, query),
       query.limit,
     );
-    return { items: rows.map((record) => toImportJobSummary(record)), nextCursor };
+    return { items: rows.map((record) => toImportJobSummary(record)), nextCursor, total };
   }
 
   async get(workspaceId: string, jobId: string): Promise<ImportJobDetail> {
