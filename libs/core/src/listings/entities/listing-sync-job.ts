@@ -17,6 +17,8 @@ export interface ListingSyncJob {
   productId: string;
   /** Set on a delist job for a product that was deleted from the catalog. */
   deleted?: DeletedProductListing;
+  /** Set on inventory jobs of the reconciliation: only items the channel shows wrongly are sent. */
+  reconcile?: boolean;
 }
 
 export interface SyncRequestResult {

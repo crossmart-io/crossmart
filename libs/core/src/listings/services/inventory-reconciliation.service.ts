@@ -8,9 +8,9 @@ import { ListingSyncRepository } from '../repositories/listing-sync.repository.j
 import { SyncJobQueue } from './sync-job.queue.js';
 
 /**
- * Inventory reconciliation (ADR 0007, every 15 minutes): re-sends the stock of every listing
- * of every connected account, which corrects drift whatever caused it. It writes Crossmart's
- * quantities without reading the channel's first; comparing them is a later refinement.
+ * Inventory reconciliation (ADR 0007, every 15 minutes): checks the stock of every listing of
+ * every connected account, which corrects drift whatever caused it. Each job reads what the
+ * channel shows and sends only the items that differ, where the connector can read stock.
  */
 @Injectable()
 export class InventoryReconciliationService {
@@ -33,6 +33,7 @@ export class InventoryReconciliationService {
         workspaceId,
         connectionId,
         productId,
+        reconcile: true,
       }));
       for (const batch of chunk(jobs, SELECTION_BATCH_SIZE)) {
         await this.queue.enqueue(batch);

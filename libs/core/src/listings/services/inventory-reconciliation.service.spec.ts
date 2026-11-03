@@ -41,5 +41,6 @@ describe('InventoryReconciliationService', () => {
       [SyncJobKind.Inventory, 'c1', 'p2'],
       [SyncJobKind.Inventory, 'c2', 'p3'],
     ]);
+    expect(queue.jobs.every((job) => job.reconcile)).toBe(true);
   });
 });

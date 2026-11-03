@@ -203,6 +203,13 @@ export class ShopifyConnector
     return this.store.inventory.setQuantities(session, updates);
   }
 
+  readQuantities(
+    session: ChannelSession,
+    externalInventoryIds: readonly string[],
+  ): Promise<Map<string, number>> {
+    return this.store.inventory.readQuantities(session, externalInventoryIds);
+  }
+
   private toSettings({ shop, location }: ShopData): ShopifySettings {
     return {
       channel: ChannelType.Shopify,

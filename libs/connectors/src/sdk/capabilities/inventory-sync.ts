@@ -21,4 +21,13 @@ export interface InventorySync {
     session: ChannelSession,
     updates: readonly InventoryQuantityUpdate[],
   ): Promise<InventoryUpdateFailure[]>;
+  /**
+   * The available quantity of each item at the connection's primary location, so a
+   * reconciliation sends only what drifted. Items the channel does not stock there are absent.
+   * Optional: connectors without it have every item re-sent.
+   */
+  readQuantities?(
+    session: ChannelSession,
+    externalInventoryIds: readonly string[],
+  ): Promise<Map<string, number>>;
 }

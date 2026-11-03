@@ -133,4 +133,28 @@ describe('Shopify inventory sync', () => {
     expect(failures).toHaveLength(2);
     expect(http.requests).toHaveLength(1);
   });
+
+  it('reads available quantities at the primary location, leaving out unstocked items', async () => {
+    const { connector, http } = createShopifyTestKit();
+    http
+      .expect(HttpMethod.Post, GRAPHQL_URL, fixtureResponse(FIXTURES, 'primary-location.json'))
+      .expect(HttpMethod.Post, GRAPHQL_URL, fixtureResponse(FIXTURES, 'inventory-levels.json'));
+
+    const quantities = await connector.readQuantities(session, [
+      'gid://shopify/InventoryItem/1',
+      'gid://shopify/InventoryItem/2',
+      'gid://shopify/InventoryItem/3',
+    ]);
+
+    expect([...quantities]).toEqual([['gid://shopify/InventoryItem/1', 7]]);
+    expect(JSON.parse(http.requests[1]?.body ?? '{}').variables).toEqual({
+      ids: [
+        'gid://shopify/InventoryItem/1',
+        'gid://shopify/InventoryItem/2',
+        'gid://shopify/InventoryItem/3',
+      ],
+      locationId: LOCATION,
+    });
+    http.assertDone();
+  });
 });

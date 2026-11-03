@@ -10,6 +10,10 @@ import {
   INVENTORY_SET_QUANTITIES_MUTATION,
   type InventorySetQuantityInput,
 } from '../graphql/inventory-set-quantities.mutation.js';
+import {
+  INVENTORY_LEVELS_QUERY,
+  type InventoryLevelsData,
+} from '../graphql/inventory-levels.query.js';
 import { ShopifyAdminClient } from '../graphql/shopify-admin.client.js';
 import type { ShopifyUserError } from '../graphql/shopify-user-error.js';
 import {
@@ -20,6 +24,16 @@ import {
 import { ShopifyLocations } from './shopify-locations.js';
 
 const NO_LOCATION = 'The store has no location to hold stock';
+
+/** The `available` quantity of each item stocked at the location. */
+function availableQuantities(nodes: InventoryLevelsData['nodes']): [string, number][] {
+  return nodes.flatMap((node) => {
+    const available = node?.inventoryLevel?.quantities.find(
+      ({ name }) => name === SHOPIFY_AVAILABLE_QUANTITY_NAME,
+    );
+    return node && available ? [[node.id, available.quantity] as [string, number]] : [];
+  });
+}
 /** `field` paths look like ["input", "quantities", "3", "inventoryItemId"]. */
 const QUANTITY_INDEX_POSITION = 2;
 
@@ -47,6 +61,25 @@ export class ShopifyInventorySync implements InventorySync {
       failures.push(...(await this.setBatch(session, batch)));
     }
     return failures;
+  }
+
+  /** Reads up to `maxBatchSize` items per call, at the primary location. */
+  async readQuantities(
+    session: ChannelSession,
+    externalInventoryIds: readonly string[],
+  ): Promise<Map<string, number>> {
+    const quantities = new Map<string, number>();
+    const locationId = await this.locations.primaryLocationId(session);
+    if (!locationId) return quantities;
+    for (let start = 0; start < externalInventoryIds.length; start += this.maxBatchSize) {
+      const ids = externalInventoryIds.slice(start, start + this.maxBatchSize);
+      const { nodes } = await this.admin.request(session, INVENTORY_LEVELS_QUERY, {
+        ids,
+        locationId,
+      });
+      for (const [id, quantity] of availableQuantities(nodes)) quantities.set(id, quantity);
+    }
+    return quantities;
   }
 
   private async setBatch(

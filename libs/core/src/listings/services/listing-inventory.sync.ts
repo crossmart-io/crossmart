@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { chunk } from '@crossmart/common';
 import {
   ChannelCapability,
+  type ChannelSession,
   type InventoryQuantityUpdate,
+  type InventorySync,
   supportsCapability,
 } from '@crossmart/connectors';
 import type { ListingSyncJob } from '../entities/listing-sync-job.js';
@@ -23,9 +25,27 @@ function toQuantityUpdates(listing: ListingStockRecord): InventoryQuantityUpdate
   });
 }
 
+/** The updates whose quantity the channel does not show already, when it can say. */
+async function driftedOnly(
+  connector: InventorySync,
+  session: ChannelSession,
+  updates: InventoryQuantityUpdate[],
+): Promise<InventoryQuantityUpdate[]> {
+  if (!connector.readQuantities) return updates;
+  const shown = await connector.readQuantities(
+    session,
+    updates.map(({ externalInventoryId }) => externalInventoryId),
+  );
+  return updates.filter(
+    ({ externalInventoryId, available }) =>
+      shown.get(externalInventoryId) !== Math.max(available, 0),
+  );
+}
+
 /**
  * Sets a listing's stock on its channel, in batches of the connector's `maxBatchSize`. Items
- * the channel rejects are reported on the listing; the rest are applied.
+ * the channel rejects are reported on the listing; the rest are applied. Reconciliation jobs
+ * send only what the channel shows wrongly.
  */
 @Injectable()
 export class ListingInventorySync {
@@ -53,8 +73,9 @@ export class ListingInventorySync {
     const { connector } = connection;
     try {
       const session = await this.connections.openSession(job.workspaceId, job.connectionId);
+      const pending = job.reconcile ? await driftedOnly(connector, session, updates) : updates;
       const failures = [];
-      for (const batch of chunk(updates, connector.maxBatchSize)) {
+      for (const batch of chunk(pending, connector.maxBatchSize)) {
         failures.push(...(await connector.setQuantities(session, batch)));
       }
       const [firstFailure] = failures;

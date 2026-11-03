@@ -65,7 +65,7 @@ function setup(held: ListingStockRecord[], maxBatchSize = 2) {
       new ListingSyncFailures(repository, activity),
     ),
   );
-  return { sync, setQuantities, listings };
+  return { sync, setQuantities, listings, connector: connector as unknown as InventorySync };
 }
 
 describe('ListingInventorySync', () => {
@@ -106,5 +106,29 @@ describe('ListingInventorySync', () => {
     await sync.run(syncJob(SyncJobKind.Inventory));
 
     expect(setQuantities).not.toHaveBeenCalled();
+  });
+
+  it('sends only what the channel shows wrongly when reconciling', async () => {
+    const { sync, setQuantities, connector } = setup([stockRecord(3)]);
+    connector.readQuantities = vi
+      .fn<NonNullable<InventorySync['readQuantities']>>()
+      .mockResolvedValue(
+        new Map([
+          ['item-0', 10],
+          ['item-2', 4],
+        ]),
+      );
+
+    await sync.run({ ...syncJob(SyncJobKind.Inventory), reconcile: true });
+    await sync.run(syncJob(SyncJobKind.Inventory));
+
+    expect(setQuantities.mock.calls.map(([, batch]) => batch)).toEqual([
+      [{ externalInventoryId: 'item-2', available: 10 }],
+      [
+        { externalInventoryId: 'item-0', available: 10 },
+        { externalInventoryId: 'item-2', available: 10 },
+      ],
+    ]);
+    expect(connector.readQuantities).toHaveBeenCalledTimes(1);
   });
 });
