@@ -7,3 +7,7 @@ export const MIN_AUTH_SECRET_LENGTH = 32;
 
 export const DEFAULT_STORAGE_LOCAL_DIR = 'storage';
 export const DEFAULT_MEDIA_PUBLIC_URL = 'http://localhost:3000/media';
+
+export const DEFAULT_WEB_APP_URL = 'http://localhost:5173';
+export const DEFAULT_MASTER_KEY_VERSION = 1;
+export const MIN_MASTER_KEY_VERSION = 1;

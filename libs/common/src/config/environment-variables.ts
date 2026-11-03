@@ -1,13 +1,26 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsInt, IsString, IsUrl, Max, Min, MinLength, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Max,
+  Min,
+  MinLength,
+  validateSync,
+} from 'class-validator';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { Environment } from './environment.enum.js';
 import {
   DEFAULT_API_PORT,
+  DEFAULT_MASTER_KEY_VERSION,
   DEFAULT_MEDIA_PUBLIC_URL,
+  DEFAULT_WEB_APP_URL,
   DEFAULT_STORAGE_LOCAL_DIR,
   MAX_PORT,
   MIN_AUTH_SECRET_LENGTH,
+  MIN_MASTER_KEY_VERSION,
   MIN_PORT,
 } from './config.constants.js';
 
@@ -53,6 +66,46 @@ export class EnvironmentVariables {
   /** Public base URL that uploaded files are served from. */
   @IsUrl({ require_tld: false })
   MEDIA_PUBLIC_URL: string = DEFAULT_MEDIA_PUBLIC_URL;
+
+  /**
+   * Public base URL of this API as channels reach it (OAuth callbacks, webhooks). Defaults to
+   * `BETTER_AUTH_URL`; set it to a tunnel URL to test channel callbacks locally.
+   */
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  API_PUBLIC_URL?: string;
+
+  /** Base URL of the web app, where channel connections send the merchant back to. */
+  @IsUrl({ require_tld: false })
+  WEB_APP_URL: string = DEFAULT_WEB_APP_URL;
+
+  /**
+   * Wraps the per-workspace keys that encrypt channel credentials. Generate with
+   * `openssl rand -base64 32`. Without it, channels cannot be connected.
+   */
+  @IsOptional()
+  @IsString()
+  CREDENTIALS_MASTER_KEY?: string;
+
+  /** Version of `CREDENTIALS_MASTER_KEY`. Increase it when rotating the key. */
+  @IsInt()
+  @Min(MIN_MASTER_KEY_VERSION)
+  CREDENTIALS_MASTER_KEY_VERSION: number = DEFAULT_MASTER_KEY_VERSION;
+
+  /** Previous master keys, still needed until data keys are rewrapped: `1:<key>,2:<key>`. */
+  @IsOptional()
+  @IsString()
+  CREDENTIALS_RETIRED_MASTER_KEYS?: string;
+
+  /** Client ID of the Crossmart Shopify app (Shopify Dev Dashboard). */
+  @IsOptional()
+  @IsString()
+  SHOPIFY_CLIENT_ID?: string;
+
+  /** Client secret of the Shopify app. Signs OAuth callbacks and webhooks. */
+  @IsOptional()
+  @IsString()
+  SHOPIFY_CLIENT_SECRET?: string;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {
