@@ -6,6 +6,7 @@ import {
   CHANNEL_CONNECTION_STATUS_SCHEMA_NAME,
   CHANNEL_TYPE_SCHEMA_NAME,
 } from '../channels.constants.js';
+import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
 
 /** A channel connection. Credentials are never part of it. */
@@ -45,6 +46,13 @@ export class ChannelConnectionDto {
   })
   productSelection: ProductSelectionRuleDto | null;
 
+  @ApiProperty({
+    type: PricingRuleDto,
+    nullable: true,
+    description: 'How the connection prices variants; null sends catalog prices',
+  })
+  pricing: PricingRuleDto | null;
+
   @ApiProperty()
   connectedAt: Date;
 
@@ -62,11 +70,12 @@ export class ChannelConnectionDto {
 
   static from(view: ChannelConnectionView): ChannelConnectionDto {
     const { settings, ...fields } = view;
-    const { account, productSelection } = settings;
+    const { account, productSelection, pricing } = settings;
     return Object.assign(new ChannelConnectionDto(), {
       ...fields,
       shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
       productSelection: productSelection ? ProductSelectionRuleDto.from(productSelection) : null,
+      pricing: pricing ? PricingRuleDto.from(pricing) : null,
     });
   }
 }

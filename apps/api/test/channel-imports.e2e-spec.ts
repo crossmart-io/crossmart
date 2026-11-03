@@ -30,16 +30,14 @@ import {
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
-const env = vi.hoisted(() => {
-  const values = {
+vi.hoisted(() => {
+  Object.assign(process.env, {
     SHOPIFY_CLIENT_ID: 'e2e-client-id',
     SHOPIFY_CLIENT_SECRET: 'e2e-client-secret',
     CREDENTIALS_MASTER_KEY: Buffer.from(Array.from({ length: 32 }, (_, index) => index)).toString(
       'base64',
     ),
-  };
-  Object.assign(process.env, values);
-  return values;
+  });
 });
 
 const CARD_HOLDER_SKU = 'NF-LCH-01';
@@ -87,10 +85,7 @@ describe('Channel catalog imports (e2e)', () => {
     user: SignedUpUser,
   ): Promise<{ shop: string; connectionId: string }> {
     const shop = newShop();
-    const connectionId = await connectShopifyStore(app, http, user, {
-      shop,
-      clientSecret: env.SHOPIFY_CLIENT_SECRET,
-    });
+    const connectionId = await connectShopifyStore(app, http, user, shop);
     return { shop, connectionId };
   }
 
@@ -119,7 +114,7 @@ describe('Channel catalog imports (e2e)', () => {
     expect(job.body).toMatchObject({
       mode: CatalogImportMode.CreateOrLink,
       format: CatalogImportFormat.ShopifyApi,
-      fileName: 'Demo Store',
+      fileName: 'E2E Store',
       connectionId,
       totalCount: STORE_PRODUCTS,
       status: ImportJobStatus.COMPLETED,
@@ -161,7 +156,7 @@ describe('Channel catalog imports (e2e)', () => {
       .set('Cookie', owner.cookie);
     expect(activity.body.items[0]).toMatchObject({
       action: ActivityAction.ChannelCatalogImported,
-      summary: 'Imported 4 products from “Demo Store”',
+      summary: 'Imported 4 products from “E2E Store”',
     });
   });
 

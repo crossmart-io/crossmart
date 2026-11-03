@@ -1,6 +1,6 @@
 import { createHmac, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import type { INestApplication } from '@nestjs/common';
+import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import {
@@ -8,13 +8,27 @@ import {
   type FakeHttpTransport,
   HttpMethod,
   type HttpRequest,
+  type HttpResponse,
   jsonResponse,
 } from '@crossmart/connectors';
 import type { SignedUpUser } from './test-app.js';
 
+/** Fake app settings, set before the app module reads its configuration. */
+export const SHOPIFY_TEST_ENV = {
+  SHOPIFY_CLIENT_ID: 'e2e-client-id',
+  SHOPIFY_CLIENT_SECRET: 'e2e-client-secret',
+  API_PUBLIC_URL: 'http://localhost:3006',
+  WEB_APP_URL: 'http://localhost:5179',
+  CREDENTIALS_MASTER_KEY: Buffer.from(Array.from({ length: 32 }, (_, index) => index)).toString(
+    'base64',
+  ),
+};
+
 /** Fabricated tokens; tests check that they never reach a response. */
-export const SHOPIFY_ACCESS_TOKEN = 'shpat_e2e_import_access_token';
-export const SHOPIFY_REFRESH_TOKEN = 'shprt_e2e_import_refresh_token';
+export const SHOPIFY_ACCESS_TOKEN = 'shpat_e2e_access_token';
+export const SHOPIFY_REFRESH_TOKEN = 'shprt_e2e_refresh_token';
+
+export const TEST_LOCATION = 'gid://shopify/Location/1';
 
 /** The connector's recorded catalog fixtures (four products over two pages). */
 const CATALOG_FIXTURES = new URL(
@@ -23,80 +37,120 @@ const CATALOG_FIXTURES = new URL(
 );
 const FIXTURE_ENCODING = 'utf8';
 
-interface GraphqlRequestBody {
+export interface GraphqlCall {
   query: string;
-  variables: { after?: string | null };
+  variables: Record<string, unknown>;
 }
 
 export function newShop(): string {
   return `e2e-${randomUUID().slice(0, 8)}.myshopify.com`;
 }
 
-function graphqlUrl(shop: string): string {
+export function graphqlUrl(shop: string): string {
   return `https://${shop}/admin/api/2026-10/graphql.json`;
+}
+
+export function graphqlCall(httpRequest: HttpRequest): GraphqlCall {
+  return JSON.parse(httpRequest.body ?? '{}') as GraphqlCall;
 }
 
 function fixture(name: string): string {
   return readFileSync(new URL(name, CATALOG_FIXTURES), FIXTURE_ENCODING);
 }
 
-function signQuery(query: Record<string, string>, secret: string): Record<string, string> {
+function signQuery(query: Record<string, string>): Record<string, string> {
   const message = Object.keys(query)
     .sort()
     .map((key) => `${key}=${query[key]}`)
     .join('&');
-  return { ...query, hmac: createHmac('sha256', secret).update(message).digest('hex') };
+  const hmac = createHmac('sha256', SHOPIFY_TEST_ENV.SHOPIFY_CLIENT_SECRET).update(message);
+  return { ...query, hmac: hmac.digest('hex') };
 }
 
-/** Connects a Shopify store through the real OAuth flow, against a fake Shopify. */
+/** Answers every GraphQL call to the store with `respond`, for as many calls as `times`. */
+export function answerGraphql(
+  http: FakeHttpTransport,
+  shop: string,
+  respond: (call: GraphqlCall) => unknown,
+  times = 1,
+): void {
+  for (let call = 0; call < times; call += 1) {
+    http.expect(HttpMethod.Post, graphqlUrl(shop), (httpRequest): HttpResponse =>
+      jsonResponse(respond(graphqlCall(httpRequest))),
+    );
+  }
+}
+
+function expectTokenExchange(http: FakeHttpTransport, shop: string): void {
+  http.expect(
+    HttpMethod.Post,
+    `https://${shop}/admin/oauth/access_token`,
+    jsonResponse({
+      access_token: SHOPIFY_ACCESS_TOKEN,
+      refresh_token: SHOPIFY_REFRESH_TOKEN,
+      expires_in: 3600,
+      refresh_token_expires_in: 7_776_000,
+      scope: 'write_products,write_inventory,read_locations',
+    }),
+  );
+}
+
+function expectShopDetails(http: FakeHttpTransport, shop: string): void {
+  answerGraphql(http, shop, () => ({
+    data: {
+      shop: {
+        name: 'E2E Store',
+        myshopifyDomain: shop,
+        currencyCode: 'USD',
+        ianaTimezone: null,
+        primaryDomain: null,
+      },
+      location: { id: TEST_LOCATION, name: 'Shop location' },
+    },
+  }));
+}
+
+/** Connects a fake store to the user's workspace through the real OAuth flow; returns its id. */
 export async function connectShopifyStore(
   app: INestApplication<App>,
   http: FakeHttpTransport,
   user: SignedUpUser,
-  options: { shop: string; clientSecret: string },
+  shop = newShop(),
 ): Promise<string> {
-  const { shop, clientSecret } = options;
-  const started = await request(app.getHttpServer())
+  const server = app.getHttpServer();
+  const started = await request(server)
     .post(`/api/v1/workspaces/${user.workspaceId}/channel-connections/authorizations`)
     .set('Cookie', user.cookie)
     .send({ channel: ChannelType.Shopify, accountHandle: shop });
   const state = new URL(started.body.authorizationUrl).searchParams.get('state') ?? '';
-  http
-    .expect(
-      HttpMethod.Post,
-      `https://${shop}/admin/oauth/access_token`,
-      jsonResponse({
-        access_token: SHOPIFY_ACCESS_TOKEN,
-        refresh_token: SHOPIFY_REFRESH_TOKEN,
-        expires_in: 3600,
-        refresh_token_expires_in: 7_776_000,
-        scope: 'write_products,write_inventory,read_locations',
-      }),
-    )
-    .expect(HttpMethod.Post, graphqlUrl(shop), jsonResponse(JSON.parse(fixture('shop.json'))));
-  await request(app.getHttpServer())
+  expectTokenExchange(http, shop);
+  expectShopDetails(http, shop);
+  await request(server)
     .get('/api/v1/channels/shopify/oauth/callback')
-    .query(signQuery({ code: 'code', shop, state, timestamp: '1762164000' }, clientSecret))
+    .query(signQuery({ code: 'code', shop, state, timestamp: '1762164000' }))
     .set('Cookie', user.cookie);
-  const list = await request(app.getHttpServer())
+  const list = await request(server)
     .get(`/api/v1/workspaces/${user.workspaceId}/channel-connections`)
     .set('Cookie', user.cookie);
-  return list.body.find(
-    (connection: { externalAccountId: string }) => connection.externalAccountId === shop,
-  ).id;
+  expect(list.status).toBe(HttpStatus.OK);
+  const connection = (list.body as { id: string; externalAccountId: string }[]).find(
+    (entry) => entry.externalAccountId === shop,
+  );
+  if (!connection) throw new Error(`The store ${shop} was not connected`);
+  return connection.id;
 }
 
-/** Answers one GraphQL call by the operation it runs, from the recorded fixtures. */
-function catalogResponder(request: HttpRequest) {
-  const body = JSON.parse(request.body ?? '{}') as GraphqlRequestBody;
-  if (body.query.includes('query PrimaryLocation')) {
+/** Answers one catalog read call by the operation it runs, from the recorded fixtures. */
+function catalogResponder(httpRequest: HttpRequest): HttpResponse {
+  const call = graphqlCall(httpRequest);
+  if (call.query.includes('query PrimaryLocation')) {
     return jsonResponse(fixture('primary-location.json'));
   }
-  if (body.query.includes('query ProductVariants')) {
+  if (call.query.includes('query ProductVariants')) {
     return jsonResponse(fixture('product-variants.json'));
   }
   return jsonResponse(
-    fixture(body.variables.after ? 'catalog-products-page-2.json' : 'catalog-products-page-1.json'),
+    fixture(call.variables.after ? 'catalog-products-page-2.json' : 'catalog-products-page-1.json'),
   );
 }
 

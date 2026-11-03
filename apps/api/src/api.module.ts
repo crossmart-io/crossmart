@@ -7,6 +7,7 @@ import { CatalogApiModule } from './catalog/catalog.module.js';
 import { ChannelsApiModule } from './channels/channels.module.js';
 import { HealthModule } from './health/health.module.js';
 import { InventoryApiModule } from './inventory/inventory.module.js';
+import { ListingsApiModule } from './listings/listings.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
 @Module({
@@ -15,6 +16,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     DatabaseModule,
     QueuesModule,
     StorageModule,
+    QueuesModule,
     AuthModule,
     HealthModule,
     WorkspacesModule,
@@ -22,6 +24,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     ActivityApiModule,
     InventoryApiModule,
     ChannelsApiModule,
+    ListingsApiModule,
   ],
 })
 export class ApiModule {}
