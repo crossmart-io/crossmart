@@ -46,7 +46,16 @@ export class ImportJobCountsDto implements ImportJobCounts {
   @ApiProperty()
   created: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Channel products linked to catalog products they matched; zero for file imports',
+  })
+  linked: number;
+
+  @ApiProperty({
+    description:
+      'Products replaced by an update import, variants whose stock an inventory import set, or ' +
+      'products a channel import found already linked',
+  })
   updated: number;
 
   @ApiProperty()
@@ -88,8 +97,23 @@ export class ImportJobDto implements ImportJobSummary {
   @ApiProperty({ enum: CatalogImportFormat, enumName: CATALOG_IMPORT_FORMAT_SCHEMA_NAME })
   format: CatalogImportFormat;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'The file name, or the channel account a channel import read' })
   fileName: string;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'The channel connection a channel import reads; null for file imports',
+  })
+  connectionId: string | null;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Records the source holds, when it reports them, to show progress',
+  })
+  totalCount: number | null;
 
   @ApiProperty({ enum: ImportJobStatus, enumName: IMPORT_JOB_STATUS_SCHEMA_NAME })
   status: ImportJobStatus;

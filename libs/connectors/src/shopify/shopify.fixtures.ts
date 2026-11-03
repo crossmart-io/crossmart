@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { RecordingSleeper } from '../sdk/time/sleeper.js';
 import { FakeHttpTransport } from '../sdk/testing/fake-http-transport.js';
+import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
 import { ShopifyConnector } from './shopify.connector.js';
@@ -33,7 +34,12 @@ export function createShopifyTestKit(
   const signatures = new ShopifySignatures(app);
   const oauth = new ShopifyOAuthClient(app, http, signatures);
   const admin = new ShopifyAdminClient(http, sleeper);
-  const connector = new ShopifyConnector(oauth, admin, new ShopifyWebhookParser(signatures));
+  const connector = new ShopifyConnector(
+    oauth,
+    admin,
+    new ShopifyWebhookParser(signatures),
+    new ShopifyCatalogReader(admin),
+  );
   return { http, sleeper, oauth, admin, connector };
 }
 

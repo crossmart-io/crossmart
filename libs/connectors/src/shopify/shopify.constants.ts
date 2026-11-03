@@ -75,3 +75,23 @@ export const SHOPIFY_MAX_ATTEMPTS = 5;
 export const SHOPIFY_BACKOFF_BASE_MS = 500;
 export const SHOPIFY_BACKOFF_MAX_MS = 10_000;
 export const MILLISECONDS_PER_SECOND = 1000;
+
+/**
+ * Catalog import page sizes. A query's requested cost is roughly products × (variants × 8 +
+ * media × 2 + 6), and Shopify refuses queries over 1,000 points. 8 products with 10 variants
+ * and 10 images ask for about 850 points, while typical products (one to three variants)
+ * cost far less once Shopify refunds the difference. Products with more variants get
+ * follow-up pages of `SHOPIFY_VARIANT_PAGE_SIZE`.
+ */
+export const SHOPIFY_CATALOG_PAGE_SIZE = 8;
+export const SHOPIFY_CATALOG_FIRST_VARIANTS = 10;
+export const SHOPIFY_VARIANT_PAGE_SIZE = 100;
+/** Images read per product; Crossmart keeps them in Shopify's order. */
+export const SHOPIFY_CATALOG_MEDIA_PER_PRODUCT = 10;
+
+/** The option Shopify gives products without options: "Title" with "Default Title". */
+export const SHOPIFY_DEFAULT_OPTION_NAME = 'Title';
+
+export const GRAMS_PER_KILOGRAM = 1000;
+export const GRAMS_PER_OUNCE = 28.349523125;
+export const GRAMS_PER_POUND = 453.59237;

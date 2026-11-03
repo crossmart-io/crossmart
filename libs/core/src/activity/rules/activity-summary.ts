@@ -79,6 +79,16 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     describe: (entry) =>
       withDetail(`Set stock of ${countOf(VARIANT_NOUN, entry)}${fromFile(entry)}`, entry),
   },
+  [ActivityAction.ChannelCatalogImported]: {
+    operation: 'Channel import',
+    describe: (entry) =>
+      withDetail(
+        entry.itemCount
+          ? `Imported ${countOfProducts(entry)}${fromFile(entry)}`
+          : `Read the catalog${fromFile(entry)}`,
+        entry,
+      ),
+  },
   [ActivityAction.ProductViewCreated]: {
     operation: 'Saving a view',
     describe: (entry) => `Saved view${named(entry)}`,

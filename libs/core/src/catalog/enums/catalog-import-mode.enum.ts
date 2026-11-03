@@ -6,4 +6,9 @@ export enum CatalogImportMode {
   Update = 'update',
   /** Sets the available stock of tracked variants, matched by SKU. */
   Inventory = 'inventory',
+  /**
+   * Reads a channel's catalog: products already linked to it are refreshed, products that
+   * match the catalog by handle or SKU are linked to it, and the rest are created.
+   */
+  CreateOrLink = 'create_or_link',
 }

@@ -107,6 +107,14 @@ export class ChannelConnectionRepository {
     });
   }
 
+  /** Records that the channel's catalog was last read into Crossmart at `syncedAt`. */
+  async markSynced(workspaceId: string, connectionId: string, syncedAt: Date): Promise<void> {
+    await this.prisma.channelConnection.updateMany({
+      where: { id: connectionId, workspaceId },
+      data: { lastSyncedAt: syncedAt },
+    });
+  }
+
   /** Disconnects one connection and wipes its credentials. */
   async markDisconnected(connectionId: string, now: Date): Promise<ChannelConnectionRecord> {
     return this.prisma.channelConnection.update({

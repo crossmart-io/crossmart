@@ -3,6 +3,7 @@ import {
   type Listing,
   type ListingStatus,
   type ListingVariant,
+  type Prisma,
   PrismaService,
 } from '@crossmart/database';
 
@@ -49,8 +50,51 @@ export class ListingRepository {
     });
   }
 
+  /** The connection's listings with these external ids, in one query. */
+  findManyByExternalIds(
+    connectionId: string,
+    externalIds: string[],
+  ): Promise<ListingWithVariants[]> {
+    return this.prisma.listing.findMany({
+      where: { connectionId, externalId: { in: externalIds } },
+      include: { variants: true },
+    });
+  }
+
+  /** Which of these products already have a listing on the connection, with its external id. */
+  async findExternalIdsByProduct(
+    connectionId: string,
+    productIds: string[],
+  ): Promise<Map<string, string | null>> {
+    const rows = await this.prisma.listing.findMany({
+      where: { connectionId, productId: { in: productIds } },
+      select: { productId: true, externalId: true },
+    });
+    return new Map(rows.map((row) => [row.productId, row.externalId]));
+  }
+
+  /** Products of the connection's listings synced at or after `since`, such as by an import. */
+  async findProductIdsSyncedSince(connectionId: string, since: Date): Promise<string[]> {
+    const rows = await this.prisma.listing.findMany({
+      where: { connectionId, lastSyncedAt: { gte: since } },
+      select: { productId: true },
+      distinct: ['productId'],
+    });
+    return rows.map((row) => row.productId);
+  }
+
   /** Creates or updates the listing with this external id and replaces its variant mappings. */
   upsertByExternalId(record: ListingRecord): Promise<ListingWithVariants> {
+    return this.toUpsert(record);
+  }
+
+  /** Upserts many listings in one transaction: all of them or none. */
+  async upsertManyByExternalId(records: ListingRecord[]): Promise<void> {
+    if (records.length === 0) return;
+    await this.prisma.$transaction(records.map((record) => this.toUpsert(record)));
+  }
+
+  private toUpsert(record: ListingRecord): Prisma.PrismaPromise<ListingWithVariants> {
     const { variants, syncedAt, ...listing } = record;
     const fields = { ...listing, lastSyncedAt: syncedAt, lastError: null };
     const variantRows = variants.map((variant) => ({

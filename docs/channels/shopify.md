@@ -18,6 +18,33 @@ merchant back to the Channels page.
 
 `API_PUBLIC_URL` defaults to `BETTER_AUTH_URL`.
 
+## Catalog import
+
+**Import products from Shopify** on the Channels page (or
+`POST /api/v1/workspaces/{workspaceId}/channel-connections/{connectionId}/imports`, which needs
+`catalog:edit`) queues an import on the lowest-priority `import` queue. The worker reads the
+store with the `CatalogProducts` query, 8 products per page in id order, each with its first 10
+variants and 10 images; products with more variants get `ProductVariants` pages of 100. Stock
+is read at the store's primary location. Cursor pages were chosen over a bulk operation so each
+page is written before the next is read and an import resumes from its stored cursor.
+
+For each Shopify product:
+
+| Case                                                      | What Crossmart does                                                                                                                                                             |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Already linked to this store (a listing with its GID)     | Refreshes the listing and its variant ids. Product content and stock stay as they are in Crossmart.                                                                             |
+| A catalog product has the same handle, or one of its SKUs | Links it: a listing maps each Shopify variant to the catalog variant with the same SKU or option values. Content and stock stay.                                                |
+| Nothing matches                                           | Creates the product (active, or a draft when it is not active on Shopify) and sets its stock through the inventory ledger (`IMPORTED`, credited to whoever started the import). |
+
+Every listing stores the Shopify product, variant and inventory item GIDs, so publishing and
+stock sync can update them later. Images keep their Shopify CDN URLs, as CSV imports do.
+Variants that match nothing, catalog products already linked to another product of the store,
+and products that break the catalog's rules are listed on the import's history entry.
+
+Starting an import while one of the same store runs returns the running one. Each page is
+recorded with the cursor after it, so a retried import continues where it stopped, and a
+repeated import is safe: it only refreshes the listings.
+
 ## App settings (Shopify Dev Dashboard)
 
 Create an app in the [Dev Dashboard](https://dev.shopify.com/dashboard), then put its client ID

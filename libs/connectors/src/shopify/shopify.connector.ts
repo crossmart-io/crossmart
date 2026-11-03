@@ -11,6 +11,8 @@ import type {
   OAuthAuthorizeRequest,
   OAuthCallback,
 } from '../sdk/auth/oauth-authorization.js';
+import type { CatalogSource } from '../sdk/capabilities/catalog-source.js';
+import type { ChannelPage, ExternalProduct } from '../sdk/capabilities/catalog.types.js';
 import type {
   ChannelWebhookEvent,
   IncomingWebhook,
@@ -19,6 +21,7 @@ import type {
 import { ChannelError } from '../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
+import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { APP_UNINSTALL_MUTATION } from './graphql/app-uninstall.mutation.js';
 import { SHOP_QUERY, type ShopData } from './graphql/shop.query.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
@@ -41,16 +44,17 @@ function shopifyError(code: ChannelErrorCode, message: string): ChannelError {
 }
 
 /**
- * The Shopify connector: OAuth install, store details and webhooks. Catalog import and
- * listing publishing add their capabilities here as they are built.
+ * The Shopify connector: OAuth install, store details, webhooks and catalog import. Listing
+ * publishing adds its capabilities here as it is built.
  */
 @Injectable()
-export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver {
+export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, CatalogSource {
   readonly channel = ChannelType.Shopify;
   readonly displayName = SHOPIFY_DISPLAY_NAME;
   readonly authStrategy = ChannelAuthStrategy.OAuthApp;
   readonly capabilities: ReadonlySet<ChannelCapability> = new Set([
     ChannelCapability.ReceiveWebhooks,
+    ChannelCapability.ImportCatalog,
   ]);
   readonly requiredScopes = SHOPIFY_REQUIRED_SCOPES;
   readonly rateLimits: readonly RateLimitBucket[] = [
@@ -66,6 +70,7 @@ export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver {
     private readonly oauth: ShopifyOAuthClient,
     private readonly admin: ShopifyAdminClient,
     private readonly webhooks: ShopifyWebhookParser,
+    private readonly catalog: ShopifyCatalogReader,
   ) {}
 
   isConfigured(): boolean {
@@ -140,6 +145,13 @@ export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver {
 
   verifyWebhook(webhook: IncomingWebhook): ChannelWebhookEvent | null {
     return this.webhooks.parse(webhook);
+  }
+
+  fetchProducts(
+    session: ChannelSession,
+    cursor: string | null,
+  ): Promise<ChannelPage<ExternalProduct>> {
+    return this.catalog.fetchProducts(session, cursor);
   }
 
   private toSettings({ shop, location }: ShopData): ShopifySettings {

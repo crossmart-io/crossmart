@@ -16,11 +16,14 @@ export interface ImportJobActor {
 }
 
 /**
- * Records per outcome. A record is a product for create and update imports, and a variant's
- * stock row for inventory imports.
+ * Records per outcome. A record is a product for create, update and channel imports, and a
+ * variant's stock row for inventory imports.
  */
 export interface ImportJobCounts {
   created: number;
+  /** Channel products linked to the catalog products they matched; zero for file imports. */
+  linked: number;
+  /** For channel imports: products already linked, whose listing was refreshed. */
   updated: number;
   skipped: number;
   failed: number;
@@ -31,7 +34,12 @@ export interface ImportJobSummary {
   id: string;
   mode: CatalogImportMode;
   format: CatalogImportFormat;
+  /** The file's name, or the channel account's name for a channel import. */
   fileName: string;
+  /** The channel connection a channel import reads; null for file imports. */
+  connectionId: string | null;
+  /** Records the source holds, when known, for progress; null for file imports. */
+  totalCount: number | null;
   status: ImportJobStatus;
   counts: ImportJobCounts;
   /** Why the whole file was rejected; null unless the job failed. */
@@ -67,4 +75,6 @@ export interface NewImportJob {
   format: CatalogImportFormat;
   fileName: string;
   actor: Actor;
+  /** Set for channel imports. */
+  connectionId?: string;
 }

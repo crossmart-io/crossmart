@@ -18,4 +18,6 @@ export enum ImportIssueCode {
    * option values a new variant needs; it was not applied.
    */
   UnmatchedVariant = 'unmatched_variant',
+  /** The matching catalog product is already linked to another product of the same channel account. */
+  AlreadyLinked = 'already_linked',
 }

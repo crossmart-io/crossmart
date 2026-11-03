@@ -14,6 +14,8 @@ export enum ActivityAction {
   ProductsUpdatedByImport = 'products_updated_by_import',
   /** An inventory import: stock levels set from a file. */
   StockImported = 'stock_imported',
+  /** A channel import: products created or linked from a connected store's catalog. */
+  ChannelCatalogImported = 'channel_catalog_imported',
   ProductViewCreated = 'product_view_created',
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',

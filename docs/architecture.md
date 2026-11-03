@@ -140,6 +140,8 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 4. The inventory policy (buffer, low-stock lock to the primary channel, allocation) computes the quantity per channel.
 5. If `available < 0`, an `OversellIncident` and a resolution `Suggestion` are created.
 
+**Channel catalog import:** the API records an `ImportJob` (format `shopify_api`, mode `create_or_link`) and queues it on `import`. The worker reads the catalog through the connector's `CatalogSource` page by page, links or creates products, writes listings with their variant ids, sets new stock through the ledger, and stores the cursor with each page's counts, so retries resume. See [channels/shopify.md](channels/shopify.md#catalog-import).
+
 **Reconciliation:** inventory every 15 minutes and everything else daily. The job compares each channel's state to Crossmart and corrects drift, logging what it changed.
 
 **AI checkout channels (ACP):** a reservation with a TTL is made before payment, then confirmed or released.

@@ -399,34 +399,46 @@ enum ImportIssueOutcome {
   @@map("import_issue_outcome")
 }
 
-/// One uploaded file and what it did to the catalog: the workspace's import history.
+/// One import and what it did to the catalog, from an uploaded file or a channel's catalog:
+/// the workspace's import history.
 model ImportJob {
-  id           String           @id @default(uuid()) @db.Uuid
-  workspaceId  String           @map("workspace_id") @db.Uuid
-  workspace    Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id           String             @id @default(uuid()) @db.Uuid
+  workspaceId  String             @map("workspace_id") @db.Uuid
+  workspace    Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   /// The signed-in user who sent the file; null for API keys and deleted users.
-  userId       String?          @map("user_id") @db.Uuid
-  user         User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId       String?            @map("user_id") @db.Uuid
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   /// The API key that sent the file, if one did.
-  apiKeyId     String?          @map("api_key_id") @db.Uuid
-  apiKey       ApiKey?          @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  apiKeyId     String?            @map("api_key_id") @db.Uuid
+  apiKey       ApiKey?            @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
   /// A `CatalogImportMode` value; validated by the API, kept as text so new modes need no migration.
   mode         String
   /// A `CatalogImportFormat` value, kept as text for the same reason.
   format       String
-  fileName     String           @map("file_name")
-  status       ImportJobStatus  @default(PROCESSING)
-  createdCount Int              @default(0) @map("created_count")
-  updatedCount Int              @default(0) @map("updated_count")
-  skippedCount Int              @default(0) @map("skipped_count")
-  failedCount  Int              @default(0) @map("failed_count")
+  /// The uploaded file's name, or the name of the channel account a channel import read.
+  fileName     String             @map("file_name")
+  /// The channel account a channel import reads; null for file imports and deleted connections.
+  connectionId String?            @map("connection_id") @db.Uuid
+  connection   ChannelConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  /// Where a channel import resumes: the channel's cursor after the last page it wrote.
+  cursor       String?
+  /// How many records the source holds, when it says, so progress can be shown.
+  totalCount   Int?               @map("total_count")
+  status       ImportJobStatus    @default(PROCESSING)
+  createdCount Int                @default(0) @map("created_count")
+  /// Channel products matched to catalog products (by handle or SKU) and linked to them.
+  linkedCount  Int                @default(0) @map("linked_count")
+  updatedCount Int                @default(0) @map("updated_count")
+  skippedCount Int                @default(0) @map("skipped_count")
+  failedCount  Int                @default(0) @map("failed_count")
   /// Why the whole file was rejected, when `status` is FAILED.
-  errorMessage String?          @map("error_message")
+  errorMessage String?            @map("error_message")
   issues       ImportJobIssue[]
-  createdAt    DateTime         @default(now()) @map("created_at")
-  finishedAt   DateTime?        @map("finished_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  finishedAt   DateTime?          @map("finished_at")
 
   @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([connectionId, status])
   @@map("import_jobs")
 }
 
@@ -504,6 +516,7 @@ model ChannelConnection {
   disconnectedAt       DateTime?               @map("disconnected_at")
   lastSyncedAt         DateTime?               @map("last_synced_at")
   listings             Listing[]
+  importJobs           ImportJob[]
   createdAt            DateTime                @default(now()) @map("created_at")
   updatedAt            DateTime                @updatedAt @map("updated_at")
 

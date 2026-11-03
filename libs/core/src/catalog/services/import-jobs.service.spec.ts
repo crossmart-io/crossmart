@@ -23,8 +23,12 @@ function record(id: string, overrides: Partial<ImportJobDetailRecord> = {}): Imp
     mode: CatalogImportMode.Inventory,
     format: CatalogImportFormat.InventoryCsv,
     fileName: 'stock.csv',
+    connectionId: null,
+    cursor: null,
+    totalCount: null,
     status: ImportJobStatus.COMPLETED,
     createdCount: 0,
+    linkedCount: 0,
     updatedCount: 3,
     skippedCount: 0,
     failedCount: 1,
@@ -64,7 +68,7 @@ describe('ImportJobsService', () => {
     });
 
     const [, , counts, issues] = repository.complete.mock.calls[0] ?? [];
-    expect(counts).toEqual({ created: 0, updated: 3, skipped: 1, failed: 2 });
+    expect(counts).toEqual({ created: 0, linked: 0, updated: 3, skipped: 1, failed: 2 });
     expect(issues?.map(({ outcome, issue: { row } }) => [outcome, row])).toEqual([
       [ImportIssueOutcome.FAILED, 2],
       [ImportIssueOutcome.SKIPPED, 4],

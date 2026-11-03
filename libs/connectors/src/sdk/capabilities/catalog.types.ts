@@ -8,8 +8,18 @@ export interface ExternalVariant {
   optionValues: string[];
   price: string;
   compareAtPrice: string | null;
+  /** Whether the channel tracks this variant's stock. */
+  tracked: boolean;
   /** Units available at the connection's primary location, when stock is tracked. */
   available: number | null;
+  /** Shipping weight in grams, when the channel has one. */
+  weightGrams: number | null;
+  requiresShipping: boolean;
+  taxable: boolean;
+  /** Whether the channel keeps selling the variant once it is out of stock. */
+  continueSellingWhenOutOfStock: boolean;
+  /** What one unit costs the merchant, as a decimal string in the account's currency. */
+  unitCost: string | null;
 }
 
 export interface ExternalImage {
@@ -38,4 +48,6 @@ export interface ExternalProduct {
 export interface ChannelPage<TItem> {
   items: TItem[];
   nextCursor: string | null;
+  /** How many items the whole read covers, when the channel reports it, for progress. */
+  totalCount?: number | null;
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppConfigService } from '@crossmart/common';
 import { ConnectorRuntimeModule } from '../sdk/connector-runtime.module.js';
+import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
 import { ShopifyConnector } from './shopify.connector.js';
@@ -21,6 +22,7 @@ import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
     ShopifyOAuthClient,
     ShopifyAdminClient,
     ShopifyWebhookParser,
+    ShopifyCatalogReader,
     ShopifyConnector,
   ],
   exports: [ShopifyConnector, ShopifyAdminClient],

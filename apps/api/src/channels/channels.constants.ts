@@ -26,3 +26,5 @@ export const ACCOUNT_HANDLE_MAX_LENGTH = 255;
 export const CHANNEL_TYPE_SCHEMA_NAME = 'ChannelType';
 export const CHANNEL_CONNECTION_STATUS_SCHEMA_NAME = 'ChannelConnectionStatus';
 export const CONNECT_FAILURE_SCHEMA_NAME = 'ConnectFailure';
+/** Imports of a connection's catalog, under the connection. */
+export const CHANNEL_IMPORTS_PATH = `:${CONNECTION_ID_PARAM}/imports`;

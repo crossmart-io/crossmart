@@ -29,6 +29,7 @@ export class ImportJobRepository {
         mode: job.mode,
         format: job.format,
         fileName: job.fileName,
+        connectionId: job.connectionId ?? null,
       },
       select: { id: true },
     });
