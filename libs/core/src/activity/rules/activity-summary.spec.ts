@@ -65,4 +65,22 @@ describe('summarizeActivity', () => {
       summarizeActivity({ action: ActivityAction.StockImported, outcome: ActivityOutcome.FAILED }),
     ).toBe('Stock import failed');
   });
+
+  it('names the channel and account of connection events', () => {
+    const subject = { type: ActivitySubjectType.ChannelConnection, id: 'c-1', label: 'Demo Store' };
+
+    expect(
+      summarizeActivity({ action: ActivityAction.ChannelConnected, subject, detail: 'Shopify' }),
+    ).toBe('Connected Shopify “Demo Store”');
+    expect(
+      summarizeActivity({ action: ActivityAction.ChannelDisconnected, subject, detail: 'Shopify' }),
+    ).toBe('Disconnected Shopify “Demo Store”');
+    expect(
+      summarizeActivity({
+        action: ActivityAction.ChannelConnectFailed,
+        outcome: ActivityOutcome.FAILED,
+        detail: 'Shopify',
+      }),
+    ).toBe('Connecting a channel failed');
+  });
 });

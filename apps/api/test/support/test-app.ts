@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { ApiModule } from '../../src/api.module.js';
@@ -14,10 +14,15 @@ export interface SignedUpUser {
   workspaceId: string;
 }
 
+/** Replaces providers before the app starts, such as the HTTP transport channels use. */
+export type TestModuleOverrides = (builder: TestingModuleBuilder) => TestingModuleBuilder;
+
 /** The API with the same HTTP conventions as the running server. */
-export async function createTestApp(): Promise<INestApplication<App>> {
-  const moduleRef = await Test.createTestingModule({ imports: [ApiModule] }).compile();
-  const app = moduleRef.createNestApplication<INestApplication<App>>();
+export async function createTestApp(
+  overrides: TestModuleOverrides = (builder) => builder,
+): Promise<INestApplication<App>> {
+  const moduleRef = await overrides(Test.createTestingModule({ imports: [ApiModule] })).compile();
+  const app = moduleRef.createNestApplication<INestApplication<App>>({ rawBody: true });
   configureApplication(app);
   await app.init();
   return app;
