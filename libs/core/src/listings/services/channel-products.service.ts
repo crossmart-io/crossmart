@@ -33,8 +33,8 @@ function toListingSummary(record: ListingSummaryRecord): ListingSummary {
 }
 
 /**
- * A connection's view of the catalog: every product with whether the selection includes it and
- * whether the channel has it, so one list replaces separate "selected" and "listed" lists.
+ * A store's products: those it should have or still has, with where each stands on the channel.
+ * Without a state it lists every product but the excluded ones; counts cover every state.
  */
 @Injectable()
 export class ChannelProductsService {
@@ -51,7 +51,9 @@ export class ChannelProductsService {
     const connection = await this.connections.get(workspaceId, connectionId);
     const scope = { workspaceId, connectionId, rule: connection.settings.productSelection };
     const search = toProductListWhere(workspaceId, { search: query.search });
-    const where = query.state ? channelProductStateWhere(scope, query.state) : { workspaceId };
+    const where = query.state
+      ? channelProductStateWhere(scope, query.state)
+      : { NOT: channelProductStateWhere(scope, ChannelProductState.Excluded) };
     const [counts, records] = await Promise.all([
       this.count(scope, search),
       this.products.listPage({ AND: [where, search] }, connectionId, query),
@@ -80,7 +82,7 @@ export class ChannelProductsService {
     records: ChannelProductRecord[],
   ): Promise<ChannelProductRow[]> {
     const selected = await this.products.matchingIds(
-      selectionWhere(scope.workspaceId, scope.rule),
+      selectionWhere(scope),
       records.map((record) => record.id),
     );
     return records.map((record) => {

@@ -32,10 +32,11 @@ export class SyncPlanner {
       productId,
     });
     const selected = new Set<string>();
-    for await (const batch of this.selection.selectedIds(
+    for await (const batch of this.selection.selectedIds({
       workspaceId,
-      connection.view.settings.productSelection,
-    )) {
+      connectionId,
+      rule: connection.view.settings.productSelection,
+    })) {
       await this.listings.createPending(workspaceId, connectionId, batch);
       batch.forEach((productId) => selected.add(productId));
     }

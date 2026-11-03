@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
@@ -94,6 +95,11 @@ function shopifyReply(call: GraphqlCall, productId: string): unknown {
   }
   if (call.query.includes('productUpdate')) return { data: { productUpdate: { userErrors: [] } } };
   return { data: { location: { id: 'gid://shopify/Location/1' } } };
+}
+
+function stateCounts(counts: Record<string, number>) {
+  const { listed, pending, removing } = counts;
+  return { listed, pending, removing };
 }
 
 describe('Listings (e2e)', () => {
@@ -252,7 +258,12 @@ describe('Listings (e2e)', () => {
         includeProductIds: [winter.id],
         excludeProductIds: [],
       });
-      const everything = await preview(null);
+      const everything = await preview({
+        filter: {},
+        includeProductIds: [],
+        excludeProductIds: [],
+      });
+      const noRule = await preview(null);
 
       expect(byTag.body.items.map((item: { title: string }) => item.title)).toEqual([
         'Beach Towel',
@@ -270,6 +281,7 @@ describe('Listings (e2e)', () => {
       ]);
       expect(manualOnly.body).toMatchObject({ total: 1, matchingFilter: 0, addedManually: 1 });
       expect(everything.body.total).toBe(3);
+      expect(noRule.body).toMatchObject({ total: 0, matchingFilter: 0, addedManually: 0 });
     });
 
     it('saves the selection and rejects bad ids', async () => {
@@ -521,7 +533,7 @@ describe('Listings (e2e)', () => {
       const connectionId = await connectShopifyStore(app, http, owner, shop);
       const product = await createProduct(owner, { title: 'Bad Product' });
       await request(server())
-        .post(connectionPath(owner, connectionId, 'sync'))
+        .post(`${base(owner)}/products/${product.id}/channels/${connectionId}`)
         .set('Cookie', owner.cookie);
       answerGraphql(http, shop, () => ({ data: { location: { id: 'gid://shopify/Location/1' } } }));
       answerGraphql(http, shop, () => ({
@@ -552,81 +564,112 @@ describe('Listings (e2e)', () => {
     });
   });
 
-  describe('channel products', () => {
-    it('shows every product once, with its state on the connection, as it moves', async () => {
-      const owner = await signUp(app, 'Channel Products');
+  describe('store products', () => {
+    it('adds products by hand, by rule and in bulk, removes them, and shows each state', async () => {
+      const owner = await signUp(app, 'Store Products');
       const shop = newShop();
       const connectionId = await connectShopifyStore(app, http, owner, shop);
-      const mug = await createProduct(owner, { title: 'State Mug', tags: ['live'] });
-      const bowl = await createProduct(owner, { title: 'State Bowl' });
-      await createProduct(owner, { title: 'State Cup' });
-      const selection = (excludeProductIds: string[]) =>
-        request(server())
-          .put(connectionPath(owner, connectionId, 'product-selection'))
-          .set('Cookie', owner.cookie)
-          .send({ rule: { filter: { tags: ['live'] }, includeProductIds: [], excludeProductIds } });
+      const mug = await createProduct(owner, { title: 'State Mug' });
+      const bowl = await createProduct(owner, { title: 'State Bowl', tags: ['live'] });
+      const cup = await createProduct(owner, { title: 'State Cup' });
       const products = (query: Record<string, string> = {}) =>
         request(server())
           .get(connectionPath(owner, connectionId, 'products'))
           .query(query)
           .set('Cookie', owner.cookie);
-      const stateOf = (body: { items: { product: { id: string }; state: string }[] }, id: string) =>
-        body.items.find((row) => row.product.id === id)?.state;
-      await selection([]);
+      const titles = (body: { items: { product: { title: string } }[] }) =>
+        body.items.map((row) => row.product.title);
+      const productChannel = (productId: string) =>
+        `${base(owner)}/products/${productId}/channels/${connectionId}`;
+      const publishReplies = (count: number) =>
+        answerGraphql(
+          http,
+          shop,
+          (call) => shopifyReply(call, 'gid://shopify/Product/880001'),
+          count,
+        );
 
-      // 1. Selected but not published yet: pending; the rest are excluded.
-      const before = await products();
-      expect(before.status).toBe(HttpStatus.OK);
-      expect(
-        before.body.items.map((row: { product: { title: string } }) => row.product.title),
-      ).toEqual(['State Bowl', 'State Cup', 'State Mug']);
-      expect(stateOf(before.body, mug.id)).toBe(ChannelProductState.Pending);
-      expect(stateOf(before.body, bowl.id)).toBe(ChannelProductState.Excluded);
-      expect(before.body.counts).toEqual({
-        [ChannelProductState.Listed]: 0,
-        [ChannelProductState.Pending]: 1,
-        [ChannelProductState.Failed]: 0,
-        [ChannelProductState.Removing]: 0,
-        [ChannelProductState.Excluded]: 2,
+      // 1. A new store gets nothing by itself.
+      const empty = await products();
+      expect(empty.body.items).toEqual([]);
+      expect(empty.body.counts[ChannelProductState.Excluded]).toBe(3);
+
+      // 2. Added by hand from the product page: published at once, then live.
+      const added = await request(server())
+        .post(productChannel(mug.id))
+        .set('Cookie', owner.cookie);
+      expect(added.status).toBe(HttpStatus.CREATED);
+      expect(added.body).toMatchObject({
+        selected: true,
+        listing: { status: ListingStatus.PENDING },
+      });
+      expect((await products()).body.items).toMatchObject([
+        { product: { id: mug.id }, state: ChannelProductState.Pending },
+      ]);
+      publishReplies(3);
+      expect(new Set(await runQueued())).toEqual(
+        new Set([SyncJobKind.Content, SyncJobKind.Inventory]),
+      );
+      const live = await products({ state: ChannelProductState.Listed });
+      expect(live.body.items).toMatchObject([
+        { product: { id: mug.id }, listing: { status: ListingStatus.ACTIVE } },
+      ]);
+
+      // 3. The automatic rule adds matching products; added ones stay whatever the rule says.
+      await request(server())
+        .put(connectionPath(owner, connectionId, 'product-selection'))
+        .set('Cookie', owner.cookie)
+        .send({
+          rule: { filter: { tags: ['live'] }, includeProductIds: [], excludeProductIds: [] },
+        });
+      const ruled = await products();
+      expect(titles(ruled.body)).toEqual(['State Bowl', 'State Mug']);
+      expect(ruled.body.items[0]).toMatchObject({
+        product: { id: bowl.id },
+        state: ChannelProductState.Pending,
       });
 
-      const newestTitleFirst = await products({ sort: 'title', direction: 'desc', limit: '2' });
-      expect(
-        newestTitleFirst.body.items.map((row: { product: { title: string } }) => row.product.title),
-      ).toEqual(['State Mug', 'State Cup']);
-      const nextPage = await products({
+      // 4. Removed by hand: delisted at once, and the rule cannot bring it back.
+      await request(server()).delete(productChannel(mug.id)).set('Cookie', owner.cookie);
+      expect((await products({ search: 'mug' })).body.items).toMatchObject([
+        { state: ChannelProductState.Removing },
+      ]);
+      publishReplies(1);
+      expect(await runQueued()).toEqual([SyncJobKind.Delist]);
+      const removed = await products({ state: ChannelProductState.Excluded });
+      expect(titles(removed.body)).toEqual(['State Cup', 'State Mug']);
+
+      // 5. Many products at once, as the products table adds them; foreign ids are refused.
+      const bulk = await request(server())
+        .post(connectionPath(owner, connectionId, 'products/add'))
+        .set('Cookie', owner.cookie)
+        .send({ productIds: [cup.id, mug.id] });
+      const foreign = await request(server())
+        .post(connectionPath(owner, connectionId, 'products/add'))
+        .set('Cookie', owner.cookie)
+        .send({ productIds: [randomUUID()] });
+      queue.drain();
+      expect(bulk.body).toEqual({ count: 2 });
+      expect(foreign.status).toBe(HttpStatus.BAD_REQUEST);
+      const sorted = await products({ sort: 'title', direction: 'desc', limit: '2' });
+      expect(titles(sorted.body)).toEqual(['State Mug', 'State Cup']);
+      const next = await products({
         sort: 'title',
         direction: 'desc',
         limit: '2',
-        cursor: newestTitleFirst.body.nextCursor,
+        cursor: sorted.body.nextCursor,
       });
-      expect(
-        nextPage.body.items.map((row: { product: { title: string } }) => row.product.title),
-      ).toEqual(['State Bowl']);
-      expect(nextPage.body.nextCursor).toBeNull();
+      expect(titles(next.body)).toEqual(['State Bowl']);
+      expect(stateCounts(next.body.counts)).toEqual({ listed: 0, pending: 3, removing: 0 });
 
-      // 2. After the sync it is listed, with its listing.
-      answerGraphql(http, shop, (call) => shopifyReply(call, 'gid://shopify/Product/880001'), 2);
-      await request(server())
-        .post(connectionPath(owner, connectionId, 'sync'))
+      // 6. The activity log names the product and the store.
+      const activity = await request(server())
+        .get(`${base(owner)}/activity`)
+        .query({ subjectType: 'product', subjectId: mug.id })
         .set('Cookie', owner.cookie);
-      await runQueued();
-      const listed = await products({ state: ChannelProductState.Listed });
-      expect(listed.body.items).toHaveLength(1);
-      expect(listed.body.items[0]).toMatchObject({
-        product: { id: mug.id },
-        state: ChannelProductState.Listed,
-        listing: { status: ListingStatus.ACTIVE, externalId: 'gid://shopify/Product/880001' },
-      });
-
-      // 3. Removed from the selection, it is still on the channel until the next sync.
-      await selection([mug.id]);
-      const removing = await products({ search: 'mug' });
-      expect(removing.body.items).toMatchObject([
-        { product: { id: mug.id }, state: ChannelProductState.Removing },
-      ]);
-      expect(removing.body.counts[ChannelProductState.Removing]).toBe(1);
-      expect(removing.body.counts[ChannelProductState.Excluded]).toBe(0);
+      expect(activity.body.items.map((entry: { action: string }) => entry.action)).toEqual(
+        expect.arrayContaining([ActivityAction.ListingAdded, ActivityAction.ListingRemoved]),
+      );
     });
   });
 

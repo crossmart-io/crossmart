@@ -45,6 +45,22 @@ Starting an import while one of the same store runs returns the running one. Eac
 recorded with the cursor after it, so a retried import continues where it stopped, and a
 repeated import is safe: it only refreshes the listings.
 
+## Products in a store
+
+A store gets only the products the merchant adds to it, plus those its automatic rule matches:
+
+- **Added by hand** (the product page's Channels card, or several at once from the products
+  table) or **imported** from the store: they stay until removed by hand, whatever the rule says.
+  Adding publishes the product at once.
+- **Automatic rule** (the store's Settings): off by default; all products, or those matching
+  filters (tags, vendor, status, gaps, search). A product added this way leaves the store when
+  the rule stops matching it.
+- **Removed by hand**: delisted at once, and the rule cannot add it back until it is added again.
+
+Each listing stores how it joined (`listings.source`: `MANUAL`, `IMPORT` or `RULE`). The store's
+Listings tab (`GET .../channel-connections/{id}/products`) shows each product's state there:
+listed, pending, failed or removing.
+
 ## Publishing and stock
 
 | Operation       | Admin GraphQL                                                                                                                                                                                                                        |

@@ -5,6 +5,7 @@ import { ChannelProductsController } from './controllers/channel-products.contro
 import { ChannelRulesController } from './controllers/channel-rules.controller.js';
 import { ChannelSyncController } from './controllers/channel-sync.controller.js';
 import { ProductChannelsController } from './controllers/product-channels.controller.js';
+import { StoreProductsController } from './controllers/store-products.controller.js';
 
 @Module({
   imports: [ListingsModule, ChannelsModule, AuthModule],
@@ -12,6 +13,7 @@ import { ProductChannelsController } from './controllers/product-channels.contro
     ChannelProductsController,
     ChannelRulesController,
     ChannelSyncController,
+    StoreProductsController,
     ProductChannelsController,
   ],
 })

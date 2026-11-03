@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type Actor,
   ListingOverridesService,
   ProductChannelsService,
+  type StoreMembershipChange,
+  StoreMembershipService,
   WorkspacePermission,
 } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
@@ -12,6 +14,7 @@ import { RequirePermission } from '../../auth/decorators/require-permission.deco
 import {
   LISTINGS_TAG,
   OVERRIDE_PATH,
+  PRODUCT_CHANNEL_PATH,
   PRODUCT_CHANNELS_ROUTE,
   PRODUCT_ID_PARAM,
 } from '../listings.constants.js';
@@ -26,6 +29,7 @@ export class ProductChannelsController {
   constructor(
     private readonly channels: ProductChannelsService,
     private readonly overrides: ListingOverridesService,
+    private readonly membership: StoreMembershipService,
   ) {}
 
   @Get()
@@ -42,6 +46,38 @@ export class ProductChannelsController {
   ): Promise<ProductChannelDto[]> {
     const views = await this.channels.list(workspaceId, productId);
     return views.map((view) => ProductChannelDto.from(view));
+  }
+
+  @Post(PRODUCT_CHANNEL_PATH)
+  @RequirePermission(WorkspacePermission.EditCatalog)
+  @ApiOperation({
+    summary: 'Add the product to a store',
+    description:
+      'The product stays in the store until it is removed, whatever the automatic rule says, ' +
+      'and is published there at once.',
+  })
+  @ApiOkResponse({ type: ProductChannelDto })
+  async add(
+    @Param() target: ProductChannelParamsDto,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductChannelDto> {
+    await this.membership.add(this.change(target), actor);
+    return this.channelView(target);
+  }
+
+  @Delete(PRODUCT_CHANNEL_PATH)
+  @RequirePermission(WorkspacePermission.EditCatalog)
+  @ApiOperation({
+    summary: 'Remove the product from a store',
+    description: 'The product is delisted there at once, and the automatic rule leaves it out.',
+  })
+  @ApiOkResponse({ type: ProductChannelDto })
+  async remove(
+    @Param() target: ProductChannelParamsDto,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductChannelDto> {
+    await this.membership.remove(this.change(target), actor);
+    return this.channelView(target);
   }
 
   @Put(OVERRIDE_PATH)
@@ -72,6 +108,14 @@ export class ProductChannelsController {
   ): Promise<ProductChannelDto> {
     await this.overrides.clear(target, actor);
     return this.channelView(target);
+  }
+
+  private change({
+    workspaceId,
+    connectionId,
+    productId,
+  }: ProductChannelParamsDto): StoreMembershipChange {
+    return { workspaceId, connectionId, productIds: [productId] };
   }
 
   private async channelView(target: ProductChannelParamsDto): Promise<ProductChannelDto> {

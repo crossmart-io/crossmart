@@ -37,6 +37,8 @@ function setup() {
   };
 }
 
+const SCOPE = { workspaceId: WS, connectionId: 'conn-1', rule: null };
+
 describe('ProductSelectionService', () => {
   it('previews a page with each count, and a cursor when more exist', async () => {
     const { service, repository } = setup();
@@ -48,8 +50,7 @@ describe('ProductSelectionService', () => {
     repository.listPage.mockResolvedValue([summary('a'), summary('b'), summary('c')]);
 
     const preview = await service.preview(
-      WS,
-      { filter: {}, includeProductIds: ['x'], excludeProductIds: ['y'] },
+      { ...SCOPE, rule: { filter: {}, includeProductIds: ['x'], excludeProductIds: ['y'] } },
       { limit: 2 },
     );
 
@@ -63,19 +64,23 @@ describe('ProductSelectionService', () => {
     expect(preview.items.map((item) => item.id)).toEqual(['a', 'b']);
   });
 
-  it('has no manual counts without a rule', async () => {
+  it('counts products added by hand even without an automatic rule', async () => {
     const { service, repository } = setup();
-    repository.count.mockResolvedValue(5);
+    repository.count
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(0);
+    repository.listPage.mockResolvedValue([]);
 
-    const preview = await service.preview(WS, null, { limit: 25 });
+    const preview = await service.preview(SCOPE, { limit: 25 });
 
     expect(preview).toMatchObject({
-      total: 5,
-      matchingFilter: 5,
-      addedManually: 0,
+      total: 3,
+      matchingFilter: 0,
+      addedManually: 3,
       removedManually: 0,
     });
-    expect(repository.count).toHaveBeenCalledTimes(2);
   });
 
   it('walks a large selection in id-ordered batches', async () => {
@@ -87,7 +92,7 @@ describe('ProductSelectionService', () => {
     repository.listIds.mockResolvedValueOnce(full).mockResolvedValueOnce(['id-last']);
 
     const batches: string[][] = [];
-    for await (const batch of service.selectedIds(WS, null)) batches.push(batch);
+    for await (const batch of service.selectedIds(SCOPE)) batches.push(batch);
 
     expect(batches.map((batch) => batch.length)).toEqual([SELECTION_BATCH_SIZE, 1]);
     expect(repository.listIds.mock.calls[1]?.[2]).toBe(full.at(-1));

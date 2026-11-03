@@ -44,8 +44,11 @@ export class ListingTargetResolver {
     const selected =
       product !== null &&
       (await this.selection.includes(
-        job.workspaceId,
-        connection.view.settings.productSelection,
+        {
+          workspaceId: job.workspaceId,
+          connectionId: job.connectionId,
+          rule: connection.view.settings.productSelection,
+        },
         job.productId,
       ));
     if (!product || !selected) {

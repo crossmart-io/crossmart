@@ -80,7 +80,7 @@ describe('ConnectionRulesService', () => {
     expect(records.saveSettings.mock.calls[0]?.[2]).toMatchObject({ productSelection: null });
     expect(activity.entries[0]).toMatchObject({
       action: ActivityAction.ChannelSelectionUpdated,
-      detail: 'every product',
+      detail: 'automatic rule removed',
     });
   });
 
@@ -91,5 +91,23 @@ describe('ConnectionRulesService', () => {
     await expect(
       service.updateSelection(WORKSPACE_ID, CONNECTION_ID, SELECTION, ACTOR),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('records products removed by hand, and forgets them once added back', async () => {
+    const { service, records, activity } = setup();
+
+    const [first, second] = [
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+    ];
+    await service.changeExclusions(WORKSPACE_ID, CONNECTION_ID, { exclude: [first, second] });
+    await service.changeExclusions(WORKSPACE_ID, CONNECTION_ID, { restore: [first] });
+
+    const saved = records.saveSettings.mock.calls.map((call) => call[2].productSelection);
+    expect(saved).toEqual([
+      { ...SELECTION, excludeProductIds: [first, second] },
+      { ...SELECTION, excludeProductIds: [] },
+    ]);
+    expect(activity.entries).toEqual([]);
   });
 });

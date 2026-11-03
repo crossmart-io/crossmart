@@ -142,6 +142,14 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Delisting',
     describe: (entry) => `Delisted${named(entry)}${onStore(entry)}`,
   },
+  [ActivityAction.ListingAdded]: {
+    operation: 'Adding a product to a store',
+    describe: (entry) => `Added${named(entry)} to ${entry.detail ?? 'a store'}`,
+  },
+  [ActivityAction.ListingRemoved]: {
+    operation: 'Removing a product from a store',
+    describe: (entry) => `Removed${named(entry)} from ${entry.detail ?? 'a store'}`,
+  },
   [ActivityAction.ListingOverrideUpdated]: {
     operation: 'Saving channel overrides',
     describe: (entry) => `Changed the channel overrides of${named(entry)}${onStore(entry)}`,

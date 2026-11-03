@@ -67,3 +67,8 @@ export const SYNC_JOB_COST: Record<SyncJobKind, number> = {
 export const UNEXPECTED_SYNC_FAILURE = 'The channel sync failed unexpectedly. It will be retried.';
 export const CONNECTION_NOT_SYNCABLE = 'Connect this channel again before syncing it';
 export const LISTING_FAILURE_MAX_LENGTH = 500;
+
+/** Products added to or removed from a store in one request. */
+export const STORE_MEMBERSHIP_MAX_PRODUCTS = 250;
+export const PRODUCT_NOT_FOUND_IN_WORKSPACE =
+  'Some of these products do not exist in this workspace';

@@ -7,6 +7,7 @@ export {
   ImportIssueOutcome,
   ImportJobStatus,
   InventoryMovementReason,
+  ListingSource,
   ListingStatus,
   ListingVisibility,
   OutOfStockPolicy,

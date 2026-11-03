@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   type Listing,
+  ListingSource,
   type ListingStatus,
   type ListingVariant,
   type Prisma,
@@ -108,7 +109,12 @@ export class ListingRepository {
           externalId: listing.externalId,
         },
       },
-      create: { ...fields, variants: { createMany: { data: variantRows } } },
+      // A product the import brings in stays in its store like one added by hand.
+      create: {
+        ...fields,
+        source: ListingSource.IMPORT,
+        variants: { createMany: { data: variantRows } },
+      },
       update: { ...fields, variants: { deleteMany: {}, createMany: { data: variantRows } } },
       include: { variants: true },
     });

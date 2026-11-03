@@ -20,11 +20,11 @@ export class ChannelProductsController {
   @Get(CHANNEL_PRODUCTS_PATH)
   @RequirePermission(WorkspacePermission.ViewWorkspace)
   @ApiOperation({
-    summary: 'Every product with its state on the connection',
+    summary: 'The store’s products with their state on the channel',
     description:
-      'Each product says whether the selection includes it and whether the channel has it: ' +
-      'listed, pending (the next sync publishes it), failed, removing (the next sync delists ' +
-      'it) or excluded. Counts per state follow `search`, so they can label filter tabs.',
+      'Products the store should have or still has: listed, pending (being published), failed ' +
+      'or removing (being delisted). Pass `state=excluded` for the catalog products it does not ' +
+      'have. Counts per state follow `search`, so they can label filter tabs.',
   })
   @ApiOkResponse({ type: ChannelProductPageDto })
   async listProducts(

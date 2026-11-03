@@ -120,6 +120,8 @@ export class ChannelRulesController {
   ): Promise<SelectionPreviewDto> {
     await this.connections.get(workspaceId, connectionId);
     const rule = body.rule ? body.rule.toRule() : null;
-    return SelectionPreviewDto.from(await this.selection.preview(workspaceId, rule, query));
+    return SelectionPreviewDto.from(
+      await this.selection.preview({ workspaceId, connectionId, rule }, query),
+    );
   }
 }

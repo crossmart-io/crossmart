@@ -9,6 +9,8 @@ import { ProductSelectionRepository } from './repositories/product-selection.rep
 import { BullSyncJobQueue } from './services/bull-sync-job.queue.js';
 import { ChannelListingsService } from './services/channel-listings.service.js';
 import { ChannelProductsService } from './services/channel-products.service.js';
+import { StoreMembershipService } from './services/store-membership.service.js';
+import { StoreMembershipWriter } from './services/store-membership.writer.js';
 import { ChannelProductsRepository } from './repositories/channel-products.repository.js';
 import { ChannelPriceResolver } from './services/channel-price-resolver.js';
 import { ChannelSyncService } from './services/channel-sync.service.js';
@@ -63,6 +65,8 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ChannelSyncService,
     ChannelListingsService,
     ChannelProductsService,
+    StoreMembershipService,
+    StoreMembershipWriter,
     ChannelProductsRepository,
     ConnectionRulesService,
     PricingPreviewService,
@@ -79,6 +83,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ChannelSyncService,
     ChannelListingsService,
     ChannelProductsService,
+    StoreMembershipService,
     ConnectionRulesService,
     PricingPreviewService,
     ProductChannelsService,

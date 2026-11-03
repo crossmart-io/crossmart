@@ -34,6 +34,10 @@ export enum ActivityAction {
   ListingSyncFailed = 'listing_sync_failed',
   /** A listing was taken off its channel, as the product is no longer selected. */
   ListingDelisted = 'listing_delisted',
+  /** The merchant added a product to a store by hand; it is published there. */
+  ListingAdded = 'listing_added',
+  /** The merchant removed a product from a store by hand; it is delisted there. */
+  ListingRemoved = 'listing_removed',
   /** The merchant changed what one listing shows differently from the product. */
   ListingOverrideUpdated = 'listing_override_updated',
   ChannelPricingUpdated = 'channel_pricing_updated',

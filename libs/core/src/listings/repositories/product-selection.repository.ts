@@ -49,6 +49,14 @@ export class ProductSelectionRepository {
     return rows.map((row) => row.id);
   }
 
+  /** The titles of those of `productIds` that belong to the workspace. */
+  findTitles(workspaceId: string, productIds: string[]): Promise<{ id: string; title: string }[]> {
+    return this.prisma.product.findMany({
+      where: { workspaceId, id: { in: productIds } },
+      select: { id: true, title: true },
+    });
+  }
+
   async matches(where: Prisma.ProductWhereInput, productId: string): Promise<boolean> {
     return (await this.prisma.product.count({ where: { AND: [where, { id: productId }] } })) > 0;
   }

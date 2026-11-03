@@ -1,55 +1,82 @@
-import type { Prisma } from '@crossmart/database';
+import { ListingSource, ListingStatus, type Prisma } from '@crossmart/database';
 import type { ProductSelectionRule } from '../../channels/entities/product-selection.js';
 import { toProductListWhere } from '../../catalog/repositories/product-list.filter.js';
 
-/** Matches no product: the filter of a selection made only of hand-picked products. */
+/** Matches no product: a connection without an automatic rule adds nothing by itself. */
 const NOTHING: Prisma.ProductWhereInput = { id: { in: [] } };
 
-/** The products a selection's filter matches, before its manual lists. */
-export function selectionFilterWhere(
-  workspaceId: string,
-  rule: ProductSelectionRule | null,
-): Prisma.ProductWhereInput {
-  if (!rule) return { workspaceId };
-  return rule.filter ? toProductListWhere(workspaceId, rule.filter) : { workspaceId, ...NOTHING };
+/** Sources of products that stay in the store until they are removed by hand. */
+export const KEPT_SOURCES: readonly ListingSource[] = [ListingSource.MANUAL, ListingSource.IMPORT];
+
+/** A connection's product selection: which store it is for, and its automatic rule. */
+export interface SelectionScope {
+  workspaceId: string;
+  connectionId: string;
+  rule: ProductSelectionRule | null;
 }
 
 /**
- * The products a selection lists: the filter's matches plus the included ids, minus the
- * excluded ids (exclusion wins). No rule lists every product of the workspace.
+ * Products the connection's automatic rule adds: none without a rule or with a null filter,
+ * every product with an empty filter, else the filter's matches.
  */
-export function selectionWhere(
-  workspaceId: string,
-  rule: ProductSelectionRule | null,
-): Prisma.ProductWhereInput {
-  if (!rule) return { workspaceId };
+export function selectionFilterWhere({
+  workspaceId,
+  rule,
+}: SelectionScope): Prisma.ProductWhereInput {
+  return rule?.filter ? toProductListWhere(workspaceId, rule.filter) : { workspaceId, ...NOTHING };
+}
+
+/** Products added to the store by hand or by an import, and not delisted since. */
+export function addedToStoreWhere({
+  workspaceId,
+  connectionId,
+  rule,
+}: SelectionScope): Prisma.ProductWhereInput {
   return {
     workspaceId,
-    AND: [
-      { OR: [selectionFilterWhere(workspaceId, rule), { id: { in: rule.includeProductIds } }] },
-      { id: { notIn: rule.excludeProductIds } },
+    OR: [
+      {
+        listings: {
+          some: {
+            connectionId,
+            source: { in: [...KEPT_SOURCES] },
+            status: { not: ListingStatus.DELISTED },
+          },
+        },
+      },
+      { id: { in: rule?.includeProductIds ?? [] } },
     ],
   };
 }
 
-/** Included products the filter would not have selected. */
-export function addedManuallyWhere(
-  workspaceId: string,
-  rule: ProductSelectionRule,
-): Prisma.ProductWhereInput {
+/**
+ * The products the store gets: those added by hand or imported, plus the automatic rule's
+ * matches, minus those removed by hand (removal wins).
+ */
+export function selectionWhere(scope: SelectionScope): Prisma.ProductWhereInput {
   return {
-    workspaceId,
-    id: { in: rule.includeProductIds, notIn: rule.excludeProductIds },
-    NOT: selectionFilterWhere(workspaceId, rule),
+    workspaceId: scope.workspaceId,
+    AND: [
+      { OR: [addedToStoreWhere(scope), selectionFilterWhere(scope)] },
+      { id: { notIn: scope.rule?.excludeProductIds ?? [] } },
+    ],
   };
 }
 
-/** Products the filter matches that the merchant removed by hand. */
-export function removedManuallyWhere(
-  workspaceId: string,
-  rule: ProductSelectionRule,
-): Prisma.ProductWhereInput {
+/** Products in the store by hand that the automatic rule would not have added. */
+export function addedManuallyWhere(scope: SelectionScope): Prisma.ProductWhereInput {
   return {
-    AND: [selectionFilterWhere(workspaceId, rule), { id: { in: rule.excludeProductIds } }],
+    AND: [
+      addedToStoreWhere(scope),
+      { id: { notIn: scope.rule?.excludeProductIds ?? [] } },
+      { NOT: selectionFilterWhere(scope) },
+    ],
+  };
+}
+
+/** Products the automatic rule matches that the merchant removed by hand. */
+export function removedManuallyWhere(scope: SelectionScope): Prisma.ProductWhereInput {
+  return {
+    AND: [selectionFilterWhere(scope), { id: { in: scope.rule?.excludeProductIds ?? [] } }],
   };
 }

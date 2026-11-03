@@ -38,8 +38,7 @@ export class ProductChannelViews {
         currencyCode: pricing.currencyCode,
       },
       selected: await this.selection.includes(
-        workspaceId,
-        view.settings.productSelection,
+        { workspaceId, connectionId: view.id, rule: view.settings.productSelection },
         product.id,
       ),
       listing: listing ? toListingSummary(listing) : null,

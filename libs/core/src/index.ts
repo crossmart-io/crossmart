@@ -94,6 +94,7 @@ export * from './listings/enums/sync-job-kind.enum.js';
 export * from './listings/services/bull-sync-job.queue.js';
 export * from './listings/services/channel-listings.service.js';
 export * from './listings/services/channel-products.service.js';
+export * from './listings/services/store-membership.service.js';
 export * from './listings/entities/channel-product.js';
 export * from './listings/enums/channel-product-state.enum.js';
 export * from './listings/services/channel-price-resolver.js';

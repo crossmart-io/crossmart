@@ -544,6 +544,18 @@ enum ListingStatus {
   @@map("listing_status")
 }
 
+/// How a product joined a connection, which decides how it leaves.
+enum ListingSource {
+  /// Added to the store by hand; it stays until it is removed by hand.
+  MANUAL
+  /// Brought in by a catalog import from the channel; it stays like a manual one.
+  IMPORT
+  /// Matched the connection's automatic rule; it leaves when the rule stops matching.
+  RULE
+
+  @@map("listing_source")
+}
+
 /// A product on one channel connection, with the ids the channel gave it. A product may have
 /// several listings on one connection (eBay variations of title or pack size), so only the
 /// external id is unique per connection.
@@ -558,6 +570,7 @@ model Listing {
   externalId       String?                  @map("external_id")
   externalUrl      String?                  @map("external_url")
   status           ListingStatus            @default(PENDING)
+  source           ListingSource            @default(RULE)
   /// A short, user-facing reason for `ERROR`. Never holds secrets.
   lastError        String?                  @map("last_error")
   lastSyncedAt     DateTime?                @map("last_synced_at")
@@ -571,6 +584,7 @@ model Listing {
 
   @@unique([connectionId, externalId])
   @@index([connectionId, status])
+  @@index([connectionId, source])
   @@index([connectionId, productId])
   @@index([workspaceId, productId])
   @@map("listings")

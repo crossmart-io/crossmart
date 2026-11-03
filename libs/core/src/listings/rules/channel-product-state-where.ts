@@ -1,7 +1,6 @@
 import { ListingStatus, type Prisma } from '@crossmart/database';
-import type { ProductSelectionRule } from '../../channels/entities/product-selection.js';
 import { ChannelProductState } from '../enums/channel-product-state.enum.js';
-import { selectionWhere } from './selection-where.js';
+import { type SelectionScope, selectionWhere } from './selection-where.js';
 
 /** Listing statuses of a product the channel holds. */
 const ON_CHANNEL_STATUSES: readonly ListingStatus[] = [
@@ -9,11 +8,8 @@ const ON_CHANNEL_STATUSES: readonly ListingStatus[] = [
   ListingStatus.INACTIVE,
 ];
 
-export interface ChannelProductScope {
-  workspaceId: string;
-  connectionId: string;
-  rule: ProductSelectionRule | null;
-}
+/** The connection whose products are sorted into states: its store and its selection. */
+export type ChannelProductScope = SelectionScope;
 
 function listingsWith(
   connectionId: string,
@@ -49,12 +45,12 @@ export function channelProductStateWhere(
   scope: ChannelProductScope,
   state: ChannelProductState,
 ): Prisma.ProductWhereInput {
-  const { workspaceId, connectionId, rule } = scope;
+  const { workspaceId, connectionId } = scope;
   const listing = listingCondition(connectionId, state);
   if (state === ChannelProductState.Failed) {
     return { workspaceId, ...listing };
   }
-  const selected = selectionWhere(workspaceId, rule);
+  const selected = selectionWhere(scope);
   return {
     workspaceId,
     AND: [listing, SELECTED_STATES.has(state) ? selected : { NOT: selected }],

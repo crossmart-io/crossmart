@@ -1,57 +1,75 @@
+import { ListingSource, ListingStatus } from '@crossmart/database';
 import { CatalogGap } from '../../catalog/enums/catalog-gap.enum.js';
 import {
   addedManuallyWhere,
+  addedToStoreWhere,
   removedManuallyWhere,
   selectionFilterWhere,
   selectionWhere,
 } from './selection-where.js';
 
 const WS = 'ws-1';
+const CONNECTION = 'conn-1';
 const rule = {
   filter: { tags: ['summer'], vendor: ' Acme ', gap: CatalogGap.Images },
   includeProductIds: ['p-in'],
   excludeProductIds: ['p-out'],
 };
+const scope = { workspaceId: WS, connectionId: CONNECTION, rule };
 
 describe('selection conditions', () => {
-  it('selects every product of the workspace without a rule', () => {
-    expect(selectionWhere(WS, null)).toEqual({ workspaceId: WS });
-    expect(selectionFilterWhere(WS, null)).toEqual({ workspaceId: WS });
+  it('adds nothing automatically without a rule or with a null filter', () => {
+    const none = { workspaceId: WS, id: { in: [] } };
+
+    expect(selectionFilterWhere({ ...scope, rule: null })).toEqual(none);
+    expect(selectionFilterWhere({ ...scope, rule: { ...rule, filter: null } })).toEqual(none);
   });
 
-  it('reuses the catalog list filters: tags, vendor (ignoring case) and gaps', () => {
-    expect(selectionFilterWhere(WS, rule)).toMatchObject({
+  it('adds every product with an empty filter', () => {
+    expect(selectionFilterWhere({ ...scope, rule: { ...rule, filter: {} } })).toEqual({
       workspaceId: WS,
-      tags: { hasSome: ['summer'] },
-      vendor: { equals: 'Acme', mode: 'insensitive' },
-      media: { none: {} },
+      AND: [{}],
     });
   });
 
-  it('adds included ids to the filter’s matches and lets exclusions win', () => {
-    expect(selectionWhere(WS, rule)).toEqual({
+  it('keeps products added by hand or imported, on this connection, until delisted', () => {
+    expect(addedToStoreWhere(scope)).toEqual({
+      workspaceId: WS,
+      OR: [
+        {
+          listings: {
+            some: {
+              connectionId: CONNECTION,
+              source: { in: [ListingSource.MANUAL, ListingSource.IMPORT] },
+              status: { not: ListingStatus.DELISTED },
+            },
+          },
+        },
+        { id: { in: ['p-in'] } },
+      ],
+    });
+  });
+
+  it('selects added and matching products, minus those removed by hand', () => {
+    expect(selectionWhere(scope)).toEqual({
       workspaceId: WS,
       AND: [
-        { OR: [selectionFilterWhere(WS, rule), { id: { in: ['p-in'] } }] },
+        { OR: [addedToStoreWhere(scope), selectionFilterWhere(scope)] },
         { id: { notIn: ['p-out'] } },
       ],
     });
   });
 
-  it('matches nothing by filter when the filter is null, so only picked products count', () => {
-    const picked = { ...rule, filter: null };
-
-    expect(selectionFilterWhere(WS, picked)).toEqual({ workspaceId: WS, id: { in: [] } });
-  });
-
-  it('counts manual additions and removals against the filter', () => {
-    expect(addedManuallyWhere(WS, rule)).toEqual({
-      workspaceId: WS,
-      id: { in: ['p-in'], notIn: ['p-out'] },
-      NOT: selectionFilterWhere(WS, rule),
+  it('counts what was added and removed by hand against the automatic rule', () => {
+    expect(addedManuallyWhere(scope)).toEqual({
+      AND: [
+        addedToStoreWhere(scope),
+        { id: { notIn: ['p-out'] } },
+        { NOT: selectionFilterWhere(scope) },
+      ],
     });
-    expect(removedManuallyWhere(WS, rule)).toEqual({
-      AND: [selectionFilterWhere(WS, rule), { id: { in: ['p-out'] } }],
+    expect(removedManuallyWhere(scope)).toEqual({
+      AND: [selectionFilterWhere(scope), { id: { in: ['p-out'] } }],
     });
   });
 });

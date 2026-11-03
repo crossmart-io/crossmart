@@ -1,6 +1,7 @@
 import { ChannelType } from '@crossmart/connectors';
 import {
   ChannelConnectionStatus,
+  ListingSource,
   ListingStatus,
   OutOfStockPolicy,
   Prisma,
@@ -71,6 +72,7 @@ export function listingRecord(overrides: Partial<ListingSyncRecord> = {}): Listi
     externalId: null,
     externalUrl: null,
     status: ListingStatus.PENDING,
+    source: ListingSource.RULE,
     lastError: null,
     lastSyncedAt: null,
     mediaDigest: null,

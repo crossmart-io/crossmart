@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
+import { ListingSource, ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
 import type { ChannelListingQuery } from '../entities/listing-views.js';
 import {
@@ -93,6 +93,46 @@ export class ListingSyncRepository {
           productId,
           status: ListingStatus.PENDING,
         })),
+    });
+  }
+
+  /**
+   * Keeps the products in the store until they are removed by hand: existing listings become
+   * manual (delisted ones pending again), and products without one get a pending listing.
+   */
+  async addToStore(workspaceId: string, connectionId: string, productIds: string[]): Promise<void> {
+    const scope = { workspaceId, connectionId, productId: { in: productIds } };
+    await this.prisma.$transaction(async (tx) => {
+      await tx.listing.updateMany({
+        where: { ...scope, status: ListingStatus.DELISTED },
+        data: { status: ListingStatus.PENDING, lastError: null },
+      });
+      await tx.listing.updateMany({ where: scope, data: { source: ListingSource.MANUAL } });
+      const existing = await tx.listing.findMany({ where: scope, select: { productId: true } });
+      const listed = new Set(existing.map((listing) => listing.productId));
+      await tx.listing.createMany({
+        data: productIds
+          .filter((productId) => !listed.has(productId))
+          .map((productId) => ({
+            workspaceId,
+            connectionId,
+            productId,
+            status: ListingStatus.PENDING,
+            source: ListingSource.MANUAL,
+          })),
+      });
+    });
+  }
+
+  /** Lets the products leave the store: their listings follow the automatic rule from now on. */
+  async releaseFromStore(
+    workspaceId: string,
+    connectionId: string,
+    productIds: string[],
+  ): Promise<void> {
+    await this.prisma.listing.updateMany({
+      where: { workspaceId, connectionId, productId: { in: productIds } },
+      data: { source: ListingSource.RULE },
     });
   }
 

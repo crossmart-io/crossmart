@@ -30,10 +30,11 @@ export class PricingPreviewService {
     const { currencyCode } = connection.pricing;
     const exampleId =
       productId ??
-      (await this.selection.firstSelectedId(
+      (await this.selection.firstSelectedId({
         workspaceId,
-        connection.view.settings.productSelection,
-      ));
+        connectionId,
+        rule: connection.view.settings.productSelection,
+      }));
     const product = exampleId ? await this.products.find(workspaceId, exampleId) : null;
     if (!product) {
       return { currencyCode, product: null, variants: [] };

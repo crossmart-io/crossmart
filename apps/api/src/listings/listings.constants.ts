@@ -9,6 +9,9 @@ export const SYNC_PATH = 'sync';
 export const LISTINGS_PATH = 'listings';
 export const CHANNEL_PRODUCTS_PATH = 'products';
 export const OVERRIDE_PATH = ':connectionId/override';
+export const PRODUCT_CHANNEL_PATH = ':connectionId';
+export const ADD_PRODUCTS_PATH = 'products/add';
+export const REMOVE_PRODUCTS_PATH = 'products/remove';
 export const CONNECTION_ID_PARAM = 'connectionId';
 export const PRODUCT_ID_PARAM = 'productId';
 

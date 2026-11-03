@@ -19,7 +19,14 @@ import { ChannelConnectionRepository } from '../../channels/repositories/channel
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import { describePricingRule } from '../rules/describe-pricing-rule.js';
 
-const SELECTION_CLEARED = 'every product';
+const SELECTION_CLEARED = 'automatic rule removed';
+
+/** A selection without an automatic rule: only products added by hand are in the store. */
+const NO_AUTOMATIC_RULE: ProductSelectionRule = {
+  filter: null,
+  includeProductIds: [],
+  excludeProductIds: [],
+};
 
 /** A connection's merchant rules: its pricing rule and its product selection. */
 @Injectable()
@@ -46,7 +53,7 @@ export class ConnectionRulesService {
     return saved;
   }
 
-  /** Saves the selection (null selects every product). "Sync now" applies it to listings. */
+  /** Saves the selection (null: no automatic rule, only products added by hand). Sync now applies it. */
   async updateSelection(
     workspaceId: string,
     connectionId: string,
@@ -61,6 +68,32 @@ export class ConnectionRulesService {
       detail: productSelection ? undefined : SELECTION_CLEARED,
     });
     return saved;
+  }
+
+  /**
+   * Records products removed from the store by hand (`exclude`) or added back (`restore`), so the
+   * automatic rule cannot bring them back. The caller logs the change per product.
+   */
+  async changeExclusions(
+    workspaceId: string,
+    connectionId: string,
+    change: { exclude?: string[]; restore?: string[] },
+  ): Promise<void> {
+    const { productSelection } = (await this.connections.get(workspaceId, connectionId)).settings;
+    const restored = new Set(change.restore ?? []);
+    const excluded = [
+      ...new Set([...(productSelection?.excludeProductIds ?? []), ...(change.exclude ?? [])]),
+    ].filter((productId) => !restored.has(productId));
+    const rule = productSelection ?? NO_AUTOMATIC_RULE;
+    await this.save(workspaceId, connectionId, {
+      productSelection: this.validate(() =>
+        productSelectionRuleSchema.parse({
+          ...rule,
+          includeProductIds: rule.includeProductIds.filter((productId) => !restored.has(productId)),
+          excludeProductIds: excluded,
+        }),
+      ),
+    });
   }
 
   private async save(
