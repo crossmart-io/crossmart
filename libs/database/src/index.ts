@@ -3,9 +3,11 @@ export * from './prisma.service.js';
 export {
   ActivityActorType,
   ActivityOutcome,
+  ChannelConnectionStatus,
   ImportIssueOutcome,
   ImportJobStatus,
   InventoryMovementReason,
+  ListingStatus,
   OutOfStockPolicy,
   ProductStatus,
   WorkspaceRole,
@@ -14,9 +16,12 @@ export { Prisma } from './generated/prisma/client.js';
 export type {
   ActivityEvent,
   ApiKey,
+  ChannelConnection,
   ImportJob,
   ImportJobIssue,
   InventoryItem,
+  Listing,
+  ListingVariant,
   Organization,
   Product,
   ProductMedia,
@@ -24,5 +29,6 @@ export type {
   User,
   Variant,
   Workspace,
+  WorkspaceDataKey,
   WorkspaceMember,
 } from './generated/prisma/client.js';
