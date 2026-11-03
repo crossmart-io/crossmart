@@ -9,7 +9,10 @@ import type { ProductDetailRecord, ProductSummaryRecord } from '../repositories/
 import type { ProductUpdateWriter } from '../repositories/product-update.writer.js';
 import type { ProductRepository } from '../repositories/product.repository.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
+import { ProductChangeReporter } from './product-change.reporter.js';
 import { ProductsService } from './products.service.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
+import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 
 const WORKSPACE_ID = 'ws-1';
 const UPDATED_AT = new Date('2026-11-02T10:00:00Z');
@@ -82,13 +85,22 @@ function createService(records: ProductSummaryRecord[] = []) {
   const writer = { update: vi.fn<ProductUpdateWriter['update']>(() => Promise.resolve()) };
   const products = repository as unknown as ProductRepository;
   const activity = new InMemoryActivityRecorder();
+  const events = new CatalogEventBus();
   const service = new ProductsService(
     products,
     writer as unknown as ProductUpdateWriter,
     new CatalogConflictsService(products),
-    activity,
+    new ProductChangeReporter(activity, events),
   );
-  return { service, repository, writer, activity };
+  return {
+    events,
+    productsChanged: vi.spyOn(events, 'productsChanged'),
+    stockChanged: vi.spyOn(events, 'stockChanged'),
+    service,
+    repository,
+    writer,
+    activity,
+  };
 }
 
 describe('ProductsService.list', () => {
@@ -213,5 +225,18 @@ describe('ProductsService.update', () => {
         },
       },
     ]);
+  });
+
+  it('tells listeners the product changed, so its listings sync', async () => {
+    const { service, repository, productsChanged } = createService();
+    repository.findDetail.mockResolvedValue(detailRecord(PRODUCT_ID, 'Mug'));
+
+    await service.update(WORKSPACE_ID, PRODUCT_ID, DRAFT, ACTOR);
+
+    expect(productsChanged).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      productIds: [PRODUCT_ID],
+      kinds: [CatalogChangeKind.Content, CatalogChangeKind.Price, CatalogChangeKind.Stock],
+    });
   });
 });

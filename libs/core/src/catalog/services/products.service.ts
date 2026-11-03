@@ -7,8 +7,7 @@ import {
 import { toCursorPage } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
-import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type {
   CatalogStats,
@@ -22,6 +21,7 @@ import { ProductRepository } from '../repositories/product.repository.js';
 import { normalizeDraft } from '../rules/normalize-draft.js';
 import { findDraftProblems } from '../rules/product-draft.rules.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
+import { ProductChangeReporter } from './product-change.reporter.js';
 
 const PRODUCT_NOT_FOUND = 'Product not found';
 
@@ -32,7 +32,7 @@ export class ProductsService {
     private readonly products: ProductRepository,
     private readonly updateWriter: ProductUpdateWriter,
     private readonly conflicts: CatalogConflictsService,
-    private readonly activity: ActivityRecorder,
+    private readonly changes: ProductChangeReporter,
   ) {}
 
   async list(workspaceId: string, query: ProductListQuery): Promise<ProductPage> {
@@ -60,7 +60,10 @@ export class ProductsService {
     this.assertValid(draft);
     await this.assertNoConflicts(workspaceId, draft);
     const product = toProductDetail(await this.products.create(workspaceId, draft));
-    await this.recordChange(workspaceId, actor, ActivityAction.ProductCreated, product);
+    await this.changes.report(workspaceId, actor, {
+      action: ActivityAction.ProductCreated,
+      product,
+    });
     return product;
   }
 
@@ -77,7 +80,11 @@ export class ProductsService {
     await this.assertNoConflicts(workspaceId, draft, productId);
     await this.updateWriter.update(workspaceId, productId, draft, actor);
     const product = await this.get(workspaceId, productId);
-    await this.recordChange(workspaceId, actor, ActivityAction.ProductUpdated, product);
+    await this.changes.report(workspaceId, actor, {
+      action: ActivityAction.ProductUpdated,
+      product,
+      kinds: [CatalogChangeKind.Content, CatalogChangeKind.Price, CatalogChangeKind.Stock],
+    });
     return product;
   }
 
@@ -86,21 +93,9 @@ export class ProductsService {
     if (!deleted) {
       throw new NotFoundException(PRODUCT_NOT_FOUND);
     }
-    await this.recordChange(workspaceId, actor, ActivityAction.ProductDeleted, {
-      id: productId,
-      title: deleted.title,
-    });
-  }
-
-  private recordChange(
-    workspaceId: string,
-    actor: Actor,
-    action: ActivityAction,
-    product: Pick<ProductDetail, 'id' | 'title'>,
-  ): Promise<void> {
-    return this.activity.record(workspaceId, actor, {
-      action,
-      subject: { type: ActivitySubjectType.Product, id: product.id, label: product.title },
+    await this.changes.report(workspaceId, actor, {
+      action: ActivityAction.ProductDeleted,
+      product: { id: productId, title: deleted.title },
     });
   }
 

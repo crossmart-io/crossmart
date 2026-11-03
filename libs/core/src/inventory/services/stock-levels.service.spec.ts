@@ -2,6 +2,7 @@ import { InventoryMovementReason } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import type { InventoryItemRepository } from '../repositories/inventory-item.repository.js';
 import type { StockLevelsWriter } from '../repositories/stock-levels.writer.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
 import { WORKSPACE_ID } from './inventory.fixtures.js';
 import { StockLevelsService } from './stock-levels.service.js';
 
@@ -12,11 +13,14 @@ function setup() {
   items.findBySkus.mockResolvedValue([ITEM]);
   const writer = { setAvailable: vi.fn<StockLevelsWriter['setAvailable']>() };
   writer.setAvailable.mockResolvedValue();
+  const events = new CatalogEventBus();
+  const stockChanged = vi.spyOn(events, 'stockChanged');
   const service = new StockLevelsService(
     items as unknown as InventoryItemRepository,
     writer as unknown as StockLevelsWriter,
+    events,
   );
-  return { service, items, writer };
+  return { service, items, writer, stockChanged };
 }
 
 describe('StockLevelsService', () => {
@@ -35,5 +39,19 @@ describe('StockLevelsService', () => {
     await service.setAvailable(WORKSPACE_ID, targets, change);
 
     expect(writer.setAvailable).toHaveBeenCalledWith(WORKSPACE_ID, targets, change);
+  });
+
+  it('tells listeners which items changed, so channels get the new stock', async () => {
+    const { service, stockChanged } = setup();
+
+    await service.setAvailable(WORKSPACE_ID, [{ inventoryItemId: 'item-1', available: 4 }], {
+      reason: InventoryMovementReason.IMPORTED,
+      actor: Actor.system(),
+    });
+
+    expect(stockChanged).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      inventoryItemIds: ['item-1'],
+    });
   });
 });

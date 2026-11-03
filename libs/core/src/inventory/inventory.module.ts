@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ActivityModule } from '../activity/activity.module.js';
+import { EventsModule } from '../events/events.module.js';
 import { InventoryItemRepository } from './repositories/inventory-item.repository.js';
 import { InventoryMovementRepository } from './repositories/inventory-movement.repository.js';
 import { StockAdjustmentWriter } from './repositories/stock-adjustment.writer.js';
@@ -10,7 +11,7 @@ import { StockLevelsService } from './services/stock-levels.service.js';
 
 /** Stock per variant, its ledger of movements, manual adjustments and bulk stock levels. */
 @Module({
-  imports: [ActivityModule],
+  imports: [ActivityModule, EventsModule],
   providers: [
     InventoryItemRepository,
     InventoryMovementRepository,
