@@ -95,3 +95,18 @@ export const SHOPIFY_DEFAULT_OPTION_NAME = 'Title';
 export const GRAMS_PER_KILOGRAM = 1000;
 export const GRAMS_PER_OUNCE = 28.349523125;
 export const GRAMS_PER_POUND = 453.59237;
+
+/** `inventorySetQuantities` accepts at most this many quantities per call. */
+export const SHOPIFY_INVENTORY_BATCH_SIZE = 250;
+export const SHOPIFY_AVAILABLE_QUANTITY_NAME = 'available';
+export const SHOPIFY_INVENTORY_REASON = 'correction';
+/** How long the primary location is cached per connection before it is read again. */
+export const SHOPIFY_LOCATION_CACHE_TTL_MS = 10 * 60 * 1000;
+/** The value Shopify gives that placeholder option. */
+export const SHOPIFY_DEFAULT_OPTION_VALUE = 'Default Title';
+/** Shopify positions start at 1. */
+export const SHOPIFY_FIRST_POSITION = 1;
+/** Joins several user errors into one message. */
+export const SHOPIFY_USER_ERROR_SEPARATOR = '; ';
+/** The admin URL of a product, for listings that are not on the online store. */
+export const SHOPIFY_ADMIN_PRODUCT_PATH = '/admin/products/';

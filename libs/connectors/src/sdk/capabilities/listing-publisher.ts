@@ -1,11 +1,27 @@
 import type { ChannelSession } from '../auth/channel-session.js';
 import type { ExternalProduct, ExternalVariant } from './catalog.types.js';
 
+/**
+ * A variant to publish: the channel's own variant shape, keyed by the Crossmart variant id.
+ * When `tracked`, `available` is the opening stock; `unitCost` is kept by channels for margin
+ * reports and never shown to buyers.
+ */
+export type ListingDraftVariant = Omit<ExternalVariant, 'externalId' | 'externalInventoryId'> & {
+  variantId: string;
+  /** The variant's id on the channel, once published; updates edit it in place. */
+  externalVariantId?: string | null;
+};
+
 /** What to publish: a product in Crossmart's terms, keyed by Crossmart variant ids. */
 export interface ListingDraft {
   productId: string;
   product: Omit<ExternalProduct, 'externalId' | 'externalUrl' | 'variants'>;
-  variants: (Omit<ExternalVariant, 'externalId' | 'externalInventoryId'> & { variantId: string })[];
+  variants: ListingDraftVariant[];
+  /**
+   * False when the images are those last published, so an update need not send them again
+   * (channels re-download sent images). Publishing always sends them.
+   */
+  imagesChanged?: boolean;
 }
 
 /** The ids the channel gave a published listing, to store as `Listing` / `ListingVariant`. */

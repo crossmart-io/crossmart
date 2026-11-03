@@ -14,6 +14,17 @@ import type {
 import type { CatalogSource } from '../sdk/capabilities/catalog-source.js';
 import type { ChannelPage, ExternalProduct } from '../sdk/capabilities/catalog.types.js';
 import type {
+  InventoryQuantityUpdate,
+  InventorySync,
+  InventoryUpdateFailure,
+} from '../sdk/capabilities/inventory-sync.js';
+import type {
+  ListingDraft,
+  ListingPublisher,
+  PriceUpdate,
+  PublishedListing,
+} from '../sdk/capabilities/listing-publisher.js';
+import type {
   ChannelWebhookEvent,
   IncomingWebhook,
   WebhookReceiver,
@@ -26,6 +37,7 @@ import { APP_UNINSTALL_MUTATION } from './graphql/app-uninstall.mutation.js';
 import { SHOP_QUERY, type ShopData } from './graphql/shop.query.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
+import { ShopifyListingCapabilities } from './shopify-listing-capabilities.js';
 import { isShopDomain, normalizeShopDomain } from './shop-domain.js';
 import {
   SHOPIFY_DISPLAY_NAME,
@@ -44,17 +56,22 @@ function shopifyError(code: ChannelErrorCode, message: string): ChannelError {
 }
 
 /**
- * The Shopify connector: OAuth install, store details, webhooks and catalog import. Listing
- * publishing adds its capabilities here as it is built.
+ * The Shopify connector: OAuth install, store details, webhooks, catalog import, publishing
+ * listings and setting stock. Each capability is implemented by its own class and delegated to here.
  */
 @Injectable()
-export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, CatalogSource {
+export class ShopifyConnector
+  implements OAuthAppConnector, WebhookReceiver, CatalogSource, ListingPublisher, InventorySync
+{
   readonly channel = ChannelType.Shopify;
   readonly displayName = SHOPIFY_DISPLAY_NAME;
   readonly authStrategy = ChannelAuthStrategy.OAuthApp;
   readonly capabilities: ReadonlySet<ChannelCapability> = new Set([
     ChannelCapability.ReceiveWebhooks,
     ChannelCapability.ImportCatalog,
+    ChannelCapability.PublishListings,
+    ChannelCapability.UpdatePrice,
+    ChannelCapability.UpdateInventory,
   ]);
   readonly requiredScopes = SHOPIFY_REQUIRED_SCOPES;
   readonly rateLimits: readonly RateLimitBucket[] = [
@@ -71,7 +88,12 @@ export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, Cat
     private readonly admin: ShopifyAdminClient,
     private readonly webhooks: ShopifyWebhookParser,
     private readonly catalog: ShopifyCatalogReader,
+    private readonly listings: ShopifyListingCapabilities,
   ) {}
+
+  get maxBatchSize(): number {
+    return this.listings.inventory.maxBatchSize;
+  }
 
   isConfigured(): boolean {
     return this.oauth.isConfigured;
@@ -152,6 +174,33 @@ export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, Cat
     cursor: string | null,
   ): Promise<ChannelPage<ExternalProduct>> {
     return this.catalog.fetchProducts(session, cursor);
+  }
+
+  publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
+    return this.listings.publisher.publish(session, draft);
+  }
+
+  update(
+    session: ChannelSession,
+    externalId: string,
+    draft: ListingDraft,
+  ): Promise<PublishedListing> {
+    return this.listings.publisher.update(session, externalId, draft);
+  }
+
+  delist(session: ChannelSession, externalId: string): Promise<void> {
+    return this.listings.publisher.delist(session, externalId);
+  }
+
+  updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void> {
+    return this.listings.publisher.updatePrices(session, updates);
+  }
+
+  setQuantities(
+    session: ChannelSession,
+    updates: readonly InventoryQuantityUpdate[],
+  ): Promise<InventoryUpdateFailure[]> {
+    return this.listings.inventory.setQuantities(session, updates);
   }
 
   private toSettings({ shop, location }: ShopData): ShopifySettings {

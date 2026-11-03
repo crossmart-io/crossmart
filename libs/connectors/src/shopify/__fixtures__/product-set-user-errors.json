@@ -1,0 +1,15 @@
+{
+  "data": {
+    "productSet": {
+      "product": null,
+      "userErrors": [
+        {
+          "field": ["input", "variants", "0", "price"],
+          "message": "Price must be greater than or equal to 0",
+          "code": "INVALID_VARIANT"
+        },
+        { "field": ["input", "title"], "message": "Title can't be blank", "code": "BLANK" }
+      ]
+    }
+  }
+}
