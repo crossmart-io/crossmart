@@ -41,6 +41,7 @@ export const PRODUCT_UPDATE_TARGET_SELECT = {
       optionValues: true,
       price: true,
       compareAtPrice: true,
+      cost: true,
       weightGrams: true,
       requiresShipping: true,
       taxable: true,

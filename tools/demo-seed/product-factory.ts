@@ -20,6 +20,7 @@ export interface NewVariantBody {
   optionValues: string[];
   price: string;
   compareAtPrice?: string;
+  cost: string;
   weightGrams: number;
   tracked: boolean;
   quantity: number;
@@ -46,6 +47,8 @@ const MIX = {
 const MAX_STOCK = 60;
 const MIN_RESTOCKED = 1;
 const SALE_MARKUP = 1.25;
+/** What the demo merchant pays per unit, as a share of the price. */
+const COST_RATIO = 0.45;
 const LARGE_SIZE_SURCHARGE = 4;
 const LARGE_SIZES = new Set(['XL', 'King', 'Large']);
 const CENTS = 100;
@@ -143,6 +146,7 @@ function variantBody(
     optionValues,
     price: toAmount(price),
     ...(onSale ? { compareAtPrice: toAmount(price * SALE_MARKUP) } : {}),
+    cost: toAmount(price * COST_RATIO),
     weightGrams: blueprint.weightGrams,
     tracked: !random.chance(MIX.untracked),
     quantity: outOfStock ? 0 : random.integer(MIN_RESTOCKED, MAX_STOCK),

@@ -56,6 +56,7 @@ export function toProductDetail(record: ProductDetailRecord): ProductDetail {
       optionValues: variant.optionValues,
       price: toAmount(variant.price),
       compareAtPrice: variant.compareAtPrice ? toAmount(variant.compareAtPrice) : null,
+      cost: variant.cost ? toAmount(variant.cost) : null,
       weightGrams: variant.weightGrams,
       requiresShipping: variant.requiresShipping,
       taxable: variant.taxable,

@@ -28,6 +28,14 @@ export class VariantDto implements VariantView {
   @ApiProperty({ type: String, nullable: true, example: '99.00' })
   compareAtPrice: string | null;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '40.00',
+    description: 'What you pay per unit; never shown to buyers',
+  })
+  cost: string | null;
+
   @ApiProperty({ type: Number, nullable: true })
   weightGrams: number | null;
 

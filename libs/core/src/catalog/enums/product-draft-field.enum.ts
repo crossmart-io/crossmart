@@ -15,6 +15,7 @@ export enum ProductDraftField {
   Barcode = 'barcode',
   Price = 'price',
   CompareAtPrice = 'compare_at_price',
+  Cost = 'cost',
   Weight = 'weight',
   RequiresShipping = 'requires_shipping',
   Taxable = 'taxable',

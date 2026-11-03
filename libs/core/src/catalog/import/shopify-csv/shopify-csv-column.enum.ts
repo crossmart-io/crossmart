@@ -23,6 +23,8 @@ export enum ShopifyCsvColumn {
   VariantInventoryPolicy = 'Variant Inventory Policy',
   VariantPrice = 'Variant Price',
   VariantCompareAtPrice = 'Variant Compare At Price',
+  /** Optional: what the merchant pays per unit. */
+  CostPerItem = 'Cost per item',
   VariantRequiresShipping = 'Variant Requires Shipping',
   VariantTaxable = 'Variant Taxable',
   VariantBarcode = 'Variant Barcode',
@@ -56,6 +58,7 @@ export const SHOPIFY_FIELD_COLUMNS: Readonly<
   [ProductDraftField.Barcode]: [ShopifyCsvColumn.VariantBarcode],
   [ProductDraftField.Price]: [ShopifyCsvColumn.VariantPrice],
   [ProductDraftField.CompareAtPrice]: [ShopifyCsvColumn.VariantCompareAtPrice],
+  [ProductDraftField.Cost]: [ShopifyCsvColumn.CostPerItem],
   [ProductDraftField.Weight]: [ShopifyCsvColumn.VariantGrams],
   [ProductDraftField.RequiresShipping]: [ShopifyCsvColumn.VariantRequiresShipping],
   [ProductDraftField.Taxable]: [ShopifyCsvColumn.VariantTaxable],

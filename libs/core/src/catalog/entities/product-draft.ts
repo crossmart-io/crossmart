@@ -23,6 +23,8 @@ export interface VariantDraft {
   /** Exact decimal string, e.g. "89.00". */
   price: string;
   compareAtPrice?: string;
+  /** What the merchant pays per unit, as a decimal string. Never shown to buyers. */
+  cost?: string;
   weightGrams?: number;
   requiresShipping: boolean;
   taxable: boolean;

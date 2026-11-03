@@ -229,6 +229,7 @@ export class ShopifyCsvParser implements CatalogFileParser {
         ? row.requiredAmount(ShopifyCsvColumn.VariantPrice)
         : UNSPECIFIED_VALUE,
       compareAtPrice: row.amount(ShopifyCsvColumn.VariantCompareAtPrice),
+      cost: row.amount(ShopifyCsvColumn.CostPerItem),
       weightGrams: row.integer(ShopifyCsvColumn.VariantGrams),
       requiresShipping: row.boolean(ShopifyCsvColumn.VariantRequiresShipping, true),
       taxable: row.boolean(ShopifyCsvColumn.VariantTaxable, true),

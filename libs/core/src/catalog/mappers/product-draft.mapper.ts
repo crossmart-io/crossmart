@@ -29,6 +29,7 @@ function toVariantDraft(variant: TargetVariant): VariantDraft {
     optionValues: variant.optionValues,
     price: toAmount(variant.price),
     compareAtPrice: variant.compareAtPrice ? toAmount(variant.compareAtPrice) : undefined,
+    cost: variant.cost ? toAmount(variant.cost) : undefined,
     weightGrams: variant.weightGrams ?? undefined,
     requiresShipping: variant.requiresShipping,
     taxable: variant.taxable,

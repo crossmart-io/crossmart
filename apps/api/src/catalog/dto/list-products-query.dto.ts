@@ -1,6 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import {
   CatalogGap,
   PRODUCT_PAGE_DEFAULT_LIMIT,
@@ -10,6 +21,7 @@ import {
 import { ProductStatus } from '@crossmart/database';
 import {
   CATALOG_GAP_SCHEMA_NAME,
+  PRODUCT_FILTER_MAX_TAGS,
   PRODUCT_SEARCH_MAX_LENGTH,
   PRODUCT_STATUS_SCHEMA_NAME,
 } from '../catalog.constants.js';
@@ -34,6 +46,24 @@ export class ListProductsQueryDto implements ProductListQuery {
   @IsOptional()
   @IsEnum(CatalogGap)
   gap?: CatalogGap;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Only products with any of these tags. Repeat the parameter for several.',
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => [value].flat())
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_FILTER_MAX_TAGS)
+  @IsString({ each: true })
+  @MaxLength(PRODUCT_SEARCH_MAX_LENGTH, { each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional({ description: 'Only products of this vendor, ignoring case' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(PRODUCT_SEARCH_MAX_LENGTH)
+  vendor?: string;
 
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()

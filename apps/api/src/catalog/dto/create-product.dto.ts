@@ -80,6 +80,14 @@ export class CreateVariantDto {
   @Matches(AMOUNT_PATTERN, { message: `compareAtPrice ${AMOUNT_MESSAGE}` })
   compareAtPrice?: string;
 
+  @ApiPropertyOptional({
+    example: '40.00',
+    description: 'What you pay per unit. Used for pricing floors; never shown to buyers.',
+  })
+  @IsOptional()
+  @Matches(AMOUNT_PATTERN, { message: `cost ${AMOUNT_MESSAGE}` })
+  cost?: string;
+
   @ApiPropertyOptional({ minimum: 0 })
   @IsOptional()
   @IsInt()
@@ -122,6 +130,7 @@ export class CreateVariantDto {
       optionValues: this.optionValues,
       price: toAmount(this.price),
       compareAtPrice: this.compareAtPrice ? toAmount(this.compareAtPrice) : undefined,
+      cost: this.cost ? toAmount(this.cost) : undefined,
       weightGrams: this.weightGrams,
       requiresShipping: this.requiresShipping,
       taxable: this.taxable,

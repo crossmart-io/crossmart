@@ -36,6 +36,8 @@ export interface VariantView {
   optionValues: string[];
   price: string;
   compareAtPrice: string | null;
+  /** What the merchant pays per unit; never shown to buyers. */
+  cost: string | null;
   weightGrams: number | null;
   requiresShipping: boolean;
   taxable: boolean;
@@ -84,11 +86,19 @@ export interface CatalogGapCount {
   products: number;
 }
 
-export interface ProductListQuery {
+/** The catalog list filters. Absent ones are not applied. */
+export interface ProductFilters {
   search?: string;
   status?: ProductStatus;
   /** Only products that have this gap. */
   gap?: CatalogGap;
+  /** Only products with any of these tags. */
+  tags?: string[];
+  /** Only products of this vendor, ignoring case. */
+  vendor?: string;
+}
+
+export interface ProductListQuery extends ProductFilters {
   cursor?: string;
   limit: number;
 }

@@ -33,3 +33,4 @@ export const IMPORT_JOB_ID_PARAM = 'jobId';
 export const CATALOG_STATS_ROUTE = 'workspaces/:workspaceId/catalog-stats';
 export const PRODUCT_IMAGES_ROUTE = 'workspaces/:workspaceId/media/product-images';
 export const IMAGE_CONTENT_TYPE_SCHEMA_NAME = 'ImageContentType';
+export const PRODUCT_FILTER_MAX_TAGS = 50;
