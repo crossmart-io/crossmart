@@ -1,3 +1,4 @@
+import type { SortDirection } from '@crossmart/common';
 import type { ActivityActorType, ActivityOutcome } from '@crossmart/database';
 import type { ActivityAction } from '../enums/activity-action.enum.js';
 import type { ActivitySubjectType } from '../enums/activity-subject-type.enum.js';
@@ -38,8 +39,10 @@ export interface ActivityPage {
   total: number;
 }
 
-/** Newest first. Absent filters are not applied. */
+/** Newest first unless `direction` says otherwise. Absent filters are not applied. */
 export interface ActivityQuery {
+  /** By time; newest first by default. */
+  direction?: SortDirection;
   action?: ActivityAction;
   outcome?: ActivityOutcome;
   subjectType?: ActivitySubjectType;

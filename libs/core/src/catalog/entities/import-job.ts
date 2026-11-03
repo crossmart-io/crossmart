@@ -1,3 +1,4 @@
+import type { SortDirection } from '@crossmart/common';
 import type { ImportIssueOutcome, ImportJobStatus } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import type { CatalogImportFormat } from '../enums/catalog-import-format.enum.js';
@@ -59,6 +60,11 @@ export interface ImportJobDetail extends ImportJobSummary {
 }
 
 export interface ImportJobListQuery {
+  status?: ImportJobStatus;
+  /** Where the records came from: a file of one format, or a channel. */
+  format?: CatalogImportFormat;
+  /** By start time; newest first by default. */
+  direction?: SortDirection;
   cursor?: string;
   /** 1-based page number, for tables; it wins over `cursor`. */
   page?: number;

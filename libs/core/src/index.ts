@@ -46,6 +46,7 @@ export * from './inventory/entities/stock-adjustment.js';
 export * from './inventory/entities/stock-levels.js';
 export * from './inventory/enums/stock-adjustment-mode.enum.js';
 export * from './inventory/enums/stock-level.enum.js';
+export * from './inventory/enums/inventory-sort.enum.js';
 export * from './inventory/inventory.constants.js';
 export * from './inventory/inventory.module.js';
 export * from './inventory/services/inventory.service.js';

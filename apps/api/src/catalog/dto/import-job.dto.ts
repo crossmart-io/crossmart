@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { SortDirection } from '@crossmart/common';
+import { SortDirectionProperty } from '../../common/sort-direction.decorator.js';
 import {
   CatalogImportFormat,
   CatalogImportMode,
@@ -25,6 +27,23 @@ import { ImportIssueDto } from './catalog-import.dto.js';
 import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ListImportJobsQueryDto implements ImportJobListQuery {
+  @ApiPropertyOptional({ enum: ImportJobStatus, enumName: IMPORT_JOB_STATUS_SCHEMA_NAME })
+  @IsOptional()
+  @IsEnum(ImportJobStatus)
+  status?: ImportJobStatus;
+
+  @ApiPropertyOptional({
+    enum: CatalogImportFormat,
+    enumName: CATALOG_IMPORT_FORMAT_SCHEMA_NAME,
+    description: 'Where the records came from: a file of this format, or a channel',
+  })
+  @IsOptional()
+  @IsEnum(CatalogImportFormat)
+  format?: CatalogImportFormat;
+
+  @SortDirectionProperty(SortDirection.Desc)
+  direction?: SortDirection;
+
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()
   @IsUUID()

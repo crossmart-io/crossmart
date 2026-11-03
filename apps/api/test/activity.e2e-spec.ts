@@ -1,7 +1,7 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { API_KEY_HEADER } from '@crossmart/common';
+import { API_KEY_HEADER, SortDirection } from '@crossmart/common';
 import {
   ActivityAction,
   ActivitySubjectType,
@@ -161,6 +161,12 @@ describe('Activity (e2e)', () => {
     const labels = [...first.items, ...second.items].map((event) => event.subject?.label);
     expect(labels).toEqual(['Three', 'Two', 'One']);
     expect(second.nextCursor).toBeNull();
+    const oldest = await activityOf(user, { direction: SortDirection.Asc });
+    expect(oldest.items.map((event) => event.subject?.label).slice(-3)).toEqual([
+      'One',
+      'Two',
+      'Three',
+    ]);
 
     const deletes = await activityOf(user, { action: ActivityAction.ProductDeleted });
     expect(deletes.items).toHaveLength(0);

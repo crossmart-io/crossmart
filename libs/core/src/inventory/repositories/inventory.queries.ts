@@ -1,7 +1,8 @@
+import { SortDirection, sortWithTiebreak } from '@crossmart/common';
 import type { Prisma } from '@crossmart/database';
+import { InventorySort } from '../enums/inventory-sort.enum.js';
 
 const ASCENDING = 'asc' as const;
-const DESCENDING = 'desc' as const;
 
 /** The variant and product columns an inventory row shows, loaded in batched queries. */
 export const INVENTORY_ROW_INCLUDE = {
@@ -21,23 +22,34 @@ export const INVENTORY_ROW_INCLUDE = {
 } satisfies Prisma.InventoryItemInclude;
 
 /** Product title, then the variants in the order the product lists them. */
-export const INVENTORY_ROW_ORDER = [
-  { variant: { product: { title: ASCENDING } } },
-  { variant: { productId: ASCENDING } },
-  { variant: { position: ASCENDING } },
-  { id: ASCENDING },
-] satisfies Prisma.InventoryItemOrderByWithRelationInput[];
+function byTitle(direction: SortDirection): Prisma.InventoryItemOrderByWithRelationInput[] {
+  return [
+    { variant: { product: { title: direction } } },
+    { variant: { productId: direction } },
+    { variant: { position: ASCENDING } },
+    { id: direction },
+  ];
+}
+
+/** The inventory table's order. Each ends on the id, so equal rows keep a stable order. */
+export function inventoryRowOrder(
+  sort: InventorySort = InventorySort.Title,
+  direction: SortDirection = SortDirection.Asc,
+): Prisma.InventoryItemOrderByWithRelationInput[] {
+  switch (sort) {
+    case InventorySort.Title:
+      return byTitle(direction);
+    case InventorySort.Available:
+      return sortWithTiebreak('available', direction);
+    case InventorySort.UpdatedAt:
+      return sortWithTiebreak('updatedAt', direction);
+  }
+}
 
 export const MOVEMENT_INCLUDE = {
   actorUser: { select: { name: true } },
   apiKey: { select: { name: true } },
 } satisfies Prisma.InventoryMovementInclude;
-
-/** Newest first. */
-export const MOVEMENT_ORDER = [
-  { createdAt: DESCENDING },
-  { id: DESCENDING },
-] satisfies Prisma.InventoryMovementOrderByWithRelationInput[];
 
 export type InventoryRowRecord = Prisma.InventoryItemGetPayload<{
   include: typeof INVENTORY_ROW_INCLUDE;

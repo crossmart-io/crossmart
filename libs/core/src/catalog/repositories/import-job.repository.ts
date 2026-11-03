@@ -1,4 +1,9 @@
-import { type CountedRecords, toPageWindow } from '@crossmart/common';
+import {
+  type CountedRecords,
+  toPageWindow,
+  SortDirection,
+  sortWithTiebreak,
+} from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import {
   type ImportIssueOutcome,
@@ -89,12 +94,16 @@ export class ImportJobRepository {
     workspaceId: string,
     query: ImportJobListQuery,
   ): Promise<CountedRecords<ImportJobSummaryRecord>> {
-    const where: Prisma.ImportJobWhereInput = { workspaceId };
+    const where: Prisma.ImportJobWhereInput = {
+      workspaceId,
+      status: query.status,
+      format: query.format,
+    };
     const [records, total] = await this.prisma.$transaction([
       this.prisma.importJob.findMany({
         where,
         include: IMPORT_JOB_SUMMARY_INCLUDE,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: sortWithTiebreak('createdAt', query.direction ?? SortDirection.Desc),
         ...toPageWindow(query),
       }),
       this.prisma.importJob.count({ where }),

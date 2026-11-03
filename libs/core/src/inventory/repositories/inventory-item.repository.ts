@@ -5,7 +5,7 @@ import type { InventoryListQuery } from '../entities/inventory-views.js';
 import type { StockItemBySku } from '../entities/stock-levels.js';
 import {
   INVENTORY_ROW_INCLUDE,
-  INVENTORY_ROW_ORDER,
+  inventoryRowOrder,
   type InventoryRowRecord,
 } from './inventory.queries.js';
 import { STOCK_LEVEL_FILTERS } from './stock-level.filters.js';
@@ -26,7 +26,7 @@ export class InventoryItemRepository {
       this.prisma.inventoryItem.findMany({
         where,
         include: INVENTORY_ROW_INCLUDE,
-        orderBy: INVENTORY_ROW_ORDER,
+        orderBy: inventoryRowOrder(query.sort, query.direction),
         ...toPageWindow(query),
       }),
       this.prisma.inventoryItem.count({ where }),

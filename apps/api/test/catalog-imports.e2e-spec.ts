@@ -1,3 +1,4 @@
+import { SortDirection } from '@crossmart/common';
 import { readFileSync } from 'node:fs';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -307,6 +308,15 @@ describe('Catalog imports and history (e2e)', () => {
       }),
     ]);
     expect(secondPage.body.nextCursor).toBeNull();
+
+    const failed = await history(user, { status: ImportJobStatus.FAILED });
+    expect(failed.body.items.map((job: { fileName: string }) => job.fileName)).toEqual([
+      'wrong.csv',
+    ]);
+    const products = await history(user, { format: CatalogImportFormat.ShopifyCsv });
+    expect(products.body.total).toBe(1);
+    const oldest = await history(user, { direction: SortDirection.Asc });
+    expect(oldest.body.items[0].mode).toBe(CatalogImportMode.Create);
   });
 
   it('attributes key imports to the key and keeps history private to the workspace', async () => {

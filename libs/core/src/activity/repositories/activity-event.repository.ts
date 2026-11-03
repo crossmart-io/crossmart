@@ -1,4 +1,9 @@
-import { type CountedRecords, toPageWindow } from '@crossmart/common';
+import {
+  type CountedRecords,
+  toPageWindow,
+  SortDirection,
+  sortWithTiebreak,
+} from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 import type { ActivityQuery } from '../entities/activity-event-view.js';
@@ -22,7 +27,7 @@ export class ActivityEventRepository {
       this.prisma.activityEvent.findMany({
         where,
         include: ACTIVITY_EVENT_INCLUDE,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: sortWithTiebreak('createdAt', query.direction ?? SortDirection.Desc),
         ...toPageWindow(query),
       }),
       this.prisma.activityEvent.count({ where }),

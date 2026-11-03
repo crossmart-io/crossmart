@@ -8,5 +8,6 @@ export const INVENTORY_SEARCH_MAX_LENGTH = 200;
 
 /** Schema names the generated web client uses for the inventory enums. */
 export const STOCK_LEVEL_SCHEMA_NAME = 'StockLevel';
+export const INVENTORY_SORT_SCHEMA_NAME = 'InventorySort';
 export const STOCK_ADJUSTMENT_MODE_SCHEMA_NAME = 'StockAdjustmentMode';
 export const INVENTORY_MOVEMENT_REASON_SCHEMA_NAME = 'InventoryMovementReason';
