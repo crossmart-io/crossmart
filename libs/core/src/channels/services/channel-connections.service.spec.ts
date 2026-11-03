@@ -50,7 +50,11 @@ describe('ChannelConnectionsService', () => {
 
     const [view] = await service.list(WORKSPACE_ID);
 
-    expect(view.settings).toEqual({ account: { channel: 'shopify' }, productSelection: null });
+    expect(view.settings).toEqual({
+      account: { channel: 'shopify' },
+      productSelection: null,
+      pricing: null,
+    });
     expect(view).not.toHaveProperty('credentials');
   });
 

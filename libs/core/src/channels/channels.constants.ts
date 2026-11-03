@@ -22,3 +22,13 @@ export const STATUS_REASON_MAX_LENGTH = 500;
 export const PRODUCT_SELECTION_MAX_IDS = 10_000;
 export const PRODUCT_SELECTION_TEXT_MAX_LENGTH = 200;
 export const PRODUCT_SELECTION_MAX_TAGS = 50;
+
+/** Pricing rule bounds: a cut of more than 90% or a markup of more than 500% is a typo. */
+export const PRICING_MIN_PERCENT = -90;
+export const PRICING_MAX_PERCENT = 500;
+export const PRICING_MAX_FIXED_AMOUNT = 100_000;
+export const PRICING_MAX_MARGIN_PERCENT = 1000;
+/** Prices are stored with two fraction digits, whatever the currency allows. */
+export const PRICE_MAX_FRACTION_DIGITS = 2;
+/** The currency of a connection whose channel does not report one. */
+export const DEFAULT_CURRENCY_CODE = 'USD';
