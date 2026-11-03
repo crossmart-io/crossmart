@@ -3,9 +3,6 @@ import { constantTimeEquals, hmacSha256 } from '@crossmart/common';
 import { ShopifyOAuthParam } from './shopify.constants.js';
 import { ShopifyApp } from './shopify-app.js';
 
-const QUERY_PAIR_SEPARATOR = '&';
-const QUERY_VALUE_SEPARATOR = '=';
-
 /**
  * Verifies what Shopify signs with the app's client secret: OAuth callbacks (hex HMAC of the
  * sorted query) and webhooks (base64 HMAC of the raw body). Comparisons are constant time.
@@ -19,11 +16,13 @@ export class ShopifySignatures {
     if (!signature || !this.app.isConfigured) {
       return false;
     }
-    const message = Object.entries(query)
-      .filter(([key]) => key !== ShopifyOAuthParam.Hmac)
-      .sort(([left], [right]) => (left < right ? -1 : 1))
-      .map(([key, value]) => `${key}${QUERY_VALUE_SEPARATOR}${value}`)
-      .join(QUERY_PAIR_SEPARATOR);
+    // Shopify signs the URL-encoded form of each value (its `host` is base64 and often ends
+    // in `=`), so the parsed values are encoded again the way URLSearchParams does it.
+    const message = new URLSearchParams(
+      Object.entries(query)
+        .filter(([key]) => key !== ShopifyOAuthParam.Hmac)
+        .sort(([left], [right]) => (left < right ? -1 : 1)),
+    ).toString();
     return constantTimeEquals(
       signature,
       hmacSha256(this.app.credentials().clientSecret, message, 'hex'),

@@ -44,7 +44,7 @@ export function signShopifyQuery(
 ): Record<string, string> {
   const message = Object.keys(query)
     .sort()
-    .map((key) => `${key}=${query[key]}`)
+    .map((key) => `${key}=${encodeURIComponent(query[key] ?? '')}`)
     .join('&');
   return { ...query, hmac: createHmac('sha256', secret).update(message).digest('hex') };
 }

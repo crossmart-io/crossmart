@@ -9,7 +9,7 @@ const signatures = new ShopifySignatures(new ShopifyApp({ clientId: 'id', client
 function signedQuery(query: Record<string, string>): Record<string, string> {
   const message = Object.keys(query)
     .sort()
-    .map((key) => `${key}=${query[key]}`)
+    .map((key) => `${key}=${encodeURIComponent(query[key] ?? '')}`)
     .join('&');
   return { ...query, hmac: createHmac('sha256', SECRET).update(message).digest('hex') };
 }
@@ -27,6 +27,38 @@ describe('ShopifySignatures', () => {
 
     expect(signatures.verifyQuery({ hmac, ...rest })).toBe(true);
     expect(signatures.verifyQuery({ ...rest, hmac })).toBe(true);
+  });
+
+  it("matches the example in Shopify's OAuth documentation", () => {
+    const documented = new ShopifySignatures(
+      new ShopifyApp({ clientId: 'id', clientSecret: 'hush' }),
+    );
+
+    expect(
+      documented.verifyQuery({
+        code: '0907a61c0c8d55e99db179b68161bc00',
+        hmac: '700e2dadb827fcc8609e9d5ce208b2e9cdaab9df07390d2cbca10d7c328fc4bf',
+        shop: 'some-shop.myshopify.com',
+        state: '0.6784241404160823',
+        timestamp: '1337178173',
+      }),
+    ).toBe(true);
+  });
+
+  it('signs the URL-encoded values, as Shopify does for its base64 host', () => {
+    const host = 'YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvZGVtbw==';
+    const encoded = `code=abc&host=${host.replaceAll('=', '%3D')}&shop=demo-store.myshopify.com&timestamp=1`;
+    const hmac = createHmac('sha256', SECRET).update(encoded).digest('hex');
+
+    expect(
+      signatures.verifyQuery({
+        code: 'abc',
+        hmac,
+        host,
+        shop: 'demo-store.myshopify.com',
+        timestamp: '1',
+      }),
+    ).toBe(true);
   });
 
   it('rejects a tampered, unsigned or foreign-signed callback', () => {
