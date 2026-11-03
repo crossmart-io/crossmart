@@ -1,4 +1,4 @@
-import type { Prisma } from '@crossmart/database';
+import { ChannelConnectionStatus, ListingStatus, type Prisma } from '@crossmart/database';
 
 const BY_POSITION = { position: 'asc' } as const;
 
@@ -8,6 +8,19 @@ export const PRODUCT_SUMMARY_INCLUDE = {
     select: { price: true, inventoryItem: { select: { tracked: true, available: true } } },
   },
   media: { select: { url: true }, orderBy: BY_POSITION, take: 1 },
+  /** The stores the product is in, for the channel icons of its row. */
+  listings: {
+    where: {
+      status: { not: ListingStatus.DELISTED },
+      connection: { status: { not: ChannelConnectionStatus.DISCONNECTED } },
+    },
+    select: {
+      connectionId: true,
+      status: true,
+      connection: { select: { channel: true, displayName: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  },
 } satisfies Prisma.ProductInclude;
 
 export const PRODUCT_DETAIL_INCLUDE = {

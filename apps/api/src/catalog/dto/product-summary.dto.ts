@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { PriceRange, ProductPage, ProductSummary } from '@crossmart/core';
-import { ProductStatus } from '@crossmart/database';
+import { ChannelType } from '@crossmart/connectors';
+import type { PriceRange, ProductPage, ProductStoreBadge, ProductSummary } from '@crossmart/core';
+import { ListingStatus, ProductStatus } from '@crossmart/database';
+import { CHANNEL_TYPE_SCHEMA_NAME } from '../../channels/channels.constants.js';
+import { LISTING_STATUS_SCHEMA_NAME } from '../../listings/listings.constants.js';
 import { PRODUCT_STATUS_SCHEMA_NAME } from '../catalog.constants.js';
 
 export class PriceRangeDto implements PriceRange {
@@ -9,6 +12,20 @@ export class PriceRangeDto implements PriceRange {
 
   @ApiProperty({ example: '89.00' })
   max: string;
+}
+
+export class ProductStoreBadgeDto implements ProductStoreBadge {
+  @ApiProperty({ format: 'uuid' })
+  connectionId: string;
+
+  @ApiProperty({ enum: ChannelType, enumName: CHANNEL_TYPE_SCHEMA_NAME })
+  channel: ChannelType;
+
+  @ApiProperty({ example: 'Demo Store' })
+  storeName: string;
+
+  @ApiProperty({ enum: ListingStatus, enumName: LISTING_STATUS_SCHEMA_NAME })
+  status: ListingStatus;
 }
 
 export class ProductSummaryDto implements ProductSummary {
@@ -45,6 +62,12 @@ export class ProductSummaryDto implements ProductSummary {
 
   @ApiProperty({ type: String, nullable: true })
   imageUrl: string | null;
+
+  @ApiProperty({
+    type: [ProductStoreBadgeDto],
+    description: 'The stores it is in, in the order it joined them',
+  })
+  stores: ProductStoreBadgeDto[];
 
   @ApiProperty()
   updatedAt: Date;

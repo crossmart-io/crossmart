@@ -56,7 +56,7 @@ export class ChannelProductsService {
       : { NOT: channelProductStateWhere(scope, ChannelProductState.Excluded) };
     const [counts, records] = await Promise.all([
       this.count(scope, search),
-      this.products.listPage({ AND: [where, search] }, connectionId, query),
+      this.products.listPage({ AND: [where, search] }, query),
     ]);
     const { rows, nextCursor } = toCursorPage(records, query.limit);
     return { items: await this.toRows(scope, rows), counts, nextCursor };
@@ -86,10 +86,13 @@ export class ChannelProductsService {
       records.map((record) => record.id),
     );
     return records.map((record) => {
-      const listing = shownListing(record.listings);
+      const listings = record.listings.filter(
+        (candidate) => candidate.connectionId === scope.connectionId,
+      );
+      const listing = shownListing(listings);
       return {
         product: toProductSummary(record),
-        state: channelProductStateOf(selected.has(record.id), record.listings),
+        state: channelProductStateOf(selected.has(record.id), listings),
         listing: listing ? toListingSummary(listing) : null,
       };
     });

@@ -21,6 +21,7 @@ function summary(id: string): ProductSummaryRecord {
     updatedAt: new Date(),
     variants: [],
     media: [],
+    listings: [],
   };
 }
 

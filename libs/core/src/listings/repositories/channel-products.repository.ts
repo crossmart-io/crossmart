@@ -14,29 +14,27 @@ const LISTING_SUMMARY_SELECT = {
   updatedAt: true,
 } satisfies Prisma.ListingSelect;
 
-const NEWEST_FIRST = { updatedAt: 'desc' } as const;
-
-/** The summary include, plus the product's listings on one connection, newest first. */
-type ChannelProductInclude = typeof PRODUCT_SUMMARY_INCLUDE & {
+/**
+ * The summary include, with each listing's state fields too. The summary already reads the
+ * product's listings (for its store icons); this connection's are picked from them in code.
+ */
+const CHANNEL_PRODUCT_INCLUDE = {
+  ...PRODUCT_SUMMARY_INCLUDE,
   listings: {
-    where: { connectionId: string };
-    select: typeof LISTING_SUMMARY_SELECT;
-    orderBy: typeof NEWEST_FIRST;
-  };
-};
+    ...PRODUCT_SUMMARY_INCLUDE.listings,
+    where: {},
+    select: { ...PRODUCT_SUMMARY_INCLUDE.listings.select, ...LISTING_SUMMARY_SELECT },
+    orderBy: { updatedAt: 'desc' },
+  },
+} as const satisfies Prisma.ProductInclude;
 
-function channelProductInclude(connectionId: string): ChannelProductInclude {
-  return {
-    ...PRODUCT_SUMMARY_INCLUDE,
-    listings: { where: { connectionId }, select: LISTING_SUMMARY_SELECT, orderBy: NEWEST_FIRST },
-  } satisfies Prisma.ProductInclude;
-}
+type ChannelProductInclude = typeof CHANNEL_PRODUCT_INCLUDE;
 
 export type ChannelProductRecord = Prisma.ProductGetPayload<{ include: ChannelProductInclude }>;
 
 export type ListingSummaryRecord = ChannelProductRecord['listings'][number];
 
-/** Reads catalog products with their listings on one connection. Conditions are workspace-scoped. */
+/** Reads catalog products with their listings. Every condition is workspace-scoped. */
 @Injectable()
 export class ChannelProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -48,12 +46,11 @@ export class ChannelProductsRepository {
   /** One page in title order, plus one extra row that says whether more exist. */
   listPage(
     where: Prisma.ProductWhereInput,
-    connectionId: string,
     page: { limit: number; cursor?: string; sort: ChannelProductSort; direction: SortDirection },
   ): Promise<ChannelProductRecord[]> {
     return this.prisma.product.findMany({
       where,
-      include: channelProductInclude(connectionId),
+      include: CHANNEL_PRODUCT_INCLUDE,
       orderBy: sortWithTiebreak(page.sort, page.direction),
       take: page.limit + 1,
       ...(page.cursor ? { cursor: { id: page.cursor }, skip: 1 } : {}),

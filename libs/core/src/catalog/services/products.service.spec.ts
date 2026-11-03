@@ -33,6 +33,7 @@ function summaryRecord(id: string, prices: string[]): ProductSummaryRecord {
     createdAt: UPDATED_AT,
     updatedAt: UPDATED_AT,
     media: [],
+    listings: [],
     variants: prices.map((price, index) => ({
       price: new Prisma.Decimal(price),
       inventoryItem: { tracked: index === 0, available: 4 },

@@ -1,4 +1,5 @@
-import type { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import type { ChannelType } from '@crossmart/connectors';
+import type { ListingStatus, OutOfStockPolicy, ProductStatus } from '@crossmart/database';
 import type { CatalogGap } from '../enums/catalog-gap.enum.js';
 
 export interface PriceRange {
@@ -7,6 +8,15 @@ export interface PriceRange {
 }
 
 /** One row of the product list. */
+/** A store a product is in, as its row's channel icon shows it. */
+export interface ProductStoreBadge {
+  connectionId: string;
+  channel: ChannelType;
+  storeName: string;
+  /** Where its listing stands there: an error shows first when it has several. */
+  status: ListingStatus;
+}
+
 export interface ProductSummary {
   id: string;
   handle: string;
@@ -19,6 +29,8 @@ export interface ProductSummary {
   totalAvailable: number | null;
   priceRange: PriceRange | null;
   imageUrl: string | null;
+  /** The stores it is in, in the order it joined them. */
+  stores: ProductStoreBadge[];
   updatedAt: Date;
 }
 

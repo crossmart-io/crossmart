@@ -610,6 +610,13 @@ describe('Listings (e2e)', () => {
       expect(new Set(await runQueued())).toEqual(
         new Set([SyncJobKind.Content, SyncJobKind.Inventory]),
       );
+      const catalog = await request(server())
+        .get(`${base(owner)}/products`)
+        .query({ search: 'State Mug' })
+        .set('Cookie', owner.cookie);
+      expect(catalog.body.items[0].stores).toEqual([
+        { connectionId, channel: 'shopify', storeName: 'E2E Store', status: ListingStatus.ACTIVE },
+      ]);
       const live = await products({ state: ChannelProductState.Listed });
       expect(live.body.items).toMatchObject([
         { product: { id: mug.id }, listing: { status: ListingStatus.ACTIVE } },
