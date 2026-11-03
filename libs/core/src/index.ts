@@ -73,6 +73,7 @@ export * from './channels/import/entities/channel-import.js';
 export * from './channels/import/queue/channel-import.queue.js';
 export * from './channels/import/services/channel-import.runner.js';
 export * from './channels/import/services/channel-import.service.js';
+export * from './channels/import/services/stalled-import.sweeper.js';
 export * from './events/events.module.js';
 export * from './events/entities/catalog-events.js';
 export * from './events/enums/catalog-change-kind.enum.js';

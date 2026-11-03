@@ -10,7 +10,10 @@ import {
   type ChannelImportJobRef,
   ChannelImportQueue,
   ChannelImportRunner,
+  IMPORT_STALE_AFTER_MS,
+  IMPORT_STALLED_REASON,
   ImportIssueCode,
+  StalledImportSweeper,
 } from '@crossmart/core';
 import {
   ChannelConnectionStatus,
@@ -263,5 +266,36 @@ describe('Channel catalog imports (e2e)', () => {
     const refused = await startImport(owner, connectionId);
     expect(refused.status).toBe(HttpStatus.CONFLICT);
     expect(refused.text).not.toContain(SHOPIFY_ACCESS_TOKEN);
+  });
+
+  it('closes imports whose worker died, and leaves running ones alone', async () => {
+    const owner = await signUp(app, 'Stalled Importer');
+    const { connectionId } = await connectedStore(owner);
+    const job = (updatedAt: Date) =>
+      prisma.importJob.create({
+        data: {
+          workspaceId: owner.workspaceId,
+          connectionId,
+          mode: CatalogImportMode.CreateOrLink,
+          format: CatalogImportFormat.ShopifyApi,
+          fileName: 'E2E Store',
+          updatedAt,
+        },
+      });
+    const stalled = await job(new Date(Date.now() - IMPORT_STALE_AFTER_MS - 60_000));
+    const running = await job(new Date());
+
+    await app.get(StalledImportSweeper).sweep();
+
+    const [closed, untouched] = await Promise.all(
+      [stalled, running].map(({ id }) => prisma.importJob.findUniqueOrThrow({ where: { id } })),
+    );
+    expect(closed).toMatchObject({
+      status: ImportJobStatus.FAILED,
+      errorMessage: IMPORT_STALLED_REASON,
+    });
+    expect(untouched?.status).toBe(ImportJobStatus.PROCESSING);
+    const restarted = await startImport(owner, connectionId);
+    expect(restarted.body.id).toBe(running.id);
   });
 });

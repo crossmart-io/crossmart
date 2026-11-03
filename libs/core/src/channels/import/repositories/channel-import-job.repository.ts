@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ImportJobStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { NewImportJob } from '../../../catalog/entities/import-job.js';
 import type { OutcomeIssue } from '../../../catalog/repositories/import-job.repository.js';
-import { CHANNEL_IMPORT_LOCK_PREFIX } from '../channel-import.constants.js';
+import {
+  CHANNEL_IMPORT_LOCK_PREFIX,
+  IMPORT_SWEEP_BATCH_SIZE,
+} from '../channel-import.constants.js';
 import type { PageOutcome } from '../entities/channel-import.js';
 
 /** What a run needs to know about its import job. */
@@ -120,6 +123,23 @@ export class ChannelImportJobRepository {
             : {}),
         },
       });
+    });
+  }
+
+  /**
+   * Channel imports still running that wrote nothing since `before`, across workspaces: the
+   * worker that ran them is gone. Oldest first, a batch at a time.
+   */
+  findStalled(before: Date): Promise<ChannelImportRunRecord[]> {
+    return this.prisma.importJob.findMany({
+      where: {
+        status: ImportJobStatus.PROCESSING,
+        connectionId: { not: null },
+        updatedAt: { lt: before },
+      },
+      select: CHANNEL_IMPORT_RUN_SELECT,
+      orderBy: { updatedAt: 'asc' },
+      take: IMPORT_SWEEP_BATCH_SIZE,
     });
   }
 

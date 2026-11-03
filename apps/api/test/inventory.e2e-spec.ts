@@ -169,11 +169,8 @@ describe('Inventory (e2e)', () => {
       sort: InventorySort.Available,
       direction: SortDirection.Desc,
     });
-    expect(mostFirst.items.map((item) => item.sku).slice(0, 3)).toEqual([
-      'MUG-BLUE',
-      'MUG-SAND',
-      'TOTE',
-    ]);
+    // Tote and the untracked gift card both have 0 available, so only the first two are fixed.
+    expect(mostFirst.items.map((item) => item.sku).slice(0, 2)).toEqual(['MUG-BLUE', 'MUG-SAND']);
     const sand = await rowBySku(seller, 'MUG-SAND');
     for (const quantity of [5, 2]) {
       await adjust(seller, sand.inventoryItemId, {

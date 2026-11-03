@@ -438,10 +438,13 @@ model ImportJob {
   errorMessage String?            @map("error_message")
   issues       ImportJobIssue[]
   createdAt    DateTime           @default(now()) @map("created_at")
+  /// Moves with every page a running import writes, so a stalled one can be found.
+  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at")
   finishedAt   DateTime?          @map("finished_at")
 
   @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([connectionId, status])
+  @@index([status, updatedAt])
   @@map("import_jobs")
 }
 

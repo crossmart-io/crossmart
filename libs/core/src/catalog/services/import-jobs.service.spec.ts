@@ -34,6 +34,7 @@ function record(id: string, overrides: Partial<ImportJobDetailRecord> = {}): Imp
     failedCount: 1,
     errorMessage: null,
     createdAt: CREATED_AT,
+    updatedAt: CREATED_AT,
     finishedAt: CREATED_AT,
     issues: [],
     ...overrides,
