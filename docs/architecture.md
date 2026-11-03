@@ -82,13 +82,15 @@ Organization ─┬─ Subscription (plan, status, provider ids)
               └─ Workspace ─┬─ Member (user, role)
                             ├─ ApiKey
                             ├─ ChannelConnection (channel, credentials[encrypted], status, settings)
-                            ├─ Product ─┬─ Variant (sku, gtin, attributes JSONB)
+                            ├─ Product ─┬─ Variant (sku, gtin, price, cost, attributes JSONB)
                             │           │    └─ InventoryItem ── InventoryMovement (ledger)
                             │           ├─ ProductContent (base: title, description, bullets, attributes)
                             │           ├─ Media
-                            │           └─ Listing (per channel) ─┬─ ChannelContent (overrides)
-                            │                                     ├─ external id, status, errors
-                            │                                     └─ last sync state
+                            │           └─ Listing (per connection) ─┬─ ListingOverride (ChannelContent)
+                            │                                        ├─ ListingVariantOverride (fixed price)
+                            │                                        ├─ ListingVariant (external ids)
+                            │                                        ├─ external id, status, last error
+                            │                                        └─ last synced, media digest
                             ├─ Order ── OrderLine (variant, qty, channel order id)
                             ├─ Suggestion (agent, target, diff, rationale, status)
                             ├─ AutonomyPolicy (action type → auto | ask)
@@ -103,6 +105,7 @@ Key rules:
 - `workspace_id` lives on every tenant table, and Postgres RLS enforces it as defence in depth.
 - Channel-specific attributes are stored as JSONB, validated by the connector's schema.
 - Every state change by an agent goes through `Suggestion` and is then applied by the same service a user would call.
+- A variant's `cost` is what the merchant pays per unit. It drives pricing floors, is sent to channels that keep it for margin reports (Shopify's "Cost per item"), and is never shown to buyers. Shopify CSV files may carry it in an optional `Cost per item` column.
 - Stock on hand is derived from the ledger (`InventoryMovement`). Each `InventoryItem` stores `available` (what can be sold, and what channels receive) and `reserved` (held for open orders); on hand = available + reserved. Both columns are updated atomically with the ledger, and every movement records the stock on hand after it, its reason and its author. The author is the same `Actor` the activity log credits (a user or an API key), and manual adjustments also appear as `inventory_adjusted` events in the product's activity. Every stock change goes through the inventory module: manual adjustments, product edits and inventory file imports (`StockLevelsService`, reason `IMPORTED`) all write the same ledger.
 
 ## 4. Connector SDK
@@ -125,12 +128,65 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 
 - **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md).
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
-- **Priority queues:** `inventory` > `orders` > `price` > `content` > `import`.
+- **Priority queues:** `inventory` > `orders` > `price` > `content` > `import`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
 - **Feed channels:** a generic template-based feed exporter (XML/CSV/TSV), so most simple channels are configuration only.
 - A **test kit** of recorded fixtures and contract tests is required for every connector PR.
 
 ## 5. Sync & inventory flows
+
+## 5. Sync & inventory flows
+
+**Listings, pricing and selection** (`libs/core/src/listings`)
+
+- **Product selection.** A connection's `settings.productSelection` names the products it lists: those matching
+  `filter` (the catalog list filters: search, status, gap, tags, vendor), plus `includeProductIds`, minus
+  `excludeProductIds` (exclusion wins). A null filter matches nothing, so only the included products are listed; no
+  selection lists every product. `ProductSelectionService` evaluates it with the same Prisma condition as the product
+  list (`toProductListWhere`), so a filter selects the same products everywhere. The schema allows several listings
+  per product per connection (for eBay later); the sync works on a product's oldest ("primary") listing.
+- **Pricing rule.** `settings.pricing` holds a typed, validated rule: an adjustment percent (−90 to 500), a fixed
+  amount, a rounding (`none`, `.99`, `.95`, `whole`; charm endings round _up_, and fall back to whole amounts for
+  zero-decimal currencies), an optional floor of cost plus a minimum margin, and what to do with compare-at prices
+  (adjust like the price, keep, or omit).
+- **Price resolution.** `ChannelPriceResolver` is pure. A manual price on the listing wins, then the connection's
+  rule, then the variant's base price. It works in exact decimals (`FixedDecimal` in `libs/common`, never floats),
+  in the channel's currency precision, and returns the steps with a one-line explanation:
+  `$89.00 → +15% → .99 = $102.99`, or `$50.00 → -10% → .99 → floor $52.00 (cost $40.00 + 30%) = $52.99`. Warnings
+  flag a floor that could not apply (no cost), a manual price below the floor, and a compare-at price that is not
+  above the price (it is dropped, as channels show no sale then).
+- **Overrides (ChannelContent).** `ListingOverride` holds what one listing shows differently: title, description,
+  tags, a subset and order of the product's images (by URL, so they survive image re-uploads), visibility (show or
+  hide on this channel whatever the product's status), an inventory buffer and a maximum shown quantity.
+  `ListingVariantOverride` holds fixed prices per variant. Typed columns, no JSON. Null follows the product.
+- **Shown stock** is `available − buffer`, never below zero, capped by the maximum.
+
+**Sync jobs.** The API enqueues, `apps/worker` runs them (`ListingSyncRunner`):
+
+| Job       | Queue       | What it does                                                                       |
+| --------- | ----------- | ---------------------------------------------------------------------------------- |
+| inventory | `inventory` | Sets the shown stock of a listing's tracked variants, in `maxBatchSize` batches    |
+| price     | `price`     | Sends channel prices only                                                          |
+| content   | `content`   | Publishes the product, or updates the listing the channel holds (never duplicates) |
+| delist    | `content`   | Takes the listing off the channel (Shopify: archives the product)                  |
+
+Jobs are keyed per kind, connection and product, and debounced (2 s for stock, 5 s for prices, 10 s for content):
+a newer job replaces the waiting one, so a burst of edits becomes one call. Jobs send current state, so coalescing
+loses nothing. The worker paces calls per connection with the connector's rate-limit buckets (a job that must wait
+goes back to the delayed set) and retries outages and rate limits with exponential backoff; rejected input marks
+the listing `ERROR` with the channel's message in `lastError`.
+
+Triggers:
+
+- **Publish / Sync now** (`POST …/channel-connections/:id/sync`): every selected product gets a pending listing and a
+  content job; every listing the channel holds for a product no longer selected gets a delist job.
+- **Catalog changes** go through the in-process `CatalogEventBus`, so the catalog does not depend on channels: a
+  product edit queues content and stock, a bulk status or tag change queues content, a bulk price change and a CSV
+  update import queue content or prices. Only listings the channel already holds are synced; new products wait for
+  "Publish".
+- **Stock changes** (adjustments, inventory imports, product edits) fan out inventory jobs only to the listings of
+  the touched stock items.
+- **Overrides** queue a content and a stock update when the channel holds the listing.
 
 **Order → inventory (overselling protection)**
 
@@ -142,7 +198,7 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 
 **Channel catalog import:** the API records an `ImportJob` (format `shopify_api`, mode `create_or_link`) and queues it on `import`. The worker reads the catalog through the connector's `CatalogSource` page by page, links or creates products, writes listings with their variant ids, sets new stock through the ledger, and stores the cursor with each page's counts, so retries resume. See [channels/shopify.md](channels/shopify.md#catalog-import).
 
-**Reconciliation:** inventory every 15 minutes and everything else daily. The job compares each channel's state to Crossmart and corrects drift, logging what it changed.
+**Reconciliation:** inventory every 15 minutes and everything else daily. The job compares each channel's state to Crossmart and corrects drift, logging what it changed. Today the inventory reconciliation is a BullMQ job scheduler on the `inventory` queue that re-sends the shown stock of every listing of every connected account; comparing with the channel's own quantities first, and the daily content reconciliation, come later.
 
 **AI checkout channels (ACP):** a reservation with a TTL is made before payment, then confirmed or released.
 

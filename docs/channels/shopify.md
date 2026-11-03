@@ -45,6 +45,19 @@ Starting an import while one of the same store runs returns the running one. Eac
 recorded with the cursor after it, so a retried import continues where it stopped, and a
 repeated import is safe: it only refreshes the listings.
 
+## Publishing and stock
+
+| Operation       | Admin GraphQL                                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Publish, update | `productSet` (synchronous), by product id on update: options, every variant (variants left out are deleted), images from public URLs, SKU, barcode, price, compare-at, cost, weight, stock policy. The handle is only set on create. |
+| Opening stock   | `inventoryQuantities` of new variants, at the primary location                                                                                                                                                                       |
+| Stock           | `inventorySetQuantities` with `@idempotent` and `changeFromQuantity: null` (Crossmart's ledger is the source of truth), 250 items per call                                                                                           |
+| Prices          | `productVariantsBulkUpdate`, one call per product                                                                                                                                                                                    |
+| Delist          | `productUpdate` to `ARCHIVED`: the product leaves sales channels but keeps its orders. Publishing again updates and reactivates it.                                                                                                  |
+
+Images are re-sent only when they changed (`listings.media_digest`). A listing whose Crossmart status is not active,
+or that is hidden on the channel, is sent as `DRAFT`. User errors are stored on the listing as `lastError`.
+
 ## App settings (Shopify Dev Dashboard)
 
 Create an app in the [Dev Dashboard](https://dev.shopify.com/dashboard), then put its client ID
