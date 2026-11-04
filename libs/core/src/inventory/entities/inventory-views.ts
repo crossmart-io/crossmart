@@ -1,3 +1,5 @@
+import type { SortDirection } from '@crossmart/common';
+import type { InventorySort } from '../enums/inventory-sort.enum.js';
 import type { InventoryMovementReason } from '@crossmart/database';
 import type { StockLevel } from '../enums/stock-level.enum.js';
 
@@ -25,13 +27,19 @@ export interface InventoryPage {
   items: InventoryRow[];
   /** Pass as `cursor` to get the next page; null on the last page. */
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface InventoryListQuery {
   /** Matches the SKU or the product title. */
   search?: string;
   stockLevel?: StockLevel;
+  sort?: InventorySort;
+  direction?: SortDirection;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }
 
@@ -53,9 +61,16 @@ export interface InventoryMovementView {
 export interface InventoryMovementPage {
   items: InventoryMovementView[];
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
 export interface MovementListQuery {
+  reason?: InventoryMovementReason;
+  /** By time; newest first by default. */
+  direction?: SortDirection;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }

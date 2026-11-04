@@ -1,8 +1,8 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { API_KEY_HEADER } from '@crossmart/common';
-import { ActivityAction, StockAdjustmentMode, StockLevel } from '@crossmart/core';
+import { API_KEY_HEADER, SortDirection } from '@crossmart/common';
+import { ActivityAction, InventorySort, StockAdjustmentMode, StockLevel } from '@crossmart/core';
 import { InventoryMovementReason, PrismaService, WorkspaceRole } from '@crossmart/database';
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
@@ -160,6 +160,34 @@ describe('Inventory (e2e)', () => {
         userName: null,
       },
     ]);
+  });
+
+  it('sorts stock by what is available and filters the history by reason, oldest first', async () => {
+    const seller = await signUp(app, 'Sorter');
+    await createCatalog(seller);
+    const mostFirst = await listInventory(seller, {
+      sort: InventorySort.Available,
+      direction: SortDirection.Desc,
+    });
+    // Tote and the untracked gift card both have 0 available, so only the first two are fixed.
+    expect(mostFirst.items.map((item) => item.sku).slice(0, 2)).toEqual(['MUG-BLUE', 'MUG-SAND']);
+    const sand = await rowBySku(seller, 'MUG-SAND');
+    for (const quantity of [5, 2]) {
+      await adjust(seller, sand.inventoryItemId, {
+        mode: StockAdjustmentMode.Delta,
+        quantity,
+        reason: InventoryMovementReason.RECEIVED,
+      });
+    }
+
+    const received = await request(app.getHttpServer())
+      .get(
+        `/api/v1/workspaces/${seller.workspaceId}/inventory-items/${sand.inventoryItemId}/movements`,
+      )
+      .query({ reason: InventoryMovementReason.RECEIVED, direction: SortDirection.Asc })
+      .set('Cookie', seller.cookie);
+    expect(received.body.items.map((item: { delta: number }) => item.delta)).toEqual([5, 2]);
+    expect(received.body.total).toBe(2);
   });
 
   function movementsOf(user: SignedUpUser, inventoryItemId: string) {

@@ -10,7 +10,10 @@ import {
   type ChannelImportJobRef,
   ChannelImportQueue,
   ChannelImportRunner,
+  IMPORT_STALE_AFTER_MS,
+  IMPORT_STALLED_REASON,
   ImportIssueCode,
+  StalledImportSweeper,
 } from '@crossmart/core';
 import {
   ChannelConnectionStatus,
@@ -30,16 +33,14 @@ import {
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
-const env = vi.hoisted(() => {
-  const values = {
+vi.hoisted(() => {
+  Object.assign(process.env, {
     SHOPIFY_CLIENT_ID: 'e2e-client-id',
     SHOPIFY_CLIENT_SECRET: 'e2e-client-secret',
     CREDENTIALS_MASTER_KEY: Buffer.from(Array.from({ length: 32 }, (_, index) => index)).toString(
       'base64',
     ),
-  };
-  Object.assign(process.env, values);
-  return values;
+  });
 });
 
 const CARD_HOLDER_SKU = 'NF-LCH-01';
@@ -87,10 +88,7 @@ describe('Channel catalog imports (e2e)', () => {
     user: SignedUpUser,
   ): Promise<{ shop: string; connectionId: string }> {
     const shop = newShop();
-    const connectionId = await connectShopifyStore(app, http, user, {
-      shop,
-      clientSecret: env.SHOPIFY_CLIENT_SECRET,
-    });
+    const connectionId = await connectShopifyStore(app, http, user, shop);
     return { shop, connectionId };
   }
 
@@ -119,7 +117,7 @@ describe('Channel catalog imports (e2e)', () => {
     expect(job.body).toMatchObject({
       mode: CatalogImportMode.CreateOrLink,
       format: CatalogImportFormat.ShopifyApi,
-      fileName: 'Demo Store',
+      fileName: 'E2E Store',
       connectionId,
       totalCount: STORE_PRODUCTS,
       status: ImportJobStatus.COMPLETED,
@@ -161,7 +159,7 @@ describe('Channel catalog imports (e2e)', () => {
       .set('Cookie', owner.cookie);
     expect(activity.body.items[0]).toMatchObject({
       action: ActivityAction.ChannelCatalogImported,
-      summary: 'Imported 4 products from “Demo Store”',
+      summary: 'Imported 4 products from “E2E Store”',
     });
   });
 
@@ -268,5 +266,36 @@ describe('Channel catalog imports (e2e)', () => {
     const refused = await startImport(owner, connectionId);
     expect(refused.status).toBe(HttpStatus.CONFLICT);
     expect(refused.text).not.toContain(SHOPIFY_ACCESS_TOKEN);
+  });
+
+  it('closes imports whose worker died, and leaves running ones alone', async () => {
+    const owner = await signUp(app, 'Stalled Importer');
+    const { connectionId } = await connectedStore(owner);
+    const job = (updatedAt: Date) =>
+      prisma.importJob.create({
+        data: {
+          workspaceId: owner.workspaceId,
+          connectionId,
+          mode: CatalogImportMode.CreateOrLink,
+          format: CatalogImportFormat.ShopifyApi,
+          fileName: 'E2E Store',
+          updatedAt,
+        },
+      });
+    const stalled = await job(new Date(Date.now() - IMPORT_STALE_AFTER_MS - 60_000));
+    const running = await job(new Date());
+
+    await app.get(StalledImportSweeper).sweep();
+
+    const [closed, untouched] = await Promise.all(
+      [stalled, running].map(({ id }) => prisma.importJob.findUniqueOrThrow({ where: { id } })),
+    );
+    expect(closed).toMatchObject({
+      status: ImportJobStatus.FAILED,
+      errorMessage: IMPORT_STALLED_REASON,
+    });
+    expect(untouched?.status).toBe(ImportJobStatus.PROCESSING);
+    const restarted = await startImport(owner, connectionId);
+    expect(restarted.body.id).toBe(running.id);
   });
 });

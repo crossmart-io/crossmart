@@ -1,0 +1,7 @@
+{
+  "data": {
+    "publishablePublish": {
+      "userErrors": [{ "field": ["id"], "message": "Product can't be published to this channel" }]
+    }
+  }
+}

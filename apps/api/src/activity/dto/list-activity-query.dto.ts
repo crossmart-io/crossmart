@@ -14,6 +14,9 @@ import {
   ACTIVITY_OUTCOME_SCHEMA_NAME,
   ACTIVITY_SUBJECT_TYPE_SCHEMA_NAME,
 } from '../activity.constants.js';
+import { SortDirection } from '@crossmart/common';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
+import { SortDirectionProperty } from '../../common/sort-direction.decorator.js';
 
 /** Filters shared by every activity list. */
 export class ActivityFilterQueryDto implements ActivityQuery {
@@ -31,10 +34,16 @@ export class ActivityFilterQueryDto implements ActivityQuery {
   @IsEnum(ActivityOutcome)
   outcome?: ActivityOutcome;
 
+  @SortDirectionProperty(SortDirection.Desc)
+  direction?: SortDirection;
+
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

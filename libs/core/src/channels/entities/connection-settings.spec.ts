@@ -9,6 +9,7 @@ describe('parseConnectionSettings', () => {
     expect(parseConnectionSettings(connector, {})).toEqual({
       account: null,
       productSelection: null,
+      pricing: null,
     });
   });
 
@@ -27,6 +28,7 @@ describe('parseConnectionSettings', () => {
     ).toEqual({
       account: { channel: 'shopify' },
       productSelection: selection,
+      pricing: null,
     });
   });
 
@@ -41,5 +43,26 @@ describe('parseConnectionSettings', () => {
     expect(() => parseConnectionSettings(connector, { account: { channel: 'ebay' } })).toThrow(
       'Invalid settings',
     );
+  });
+
+  it('validates the pricing rule: bounds, precision and enums', () => {
+    const pricing = {
+      adjustmentPercent: '15',
+      fixedAmount: '-2.50',
+      rounding: 'ending_99',
+      floor: { minMarginPercent: '30' },
+      compareAt: 'adjust',
+    };
+
+    expect(parseConnectionSettings(connector, { pricing }).pricing).toEqual(pricing);
+    expect(() =>
+      parseConnectionSettings(connector, { pricing: { ...pricing, adjustmentPercent: '-95' } }),
+    ).toThrow(/between -90 and 500/);
+    expect(() =>
+      parseConnectionSettings(connector, { pricing: { ...pricing, fixedAmount: '1.005' } }),
+    ).toThrow(/two fraction digits/);
+    expect(() =>
+      parseConnectionSettings(connector, { pricing: { ...pricing, rounding: 'ending_49' } }),
+    ).toThrow(/rounding/);
   });
 });

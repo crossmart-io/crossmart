@@ -1,5 +1,8 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
+import { CatalogImportMode } from '../enums/catalog-import-mode.enum.js';
 import { CATALOG_IMPORT_STRATEGIES } from '../catalog.constants.js';
 import type {
   CatalogImportRequest,
@@ -20,6 +23,7 @@ export class CatalogImportService {
     @Inject(CATALOG_IMPORT_STRATEGIES) private readonly strategies: CatalogImportStrategy[],
     private readonly jobs: ImportJobsService,
     private readonly activity: ActivityRecorder,
+    private readonly events: CatalogEventBus,
   ) {}
 
   async importFile(
@@ -40,6 +44,13 @@ export class CatalogImportService {
       throw error;
     }
     await this.activity.record(workspaceId, actor, toImportActivityEntry(file, outcome));
+    if (mode === CatalogImportMode.Update) {
+      await this.events.productsChanged({
+        workspaceId,
+        productIds: outcome.productIds,
+        kinds: [CatalogChangeKind.Content, CatalogChangeKind.Price],
+      });
+    }
     const { productIds: _productIds, ...counts } = outcome;
     return { ...counts, jobId, mode };
   }

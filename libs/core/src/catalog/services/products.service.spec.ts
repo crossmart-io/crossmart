@@ -1,3 +1,4 @@
+import { SortDirection } from '@crossmart/common';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OutOfStockPolicy, Prisma, ProductStatus } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
@@ -9,11 +10,16 @@ import type { ProductDetailRecord, ProductSummaryRecord } from '../repositories/
 import type { ProductUpdateWriter } from '../repositories/product-update.writer.js';
 import type { ProductRepository } from '../repositories/product.repository.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
+import { ProductChangeReporter } from './product-change.reporter.js';
 import { ProductsService } from './products.service.js';
+import { ProductSort } from '../enums/product-store-filter.enum.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
+import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 
 const WORKSPACE_ID = 'ws-1';
 const UPDATED_AT = new Date('2026-11-02T10:00:00Z');
 const ACTOR = Actor.user('user-1');
+const LIST = { sort: ProductSort.Title, direction: SortDirection.Asc };
 
 function summaryRecord(id: string, prices: string[]): ProductSummaryRecord {
   return {
@@ -30,6 +36,7 @@ function summaryRecord(id: string, prices: string[]): ProductSummaryRecord {
     createdAt: UPDATED_AT,
     updatedAt: UPDATED_AT,
     media: [],
+    listings: [],
     variants: prices.map((price, index) => ({
       price: new Prisma.Decimal(price),
       inventoryItem: { tracked: index === 0, available: 4 },
@@ -65,7 +72,9 @@ const DRAFT: ProductDraft = {
 
 function createService(records: ProductSummaryRecord[] = []) {
   const repository = {
-    listPage: vi.fn<ProductRepository['listPage']>(() => Promise.resolve(records)),
+    listPage: vi.fn<ProductRepository['listPage']>(() =>
+      Promise.resolve({ records, total: records.length }),
+    ),
     findDetail: vi.fn<ProductRepository['findDetail']>(() => Promise.resolve(null)),
     findExistingHandles: vi.fn<ProductRepository['findExistingHandles']>(() =>
       Promise.resolve(new Set<string>()),
@@ -82,13 +91,22 @@ function createService(records: ProductSummaryRecord[] = []) {
   const writer = { update: vi.fn<ProductUpdateWriter['update']>(() => Promise.resolve()) };
   const products = repository as unknown as ProductRepository;
   const activity = new InMemoryActivityRecorder();
+  const events = new CatalogEventBus();
   const service = new ProductsService(
     products,
     writer as unknown as ProductUpdateWriter,
     new CatalogConflictsService(products),
-    activity,
+    new ProductChangeReporter(activity, events),
   );
-  return { service, repository, writer, activity };
+  return {
+    events,
+    productsChanged: vi.spyOn(events, 'productsChanged'),
+    stockChanged: vi.spyOn(events, 'stockChanged'),
+    service,
+    repository,
+    writer,
+    activity,
+  };
 }
 
 describe('ProductsService.list', () => {
@@ -99,7 +117,7 @@ describe('ProductsService.list', () => {
       summaryRecord('c', ['5']),
     ]);
 
-    const page = await service.list(WORKSPACE_ID, { limit: 2 });
+    const page = await service.list(WORKSPACE_ID, { ...LIST, limit: 2 });
 
     expect(page.items.map((item) => item.id)).toEqual(['a', 'b']);
     expect(page.nextCursor).toBe('b');
@@ -108,7 +126,7 @@ describe('ProductsService.list', () => {
   it('summarizes prices and tracked stock', async () => {
     const { service } = createService([summaryRecord('a', ['22', '9.5', '40'])]);
 
-    const { items, nextCursor } = await service.list(WORKSPACE_ID, { limit: 25 });
+    const { items, nextCursor } = await service.list(WORKSPACE_ID, { ...LIST, limit: 25 });
 
     expect(nextCursor).toBeNull();
     expect(items[0]).toMatchObject({
@@ -151,6 +169,29 @@ describe('ProductsService.create and delete', () => {
       [ActivityAction.ProductCreated, 'p-1', 'Mug'],
       [ActivityAction.ProductDeleted, 'p-2', 'Old Mug'],
     ]);
+  });
+});
+
+describe('ProductsService.delete', () => {
+  it('lets listeners delist the product before it is deleted', async () => {
+    const { service, repository, events } = createService();
+    const order: string[] = [];
+    const productsDeleting = vi.spyOn(events, 'productsDeleting').mockImplementation(() => {
+      order.push('deleting');
+      return Promise.resolve();
+    });
+    repository.delete.mockImplementation(() => {
+      order.push('delete');
+      return Promise.resolve({ title: 'Mug' });
+    });
+
+    await service.delete(WORKSPACE_ID, 'p-1', ACTOR);
+
+    expect(productsDeleting).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      productIds: ['p-1'],
+    });
+    expect(order).toEqual(['deleting', 'delete']);
   });
 });
 
@@ -213,5 +254,18 @@ describe('ProductsService.update', () => {
         },
       },
     ]);
+  });
+
+  it('tells listeners the product changed, so its listings sync', async () => {
+    const { service, repository, productsChanged } = createService();
+    repository.findDetail.mockResolvedValue(detailRecord(PRODUCT_ID, 'Mug'));
+
+    await service.update(WORKSPACE_ID, PRODUCT_ID, DRAFT, ACTOR);
+
+    expect(productsChanged).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      productIds: [PRODUCT_ID],
+      kinds: [CatalogChangeKind.Content, CatalogChangeKind.Price, CatalogChangeKind.Stock],
+    });
   });
 });

@@ -33,7 +33,9 @@ function record(id: string, overrides: Partial<ActivityEventRecord> = {}): Activ
 
 function setup(records: ActivityEventRecord[]) {
   const repository = {
-    listPage: vi.fn<ActivityEventRepository['listPage']>().mockResolvedValue(records),
+    listPage: vi
+      .fn<ActivityEventRepository['listPage']>()
+      .mockResolvedValue({ records, total: records.length }),
   };
   const service = new ActivityService(repository as unknown as ActivityEventRepository);
   return { service, repository };
@@ -69,7 +71,7 @@ describe('ActivityService', () => {
   });
 
   it('skips actions this version does not know', async () => {
-    const { service } = setup([record('known'), record('future', { action: 'listing_published' })]);
+    const { service } = setup([record('known'), record('future', { action: 'order_refunded' })]);
 
     const { items } = await service.list(WORKSPACE_ID, { limit: 25 });
 

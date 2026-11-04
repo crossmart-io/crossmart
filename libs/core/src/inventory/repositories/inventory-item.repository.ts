@@ -1,10 +1,11 @@
+import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 import type { InventoryListQuery } from '../entities/inventory-views.js';
 import type { StockItemBySku } from '../entities/stock-levels.js';
 import {
   INVENTORY_ROW_INCLUDE,
-  INVENTORY_ROW_ORDER,
+  inventoryRowOrder,
   type InventoryRowRecord,
 } from './inventory.queries.js';
 import { STOCK_LEVEL_FILTERS } from './stock-level.filters.js';
@@ -16,14 +17,21 @@ export class InventoryItemRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /** One page of rows, plus one extra that tells the caller whether more exist. */
-  listPage(workspaceId: string, query: InventoryListQuery): Promise<InventoryRowRecord[]> {
-    return this.prisma.inventoryItem.findMany({
-      where: this.toListFilter(workspaceId, query),
-      include: INVENTORY_ROW_INCLUDE,
-      orderBy: INVENTORY_ROW_ORDER,
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  async listPage(
+    workspaceId: string,
+    query: InventoryListQuery,
+  ): Promise<CountedRecords<InventoryRowRecord>> {
+    const where: Prisma.InventoryItemWhereInput = this.toListFilter(workspaceId, query);
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.inventoryItem.findMany({
+        where,
+        include: INVENTORY_ROW_INCLUDE,
+        orderBy: inventoryRowOrder(query.sort, query.direction),
+        ...toPageWindow(query),
+      }),
+      this.prisma.inventoryItem.count({ where }),
+    ]);
+    return { records, total };
   }
 
   findRow(workspaceId: string, inventoryItemId: string): Promise<InventoryRowRecord | null> {

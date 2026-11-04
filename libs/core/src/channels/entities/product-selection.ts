@@ -23,11 +23,12 @@ export const productSelectionFilterSchema = z
 
 /**
  * Which products a connection lists: those matching `filter`, plus `includeProductIds`, minus
- * `excludeProductIds`. Stored on the connection; the publish flow evaluates it.
+ * `excludeProductIds`. A null filter matches nothing, so only the included products are listed.
+ * Stored on the connection; the publish flow evaluates it.
  */
 export const productSelectionRuleSchema = z
   .object({
-    filter: productSelectionFilterSchema,
+    filter: productSelectionFilterSchema.nullable(),
     includeProductIds: productIds,
     excludeProductIds: productIds,
   })

@@ -15,6 +15,7 @@ import { ImportIssueCode } from '../enums/import-issue-code.enum.js';
 import { emptyOutcome } from '../import/import-issues.js';
 import { CatalogImportService } from './catalog-import.service.js';
 import type { ImportJobsService } from './import-jobs.service.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
 
 const WORKSPACE_ID = 'ws-1';
 const JOB_ID = 'job-1';
@@ -46,12 +47,22 @@ function setup() {
     fail: vi.fn<ImportJobsService['fail']>().mockResolvedValue(),
   };
   const activity = new InMemoryActivityRecorder();
+  const events = new CatalogEventBus();
   const service = new CatalogImportService(
     [strategy],
     jobs as unknown as ImportJobsService,
     activity,
+    events,
   );
-  return { service, jobs, run, activity };
+  return {
+    events,
+    productsChanged: vi.spyOn(events, 'productsChanged'),
+    stockChanged: vi.spyOn(events, 'stockChanged'),
+    service,
+    jobs,
+    run,
+    activity,
+  };
 }
 
 describe('CatalogImportService', () => {

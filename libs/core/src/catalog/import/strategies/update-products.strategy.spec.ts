@@ -40,6 +40,7 @@ function target(id: string, handle: string, sku: string): ProductUpdateTargetRec
         optionValues: [],
         price: new Prisma.Decimal('5.00'),
         compareAtPrice: null,
+        cost: null,
         weightGrams: 100,
         requiresShipping: true,
         taxable: true,

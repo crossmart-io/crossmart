@@ -1,7 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import type { ShopifySettings } from '@crossmart/connectors';
 import {
   CatalogGap,
+  PRODUCT_SELECTION_MAX_IDS,
+  PRODUCT_SELECTION_MAX_TAGS,
+  PRODUCT_SELECTION_TEXT_MAX_LENGTH,
   type ProductSelectionFilter,
   type ProductSelectionRule,
 } from '@crossmart/core';
@@ -52,37 +66,82 @@ export class ShopifySettingsDto {
 }
 
 export class ProductSelectionFilterDto implements ProductSelectionFilter {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Matches title, handle or SKU' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(PRODUCT_SELECTION_TEXT_MAX_LENGTH)
   search?: string;
 
   @ApiPropertyOptional({ enum: ProductStatus, enumName: PRODUCT_STATUS_SCHEMA_NAME })
+  @IsOptional()
+  @IsEnum(ProductStatus)
   status?: ProductStatus;
 
   @ApiPropertyOptional({ enum: CatalogGap, enumName: CATALOG_GAP_SCHEMA_NAME })
+  @IsOptional()
+  @IsEnum(CatalogGap)
   gap?: CatalogGap;
 
-  @ApiPropertyOptional({ type: [String] })
+  @ApiPropertyOptional({ type: [String], description: 'Products with any of these tags' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_SELECTION_MAX_TAGS)
+  @IsString({ each: true })
+  @MaxLength(PRODUCT_SELECTION_TEXT_MAX_LENGTH, { each: true })
   tags?: string[];
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Products of this vendor, ignoring case' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(PRODUCT_SELECTION_TEXT_MAX_LENGTH)
   vendor?: string;
+
+  toFilter(): ProductSelectionFilter {
+    return {
+      ...(this.search?.trim() ? { search: this.search.trim() } : {}),
+      ...(this.status ? { status: this.status } : {}),
+      ...(this.gap ? { gap: this.gap } : {}),
+      ...(this.tags?.length ? { tags: this.tags } : {}),
+      ...(this.vendor?.trim() ? { vendor: this.vendor.trim() } : {}),
+    };
+  }
 }
 
-/** Which products the connection lists: the filter's matches, plus and minus these ids. */
+/**
+ * Which products the connection lists: the filter's matches, plus and minus these ids. A null
+ * filter matches nothing, so only `includeProductIds` are listed.
+ */
 export class ProductSelectionRuleDto implements ProductSelectionRule {
-  @ApiProperty({ type: ProductSelectionFilterDto })
-  filter: ProductSelectionFilterDto;
+  @ApiProperty({ type: ProductSelectionFilterDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ProductSelectionFilterDto)
+  filter: ProductSelectionFilterDto | null;
 
   @ApiProperty({ type: [String], format: 'uuid' })
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_SELECTION_MAX_IDS)
+  @IsUUID('all', { each: true })
   includeProductIds: string[];
 
   @ApiProperty({ type: [String], format: 'uuid' })
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_SELECTION_MAX_IDS)
+  @IsUUID('all', { each: true })
   excludeProductIds: string[];
 
   static from(rule: ProductSelectionRule): ProductSelectionRuleDto {
     return Object.assign(new ProductSelectionRuleDto(), {
       ...rule,
-      filter: Object.assign(new ProductSelectionFilterDto(), rule.filter),
+      filter: rule.filter ? Object.assign(new ProductSelectionFilterDto(), rule.filter) : null,
     });
+  }
+
+  toRule(): ProductSelectionRule {
+    return {
+      filter: this.filter ? this.filter.toFilter() : null,
+      includeProductIds: [...new Set(this.includeProductIds)],
+      excludeProductIds: [...new Set(this.excludeProductIds)],
+    };
   }
 }

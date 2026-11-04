@@ -3,9 +3,14 @@ import { AppConfigService } from '@crossmart/common';
 import { ConnectorRuntimeModule } from '../sdk/connector-runtime.module.js';
 import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
+import { ShopifyInventorySync } from './inventory/shopify-inventory-sync.js';
+import { ShopifyLocations } from './inventory/shopify-locations.js';
+import { ShopifyOnlineStore } from './publish/shopify-online-store.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
+import { ShopifyListingPublisher } from './publish/shopify-listing-publisher.js';
 import { ShopifyConnector } from './shopify.connector.js';
 import { ShopifyApp } from './shopify-app.js';
+import { ShopifyStoreCapabilities } from './shopify-store-capabilities.js';
 import { ShopifySignatures } from './shopify-signatures.js';
 import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
 
@@ -23,6 +28,11 @@ import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
     ShopifyAdminClient,
     ShopifyWebhookParser,
     ShopifyCatalogReader,
+    ShopifyLocations,
+    ShopifyOnlineStore,
+    ShopifyListingPublisher,
+    ShopifyInventorySync,
+    ShopifyStoreCapabilities,
     ShopifyConnector,
   ],
   exports: [ShopifyConnector, ShopifyAdminClient],

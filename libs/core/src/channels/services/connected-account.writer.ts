@@ -5,6 +5,10 @@ import type {
   OAuthAppConnector,
 } from '@crossmart/connectors';
 import type { ChannelConnectionView } from '../entities/channel-connection-view.js';
+import {
+  emptyConnectionSettings,
+  serializeConnectionSettings,
+} from '../entities/connection-settings.js';
 import type { OAuthStatePayload } from '../entities/oauth-state.js';
 import { toChannelConnectionView } from '../mappers/channel-connection.mapper.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
@@ -36,7 +40,10 @@ export class ConnectedAccountWriter {
       sealedCredentials: await this.vault.seal(owner, authorization.credentials),
       credentialsExpiresAt: credentialsExpiry(authorization.credentials),
       grantedScopes: authorization.grantedScopes,
-      settings: { account: { ...profile.settings }, productSelection: null },
+      settings: serializeConnectionSettings({
+        ...emptyConnectionSettings(),
+        account: profile.settings,
+      }),
       connectedById: state.userId,
       connectedAt: new Date(),
     });
@@ -49,6 +56,7 @@ function issuedSession(authorization: ChannelAuthorization): ChannelSession {
   return {
     connectionId: authorization.externalAccountId,
     externalAccountId: authorization.externalAccountId,
+    grantedScopes: authorization.grantedScopes,
     accessToken: () => Promise.resolve(authorization.credentials.accessToken),
   };
 }

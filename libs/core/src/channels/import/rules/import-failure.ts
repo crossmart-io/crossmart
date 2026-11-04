@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { ChannelError } from '@crossmart/connectors';
 import { toFailureReason } from '../../../activity/rules/failure-reason.js';
+import { StalledImportError } from './stalled-import.error.js';
 
 /**
  * A failure that retrying cannot fix: the channel refused the request or the credentials, or
@@ -15,8 +16,10 @@ export function isPermanentImportFailure(error: unknown): boolean {
 
 /**
  * A reason that is safe to store and show. Channel errors are written for merchants and never
- * hold credentials, so their message is kept; anything else falls back to the generic rule.
+ * hold credentials, and a stalled import says what to do, so their message is kept; anything
+ * else falls back to the generic rule.
  */
 export function toImportFailureReason(error: unknown): string {
-  return error instanceof ChannelError ? error.message : toFailureReason(error);
+  if (error instanceof ChannelError || error instanceof StalledImportError) return error.message;
+  return toFailureReason(error);
 }

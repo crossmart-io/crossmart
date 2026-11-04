@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
 import type { InventoryRow } from '../entities/inventory-views.js';
 import type { StockAdjustment, StockSnapshot } from '../entities/stock-adjustment.js';
 import { StockAdjustmentMode } from '../enums/stock-adjustment-mode.enum.js';
@@ -29,6 +30,7 @@ export class StockAdjustmentService {
     private readonly items: InventoryItemRepository,
     private readonly writer: StockAdjustmentWriter,
     private readonly activity: ActivityRecorder,
+    private readonly events: CatalogEventBus,
   ) {}
 
   /** Applies the adjustment and returns the item's new stock. Setting the same stock is a no-op. */
@@ -50,6 +52,7 @@ export class StockAdjustmentService {
     const row = toInventoryRow(record);
     if (delta) {
       await this.recordAdjustment(workspaceId, adjustment, row, delta);
+      await this.events.stockChanged({ workspaceId, inventoryItemIds: [inventoryItemId] });
     }
     return row;
   }

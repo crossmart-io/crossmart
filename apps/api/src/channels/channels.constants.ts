@@ -24,6 +24,7 @@ export const ACCOUNT_HANDLE_MAX_LENGTH = 255;
 
 /** Schema names the generated web client uses for the channel enums. */
 export const CHANNEL_TYPE_SCHEMA_NAME = 'ChannelType';
+export const CHANNEL_FEATURE_SCHEMA_NAME = 'ChannelFeature';
 export const CHANNEL_CONNECTION_STATUS_SCHEMA_NAME = 'ChannelConnectionStatus';
 export const CONNECT_FAILURE_SCHEMA_NAME = 'ConnectFailure';
 /** Imports of a connection's catalog, under the connection. */

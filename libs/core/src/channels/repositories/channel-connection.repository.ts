@@ -14,6 +14,18 @@ export interface AccountRef {
   externalAccountId: string;
 }
 
+function isJsonObject(value: Prisma.JsonValue | undefined): value is Prisma.JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** The new account settings over the stored ones, so the merchant's rules survive a re-auth. */
+function keepMerchantRules(
+  stored: Prisma.JsonValue | undefined,
+  incoming: Prisma.InputJsonObject,
+): Prisma.InputJsonObject {
+  return isJsonObject(stored) ? { ...stored, account: incoming.account } : incoming;
+}
+
 /** Only the account's identity, so passing a whole record never widens the filter. */
 function accountFilter({ channel, externalAccountId }: AccountRef): AccountRef {
   return { channel, externalAccountId };
@@ -27,20 +39,52 @@ function accountFilter({ channel, externalAccountId }: AccountRef): AccountRef {
 export class ChannelConnectionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Connecting an account again (re-auth) updates its row and keeps its listings. */
+  /**
+   * Connecting an account again (re-auth) updates its row and keeps its listings, and the
+   * merchant's rules (product selection, pricing): only the account part of settings changes.
+   */
   upsertConnected(record: ConnectedAccountRecord): Promise<ChannelConnectionRecord> {
-    const { workspaceId, channel, externalAccountId, sealedCredentials, ...fields } = record;
-    const data = {
-      ...fields,
-      credentials: sealedCredentials,
-      status: ChannelConnectionStatus.CONNECTED,
-      statusReason: null,
-      disconnectedAt: null,
-    };
-    return this.prisma.channelConnection.upsert({
-      where: { workspaceId_channel_externalAccountId: { workspaceId, channel, externalAccountId } },
-      create: { workspaceId, channel, externalAccountId, ...data },
-      update: data,
+    const { workspaceId, channel, externalAccountId, sealedCredentials, settings, ...fields } =
+      record;
+    const key = { workspaceId, channel, externalAccountId };
+    return this.prisma.$transaction(async (client) => {
+      const existing = await client.channelConnection.findUnique({
+        where: { workspaceId_channel_externalAccountId: key },
+        select: { settings: true },
+      });
+      const data = {
+        ...fields,
+        credentials: sealedCredentials,
+        status: ChannelConnectionStatus.CONNECTED,
+        statusReason: null,
+        disconnectedAt: null,
+      };
+      return client.channelConnection.upsert({
+        where: { workspaceId_channel_externalAccountId: key },
+        create: { ...key, ...data, settings },
+        update: { ...data, settings: keepMerchantRules(existing?.settings, settings) },
+        omit: WITHOUT_CREDENTIALS,
+      });
+    });
+  }
+
+  /** Replaces the connection's settings; the caller has validated them. */
+  async saveSettings(
+    workspaceId: string,
+    connectionId: string,
+    settings: Prisma.InputJsonObject,
+  ): Promise<ChannelConnectionRecord | null> {
+    const { count } = await this.prisma.channelConnection.updateMany({
+      where: { id: connectionId, workspaceId },
+      data: { settings },
+    });
+    return count === 0 ? null : this.findForWorkspace(workspaceId, connectionId);
+  }
+
+  /** Connections that hold working credentials, for scheduled reconciliation. */
+  listConnected(): Promise<ChannelConnectionRecord[]> {
+    return this.prisma.channelConnection.findMany({
+      where: { status: ChannelConnectionStatus.CONNECTED, credentials: { not: null } },
       omit: WITHOUT_CREDENTIALS,
     });
   }

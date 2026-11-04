@@ -7,11 +7,16 @@ import { InventoryService } from './inventory.service.js';
 
 function setup() {
   const items = {
-    listPage: vi.fn<InventoryItemRepository['listPage']>().mockResolvedValue([inventoryRecord()]),
+    listPage: vi.fn<InventoryItemRepository['listPage']>().mockResolvedValue({
+      records: [inventoryRecord()],
+      total: 1,
+    }),
     exists: vi.fn<InventoryItemRepository['exists']>().mockResolvedValue(true),
   };
   const movements = {
-    listPage: vi.fn<InventoryMovementRepository['listPage']>().mockResolvedValue([]),
+    listPage: vi
+      .fn<InventoryMovementRepository['listPage']>()
+      .mockResolvedValue({ records: [], total: 0 }),
   };
   return {
     service: new InventoryService(
@@ -44,29 +49,33 @@ describe('InventoryService', () => {
 
   it('returns a cursor when the repository found one row more than the limit', async () => {
     const { service, items } = setup();
-    items.listPage.mockResolvedValue([
-      inventoryRecord({ id: 'item-a' }),
-      inventoryRecord({ id: 'item-b' }),
-    ]);
+    items.listPage.mockResolvedValue({
+      records: [inventoryRecord({ id: 'item-a' }), inventoryRecord({ id: 'item-b' })],
+      total: 2,
+    });
 
     const page = await service.list(WORKSPACE_ID, { limit: 1 });
 
     expect(page.items).toHaveLength(1);
     expect(page.nextCursor).toBe('item-a');
+    expect(page.total).toBe(2);
   });
 
   it('names who made each change in the history', async () => {
     const { service, movements } = setup();
-    movements.listPage.mockResolvedValue([
-      movementRecord(),
-      movementRecord({
-        id: 'movement-2',
-        actorUserId: null,
-        actorUser: null,
-        apiKeyId: 'key-1',
-        apiKey: { name: 'Stock bot' },
-      }),
-    ]);
+    movements.listPage.mockResolvedValue({
+      total: 2,
+      records: [
+        movementRecord(),
+        movementRecord({
+          id: 'movement-2',
+          actorUserId: null,
+          actorUser: null,
+          apiKeyId: 'key-1',
+          apiKey: { name: 'Stock bot' },
+        }),
+      ],
+    });
 
     const history = await service.history(WORKSPACE_ID, ITEM_ID, { limit: 10 });
 

@@ -1,0 +1,37 @@
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ChannelProductsService, WorkspacePermission } from '@crossmart/core';
+import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
+import { ChannelProductPageDto, ListChannelProductsQueryDto } from '../dto/channel-product.dto.js';
+import {
+  CHANNEL_PRODUCTS_PATH,
+  CONNECTION_ID_PARAM,
+  CONNECTION_ROUTE,
+  LISTINGS_TAG,
+} from '../listings.constants.js';
+
+/** The catalog as one connection sees it: what should be on the channel, and what is. */
+@ApiTags(LISTINGS_TAG)
+@Controller(CONNECTION_ROUTE)
+export class ChannelProductsController {
+  constructor(private readonly products: ChannelProductsService) {}
+
+  @Get(CHANNEL_PRODUCTS_PATH)
+  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @ApiOperation({
+    summary: 'The store’s products with their state on the channel',
+    description:
+      'Products the store should have or still has: listed, pending (being published), failed ' +
+      'or removing (being delisted). Pass `state=excluded` for the catalog products it does not ' +
+      'have. Counts per state follow `search`, so they can label filter tabs.',
+  })
+  @ApiOkResponse({ type: ChannelProductPageDto })
+  async listProducts(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,
+    @Query() query: ListChannelProductsQueryDto,
+  ): Promise<ChannelProductPageDto> {
+    return ChannelProductPageDto.from(await this.products.list(workspaceId, connectionId, query));
+  }
+}

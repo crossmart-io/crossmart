@@ -1,11 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChannelType, isShopifySettings } from '@crossmart/connectors';
+import { ChannelFeature, ChannelType, isShopifySettings } from '@crossmart/connectors';
 import type { ChannelConnectionView } from '@crossmart/core';
 import { ChannelConnectionStatus } from '@crossmart/database';
 import {
   CHANNEL_CONNECTION_STATUS_SCHEMA_NAME,
+  CHANNEL_FEATURE_SCHEMA_NAME,
   CHANNEL_TYPE_SCHEMA_NAME,
 } from '../channels.constants.js';
+import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
 
 /** A channel connection. Credentials are never part of it. */
@@ -32,6 +34,14 @@ export class ChannelConnectionDto {
   grantedScopes: string[];
 
   @ApiProperty({
+    enum: ChannelFeature,
+    enumName: CHANNEL_FEATURE_SCHEMA_NAME,
+    isArray: true,
+    description: 'What the connection cannot do until the merchant approves the app again',
+  })
+  missingFeatures: ChannelFeature[];
+
+  @ApiProperty({
     type: ShopifySettingsDto,
     nullable: true,
     description: 'The store’s details, for Shopify connections',
@@ -44,6 +54,13 @@ export class ChannelConnectionDto {
     description: 'Which products the connection lists; null lists every product',
   })
   productSelection: ProductSelectionRuleDto | null;
+
+  @ApiProperty({
+    type: PricingRuleDto,
+    nullable: true,
+    description: 'How the connection prices variants; null sends catalog prices',
+  })
+  pricing: PricingRuleDto | null;
 
   @ApiProperty()
   connectedAt: Date;
@@ -60,13 +77,18 @@ export class ChannelConnectionDto {
   @ApiProperty()
   updatedAt: Date;
 
-  static from(view: ChannelConnectionView): ChannelConnectionDto {
+  @ApiProperty({ description: 'Listings in this store whose last sync failed' })
+  failedListings: number;
+
+  static from(view: ChannelConnectionView, failedListings = 0): ChannelConnectionDto {
     const { settings, ...fields } = view;
-    const { account, productSelection } = settings;
+    const { account, productSelection, pricing } = settings;
     return Object.assign(new ChannelConnectionDto(), {
       ...fields,
+      failedListings,
       shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
       productSelection: productSelection ? ProductSelectionRuleDto.from(productSelection) : null,
+      pricing: pricing ? PricingRuleDto.from(pricing) : null,
     });
   }
 }

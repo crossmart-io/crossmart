@@ -10,7 +10,7 @@ merchant back to the Channels page.
 |            |                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API        | GraphQL Admin API, version `2026-10` (`SHOPIFY_ADMIN_API_VERSION`)                                                                                                                            |
-| Scopes     | `read_products`, `write_products`, `read_inventory`, `write_inventory`, `read_locations`                                                                                                      |
+| Scopes     | `read_products`, `write_products`, `read_inventory`, `write_inventory`, `read_locations`; optional `write_publications`                                                                       |
 | Tokens     | Expiring offline tokens (`expiring=1`): 1 hour access token, 90 day refresh token. Refreshed 5 minutes before expiry, under a database lock. Public apps must use these from January 1, 2027. |
 | Callback   | `{API_PUBLIC_URL}/api/v1/channels/shopify/oauth/callback`                                                                                                                                     |
 | Webhooks   | `{API_PUBLIC_URL}/api/v1/webhooks/shopify`, verified with `X-Shopify-Hmac-Sha256` over the raw body                                                                                           |
@@ -30,11 +30,11 @@ page is written before the next is read and an import resumes from its stored cu
 
 For each Shopify product:
 
-| Case                                                      | What Crossmart does                                                                                                                                                             |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Already linked to this store (a listing with its GID)     | Refreshes the listing and its variant ids. Product content and stock stay as they are in Crossmart.                                                                             |
-| A catalog product has the same handle, or one of its SKUs | Links it: a listing maps each Shopify variant to the catalog variant with the same SKU or option values. Content and stock stay.                                                |
-| Nothing matches                                           | Creates the product (active, or a draft when it is not active on Shopify) and sets its stock through the inventory ledger (`IMPORTED`, credited to whoever started the import). |
+| Case                                                      | What Crossmart does                                                                                                                                                                                                               |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Already linked to this store (a listing with its GID)     | Refreshes the listing and its variant ids. Product content and stock stay as they are in Crossmart.                                                                                                                               |
+| A catalog product has the same handle, or one of its SKUs | Links it: a listing maps each Shopify variant to the catalog variant with the same SKU or option values. Content and stock stay.                                                                                                  |
+| Nothing matches                                           | Creates the product (active, or a draft when it is not active on Shopify), with each variant's "Cost per item" as its cost, and sets its stock through the inventory ledger (`IMPORTED`, credited to whoever started the import). |
 
 Every listing stores the Shopify product, variant and inventory item GIDs, so publishing and
 stock sync can update them later. Images keep their Shopify CDN URLs, as CSV imports do.
@@ -44,6 +44,46 @@ and products that break the catalog's rules are listed on the import's history e
 Starting an import while one of the same store runs returns the running one. Each page is
 recorded with the cursor after it, so a retried import continues where it stopped, and a
 repeated import is safe: it only refreshes the listings.
+
+## Products in a store
+
+A store gets only the products the merchant adds to it, plus those its automatic rule matches:
+
+- **Added by hand** (the product page's Channels card, or several at once from the products
+  table) or **imported** from the store: they stay until removed by hand, whatever the rule says.
+  Adding publishes the product at once.
+- **Automatic rule** (the store's Settings): off by default; all products, or those matching
+  filters (tags, vendor, status, gaps, search). A product added this way leaves the store when
+  the rule stops matching it.
+- **Removed by hand**: delisted at once, and the rule cannot add it back until it is added again.
+- **Deleted from the catalog**: archived on every store that holds it. The Shopify product id is
+  read before the delete and travels with the delist job, since the listing row is deleted with
+  the product. A rejected archive is logged as activity; outages are retried.
+- **Changes apply at once**: saving the automatic rule publishes what it now adds and delists
+  what it now drops (only the difference), and the editor's preview says how many first. Saving a
+  pricing rule re-sends the prices of listed products. Sync now ("Resync everything") is only
+  for recovery.
+
+Each listing stores how it joined (`listings.source`: `MANUAL`, `IMPORT` or `RULE`). The store's
+Listings tab (`GET .../channel-connections/{id}/products`) shows each product's state there:
+listed, pending, failed or removing, plus `removed_by_hand` ones that can be added back. The
+products table filters by store (`storeFilter`: `in_store`, `not_in_store`, `in_no_store`,
+`with_errors`) and connections report `failedListings`.
+
+## Publishing and stock
+
+| Operation       | Admin GraphQL                                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Publish, update | `productSet` (synchronous), by product id on update: options, every variant (variants left out are deleted), images from public URLs, SKU, barcode, price, compare-at, cost, weight, stock policy. The handle is only set on create. |
+| Online Store    | `publishablePublish` to the Online Store publication after each publish and update (found with `publications`, cached for 10 minutes). Skipped without `write_publications`; a failure is logged and never fails the publish.        |
+| Opening stock   | `inventoryQuantities` of new variants, at the primary location                                                                                                                                                                       |
+| Stock           | `inventorySetQuantities` with `@idempotent` and `changeFromQuantity: null` (Crossmart's ledger is the source of truth), 250 items per call                                                                                           |
+| Reconciliation  | Every 15 minutes: `nodes` reads the `available` quantity of each listed item at the primary location (250 per call), and only items that differ are set again                                                                        |
+| Prices          | `productVariantsBulkUpdate`, one call per product                                                                                                                                                                                    |
+| Delist          | `productUpdate` to `ARCHIVED`: the product leaves sales channels but keeps its orders. Publishing again updates and reactivates it.                                                                                                  |
+
+Images are re-sent only when they changed (`listings.media_digest`). A listing whose Crossmart status is not active,
+or that is hidden on the channel, is sent as `DRAFT`. User errors are stored on the listing as `lastError`.
 
 ## App settings (Shopify Dev Dashboard)
 
@@ -57,7 +97,7 @@ In a new app version, set:
 - **Embed app in Shopify admin**: off.
 - **Redirect URLs**: the callback above, for example
   `http://localhost:3000/api/v1/channels/shopify/oauth/callback`. It must match exactly.
-- **Scopes**: the five scopes above.
+- **Scopes**: the five required scopes above, plus `write_publications`. A store connected without it keeps working, but its products are not shown in the Online Store; its page asks an admin to approve the app again.
 - **Webhooks API version**: `2026-10`.
 
 ### Webhooks
@@ -71,7 +111,7 @@ in `shopify.app.toml` and deploy with `shopify app deploy`:
 embedded = false
 
 [access_scopes]
-scopes = "read_products,write_products,read_inventory,write_inventory,read_locations"
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,write_publications"
 
 [auth]
 redirect_urls = ["https://api.example.com/api/v1/channels/shopify/oauth/callback"]

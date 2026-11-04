@@ -20,6 +20,7 @@ import {
   ChannelAuthorizationService,
   ChannelConnectionsService,
   WorkspacePermission,
+  ChannelListingsService,
 } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
@@ -45,6 +46,7 @@ export class ChannelConnectionsController {
   constructor(
     private readonly connections: ChannelConnectionsService,
     private readonly authorizations: ChannelAuthorizationService,
+    private readonly listings: ChannelListingsService,
   ) {}
 
   @Get()
@@ -55,7 +57,8 @@ export class ChannelConnectionsController {
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
   ): Promise<ChannelConnectionDto[]> {
     const views = await this.connections.list(workspaceId);
-    return views.map((view) => ChannelConnectionDto.from(view));
+    const failed = await this.listings.failedCounts(workspaceId);
+    return views.map((view) => ChannelConnectionDto.from(view, failed.get(view.id) ?? 0));
   }
 
   @Post(AUTHORIZATIONS_PATH)
@@ -85,7 +88,11 @@ export class ChannelConnectionsController {
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,
   ): Promise<ChannelConnectionDto> {
-    return ChannelConnectionDto.from(await this.connections.get(workspaceId, connectionId));
+    const [view, failed] = await Promise.all([
+      this.connections.get(workspaceId, connectionId),
+      this.listings.failedCounts(workspaceId),
+    ]);
+    return ChannelConnectionDto.from(view, failed.get(view.id) ?? 0);
   }
 
   @Post(DISCONNECT_PATH)

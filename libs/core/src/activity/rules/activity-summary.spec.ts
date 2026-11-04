@@ -83,4 +83,37 @@ describe('summarizeActivity', () => {
       }),
     ).toBe('Connecting a channel failed');
   });
+
+  it('names the product and store of listing events, and the connection of rule changes', () => {
+    const product = { type: ActivitySubjectType.Product, id: 'p-1', label: 'Mug' };
+    const store = { type: ActivitySubjectType.ChannelConnection, id: 'c-1', label: 'Demo Store' };
+
+    expect(
+      summarizeActivity({
+        action: ActivityAction.ListingPublished,
+        subject: product,
+        detail: 'Demo Store',
+      }),
+    ).toBe('Published “Mug” on Demo Store');
+    expect(
+      summarizeActivity({
+        action: ActivityAction.ListingDelisted,
+        subject: product,
+        detail: 'Demo Store',
+      }),
+    ).toBe('Delisted “Mug” on Demo Store');
+    expect(
+      summarizeActivity({
+        action: ActivityAction.ChannelPricingUpdated,
+        subject: store,
+        detail: '+15%, .99',
+      }),
+    ).toBe('Changed the pricing rule of “Demo Store”: +15%, .99');
+    expect(
+      summarizeActivity({
+        action: ActivityAction.ListingSyncFailed,
+        outcome: ActivityOutcome.FAILED,
+      }),
+    ).toBe('Syncing a listing failed');
+  });
 });

@@ -36,6 +36,7 @@ export function toVariantFields(variant: VariantDraft, position: number): Varian
     optionValues: variant.optionValues,
     price: variant.price,
     compareAtPrice: variant.compareAtPrice ?? null,
+    cost: variant.cost ?? null,
     weightGrams: variant.weightGrams ?? null,
     requiresShipping: variant.requiresShipping,
     taxable: variant.taxable,

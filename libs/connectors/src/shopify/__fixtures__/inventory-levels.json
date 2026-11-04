@@ -1,0 +1,12 @@
+{
+  "data": {
+    "nodes": [
+      {
+        "id": "gid://shopify/InventoryItem/1",
+        "inventoryLevel": { "quantities": [{ "name": "available", "quantity": 7 }] }
+      },
+      { "id": "gid://shopify/InventoryItem/2", "inventoryLevel": null },
+      null
+    ]
+  }
+}

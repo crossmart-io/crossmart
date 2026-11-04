@@ -1,5 +1,7 @@
+import { sortWithTiebreak, type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService, ProductStatus } from '@crossmart/database';
+import { storeFilterWhere, toProductListWhere } from './product-list.filter.js';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type { CatalogGapCount, CatalogStats, ProductListQuery } from '../entities/product-views.js';
 import { CatalogGap } from '../enums/catalog-gap.enum.js';
@@ -13,8 +15,6 @@ import {
   type ProductUpdateTargetRecord,
 } from './product.queries.js';
 import { toProductCreateInput } from './product-write.mapper.js';
-
-const INSENSITIVE = 'insensitive' as const;
 
 export interface DeletedProduct {
   title: string;
@@ -44,15 +44,27 @@ const CREATED_PRODUCT_SELECT = {
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** One page in title order, plus one extra row that tells the caller whether more exist. */
-  listPage(workspaceId: string, query: ProductListQuery): Promise<ProductSummaryRecord[]> {
-    return this.prisma.product.findMany({
-      where: this.toListFilter(workspaceId, query),
-      include: PRODUCT_SUMMARY_INCLUDE,
-      orderBy: [{ title: 'asc' }, { id: 'asc' }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  /** One page in the query's order, plus one extra row that says whether more exist, and the total. */
+  async listPage(
+    workspaceId: string,
+    query: ProductListQuery,
+  ): Promise<CountedRecords<ProductSummaryRecord>> {
+    const where: Prisma.ProductWhereInput = {
+      AND: [
+        toProductListWhere(workspaceId, query),
+        storeFilterWhere(query.storeFilter, query.storeId),
+      ],
+    };
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: PRODUCT_SUMMARY_INCLUDE,
+        orderBy: sortWithTiebreak(query.sort, query.direction),
+        ...toPageWindow(query),
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return { records, total };
   }
 
   findDetail(workspaceId: string, productId: string): Promise<ProductDetailRecord | null> {
@@ -205,24 +217,6 @@ export class ProductRepository {
     if (!product) return null;
     const { count } = await this.prisma.product.deleteMany({ where });
     return count > 0 ? product : null;
-  }
-
-  private toListFilter(workspaceId: string, query: ProductListQuery): Prisma.ProductWhereInput {
-    const search = query.search?.trim();
-    return {
-      workspaceId,
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.gap ? CATALOG_GAP_FILTERS[query.gap] : {}),
-      ...(search
-        ? {
-            OR: [
-              { title: { contains: search, mode: INSENSITIVE } },
-              { handle: { contains: search, mode: INSENSITIVE } },
-              { variants: { some: { sku: { contains: search, mode: INSENSITIVE } } } },
-            ],
-          }
-        : {}),
-    };
   }
 
   private except(productId: string | undefined): Prisma.ProductWhereInput | undefined {

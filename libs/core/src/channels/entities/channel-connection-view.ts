@@ -1,4 +1,4 @@
-import type { ChannelType } from '@crossmart/connectors';
+import type { ChannelFeature, ChannelType } from '@crossmart/connectors';
 import type { ChannelConnectionStatus } from '@crossmart/database';
 import type { ConnectionSettings } from './connection-settings.js';
 
@@ -11,6 +11,8 @@ export interface ChannelConnectionView {
   status: ChannelConnectionStatus;
   statusReason: string | null;
   grantedScopes: string[];
+  /** What the connection cannot do until the merchant grants the optional scope it needs. */
+  missingFeatures: ChannelFeature[];
   settings: ConnectionSettings;
   connectedAt: Date;
   disconnectedAt: Date | null;

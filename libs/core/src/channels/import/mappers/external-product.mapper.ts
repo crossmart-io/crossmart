@@ -14,6 +14,7 @@ function toVariantDraft(variant: ExternalVariant): VariantDraft {
     optionValues: variant.optionValues,
     price: variant.price,
     compareAtPrice: variant.compareAtPrice ?? undefined,
+    cost: variant.unitCost ?? undefined,
     weightGrams: variant.weightGrams ?? undefined,
     requiresShipping: variant.requiresShipping,
     taxable: variant.taxable,

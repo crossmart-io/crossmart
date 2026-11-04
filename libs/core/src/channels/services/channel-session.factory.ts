@@ -43,6 +43,7 @@ export class ChannelSessionFactory {
     return {
       connectionId,
       externalAccountId: connection.externalAccountId,
+      grantedScopes: connection.grantedScopes,
       accessToken: async () => (await this.currentCredentials(connectionId)).accessToken,
     };
   }

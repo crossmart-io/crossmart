@@ -14,6 +14,17 @@ import type {
 import type { CatalogSource } from '../sdk/capabilities/catalog-source.js';
 import type { ChannelPage, ExternalProduct } from '../sdk/capabilities/catalog.types.js';
 import type {
+  InventoryQuantityUpdate,
+  InventorySync,
+  InventoryUpdateFailure,
+} from '../sdk/capabilities/inventory-sync.js';
+import type {
+  ListingDraft,
+  ListingPublisher,
+  PriceUpdate,
+  PublishedListing,
+} from '../sdk/capabilities/listing-publisher.js';
+import type {
   ChannelWebhookEvent,
   IncomingWebhook,
   WebhookReceiver,
@@ -21,17 +32,18 @@ import type {
 import { ChannelError } from '../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
-import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { APP_UNINSTALL_MUTATION } from './graphql/app-uninstall.mutation.js';
 import { SHOP_QUERY, type ShopData } from './graphql/shop.query.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
+import { ShopifyStoreCapabilities } from './shopify-store-capabilities.js';
 import { isShopDomain, normalizeShopDomain } from './shop-domain.js';
 import {
   SHOPIFY_DISPLAY_NAME,
   SHOPIFY_GRAPHQL_BUCKET_CAPACITY,
   SHOPIFY_GRAPHQL_BUCKET_NAME,
   SHOPIFY_GRAPHQL_RESTORE_PER_SECOND,
+  SHOPIFY_OPTIONAL_SCOPES,
   SHOPIFY_REQUIRED_SCOPES,
   ShopifyOAuthParam,
 } from './shopify.constants.js';
@@ -44,19 +56,25 @@ function shopifyError(code: ChannelErrorCode, message: string): ChannelError {
 }
 
 /**
- * The Shopify connector: OAuth install, store details, webhooks and catalog import. Listing
- * publishing adds its capabilities here as it is built.
+ * The Shopify connector: OAuth install, store details, webhooks, catalog import, publishing
+ * listings and setting stock. Each capability is implemented by its own class and delegated to here.
  */
 @Injectable()
-export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, CatalogSource {
+export class ShopifyConnector
+  implements OAuthAppConnector, WebhookReceiver, CatalogSource, ListingPublisher, InventorySync
+{
   readonly channel = ChannelType.Shopify;
   readonly displayName = SHOPIFY_DISPLAY_NAME;
   readonly authStrategy = ChannelAuthStrategy.OAuthApp;
   readonly capabilities: ReadonlySet<ChannelCapability> = new Set([
     ChannelCapability.ReceiveWebhooks,
     ChannelCapability.ImportCatalog,
+    ChannelCapability.PublishListings,
+    ChannelCapability.UpdatePrice,
+    ChannelCapability.UpdateInventory,
   ]);
   readonly requiredScopes = SHOPIFY_REQUIRED_SCOPES;
+  readonly optionalScopes = SHOPIFY_OPTIONAL_SCOPES;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {
       name: SHOPIFY_GRAPHQL_BUCKET_NAME,
@@ -70,8 +88,12 @@ export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, Cat
     private readonly oauth: ShopifyOAuthClient,
     private readonly admin: ShopifyAdminClient,
     private readonly webhooks: ShopifyWebhookParser,
-    private readonly catalog: ShopifyCatalogReader,
+    private readonly store: ShopifyStoreCapabilities,
   ) {}
+
+  get maxBatchSize(): number {
+    return this.store.inventory.maxBatchSize;
+  }
 
   isConfigured(): boolean {
     return this.oauth.isConfigured;
@@ -151,7 +173,41 @@ export class ShopifyConnector implements OAuthAppConnector, WebhookReceiver, Cat
     session: ChannelSession,
     cursor: string | null,
   ): Promise<ChannelPage<ExternalProduct>> {
-    return this.catalog.fetchProducts(session, cursor);
+    return this.store.catalog.fetchProducts(session, cursor);
+  }
+
+  publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
+    return this.store.publisher.publish(session, draft);
+  }
+
+  update(
+    session: ChannelSession,
+    externalId: string,
+    draft: ListingDraft,
+  ): Promise<PublishedListing> {
+    return this.store.publisher.update(session, externalId, draft);
+  }
+
+  delist(session: ChannelSession, externalId: string): Promise<void> {
+    return this.store.publisher.delist(session, externalId);
+  }
+
+  updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void> {
+    return this.store.publisher.updatePrices(session, updates);
+  }
+
+  setQuantities(
+    session: ChannelSession,
+    updates: readonly InventoryQuantityUpdate[],
+  ): Promise<InventoryUpdateFailure[]> {
+    return this.store.inventory.setQuantities(session, updates);
+  }
+
+  readQuantities(
+    session: ChannelSession,
+    externalInventoryIds: readonly string[],
+  ): Promise<Map<string, number>> {
+    return this.store.inventory.readQuantities(session, externalInventoryIds);
   }
 
   private toSettings({ shop, location }: ShopData): ShopifySettings {

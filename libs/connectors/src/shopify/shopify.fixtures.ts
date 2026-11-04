@@ -3,9 +3,14 @@ import { RecordingSleeper } from '../sdk/time/sleeper.js';
 import { FakeHttpTransport } from '../sdk/testing/fake-http-transport.js';
 import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
+import { ShopifyInventorySync } from './inventory/shopify-inventory-sync.js';
+import { ShopifyOnlineStore } from './publish/shopify-online-store.js';
+import { ShopifyLocations } from './inventory/shopify-locations.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
+import { ShopifyListingPublisher } from './publish/shopify-listing-publisher.js';
 import { ShopifyConnector } from './shopify.connector.js';
 import { ShopifyApp } from './shopify-app.js';
+import { ShopifyStoreCapabilities } from './shopify-store-capabilities.js';
 import { ShopifySignatures } from './shopify-signatures.js';
 import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
 
@@ -34,11 +39,16 @@ export function createShopifyTestKit(
   const signatures = new ShopifySignatures(app);
   const oauth = new ShopifyOAuthClient(app, http, signatures);
   const admin = new ShopifyAdminClient(http, sleeper);
+  const locations = new ShopifyLocations(admin);
   const connector = new ShopifyConnector(
     oauth,
     admin,
     new ShopifyWebhookParser(signatures),
-    new ShopifyCatalogReader(admin),
+    new ShopifyStoreCapabilities(
+      new ShopifyCatalogReader(admin),
+      new ShopifyListingPublisher(admin, locations, new ShopifyOnlineStore(admin)),
+      new ShopifyInventorySync(admin, locations),
+    ),
   );
   return { http, sleeper, oauth, admin, connector };
 }

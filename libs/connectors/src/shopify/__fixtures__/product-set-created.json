@@ -1,0 +1,33 @@
+{
+  "data": {
+    "productSet": {
+      "product": {
+        "id": "gid://shopify/Product/7001",
+        "status": "ACTIVE",
+        "onlineStoreUrl": null,
+        "variants": {
+          "nodes": [
+            {
+              "id": "gid://shopify/ProductVariant/8002",
+              "position": 2,
+              "inventoryItem": { "id": "gid://shopify/InventoryItem/9002" }
+            },
+            {
+              "id": "gid://shopify/ProductVariant/8001",
+              "position": 1,
+              "inventoryItem": { "id": "gid://shopify/InventoryItem/9001" }
+            }
+          ]
+        }
+      },
+      "userErrors": []
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 22,
+      "actualQueryCost": 12,
+      "throttleStatus": { "maximumAvailable": 2000, "currentlyAvailable": 1988, "restoreRate": 100 }
+    }
+  }
+}

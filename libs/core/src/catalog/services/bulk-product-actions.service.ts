@@ -4,6 +4,8 @@ import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
+import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 import type { BulkProductChange, BulkProductResult } from '../entities/bulk-product-change.js';
 import { BulkProductAction } from '../enums/bulk-product-action.enum.js';
 import { ProductBulkWriter } from '../repositories/product-bulk.writer.js';
@@ -16,6 +18,7 @@ export class BulkProductActionsService {
   constructor(
     private readonly writer: ProductBulkWriter,
     private readonly activity: ActivityRecorder,
+    private readonly events: CatalogEventBus,
   ) {}
 
   async apply(
@@ -25,11 +28,29 @@ export class BulkProductActionsService {
     actor: Actor,
   ): Promise<BulkProductResult> {
     const ids = [...new Set(productIds)];
+    if (change.action === BulkProductAction.Delete) {
+      await this.events.productsDeleting({ workspaceId, productIds: ids });
+    }
     const affected = await this.write(workspaceId, ids, change);
     if (affected > 0) {
       await this.activity.record(workspaceId, actor, toActivityEntry(ids, change, affected));
+      await this.notifyChange(workspaceId, ids, change);
     }
     return { affected };
+  }
+
+  /** Deleted products were delisted before the delete; their listings go with them. */
+  private notifyChange(
+    workspaceId: string,
+    productIds: string[],
+    change: BulkProductChange,
+  ): Promise<void> {
+    if (change.action === BulkProductAction.Delete) return Promise.resolve();
+    const kind =
+      change.action === BulkProductAction.AdjustPrices
+        ? CatalogChangeKind.Price
+        : CatalogChangeKind.Content;
+    return this.events.productsChanged({ workspaceId, productIds, kinds: [kind] });
   }
 
   private write(workspaceId: string, ids: string[], change: BulkProductChange): Promise<number> {

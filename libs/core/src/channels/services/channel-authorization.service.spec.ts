@@ -118,7 +118,11 @@ describe('ChannelAuthorizationService', () => {
       const [stored] = connections.upsertConnected.mock.calls[0];
       expect(stored.sealedCredentials).not.toContain('token-1');
       expect(stored.credentialsExpiresAt).toEqual(new Date('2026-11-03T11:00:00.000Z'));
-      expect(stored.settings).toEqual({ account: { channel: 'shopify' }, productSelection: null });
+      expect(stored.settings).toEqual({
+        account: { channel: 'shopify' },
+        productSelection: null,
+        pricing: null,
+      });
       const opened = await vault.open(
         { workspaceId: WORKSPACE_ID, channel: 'shopify', externalAccountId: FAKE_ACCOUNT },
         stored.sealedCredentials,

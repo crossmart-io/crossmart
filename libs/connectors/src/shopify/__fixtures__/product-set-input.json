@@ -1,0 +1,53 @@
+{
+  "handle": "linen-shirt",
+  "title": "Linen shirt",
+  "descriptionHtml": "<p>Breathable.</p>",
+  "vendor": "Acme",
+  "productType": "Shirts",
+  "tags": ["summer", "linen"],
+  "status": "ACTIVE",
+  "productOptions": [
+    { "name": "Size", "position": 1, "values": [{ "name": "S" }, { "name": "M" }] }
+  ],
+  "variants": [
+    {
+      "position": 1,
+      "optionValues": [{ "optionName": "Size", "name": "S" }],
+      "price": "102.99",
+      "compareAtPrice": null,
+      "sku": "SHIRT-S",
+      "barcodes": [{ "value": "4006381333931" }],
+      "inventoryPolicy": "DENY",
+      "taxable": true,
+      "inventoryItem": {
+        "tracked": true,
+        "cost": "40.00",
+        "requiresShipping": true,
+        "measurement": { "weight": { "value": 250, "unit": "GRAMS" } }
+      },
+      "inventoryQuantities": [
+        { "locationId": "gid://shopify/Location/1001", "name": "available", "quantity": 7 }
+      ]
+    },
+    {
+      "position": 2,
+      "optionValues": [{ "optionName": "Size", "name": "M" }],
+      "price": "102.99",
+      "compareAtPrice": "129.99",
+      "sku": "SHIRT-M",
+      "inventoryPolicy": "CONTINUE",
+      "taxable": true,
+      "inventoryItem": { "tracked": true, "cost": null, "requiresShipping": true },
+      "inventoryQuantities": [
+        { "locationId": "gid://shopify/Location/1001", "name": "available", "quantity": 0 }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "originalSource": "https://cdn.example.com/shirt.jpg",
+      "alt": "A linen shirt",
+      "contentType": "IMAGE"
+    }
+  ]
+}

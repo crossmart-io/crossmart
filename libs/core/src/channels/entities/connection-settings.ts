@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { ChannelConnector, ChannelSettings } from '@crossmart/connectors';
+import type { Prisma } from '@crossmart/database';
+import { type PricingRule, pricingRuleSchema } from './pricing-rule.js';
 import { type ProductSelectionRule, productSelectionRuleSchema } from './product-selection.js';
 
 /**
@@ -11,11 +13,14 @@ export interface ConnectionSettings {
   account: ChannelSettings | null;
   /** Null until the merchant chooses products; the publish flow then lists all of them. */
   productSelection: ProductSelectionRule | null;
+  /** Null until the merchant sets one; prices are then sent as they are in the catalog. */
+  pricing: PricingRule | null;
 }
 
 const storedSettingsSchema = z.object({
   account: z.unknown().optional(),
   productSelection: productSelectionRuleSchema.nullable().optional(),
+  pricing: pricingRuleSchema.nullable().optional(),
 });
 
 /** Reads stored settings, letting the connector validate its own part. Throws on bad data. */
@@ -30,9 +35,19 @@ export function parseConnectionSettings(
         ? null
         : connector.parseSettings(stored.account),
     productSelection: stored.productSelection ?? null,
+    pricing: stored.pricing ?? null,
   };
 }
 
 export function emptyConnectionSettings(): ConnectionSettings {
-  return { account: null, productSelection: null };
+  return { account: null, productSelection: null, pricing: null };
+}
+
+/** The stored form of settings, for the connection's JSON column. */
+export function serializeConnectionSettings(settings: ConnectionSettings): Prisma.InputJsonObject {
+  return {
+    account: settings.account ? { ...settings.account } : null,
+    productSelection: settings.productSelection,
+    pricing: settings.pricing,
+  };
 }

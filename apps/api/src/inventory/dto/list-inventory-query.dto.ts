@@ -5,9 +5,17 @@ import {
   INVENTORY_PAGE_DEFAULT_LIMIT,
   INVENTORY_PAGE_MAX_LIMIT,
   type InventoryListQuery,
+  InventorySort,
   StockLevel,
 } from '@crossmart/core';
-import { INVENTORY_SEARCH_MAX_LENGTH, STOCK_LEVEL_SCHEMA_NAME } from '../inventory.constants.js';
+import { SortDirection } from '@crossmart/common';
+import {
+  INVENTORY_SEARCH_MAX_LENGTH,
+  INVENTORY_SORT_SCHEMA_NAME,
+  STOCK_LEVEL_SCHEMA_NAME,
+} from '../inventory.constants.js';
+import { SortDirectionProperty } from '../../common/sort-direction.decorator.js';
+import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ListInventoryQueryDto implements InventoryListQuery {
   @ApiPropertyOptional({ description: 'Matches the SKU or the product title' })
@@ -21,10 +29,25 @@ export class ListInventoryQueryDto implements InventoryListQuery {
   @IsEnum(StockLevel)
   stockLevel?: StockLevel;
 
+  @ApiPropertyOptional({
+    enum: InventorySort,
+    enumName: INVENTORY_SORT_SCHEMA_NAME,
+    default: InventorySort.Title,
+  })
+  @IsOptional()
+  @IsEnum(InventorySort)
+  sort?: InventorySort;
+
+  @SortDirectionProperty(SortDirection.Asc)
+  direction?: SortDirection;
+
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()
   @IsUUID()
   cursor?: string;
+
+  @PageNumberProperty()
+  page?: number;
 
   @ApiPropertyOptional({
     minimum: 1,

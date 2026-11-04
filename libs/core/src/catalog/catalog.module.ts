@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ActivityModule } from '../activity/activity.module.js';
+import { EventsModule } from '../events/events.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import {
   CATALOG_FILE_PARSERS,
@@ -26,6 +27,7 @@ import { CatalogConflictsService } from './services/catalog-conflicts.service.js
 import { CatalogImportService } from './services/catalog-import.service.js';
 import { ImportJobsService } from './services/import-jobs.service.js';
 import { ProductViewsService } from './services/product-views.service.js';
+import { ProductChangeReporter } from './services/product-change.reporter.js';
 import { ProductsService } from './services/products.service.js';
 
 /**
@@ -33,7 +35,7 @@ import { ProductsService } from './services/products.service.js';
  * and an import mode by registering its strategy.
  */
 @Module({
-  imports: [ActivityModule, InventoryModule],
+  imports: [ActivityModule, EventsModule, InventoryModule],
   providers: [
     ProductRepository,
     ProductUpdateWriter,
@@ -42,6 +44,7 @@ import { ProductsService } from './services/products.service.js';
     CatalogConflictsService,
     BulkProductActionsService,
     ProductViewsService,
+    ProductChangeReporter,
     ProductsService,
     ImportJobRepository,
     ImportJobsService,

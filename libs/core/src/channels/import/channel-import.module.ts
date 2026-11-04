@@ -14,6 +14,7 @@ import { ChannelImportRunner } from './services/channel-import.runner.js';
 import { ChannelImportService } from './services/channel-import.service.js';
 import { ChannelProductCreator } from './services/channel-product.creator.js';
 import { ProductMatcher } from './services/product-matcher.js';
+import { StalledImportSweeper } from './services/stalled-import.sweeper.js';
 
 /**
  * Imports a connected channel's catalog: the API starts an import (`ChannelImportService`),
@@ -32,8 +33,9 @@ import { ProductMatcher } from './services/product-matcher.js';
     ChannelImportReporter,
     ChannelImportRunner,
     ChannelImportService,
+    StalledImportSweeper,
     { provide: ChannelImportQueue, useClass: BullChannelImportQueue },
   ],
-  exports: [ChannelImportService, ChannelImportRunner, ChannelImportQueue],
+  exports: [ChannelImportService, ChannelImportRunner, ChannelImportQueue, StalledImportSweeper],
 })
 export class ChannelImportModule {}

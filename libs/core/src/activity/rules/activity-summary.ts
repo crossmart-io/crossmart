@@ -44,6 +44,11 @@ function channelOf(entry: ActivityEntry): string {
   return entry.detail ?? 'a channel';
 }
 
+/** The store a listing event is about ("Demo Store"), which listing events pass as their detail. */
+function onStore(entry: ActivityEntry): string {
+  return entry.detail ? ` on ${entry.detail}` : '';
+}
+
 /** One entry per action, so adding an action without its wording does not compile. */
 const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.ProductCreated]: {
@@ -120,6 +125,46 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.ChannelConnectFailed]: {
     operation: 'Connecting a channel',
     describe: (entry) => `Could not connect ${channelOf(entry)}${named(entry)}`,
+  },
+  [ActivityAction.ListingPublished]: {
+    operation: 'Publishing a listing',
+    describe: (entry) => `Published${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.ListingUpdated]: {
+    operation: 'Updating a listing',
+    describe: (entry) => `Updated the listing of${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.ListingSyncFailed]: {
+    operation: 'Syncing a listing',
+    describe: (entry) => `Could not sync${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.ListingDelisted]: {
+    operation: 'Delisting',
+    describe: (entry) => `Delisted${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.ListingAdded]: {
+    operation: 'Adding a product to a store',
+    describe: (entry) => `Added${named(entry)} to ${entry.detail ?? 'a store'}`,
+  },
+  [ActivityAction.ListingRemoved]: {
+    operation: 'Removing a product from a store',
+    describe: (entry) => `Removed${named(entry)} from ${entry.detail ?? 'a store'}`,
+  },
+  [ActivityAction.ListingOverrideUpdated]: {
+    operation: 'Saving channel overrides',
+    describe: (entry) => `Changed the channel overrides of${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.ChannelPricingUpdated]: {
+    operation: 'Saving a pricing rule',
+    describe: (entry) => withDetail(`Changed the pricing rule of${named(entry)}`, entry),
+  },
+  [ActivityAction.ChannelSelectionUpdated]: {
+    operation: 'Saving a product selection',
+    describe: (entry) => withDetail(`Changed the products listed on${named(entry)}`, entry),
+  },
+  [ActivityAction.ChannelSyncRequested]: {
+    operation: 'Starting a sync',
+    describe: (entry) => withDetail(`Started a sync of${named(entry)}`, entry),
   },
 };
 

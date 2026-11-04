@@ -68,6 +68,20 @@ describe('Catalog (e2e)', () => {
       .set('Cookie', cookie);
     expect(secondPage.body.items).toHaveLength(3);
     expect(secondPage.body.nextCursor).toBeNull();
+    expect(firstPage.body.total).toBe(8);
+
+    // Page numbers, as tables use them, land on the same rows as the cursor.
+    const pageTwo = await request(app.getHttpServer())
+      .get(productsUrl)
+      .query({ limit: 5, page: 2 })
+      .set('Cookie', cookie);
+    expect(pageTwo.body.items).toEqual(secondPage.body.items);
+    expect(pageTwo.body).toMatchObject({ total: 8, nextCursor: null });
+    const badPage = await request(app.getHttpServer())
+      .get(productsUrl)
+      .query({ page: 0 })
+      .set('Cookie', cookie);
+    expect(badPage.status).toBe(HttpStatus.BAD_REQUEST);
 
     const drafts = await request(app.getHttpServer())
       .get(productsUrl)

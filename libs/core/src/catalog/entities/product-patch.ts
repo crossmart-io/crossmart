@@ -24,6 +24,7 @@ const VARIANT_FIELD_KEYS: ReadonlyArray<readonly [ProductDraftField, PatchableVa
   [ProductDraftField.Options, 'optionValues'],
   [ProductDraftField.Price, 'price'],
   [ProductDraftField.CompareAtPrice, 'compareAtPrice'],
+  [ProductDraftField.Cost, 'cost'],
   [ProductDraftField.Weight, 'weightGrams'],
   [ProductDraftField.RequiresShipping, 'requiresShipping'],
   [ProductDraftField.Taxable, 'taxable'],

@@ -1,3 +1,4 @@
+import type { SortDirection } from '@crossmart/common';
 import type { ActivityActorType, ActivityOutcome } from '@crossmart/database';
 import type { ActivityAction } from '../enums/activity-action.enum.js';
 import type { ActivitySubjectType } from '../enums/activity-subject-type.enum.js';
@@ -34,10 +35,14 @@ export interface ActivityPage {
   items: ActivityEventView[];
   /** Pass as `cursor` to get older events; null on the last page. */
   nextCursor: string | null;
+  /** How many match in all, for page numbers. */
+  total: number;
 }
 
-/** Newest first. Absent filters are not applied. */
+/** Newest first unless `direction` says otherwise. Absent filters are not applied. */
 export interface ActivityQuery {
+  /** By time; newest first by default. */
+  direction?: SortDirection;
   action?: ActivityAction;
   outcome?: ActivityOutcome;
   subjectType?: ActivitySubjectType;
@@ -46,5 +51,7 @@ export interface ActivityQuery {
   actorUserId?: string;
   actorApiKeyId?: string;
   cursor?: string;
+  /** 1-based page number, for tables; it wins over `cursor`. */
+  page?: number;
   limit: number;
 }

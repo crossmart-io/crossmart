@@ -7,7 +7,7 @@ import { fakeChannelSession } from '../../sdk/testing/fake-channel-session.js';
 import { fixtureResponse } from '../../sdk/testing/fixtures.js';
 import { createShopifyTestKit, FIXTURES, GRAPHQL_URL, SHOP } from '../shopify.fixtures.js';
 
-const LOCATION_ID = 'gid://shopify/Location/71000000001';
+const LOCATION_ID = 'gid://shopify/Location/1001';
 const PAGE_2_CURSOR = 'eyJsYXN0X2lkIjo5MDAzfQ==';
 
 interface GraphqlBody {

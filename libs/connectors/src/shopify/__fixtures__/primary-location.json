@@ -1,18 +1,10 @@
 {
-  "data": {
-    "location": {
-      "id": "gid://shopify/Location/71000000001"
-    }
-  },
+  "data": { "location": { "id": "gid://shopify/Location/1001" } },
   "extensions": {
     "cost": {
       "requestedQueryCost": 1,
       "actualQueryCost": 1,
-      "throttleStatus": {
-        "maximumAvailable": 2000.0,
-        "currentlyAvailable": 1900,
-        "restoreRate": 100.0
-      }
+      "throttleStatus": { "maximumAvailable": 2000, "currentlyAvailable": 1999, "restoreRate": 100 }
     }
   }
 }

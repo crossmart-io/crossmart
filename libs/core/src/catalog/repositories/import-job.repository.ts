@@ -1,5 +1,16 @@
+import {
+  type CountedRecords,
+  toPageWindow,
+  SortDirection,
+  sortWithTiebreak,
+} from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
-import { type ImportIssueOutcome, ImportJobStatus, PrismaService } from '@crossmart/database';
+import {
+  type ImportIssueOutcome,
+  ImportJobStatus,
+  type Prisma,
+  PrismaService,
+} from '@crossmart/database';
 import type { ImportIssue } from '../entities/catalog-import.js';
 import type { ImportJobCounts, ImportJobListQuery, NewImportJob } from '../entities/import-job.js';
 import {
@@ -79,14 +90,25 @@ export class ImportJobRepository {
   }
 
   /** One page, newest first, plus one extra row that tells the caller whether more exist. */
-  listPage(workspaceId: string, query: ImportJobListQuery): Promise<ImportJobSummaryRecord[]> {
-    return this.prisma.importJob.findMany({
-      where: { workspaceId },
-      include: IMPORT_JOB_SUMMARY_INCLUDE,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+  async listPage(
+    workspaceId: string,
+    query: ImportJobListQuery,
+  ): Promise<CountedRecords<ImportJobSummaryRecord>> {
+    const where: Prisma.ImportJobWhereInput = {
+      workspaceId,
+      status: query.status,
+      format: query.format,
+    };
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.importJob.findMany({
+        where,
+        include: IMPORT_JOB_SUMMARY_INCLUDE,
+        orderBy: sortWithTiebreak('createdAt', query.direction ?? SortDirection.Desc),
+        ...toPageWindow(query),
+      }),
+      this.prisma.importJob.count({ where }),
+    ]);
+    return { records, total };
   }
 
   findDetail(workspaceId: string, jobId: string): Promise<ImportJobDetailRecord | null> {

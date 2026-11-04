@@ -5,6 +5,8 @@ import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activ
 import { BulkProductAction } from '../enums/bulk-product-action.enum.js';
 import type { ProductBulkWriter } from '../repositories/product-bulk.writer.js';
 import { BulkProductActionsService } from './bulk-product-actions.service.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
+import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 
 const WORKSPACE_ID = 'ws-1';
 const ACTOR = Actor.user('user-1');
@@ -18,8 +20,15 @@ function setup() {
     delete: vi.fn<ProductBulkWriter['delete']>().mockResolvedValue(2),
   };
   const activity = new InMemoryActivityRecorder();
-  const service = new BulkProductActionsService(writer as unknown as ProductBulkWriter, activity);
-  return { service, writer, activity };
+  const events = new CatalogEventBus();
+  const productsChanged = vi.spyOn(events, 'productsChanged');
+  const productsDeleting = vi.spyOn(events, 'productsDeleting');
+  const service = new BulkProductActionsService(
+    writer as unknown as ProductBulkWriter,
+    activity,
+    events,
+  );
+  return { service, writer, activity, productsChanged, productsDeleting };
 }
 
 describe('BulkProductActionsService', () => {
@@ -108,5 +117,54 @@ describe('BulkProductActionsService', () => {
     );
 
     expect(activity.recorded).toHaveLength(0);
+  });
+
+  it('tells listeners what changed: prices for price moves, content otherwise, nothing on delete', async () => {
+    const { service, writer, productsChanged } = setup();
+    writer.adjustPrices.mockResolvedValue(1);
+    writer.addTags.mockResolvedValue(1);
+    writer.delete.mockResolvedValue(1);
+
+    await service.apply(
+      WORKSPACE_ID,
+      ['p1'],
+      { action: BulkProductAction.AdjustPrices, percent: 5 },
+      ACTOR,
+    );
+    await service.apply(
+      WORKSPACE_ID,
+      ['p1'],
+      { action: BulkProductAction.AddTags, tags: ['x'] },
+      ACTOR,
+    );
+    await service.apply(WORKSPACE_ID, ['p1'], { action: BulkProductAction.Delete }, ACTOR);
+
+    expect(productsChanged.mock.calls.map(([event]) => event.kinds)).toEqual([
+      [CatalogChangeKind.Price],
+      [CatalogChangeKind.Content],
+    ]);
+  });
+
+  it('lets listeners delist products before a bulk delete, and only then', async () => {
+    const { service, productsDeleting } = setup();
+
+    await service.apply(
+      WORKSPACE_ID,
+      ['p1', 'p1', 'p2'],
+      { action: BulkProductAction.Delete },
+      ACTOR,
+    );
+    await service.apply(
+      WORKSPACE_ID,
+      ['p3'],
+      { action: BulkProductAction.AddTags, tags: ['x'] },
+      ACTOR,
+    );
+
+    expect(productsDeleting).toHaveBeenCalledTimes(1);
+    expect(productsDeleting).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      productIds: ['p1', 'p2'],
+    });
   });
 });

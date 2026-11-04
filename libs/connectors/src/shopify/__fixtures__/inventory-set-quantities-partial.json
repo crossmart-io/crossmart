@@ -1,0 +1,13 @@
+{
+  "data": {
+    "inventorySetQuantities": {
+      "userErrors": [
+        {
+          "code": "ITEM_NOT_STOCKED_AT_LOCATION",
+          "field": ["input", "quantities", "1", "locationId"],
+          "message": "The specified inventory item is not stocked at the location."
+        }
+      ]
+    }
+  }
+}

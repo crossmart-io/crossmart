@@ -11,6 +11,7 @@ import type { InventoryItemRepository } from '../repositories/inventory-item.rep
 import type { StockAdjustmentWriter } from '../repositories/stock-adjustment.writer.js';
 import { inventoryRecord, ITEM_ID, WORKSPACE_ID } from './inventory.fixtures.js';
 import { StockAdjustmentService } from './stock-adjustment.service.js';
+import { CatalogEventBus } from '../../events/services/catalog-event-bus.js';
 
 const STOCK: StockSnapshot = { tracked: true, available: 7, reserved: 2 };
 
@@ -39,12 +40,22 @@ function setup(stock: StockSnapshot | null = STOCK) {
     findRow: vi.fn<InventoryItemRepository['findRow']>().mockResolvedValue(inventoryRecord()),
   };
   const activity = new InMemoryActivityRecorder();
+  const events = new CatalogEventBus();
   const service = new StockAdjustmentService(
     items as unknown as InventoryItemRepository,
     writer as unknown as StockAdjustmentWriter,
     activity,
+    events,
   );
-  return { service, writer, resolvedDeltas, activity };
+  return {
+    events,
+    productsChanged: vi.spyOn(events, 'productsChanged'),
+    stockChanged: vi.spyOn(events, 'stockChanged'),
+    service,
+    writer,
+    resolvedDeltas,
+    activity,
+  };
 }
 
 describe('StockAdjustmentService', () => {

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { toCursorPage } from '@crossmart/common';
+import { toCountedPage } from '@crossmart/common';
 import type {
   InventoryListQuery,
   InventoryMovementPage,
@@ -20,11 +20,11 @@ export class InventoryService {
   ) {}
 
   async list(workspaceId: string, query: InventoryListQuery): Promise<InventoryPage> {
-    const { rows, nextCursor } = toCursorPage(
+    const { rows, nextCursor, total } = toCountedPage(
       await this.items.listPage(workspaceId, query),
       query.limit,
     );
-    return { items: rows.map((record) => toInventoryRow(record)), nextCursor };
+    return { items: rows.map((record) => toInventoryRow(record)), nextCursor, total };
   }
 
   async history(
@@ -35,10 +35,10 @@ export class InventoryService {
     if (!(await this.items.exists(workspaceId, inventoryItemId))) {
       throw new NotFoundException(INVENTORY_ITEM_NOT_FOUND);
     }
-    const { rows, nextCursor } = toCursorPage(
+    const { rows, nextCursor, total } = toCountedPage(
       await this.movements.listPage(workspaceId, inventoryItemId, query),
       query.limit,
     );
-    return { items: rows.map((record) => toMovementView(record)), nextCursor };
+    return { items: rows.map((record) => toMovementView(record)), nextCursor, total };
   }
 }

@@ -147,3 +147,28 @@ describe('ShopifyCsvParser partial parse, for updates', () => {
     expect(issues).toEqual([expect.objectContaining({ code: ImportIssueCode.MissingValue })]);
   });
 });
+
+describe('ShopifyCsvParser cost per item', () => {
+  const header = 'Handle,Title,Variant SKU,Variant Price,Cost per item';
+
+  it('reads the optional cost column as an exact amount, and an empty cell as no cost', () => {
+    const { products, fields } = parser.parse(
+      Buffer.from([header, 'mug,Mug,MUG-1,89,40.5', 'cup,Cup,CUP-1,12,'].join('\n')),
+    );
+
+    expect(products.map((product) => product.variants[0]?.cost)).toEqual(['40.50', undefined]);
+    expect(fields.has(ProductDraftField.Cost)).toBe(true);
+  });
+
+  it('leaves cost out of update files that have no cost column', () => {
+    const { fields } = parser.parse(Buffer.from('Handle,Variant Price\nmug,90'), { partial: true });
+
+    expect(fields.has(ProductDraftField.Cost)).toBe(false);
+  });
+
+  it('rejects a cost that is not an amount', () => {
+    const { issues } = parser.parse(Buffer.from([header, 'mug,Mug,MUG-1,89,cheap'].join('\n')));
+
+    expect(issues[0]?.code).toBe(ImportIssueCode.InvalidValue);
+  });
+});
