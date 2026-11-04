@@ -6,6 +6,8 @@ export interface WorkspaceAccess {
   organizationId: string;
   name: string;
   slug: string;
+  /** ISO 4217 code of the catalog's prices. */
+  currency: string;
   role: WorkspaceRole;
 }
 

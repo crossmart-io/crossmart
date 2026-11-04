@@ -1,45 +1,23 @@
-import { randomUUID } from 'node:crypto';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
 import { WorkspaceRole } from '@crossmart/database';
-import { ApiModule } from '../src/api.module.js';
-import { configureApplication } from '../src/bootstrap/configure-application.js';
-
-const PASSWORD = 'correct-horse-battery';
-const SET_COOKIE_HEADER = 'set-cookie';
-
-interface SignedUpUser {
-  cookie: string;
-  workspaceId: string;
-}
+import { createTestApp, signUp as signUpUser, type SignedUpUser } from './support/test-app.js';
 
 describe('Auth and workspaces (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [ApiModule] }).compile();
-    app = moduleRef.createNestApplication();
-    configureApplication(app);
-    await app.init();
+    app = await createTestApp();
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  async function signUp(name: string): Promise<SignedUpUser> {
-    const signUpResponse = await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .send({ name, email: `${randomUUID()}@example.com`, password: PASSWORD });
-    expect(signUpResponse.status).toBe(HttpStatus.OK);
-    const cookie = [signUpResponse.headers[SET_COOKIE_HEADER]].flat().join('; ');
-
-    const meResponse = await request(app.getHttpServer()).get('/api/v1/me').set('Cookie', cookie);
-    expect(meResponse.status).toBe(HttpStatus.OK);
-    return { cookie, workspaceId: meResponse.body.workspaces[0].id };
+  function signUp(name: string): Promise<SignedUpUser> {
+    return signUpUser(app, name);
   }
 
   it('rejects anonymous callers', async () => {
@@ -56,7 +34,11 @@ describe('Auth and workspaces (e2e)', () => {
       .set('Cookie', cookie);
 
     expect(response.status).toBe(HttpStatus.OK);
-    expect(response.body).toMatchObject({ slug: 'default', role: WorkspaceRole.OWNER });
+    expect(response.body).toMatchObject({
+      slug: 'default',
+      currency: 'USD',
+      role: WorkspaceRole.OWNER,
+    });
   });
 
   it('hides a workspace from users who are not members', async () => {

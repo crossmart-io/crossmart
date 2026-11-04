@@ -1,0 +1,78 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ProductsService, WorkspacePermission } from '@crossmart/core';
+import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
+import { CATALOG_TAG, PRODUCT_ID_PARAM, PRODUCTS_ROUTE } from '../catalog.constants.js';
+import { CreateProductDto } from '../dto/create-product.dto.js';
+import { ListProductsQueryDto } from '../dto/list-products-query.dto.js';
+import { ProductPageDto } from '../dto/product-summary.dto.js';
+import { ProductDto } from '../dto/product.dto.js';
+
+@ApiTags(CATALOG_TAG)
+@Controller(PRODUCTS_ROUTE)
+export class ProductsController {
+  constructor(private readonly products: ProductsService) {}
+
+  @Get()
+  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @ApiOperation({ summary: 'Products of a workspace, in title order' })
+  @ApiOkResponse({ type: ProductPageDto })
+  async list(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Query() query: ListProductsQueryDto,
+  ): Promise<ProductPageDto> {
+    return ProductPageDto.from(await this.products.list(workspaceId, query));
+  }
+
+  @Get(`:${PRODUCT_ID_PARAM}`)
+  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @ApiOperation({ summary: 'A product with its variants, stock and media' })
+  @ApiOkResponse({ type: ProductDto })
+  async get(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
+  ): Promise<ProductDto> {
+    return ProductDto.from(await this.products.get(workspaceId, productId));
+  }
+
+  @Post()
+  @RequirePermission(WorkspacePermission.EditCatalog)
+  @ApiOperation({ summary: 'Create a product with its variants' })
+  @ApiCreatedResponse({ type: ProductDto })
+  async create(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Body() body: CreateProductDto,
+  ): Promise<ProductDto> {
+    return ProductDto.from(await this.products.create(workspaceId, body.toDraft()));
+  }
+
+  @Delete(`:${PRODUCT_ID_PARAM}`)
+  @RequirePermission(WorkspacePermission.EditCatalog)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a product, its variants and their stock' })
+  @ApiNoContentResponse()
+  delete(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
+  ): Promise<void> {
+    return this.products.delete(workspaceId, productId);
+  }
+}

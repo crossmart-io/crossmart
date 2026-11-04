@@ -64,6 +64,12 @@ This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
 - **Programs** (the MCP server, scripts) use a workspace API key in the `x-api-key` header. Keys are created at `POST /api/v1/workspaces/{workspaceId}/api-keys`, carry a role no higher than their creator's, are shown once and stored only as a SHA-256 hash.
 - **Roles** per workspace: `OWNER`, `ADMIN`, `EDITOR`, `APPROVER`, `VIEWER`. Routes declare the permission they need; callers outside the workspace get `404`.
 
+## Catalog
+
+- **Products** have base content (title, HTML description, vendor, type, tags, status), up to three options (Size, Color, Material) and up to 250 variants. Handles are unique per workspace, and so are SKUs. Prices are exact decimal strings (`"19.90"`) in the workspace currency.
+- **Stock** lives in an append-only ledger (`inventory_movements`). Each variant's `available` caches the sum of its movements.
+- **Import** a Shopify product export with `POST /api/v1/workspaces/{workspaceId}/product-imports` (multipart: `format=shopify_csv`, `file`). Products whose handle is already in the catalog are skipped, never overwritten. Invalid rows are reported with their spreadsheet row number. To add another format, implement `CatalogFileParser` and register it in `CatalogModule`.
+
 ## Using Crossmart from Claude, ChatGPT or Cursor
 
 Build the MCP server and register it with your client:
