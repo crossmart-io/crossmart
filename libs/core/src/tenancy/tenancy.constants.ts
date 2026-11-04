@@ -17,3 +17,23 @@ export const API_KEY_ASSIGNABLE_ROLES: readonly WorkspaceRole[] = [
   WorkspaceRole.APPROVER,
   WorkspaceRole.VIEWER,
 ];
+
+/** Roles as people read them, in emails. */
+export const WORKSPACE_ROLE_NAMES: Readonly<Record<WorkspaceRole, string>> = {
+  [WorkspaceRole.OWNER]: 'Owner',
+  [WorkspaceRole.ADMIN]: 'Admin',
+  [WorkspaceRole.EDITOR]: 'Editor',
+  [WorkspaceRole.APPROVER]: 'Approver',
+  [WorkspaceRole.VIEWER]: 'Viewer',
+};
+
+/** How long an invitation link works. Stated in the email. */
+export const INVITATION_TTL_DAYS = 7;
+const MS_PER_DAY = 86_400_000;
+export const INVITATION_TTL_MS = INVITATION_TTL_DAYS * MS_PER_DAY;
+export const INVITATION_TOKEN_BYTES = 32;
+/** Caps the emails one workspace can send to strangers. */
+export const MAX_PENDING_INVITATIONS = 50;
+/** The web app page an invitation link opens, with the token in the query. */
+export const INVITATION_ACCEPT_PATH = '/invitations/accept';
+export const INVITATION_TOKEN_QUERY = 'token';

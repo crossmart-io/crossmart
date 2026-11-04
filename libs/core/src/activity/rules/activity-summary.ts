@@ -110,6 +110,30 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'API key revocation',
     describe: (entry) => `Revoked API key${named(entry)}`,
   },
+  [ActivityAction.MemberInvited]: {
+    operation: 'Invitation',
+    describe: (entry) => withDetail(`Invited${named(entry)}`, entry),
+  },
+  [ActivityAction.InvitationRevoked]: {
+    operation: 'Revoking an invitation',
+    describe: (entry) => `Revoked the invitation of${named(entry)}`,
+  },
+  [ActivityAction.MemberJoined]: {
+    operation: 'Joining the workspace',
+    describe: (entry) => withDetail(`${entry.subject?.label ?? 'A member'} joined`, entry),
+  },
+  [ActivityAction.MemberRoleChanged]: {
+    operation: 'Changing a role',
+    describe: (entry) => withDetail(`Changed the role of${named(entry)}`, entry),
+  },
+  [ActivityAction.MemberRemoved]: {
+    operation: 'Removing a member',
+    describe: (entry) => `Removed${named(entry)} from the workspace`,
+  },
+  [ActivityAction.MemberLeft]: {
+    operation: 'Leaving the workspace',
+    describe: (entry) => `${entry.subject?.label ?? 'A member'} left the workspace`,
+  },
   [ActivityAction.InventoryAdjusted]: {
     operation: 'Stock adjustment',
     describe: (entry) => withDetail(`Adjusted stock of${named(entry)}`, entry),

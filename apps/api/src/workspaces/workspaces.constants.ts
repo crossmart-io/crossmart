@@ -5,10 +5,24 @@ export const ME_ROUTE = 'me';
 export const CURRENT_API_KEY_ROUTE = 'api-key';
 export const WORKSPACES_ROUTE = 'workspaces';
 export const WORKSPACE_ROUTE = 'workspaces/:workspaceId';
-export const MEMBERS_ROUTE = 'members';
 export const API_KEYS_ROUTE = 'workspaces/:workspaceId/api-keys';
 export const API_KEY_ID_PARAM = 'apiKeyId';
 export const API_KEY_NAME_MAX_LENGTH = 100;
 export const WORKSPACE_NAME_MAX_LENGTH = 200;
 /** The name the generated web client uses for the role enum. */
 export const WORKSPACE_ROLE_SCHEMA_NAME = 'WorkspaceRole';
+export const MEMBERS_TAG = 'Members';
+export const WORKSPACE_MEMBERS_ROUTE = 'workspaces/:workspaceId/members';
+export const MEMBER_USER_ID_PARAM = 'userId';
+/** The caller's own membership, so any member can leave. */
+export const MEMBERSHIP_ROUTE = 'workspaces/:workspaceId/membership';
+export const WORKSPACE_INVITATIONS_ROUTE = 'workspaces/:workspaceId/invitations';
+export const INVITATION_ID_PARAM = 'invitationId';
+/** Routes for the person holding an invitation link, outside any workspace they belong to. */
+export const INVITATIONS_ROUTE = 'invitations';
+export const INVITATION_PREVIEW_ROUTE = 'preview';
+export const INVITATION_ACCEPT_ROUTE = 'accept';
+/** RFC 5321's limit on an address. */
+export const EMAIL_MAX_LENGTH = 254;
+/** Invitation tokens are 32 random bytes in base64url; anything far longer is not one. */
+export const INVITATION_TOKEN_MAX_LENGTH = 128;

@@ -1,20 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { type MailMessage, MailSender } from '@crossmart/common';
+import { Injectable } from '@nestjs/common';
+import { MailSender } from '@crossmart/common';
 import {
   type AccountEmailInput,
   emailVerificationEmail,
   passwordResetEmail,
 } from '../emails/account.emails.js';
+import { BackgroundEmails } from './background-emails.js';
 
-/**
- * Sends the emails that guard an account. Sending runs in the background: an attacker must not
- * learn from the response time whether an address has an account.
- */
+/** Sends the emails that guard an account. */
 @Injectable()
-export class AccountEmailsService {
-  private readonly logger = new Logger(AccountEmailsService.name);
-
-  constructor(private readonly mail: MailSender) {}
+export class AccountEmailsService extends BackgroundEmails {
+  constructor(mail: MailSender) {
+    super(mail);
+  }
 
   sendPasswordReset(input: AccountEmailInput): void {
     this.sendInBackground(passwordResetEmail(input));
@@ -22,11 +20,5 @@ export class AccountEmailsService {
 
   sendEmailVerification(input: AccountEmailInput): void {
     this.sendInBackground(emailVerificationEmail(input));
-  }
-
-  private sendInBackground(message: MailMessage): void {
-    this.mail.send(message).catch((error: unknown) => {
-      this.logger.error(`Could not send "${message.subject}": ${String(error)}`);
-    });
   }
 }
