@@ -1,10 +1,17 @@
 import { Module } from '@nestjs/common';
+import { InventoryReportRepository } from './repositories/inventory-report.repository.js';
 import { SalesRepository } from './repositories/sales.repository.js';
+import { InventoryReportService } from './services/inventory-report.service.js';
 import { SalesAnalyticsService } from './services/sales-analytics.service.js';
 
-/** Reports over the workspace's orders, such as sales over time for the overview. */
+/** The overview's reports: sales over the workspace's orders, and stock and store health. */
 @Module({
-  providers: [SalesRepository, SalesAnalyticsService],
-  exports: [SalesAnalyticsService],
+  providers: [
+    SalesRepository,
+    SalesAnalyticsService,
+    InventoryReportRepository,
+    InventoryReportService,
+  ],
+  exports: [SalesAnalyticsService, InventoryReportService],
 })
 export class AnalyticsModule {}

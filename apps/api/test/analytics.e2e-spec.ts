@@ -4,7 +4,12 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
 import { SalesInterval, SalesRange } from '@crossmart/core';
-import { OrderStatus, PrismaService } from '@crossmart/database';
+import {
+  ChannelConnectionStatus,
+  ListingStatus,
+  OrderStatus,
+  PrismaService,
+} from '@crossmart/database';
 import { connectShopifyStore, newShop } from './support/shopify-store.js';
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
@@ -168,6 +173,56 @@ describe('Analytics (e2e)', () => {
 
     const invalid = await report(seller.user, { timeZone: 'Mars/Olympus_Mons' });
     expect(invalid.status).toBe(HttpStatus.BAD_REQUEST);
+  });
+
+  it('values stock at cost and price, counts stock levels and lists each store’s listings', async () => {
+    const user = await signUp(app, 'Stock Seller');
+    const stamp = randomUUID().slice(0, 6);
+    const created = await request(server())
+      .post(`/api/v1/workspaces/${user.workspaceId}/products`)
+      .set('Cookie', user.cookie)
+      .send({
+        title: 'Stock Mug',
+        optionNames: ['Size'],
+        variants: [
+          { sku: `SA-${stamp}`, price: '10', cost: '4', quantity: 10, optionValues: ['L'] },
+          { sku: `SB-${stamp}`, price: '20', quantity: 2, optionValues: ['M'] },
+          { sku: `SC-${stamp}`, price: '8', cost: '5', quantity: 0, optionValues: ['S'] },
+          { sku: `SD-${stamp}`, price: '9', tracked: false, optionValues: ['XS'] },
+        ],
+      });
+    expect(created.status).toBe(HttpStatus.CREATED);
+    const connectionId = await connectShopifyStore(app, http, user, { shop: newShop() });
+    await prisma.listing.create({
+      data: {
+        workspaceId: user.workspaceId,
+        connectionId,
+        productId: created.body.id,
+        status: ListingStatus.ERROR,
+        lastError: 'Shopify rejected the title',
+      },
+    });
+
+    const response = await request(server())
+      .get(`/api/v1/workspaces/${user.workspaceId}/analytics/inventory`)
+      .set('Cookie', user.cookie);
+
+    expect(response.status).toBe(HttpStatus.OK);
+    expect(response.body.value).toEqual({
+      atCost: '40.00',
+      atPrice: '140.00',
+      unitsOnHand: 12,
+      variantsWithoutCost: 1,
+    });
+    expect(response.body.stockLevels).toEqual({
+      inStock: 1,
+      lowStock: 1,
+      outOfStock: 1,
+      untracked: 1,
+    });
+    const [store] = response.body.stores;
+    expect(store).toMatchObject({ connectionId, status: ChannelConnectionStatus.CONNECTED });
+    expect(store.listings).toContainEqual({ status: ListingStatus.ERROR, count: 1 });
   });
 
   it('keeps other workspaces out', async () => {
