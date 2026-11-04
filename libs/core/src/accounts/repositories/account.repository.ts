@@ -60,6 +60,13 @@ export class AccountRepository {
     }));
   }
 
+  findUser(userId: string): Promise<{ id: string; name: string; email: string } | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+  }
+
   /** Deletes the user with their sessions, logins and memberships; their activity stays, unnamed. */
   async deleteUser(userId: string): Promise<void> {
     await this.prisma.user.delete({ where: { id: userId } });

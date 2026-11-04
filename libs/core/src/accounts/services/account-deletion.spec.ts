@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Actor } from '../../activity/entities/actor.js';
 import type { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
+import type { TenancyProvisioningService } from '../../tenancy/services/tenancy-provisioning.service.js';
 import type { AccountRepository } from '../repositories/account.repository.js';
 import { AccountDeletionService } from './account-deletion.service.js';
 import { WorkspaceDeletionService } from './workspace-deletion.service.js';
@@ -14,6 +15,14 @@ function setup() {
     deleteWorkspace: vi.fn<AccountRepository['deleteWorkspace']>().mockResolvedValue(),
     workspacesOf: vi.fn<AccountRepository['workspacesOf']>().mockResolvedValue([]),
     deleteUser: vi.fn<AccountRepository['deleteUser']>().mockResolvedValue(),
+    findUser: vi
+      .fn<AccountRepository['findUser']>()
+      .mockResolvedValue({ id: 'u-1', name: 'Dana', email: 'dana@example.com' }),
+  };
+  const tenancy = {
+    provisionForNewUser: vi
+      .fn<TenancyProvisioningService['provisionForNewUser']>()
+      .mockResolvedValue(),
   };
   const connections = {
     disconnect: vi.fn<ChannelConnectionsService['disconnect']>(),
@@ -21,9 +30,10 @@ function setup() {
   const workspaces = new WorkspaceDeletionService(
     accounts as unknown as AccountRepository,
     connections as unknown as ChannelConnectionsService,
+    tenancy as unknown as TenancyProvisioningService,
   );
   const users = new AccountDeletionService(accounts as unknown as AccountRepository, workspaces);
-  return { accounts, connections, workspaces, users };
+  return { accounts, connections, workspaces, users, tenancy };
 }
 
 describe('WorkspaceDeletionService', () => {
@@ -34,6 +44,18 @@ describe('WorkspaceDeletionService', () => {
 
     expect(connections.disconnect.mock.calls.map(([, id]) => id)).toEqual(['c-1', 'c-2']);
     expect(accounts.deleteWorkspace).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('gives the user a fresh workspace, which provisioning skips if they still have one', async () => {
+    const { workspaces, tenancy } = setup();
+
+    await workspaces.deleteConfirmed('ws-1', 'Shop', Actor.user('u-1'));
+
+    expect(tenancy.provisionForNewUser).toHaveBeenCalledWith({
+      id: 'u-1',
+      name: 'Dana',
+      email: 'dana@example.com',
+    });
   });
 
   it('deletes nothing unless the typed name matches', async () => {

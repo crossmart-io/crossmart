@@ -86,6 +86,9 @@ describe('Deleting workspaces and accounts (e2e)', () => {
         prisma.activityEvent.count({ where }),
       ]),
     ).toEqual([0, 0, 0, 0]);
+    const me = await request(server()).get('/api/v1/me').set('Cookie', owner.cookie);
+    expect(me.body.workspaces).toHaveLength(1);
+    expect(me.body.workspaces[0].id).not.toBe(owner.workspaceId);
   });
 
   it('lets only owners delete a workspace', async () => {
