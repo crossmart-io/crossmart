@@ -19,4 +19,9 @@ export enum ActivityAction {
   ApiKeyCreated = 'api_key_created',
   ApiKeyRevoked = 'api_key_revoked',
   InventoryAdjusted = 'inventory_adjusted',
+  /** A channel account (a Shopify store) was connected, or connected again. */
+  ChannelConnected = 'channel_connected',
+  /** By the merchant, or by the channel when the app was uninstalled. */
+  ChannelDisconnected = 'channel_disconnected',
+  ChannelConnectFailed = 'channel_connect_failed',
 }

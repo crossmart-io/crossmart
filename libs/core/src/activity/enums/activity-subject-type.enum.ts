@@ -5,4 +5,5 @@ export enum ActivitySubjectType {
   /** An entry of the import history; the event links to it. */
   ImportJob = 'import_job',
   ApiKey = 'api_key',
+  ChannelConnection = 'channel_connection',
 }

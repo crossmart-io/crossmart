@@ -1,0 +1,19 @@
+{
+  "data": {
+    "shop": {
+      "name": "Demo Store",
+      "myshopifyDomain": "demo-store.myshopify.com",
+      "currencyCode": "EUR",
+      "ianaTimezone": "Europe/Berlin",
+      "primaryDomain": { "url": "https://shop.example.com" }
+    },
+    "location": { "id": "gid://shopify/Location/1001", "name": "Main warehouse" }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 2,
+      "actualQueryCost": 2,
+      "throttleStatus": { "maximumAvailable": 1000, "currentlyAvailable": 998, "restoreRate": 50 }
+    }
+  }
+}

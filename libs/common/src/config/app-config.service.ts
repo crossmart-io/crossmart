@@ -4,6 +4,13 @@ import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { CORS_ORIGINS_SEPARATOR } from './config.constants.js';
 import { Environment } from './environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
+import type { MasterKeySettings } from '../crypto/envelope/master-key-ring.js';
+
+/** Credentials of an OAuth app a channel issued to Crossmart. */
+export interface OAuthAppCredentials {
+  clientId: string;
+  clientSecret: string;
+}
 
 /** Typed, read-only access to validated configuration. */
 @Injectable()
@@ -56,5 +63,29 @@ export class AppConfigService {
 
   get mediaPublicUrl(): string {
     return this.configService.get('MEDIA_PUBLIC_URL', { infer: true });
+  }
+
+  /** Where channels reach this API: `API_PUBLIC_URL`, else `BETTER_AUTH_URL`. */
+  get apiPublicUrl(): string {
+    return this.configService.get('API_PUBLIC_URL', { infer: true }) ?? this.authBaseUrl;
+  }
+
+  get webAppUrl(): string {
+    return this.configService.get('WEB_APP_URL', { infer: true });
+  }
+
+  get masterKeySettings(): MasterKeySettings {
+    return {
+      currentKey: this.configService.get('CREDENTIALS_MASTER_KEY', { infer: true }),
+      currentVersion: this.configService.get('CREDENTIALS_MASTER_KEY_VERSION', { infer: true }),
+      retiredKeys: this.configService.get('CREDENTIALS_RETIRED_MASTER_KEYS', { infer: true }),
+    };
+  }
+
+  /** The Shopify app, or null when this instance has none configured. */
+  get shopifyApp(): OAuthAppCredentials | null {
+    const clientId = this.configService.get('SHOPIFY_CLIENT_ID', { infer: true });
+    const clientSecret = this.configService.get('SHOPIFY_CLIENT_SECRET', { infer: true });
+    return clientId && clientSecret ? { clientId, clientSecret } : null;
   }
 }

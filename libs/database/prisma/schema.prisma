@@ -27,8 +27,9 @@ model User {
   activity      ActivityEvent[]
   stockMoves    InventoryMovement[]
   importJobs    ImportJob[]
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+  connections   ChannelConnection[]
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -103,21 +104,23 @@ model Organization {
 }
 
 model Workspace {
-  id             String            @id @default(uuid()) @db.Uuid
-  organizationId String            @map("organization_id") @db.Uuid
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   slug           String
   /// ISO 4217 code the catalog's prices are in.
-  currency       String            @default("USD") @db.Char(3)
+  currency       String              @default("USD") @db.Char(3)
   members        WorkspaceMember[]
   apiKeys        ApiKey[]
   products       Product[]
   productViews   ProductView[]
   activity       ActivityEvent[]
   importJobs     ImportJob[]
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
+  dataKey        WorkspaceDataKey?
+  connections    ChannelConnection[]
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -141,21 +144,21 @@ model WorkspaceMember {
 
 /// A workspace-scoped key for the API and MCP. Only a SHA-256 hash of the secret is stored.
 model ApiKey {
-  id          String          @id @default(uuid()) @db.Uuid
-  workspaceId String          @map("workspace_id") @db.Uuid
-  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdById String          @map("created_by_id") @db.Uuid
-  createdBy   User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  id          String              @id @default(uuid()) @db.Uuid
+  workspaceId String              @map("workspace_id") @db.Uuid
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String              @map("created_by_id") @db.Uuid
+  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
   name        String
   role        WorkspaceRole
   prefix      String
-  hash        String          @unique
-  lastUsedAt  DateTime?       @map("last_used_at")
-  expiresAt   DateTime?       @map("expires_at")
-  revokedAt   DateTime?       @map("revoked_at")
+  hash        String              @unique
+  lastUsedAt  DateTime?           @map("last_used_at")
+  expiresAt   DateTime?           @map("expires_at")
+  revokedAt   DateTime?           @map("revoked_at")
   activity    ActivityEvent[]
   stockMoves  InventoryMovement[]
-  createdAt   DateTime        @default(now()) @map("created_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
   importJobs  ImportJob[]
 
   @@index([workspaceId])
@@ -211,6 +214,7 @@ model Product {
   optionNames     String[]       @map("option_names")
   variants        Variant[]
   media           ProductMedia[]
+  listings        Listing[]
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
@@ -235,6 +239,7 @@ model Variant {
   taxable          Boolean          @default(true)
   outOfStockPolicy OutOfStockPolicy @default(STOP_SELLING) @map("out_of_stock_policy")
   inventoryItem    InventoryItem?
+  listingVariants  ListingVariant[]
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
@@ -443,4 +448,130 @@ model ImportJobIssue {
 
   @@index([jobId, position])
   @@map("import_job_issues")
+}
+
+// ─── Channels ─────────────────────────────────────────────────────────────────
+
+/// The key that encrypts a workspace's secrets (channel credentials), wrapped by a master key.
+model WorkspaceDataKey {
+  workspaceId      String    @id @map("workspace_id") @db.Uuid
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// AES-256-GCM sealed data key; never stored in plain text.
+  wrappedKey       String    @map("wrapped_key")
+  /// Which master key wrapped it, so keys can be rotated.
+  masterKeyVersion Int       @map("master_key_version")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("workspace_data_keys")
+}
+
+enum ChannelConnectionStatus {
+  CONNECTED
+  /// The channel no longer accepts the credentials; the merchant must connect again.
+  NEEDS_REAUTH
+  /// Disconnected by the merchant, or the app was uninstalled. Credentials are wiped.
+  DISCONNECTED
+  /// The last sync or account check failed for another reason.
+  ERROR
+
+  @@map("channel_connection_status")
+}
+
+/// A workspace's account on a channel, such as one Shopify store.
+model ChannelConnection {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  workspaceId          String                  @map("workspace_id") @db.Uuid
+  workspace            Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// A `ChannelType` value; kept as text so new channels need no migration.
+  channel              String
+  /// The account on the channel: a Shopify store's `*.myshopify.com` domain.
+  externalAccountId    String                  @map("external_account_id")
+  displayName          String                  @map("display_name")
+  status               ChannelConnectionStatus @default(CONNECTED)
+  /// The connector's credentials as JSON, sealed with the workspace data key. Null once wiped.
+  credentials          String?
+  /// When the access token expires, so it can be refreshed ahead of time. Not a secret.
+  credentialsExpiresAt DateTime?               @map("credentials_expires_at")
+  grantedScopes        String[]                @map("granted_scopes")
+  /// Account settings typed per channel and validated by its connector (currency, location).
+  settings             Json                    @default("{}")
+  /// A short, user-facing reason for `NEEDS_REAUTH` or `ERROR`. Never holds secrets.
+  statusReason         String?                 @map("status_reason")
+  connectedById        String?                 @map("connected_by_id") @db.Uuid
+  connectedBy          User?                   @relation(fields: [connectedById], references: [id], onDelete: SetNull)
+  connectedAt          DateTime                @default(now()) @map("connected_at")
+  disconnectedAt       DateTime?               @map("disconnected_at")
+  lastSyncedAt         DateTime?               @map("last_synced_at")
+  listings             Listing[]
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+
+  @@unique([workspaceId, channel, externalAccountId])
+  /// Webhooks name the account, not the workspace.
+  @@index([channel, externalAccountId])
+  @@map("channel_connections")
+}
+
+enum ListingStatus {
+  /// Waiting to be published.
+  PENDING
+  /// Live on the channel.
+  ACTIVE
+  /// On the channel but not for sale (a draft or archived product).
+  INACTIVE
+  /// The last publish or update failed; see `lastError`.
+  ERROR
+  /// Removed from the channel.
+  DELISTED
+
+  @@map("listing_status")
+}
+
+/// A product on one channel connection, with the ids the channel gave it. A product may have
+/// several listings on one connection (eBay variations of title or pack size), so only the
+/// external id is unique per connection.
+model Listing {
+  id           String            @id @default(uuid()) @db.Uuid
+  workspaceId  String            @map("workspace_id") @db.Uuid
+  connectionId String            @map("connection_id") @db.Uuid
+  connection   ChannelConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  productId    String            @map("product_id") @db.Uuid
+  product      Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The product's id on the channel (a Shopify product GID); null until it is published.
+  externalId   String?           @map("external_id")
+  externalUrl  String?           @map("external_url")
+  status       ListingStatus     @default(PENDING)
+  /// A short, user-facing reason for `ERROR`. Never holds secrets.
+  lastError    String?           @map("last_error")
+  lastSyncedAt DateTime?         @map("last_synced_at")
+  variants     ListingVariant[]
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  @@unique([connectionId, externalId])
+  @@index([connectionId, productId])
+  @@index([workspaceId, productId])
+  @@map("listings")
+}
+
+/// Maps a variant to its ids on a listing's channel, for price and stock sync.
+model ListingVariant {
+  id                  String   @id @default(uuid()) @db.Uuid
+  workspaceId         String   @map("workspace_id") @db.Uuid
+  listingId           String   @map("listing_id") @db.Uuid
+  listing             Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  variantId           String   @map("variant_id") @db.Uuid
+  variant             Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  /// The variant's id on the channel (a Shopify ProductVariant GID).
+  externalId          String   @map("external_id")
+  /// The id stock is set on, where the channel has one (a Shopify InventoryItem GID).
+  externalInventoryId String?  @map("external_inventory_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@unique([listingId, variantId])
+  @@unique([listingId, externalId])
+  @@index([variantId])
+  @@map("listing_variants")
 }

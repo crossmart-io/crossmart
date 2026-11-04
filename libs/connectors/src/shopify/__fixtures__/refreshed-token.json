@@ -1,0 +1,7 @@
+{
+  "access_token": "shpat_fixture_refreshed",
+  "expires_in": 3600,
+  "refresh_token": "shprt_fixture_rotated",
+  "refresh_token_expires_in": 7776000,
+  "scope": "write_products,write_inventory,read_locations"
+}

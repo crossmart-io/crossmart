@@ -12,7 +12,8 @@ import {
 const APP_VERSION = process.env.npm_package_version ?? '0.0.0';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(ApiModule);
+  // Webhook signatures are computed over the raw body, so it is kept next to the parsed one.
+  const app = await NestFactory.create(ApiModule, { rawBody: true });
   configureApplication(app);
 
   const openApiDocument = buildOpenApiDocument(app, APP_VERSION);
