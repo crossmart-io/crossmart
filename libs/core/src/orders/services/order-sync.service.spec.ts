@@ -1,6 +1,7 @@
 import {
   ChannelCapability,
   ChannelConnectorRegistry,
+  ChannelFeature,
   type ExternalOrder,
   type OrderSource,
 } from '@crossmart/connectors';
@@ -79,5 +80,18 @@ describe('OrderSyncService.pollAll', () => {
     expect(ingestion.ingest).toHaveBeenCalledTimes(2);
     expect(connections.markOrdersPolled).toHaveBeenCalledTimes(1);
     expect(connections.markOrdersPolled).toHaveBeenCalledWith(WORKSPACE_ID, 'c-1', NOW);
+  });
+
+  it('starts no store’s order sync before it grants the scope orders need', async () => {
+    const { service, connector, connections } = setup();
+    connector.optionalScopes = [{ scope: 'read_orders', feature: ChannelFeature.OrderSync }];
+    connections.listConnected.mockResolvedValue([
+      connectionRecord({ id: 'c-3', grantedScopes: [] }),
+    ]);
+
+    expect(await service.pollAll(NOW)).toBe(0);
+
+    expect(connections.startOrderSync).not.toHaveBeenCalled();
+    expect(connector.fetchOrders).not.toHaveBeenCalled();
   });
 });

@@ -13,6 +13,7 @@ import {
   type OAuthAuthorizeRequest,
   RateLimitScope,
   type WebhookReceiver,
+  type OptionalScope,
 } from '@crossmart/connectors';
 
 export const FAKE_ACCOUNT = 'demo-store.myshopify.com';
@@ -27,6 +28,7 @@ export class FakeOAuthConnector implements OAuthAppConnector, WebhookReceiver {
     { name: 'fake', scope: RateLimitScope.Connection, capacity: 1, restorePerSecond: 1 },
   ];
   readonly requiredScopes = ['read_products'];
+  optionalScopes?: readonly OptionalScope[];
 
   configured = true;
   authorization: ChannelAuthorization = {

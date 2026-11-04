@@ -4,6 +4,7 @@ import {
   ChannelCapability,
   type ChannelConnector,
   ChannelConnectorRegistry,
+  ChannelFeature,
   type ChannelSession,
   ChannelType,
   type OrderSource,
@@ -18,6 +19,12 @@ import { ORDER_POLL_OVERLAP_MS } from '../orders.constants.js';
 import { OrderIngestionService, type OrderOrigin } from './order-ingestion.service.js';
 
 type OrderConnector = ChannelConnector & OrderSource;
+
+function lacksOrderScope(connector: ChannelConnector, grantedScopes: readonly string[]): boolean {
+  return (connector.optionalScopes ?? []).some(
+    ({ scope, feature }) => feature === ChannelFeature.OrderSync && !grantedScopes.includes(scope),
+  );
+}
 
 interface OpenedStore {
   origin: OrderOrigin;
@@ -97,6 +104,8 @@ export class OrderSyncService {
   private async open(record: ChannelConnectionRecord): Promise<OpenedStore | null> {
     const connector = this.registry.find(requireEnumValue(ChannelType, record.channel));
     if (!connector || !supportsCapability(connector, ChannelCapability.FetchOrders)) return null;
+    // Until the merchant grants reading orders, none are read, so the sync has not started.
+    if (lacksOrderScope(connector, record.grantedScopes)) return null;
     const syncedFrom =
       record.ordersSyncedFrom ??
       (await this.connections.startOrderSync(record.workspaceId, record.id, new Date()));
