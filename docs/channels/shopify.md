@@ -91,6 +91,8 @@ quantities, shipped units, prices and totals, never the buyer.
   "Oversold".
 - Lines match catalog variants by the listing's variant id, else by SKU. Lines that match
   none are kept without holding stock.
+- **Retention:** shipped and cancelled orders are deleted 2 years after they were placed
+  (`ORDER_RETENTION_DAYS`), by a daily job. Open orders stay while they hold stock.
 
 ## Publishing and stock
 
@@ -154,11 +156,11 @@ api_version = "2026-10"
   uri = "https://api.example.com/api/v1/webhooks/shopify"
 ```
 
-| Topic                                        | What Crossmart does                                                                              |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `app/uninstalled`                            | Marks every connection to the store as disconnected and wipes its credentials                    |
-| `customers/data_request`, `customers/redact` | Acknowledges them. Crossmart does not store buyer data yet.                                      |
-| `shop/redact`                                | Wipes credentials, settings and scopes, and deletes the store's listing mappings. Products stay. |
+| Topic                                        | What Crossmart does                                                                                                                                       |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/uninstalled`                            | Marks every connection to the store as disconnected and wipes its credentials                                                                             |
+| `customers/data_request`, `customers/redact` | Acknowledges them. Crossmart does not store buyer data yet.                                                                                               |
+| `shop/redact`                                | Wipes credentials, settings and scopes, and deletes the store's orders and listing mappings. Stock its open orders held goes back on sale. Products stay. |
 
 Webhook URLs must be public HTTPS, so receiving webhooks locally needs a tunnel (for example
 `cloudflared tunnel --url http://localhost:3000`).

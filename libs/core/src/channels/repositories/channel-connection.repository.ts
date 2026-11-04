@@ -208,14 +208,32 @@ export class ChannelConnectionRepository {
   }
 
   /**
-   * Erases what Crossmart stored about an account: credentials, settings, scopes and the
-   * listing ids mapped to it. Products stay; they belong to the merchant.
+   * Erases what Crossmart stored about an account: credentials, settings, scopes, its orders
+   * and the listing ids mapped to it, releasing the stock open orders held. Products stay;
+   * they belong to the merchant.
    */
   async redactAccount(account: AccountRef, now: Date): Promise<number> {
-    const [, { count }] = await this.prisma.$transaction([
-      this.prisma.listing.deleteMany({ where: { connection: accountFilter(account) } }),
+    const connection = accountFilter(account);
+    const [, , , { count }] = await this.prisma.$transaction([
+      // Units the account's open orders still hold go back on sale: Crossmart can no longer
+      // follow those orders, and reconciliation sends the new stock to the other channels.
+      this.prisma.$executeRaw`
+        UPDATE inventory_items i
+        SET available = i.available + held.units, reserved = i.reserved - held.units
+        FROM (
+          SELECT l.variant_id, SUM(l.reserved_quantity)::int AS units
+          FROM order_lines l
+          JOIN orders o ON o.id = l.order_id
+          JOIN channel_connections c ON c.id = o.connection_id
+          WHERE c.channel = ${connection.channel} AND c.external_account_id = ${connection.externalAccountId}
+            AND l.variant_id IS NOT NULL AND l.reserved_quantity > 0
+          GROUP BY l.variant_id
+        ) held
+        WHERE i.variant_id = held.variant_id AND i.tracked`,
+      this.prisma.order.deleteMany({ where: { connection } }),
+      this.prisma.listing.deleteMany({ where: { connection } }),
       this.prisma.channelConnection.updateMany({
-        where: accountFilter(account),
+        where: connection,
         data: {
           ...wipedCredentials(now),
           status: ChannelConnectionStatus.DISCONNECTED,

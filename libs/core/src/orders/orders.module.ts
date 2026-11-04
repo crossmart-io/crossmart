@@ -8,6 +8,7 @@ import { OrderRepository } from './repositories/order.repository.js';
 import { OrderVariantMatcher } from './repositories/order-variant.matcher.js';
 import { OrderWriter } from './repositories/order.writer.js';
 import { OrderIngestionService } from './services/order-ingestion.service.js';
+import { OrderRetentionService } from './services/order-retention.service.js';
 import { OrderSyncService } from './services/order-sync.service.js';
 import { OrderWebhookListener } from './services/order-webhook.listener.js';
 import { OrdersService } from './services/orders.service.js';
@@ -23,11 +24,18 @@ import { OrdersService } from './services/orders.service.js';
     OrderVariantMatcher,
     OrderWriter,
     OrderIngestionService,
+    OrderRetentionService,
     OrderSyncService,
     OrderWebhookListener,
     OrdersService,
     { provide: OrderJobQueue, useClass: BullOrderJobQueue },
   ],
-  exports: [OrdersService, OrderSyncService, OrderIngestionService, OrderJobQueue],
+  exports: [
+    OrdersService,
+    OrderSyncService,
+    OrderIngestionService,
+    OrderRetentionService,
+    OrderJobQueue,
+  ],
 })
 export class OrdersModule {}

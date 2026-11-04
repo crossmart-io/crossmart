@@ -118,3 +118,4 @@ export * from './orders/entities/order-views.js';
 export * from './orders/queue/order-job.queue.js';
 export * from './orders/services/order-sync.service.js';
 export * from './orders/services/orders.service.js';
+export * from './orders/services/order-retention.service.js';

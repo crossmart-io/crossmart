@@ -2,8 +2,16 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
-import { ActivityAction, OrderJobQueue, OrderSyncService, SyncJobQueue } from '@crossmart/core';
+import { ChannelType, FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
+import {
+  ActivityAction,
+  ChannelWebhooksService,
+  ORDER_RETENTION_MS,
+  OrderJobQueue,
+  OrderRetentionService,
+  OrderSyncService,
+  SyncJobQueue,
+} from '@crossmart/core';
 import { InventoryMovementReason, OrderStatus, PrismaService } from '@crossmart/database';
 import { RecordingOrderJobQueue } from './support/recording-order-job.queue.js';
 import { RecordingSyncJobQueue } from './support/recording-sync-job.queue.js';
@@ -119,6 +127,21 @@ describe('Orders (e2e)', () => {
       data: { ordersSyncedFrom: new Date(Date.now() - HOUR_MS) },
     });
     return { user, shop, connectionId, sku };
+  }
+
+  function signedWebhook(topic: string, shop: string, body: object) {
+    const rawBody = Buffer.from(JSON.stringify(body));
+    return {
+      rawBody,
+      headers: {
+        'x-shopify-topic': topic,
+        'x-shopify-shop-domain': shop,
+        'x-shopify-webhook-id': randomUUID(),
+        'x-shopify-hmac-sha256': createHmac('sha256', SHOPIFY_TEST_ENV.SHOPIFY_CLIENT_SECRET)
+          .update(rawBody)
+          .digest('base64'),
+      },
+    };
   }
 
   async function stock(user: SignedUpUser, sku: string) {
@@ -244,5 +267,32 @@ describe('Orders (e2e)', () => {
 
     expect(await stock(user, sku)).toEqual({ onHand: 10, reserved: 1, available: 9 });
     expect(await prisma.order.count({ where: { workspaceId: user.workspaceId } })).toBe(1);
+  });
+
+  it('deletes finished orders past retention, and a store’s orders when its data is erased', async () => {
+    const seller = await sellerWithMug();
+    const { user, sku } = seller;
+    const old = new Date(Date.now() - ORDER_RETENTION_MS - DAY_MS);
+    await pollReturning(seller, [
+      shopifyOrder(7301, [{ sku, quantity: 1, fulfilled: 1 }]),
+      shopifyOrder(7302, [{ sku, quantity: 2 }]),
+    ]);
+    await prisma.order.updateMany({
+      where: { workspaceId: user.workspaceId },
+      data: { placedAt: old },
+    });
+
+    await app.get(OrderRetentionService).purge();
+    expect(
+      (await prisma.order.findMany({ where: { workspaceId: user.workspaceId } })).map(
+        (order) => order.name,
+      ),
+    ).toEqual(['#7302']);
+
+    await app
+      .get(ChannelWebhooksService)
+      .handle(ChannelType.Shopify, signedWebhook('shop/redact', seller.shop, {}));
+    expect(await prisma.order.count({ where: { workspaceId: user.workspaceId } })).toBe(0);
+    expect(await stock(user, sku)).toEqual({ onHand: 9, reserved: 0, available: 9 });
   });
 });
