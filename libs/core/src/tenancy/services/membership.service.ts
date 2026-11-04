@@ -10,32 +10,36 @@ import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type { WorkspaceMemberProfile } from '../entities/workspace-access.js';
+import type { ResolvedRole, RoleAssignment } from '../entities/role-assignment.js';
 import type { MembershipManager } from '../entities/workspace-invitation.js';
-import { roleCovers } from '../permissions/role-permissions.js';
-import { ApiKeyRepository } from '../repositories/api-key.repository.js';
+import type { WorkspacePermission } from '../enums/workspace-permission.enum.js';
+import { permissionsCover } from '../permissions/role-permissions.js';
 import { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
-import { WORKSPACE_ROLE_NAMES } from '../tenancy.constants.js';
+import { roleName } from '../rules/role-name.js';
+import { ApiKeyCleanup } from './api-key-cleanup.js';
+import { RoleResolver } from './role-resolver.js';
 
-export interface RoleChange {
+export interface RoleChange extends RoleAssignment {
   userId: string;
-  role: WorkspaceRole;
 }
 
 interface MembershipChange {
   action: ActivityAction;
   member: WorkspaceMemberProfile;
-  newRole?: WorkspaceRole;
+  newRole?: ResolvedRole;
 }
 
 /**
- * Changes who is in a workspace and with which role. A manager only acts on roles their own
- * covers, and a workspace always keeps an owner. A member's API keys never outlive their access.
+ * Changes who is in a workspace and with which role. A manager only acts on members and roles
+ * their own permissions cover, and a workspace always keeps an owner. A member's API keys never
+ * outlive their access.
  */
 @Injectable()
 export class MembershipService {
   constructor(
     private readonly members: WorkspaceMemberRepository,
-    private readonly apiKeys: ApiKeyRepository,
+    private readonly roles: RoleResolver,
+    private readonly keys: ApiKeyCleanup,
     private readonly activity: ActivityRecorder,
   ) {}
 
@@ -46,22 +50,23 @@ export class MembershipService {
     actor: Actor,
   ): Promise<WorkspaceMemberProfile> {
     const member = await this.requireMember(workspaceId, change.userId);
-    this.assertManages(manager.role, member.role, change.role);
-    if (member.role === change.role) return member;
-    await this.assertKeepsAnOwner(workspaceId, member, change.role);
-    await this.members.updateRole(workspaceId, member.userId, change.role);
-    await this.apiKeys.revokeCreatedBy(
-      workspaceId,
-      member.userId,
-      new Date(),
-      rolesBeyond(change.role),
-    );
+    const target = await this.roles.resolve(workspaceId, change);
+    this.assertManages(manager, member.permissions, target.permissions);
+    if (member.role === target.role && member.customRole?.id === target.customRole?.id) {
+      return member;
+    }
+    await this.assertKeepsAnOwner(workspaceId, member, target.role);
+    await this.members.updateRole(workspaceId, member.userId, {
+      role: target.role,
+      customRoleId: target.customRole?.id ?? null,
+    });
+    await this.keys.revokeBeyond(workspaceId, member.userId, target.permissions);
     await this.record(workspaceId, actor, {
       action: ActivityAction.MemberRoleChanged,
       member,
-      newRole: change.role,
+      newRole: target,
     });
-    return { ...member, role: change.role };
+    return { ...member, ...target };
   }
 
   async remove(
@@ -71,7 +76,7 @@ export class MembershipService {
     actor: Actor,
   ): Promise<void> {
     const member = await this.requireMember(workspaceId, userId);
-    this.assertManages(manager.role, member.role);
+    this.assertManages(manager, member.permissions);
     await this.removeMember(workspaceId, member);
     await this.record(workspaceId, actor, { action: ActivityAction.MemberRemoved, member });
   }
@@ -89,7 +94,7 @@ export class MembershipService {
   private async removeMember(workspaceId: string, member: WorkspaceMemberProfile): Promise<void> {
     await this.assertKeepsAnOwner(workspaceId, member, null);
     await this.members.remove(workspaceId, member.userId);
-    await this.apiKeys.revokeCreatedBy(workspaceId, member.userId, new Date());
+    await this.keys.revokeBeyond(workspaceId, member.userId, null);
   }
 
   private async requireMember(
@@ -103,8 +108,13 @@ export class MembershipService {
     return member;
   }
 
-  private assertManages(managerRole: WorkspaceRole, ...roles: WorkspaceRole[]): void {
-    if (!roles.every((role) => roleCovers(managerRole, role))) {
+  private assertManages(
+    manager: MembershipManager,
+    ...permissionSets: ReadonlySet<WorkspacePermission>[]
+  ): void {
+    if (
+      !permissionSets.every((permissions) => permissionsCover(manager.permissions, permissions))
+    ) {
       throw new ForbiddenException('You cannot change a member with more access than you have');
     }
   }
@@ -126,12 +136,7 @@ export class MembershipService {
     return this.activity.record(workspaceId, actor, {
       action,
       subject: { type: ActivitySubjectType.Member, id: member.userId, label: member.email },
-      ...(newRole ? { detail: `now ${WORKSPACE_ROLE_NAMES[newRole]}` } : {}),
+      ...(newRole ? { detail: `now ${roleName(newRole)}` } : {}),
     });
   }
-}
-
-/** Roles a key may no longer hold once its creator has `role`. */
-function rolesBeyond(role: WorkspaceRole): WorkspaceRole[] {
-  return Object.values(WorkspaceRole).filter((other) => !roleCovers(role, other));
 }

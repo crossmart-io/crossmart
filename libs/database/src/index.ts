@@ -20,6 +20,7 @@ export type {
   ActivityEvent,
   ApiKey,
   ChannelConnection,
+  CustomRole,
   ImportJob,
   ImportJobIssue,
   InventoryItem,

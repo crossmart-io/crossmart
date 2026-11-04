@@ -15,10 +15,10 @@ datasource db {
 // ─── Identity (owned by Better Auth; field names follow its schema) ───────────
 
 model User {
-  id            String              @id @default(uuid()) @db.Uuid
+  id            String                @id @default(uuid()) @db.Uuid
   name          String
-  email         String              @unique
-  emailVerified Boolean             @default(false) @map("email_verified")
+  email         String                @unique
+  emailVerified Boolean               @default(false) @map("email_verified")
   image         String?
   sessions      Session[]
   accounts      Account[]
@@ -29,8 +29,8 @@ model User {
   importJobs    ImportJob[]
   connections   ChannelConnection[]
   invitations   WorkspaceInvitation[]
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -90,6 +90,8 @@ enum WorkspaceRole {
   EDITOR
   APPROVER
   VIEWER
+  /// The permissions come from the workspace's own role, named by `customRoleId`.
+  CUSTOM
 
   @@map("workspace_role")
 }
@@ -105,15 +107,16 @@ model Organization {
 }
 
 model Workspace {
-  id             String              @id @default(uuid()) @db.Uuid
-  organizationId String              @map("organization_id") @db.Uuid
-  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @map("organization_id") @db.Uuid
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   slug           String
   /// ISO 4217 code the catalog's prices are in.
-  currency       String              @default("USD") @db.Char(3)
+  currency       String                @default("USD") @db.Char(3)
   members        WorkspaceMember[]
   invitations    WorkspaceInvitation[]
+  customRoles    CustomRole[]
   apiKeys        ApiKey[]
   products       Product[]
   productViews   ProductView[]
@@ -122,8 +125,8 @@ model Workspace {
   orders         Order[]
   dataKey        WorkspaceDataKey?
   connections    ChannelConnection[]
-  createdAt      DateTime            @default(now()) @map("created_at")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -131,37 +134,62 @@ model Workspace {
 }
 
 model WorkspaceMember {
-  id          String        @id @default(uuid()) @db.Uuid
-  workspaceId String        @map("workspace_id") @db.Uuid
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  userId      String        @map("user_id") @db.Uuid
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role        WorkspaceRole
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  id           String        @id @default(uuid()) @db.Uuid
+  workspaceId  String        @map("workspace_id") @db.Uuid
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String        @map("user_id") @db.Uuid
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         WorkspaceRole
+  /// Set exactly when `role` is CUSTOM (a check constraint enforces it).
+  customRoleId String?       @map("custom_role_id") @db.Uuid
+  customRole   CustomRole?   @relation(fields: [customRoleId], references: [id], onDelete: NoAction)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   @@unique([workspaceId, userId])
+  @@index([customRoleId])
   @@index([userId])
   @@map("workspace_members")
+}
+
+/// A role a workspace defines itself: a name and a set of `WorkspacePermission` values.
+model CustomRole {
+  id          String                @id @default(uuid()) @db.Uuid
+  workspaceId String                @map("workspace_id") @db.Uuid
+  workspace   Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  permissions String[]
+  members     WorkspaceMember[]
+  invitations WorkspaceInvitation[]
+  apiKeys     ApiKey[]
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  @@unique([workspaceId, name])
+  @@map("custom_roles")
 }
 
 /// An emailed invitation to join a workspace with a role. Only a SHA-256 hash of the link's token
 /// is stored. Pending while neither accepted nor revoked, until it expires.
 model WorkspaceInvitation {
-  id          String        @id @default(uuid()) @db.Uuid
-  workspaceId String        @map("workspace_id") @db.Uuid
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id           String        @id @default(uuid()) @db.Uuid
+  workspaceId  String        @map("workspace_id") @db.Uuid
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   /// Lowercased, so it matches the invitee's account whatever case they type.
-  email       String
-  role        WorkspaceRole
-  tokenHash   String        @unique @map("token_hash")
-  invitedById String        @map("invited_by_id") @db.Uuid
-  invitedBy   User          @relation(fields: [invitedById], references: [id], onDelete: Cascade)
-  expiresAt   DateTime      @map("expires_at")
-  acceptedAt  DateTime?     @map("accepted_at")
-  revokedAt   DateTime?     @map("revoked_at")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  email        String
+  role         WorkspaceRole
+  /// The custom role for a CUSTOM invitation; null once that role is deleted, which grants nothing.
+  customRoleId String?       @map("custom_role_id") @db.Uuid
+  customRole   CustomRole?   @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
+  tokenHash    String        @unique @map("token_hash")
+  invitedById  String        @map("invited_by_id") @db.Uuid
+  invitedBy    User          @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt    DateTime      @map("expires_at")
+  acceptedAt   DateTime?     @map("accepted_at")
+  revokedAt    DateTime?     @map("revoked_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   @@index([workspaceId, email])
   @@map("workspace_invitations")
@@ -169,22 +197,25 @@ model WorkspaceInvitation {
 
 /// A workspace-scoped key for the API and MCP. Only a SHA-256 hash of the secret is stored.
 model ApiKey {
-  id          String              @id @default(uuid()) @db.Uuid
-  workspaceId String              @map("workspace_id") @db.Uuid
-  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdById String              @map("created_by_id") @db.Uuid
-  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  name        String
-  role        WorkspaceRole
-  prefix      String
-  hash        String              @unique
-  lastUsedAt  DateTime?           @map("last_used_at")
-  expiresAt   DateTime?           @map("expires_at")
-  revokedAt   DateTime?           @map("revoked_at")
-  activity    ActivityEvent[]
-  stockMoves  InventoryMovement[]
-  createdAt   DateTime            @default(now()) @map("created_at")
-  importJobs  ImportJob[]
+  id           String              @id @default(uuid()) @db.Uuid
+  workspaceId  String              @map("workspace_id") @db.Uuid
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById  String              @map("created_by_id") @db.Uuid
+  createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  name         String
+  role         WorkspaceRole
+  /// The custom role for a CUSTOM key; null once that role is deleted, which grants nothing.
+  customRoleId String?             @map("custom_role_id") @db.Uuid
+  customRole   CustomRole?         @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
+  prefix       String
+  hash         String              @unique
+  lastUsedAt   DateTime?           @map("last_used_at")
+  expiresAt    DateTime?           @map("expires_at")
+  revokedAt    DateTime?           @map("revoked_at")
+  activity     ActivityEvent[]
+  stockMoves   InventoryMovement[]
+  createdAt    DateTime            @default(now()) @map("created_at")
+  importJobs   ImportJob[]
 
   @@index([workspaceId])
   @@map("api_keys")

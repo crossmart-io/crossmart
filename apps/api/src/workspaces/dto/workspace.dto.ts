@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { permissionsOf, type WorkspaceAccess, WorkspacePermission } from '@crossmart/core';
+import { toPermissionList, type WorkspaceAccess, WorkspacePermission } from '@crossmart/core';
 import { WorkspaceRole } from '@crossmart/database';
 import {
   WORKSPACE_PERMISSION_SCHEMA_NAME,
   WORKSPACE_ROLE_SCHEMA_NAME,
 } from '../workspaces.constants.js';
+import { CUSTOM_ROLE_PROPERTY, CustomRoleRefDto } from './role-assignment.dto.js';
 
 export class WorkspaceDto {
   @ApiProperty({ format: 'uuid' })
@@ -34,6 +35,9 @@ export class WorkspaceDto {
   })
   role: WorkspaceRole;
 
+  @ApiProperty(CUSTOM_ROLE_PROPERTY)
+  customRole: CustomRoleRefDto | null;
+
   @ApiProperty({
     enum: WorkspacePermission,
     enumName: WORKSPACE_PERMISSION_SCHEMA_NAME,
@@ -43,6 +47,8 @@ export class WorkspaceDto {
   permissions: WorkspacePermission[];
 
   static from(access: WorkspaceAccess): WorkspaceDto {
-    return Object.assign(new WorkspaceDto(), access, { permissions: permissionsOf(access.role) });
+    return Object.assign(new WorkspaceDto(), access, {
+      permissions: toPermissionList(access.permissions),
+    });
   }
 }

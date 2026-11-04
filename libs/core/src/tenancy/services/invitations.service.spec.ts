@@ -9,12 +9,12 @@ import type {
   PendingInvitation,
   WorkspaceInvitationRepository,
 } from '../repositories/workspace-invitation.repository.js';
-import type { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
+import { fakeRoleResolver, managerWith } from '../testing/role-fixtures.js';
 import { MAX_PENDING_INVITATIONS } from '../tenancy.constants.js';
 import type { InvitationMailer } from './invitation-mailer.js';
 import { InvitationsService } from './invitations.service.js';
 
-const ADMIN = { userId: 'user-1', role: WorkspaceRole.ADMIN };
+const ADMIN = managerWith(WorkspaceRole.ADMIN);
 const ACTOR = Actor.user('user-1');
 const PENDING: PendingInvitation = {
   id: 'inv-1',
@@ -23,6 +23,7 @@ const PENDING: PendingInvitation = {
   inviterName: 'Ana',
   email: 'bo@example.com',
   role: WorkspaceRole.EDITOR,
+  customRole: null,
   expiresAt: new Date('2026-11-11T00:00:00Z'),
 };
 
@@ -34,6 +35,7 @@ function createService() {
           id: 'inv-1',
           email: record.email,
           role: record.role,
+          customRole: null,
           invitedByName: 'Ana',
           workspaceName: 'Acme',
           expiresAt: new Date(),
@@ -45,20 +47,17 @@ function createService() {
     revoke: vi.fn(),
     findPendingByTokenHash: vi.fn().mockResolvedValue(PENDING),
     accept: vi.fn().mockResolvedValue(true),
-  };
-  const members = {
-    isMemberByEmail: vi.fn().mockResolvedValue(false),
-    findRole: vi.fn().mockResolvedValue(WorkspaceRole.EDITOR),
+    hasMember: vi.fn().mockResolvedValue(false),
   };
   const mailer = { send: vi.fn() };
   const activity = new InMemoryActivityRecorder();
   const service = new InvitationsService(
     invitations as unknown as WorkspaceInvitationRepository,
-    members as unknown as WorkspaceMemberRepository,
+    fakeRoleResolver(),
     mailer as unknown as InvitationMailer,
     activity,
   );
-  return { service, invitations, members, mailer, activity };
+  return { service, invitations, mailer, activity };
 }
 
 describe('InvitationsService.invite', () => {
@@ -91,9 +90,9 @@ describe('InvitationsService.invite', () => {
   });
 
   it('refuses members and too many pending invitations', async () => {
-    const { service, members, invitations } = createService();
+    const { service, invitations } = createService();
     const request = { email: 'bo@example.com', role: WorkspaceRole.VIEWER };
-    members.isMemberByEmail.mockResolvedValueOnce(true);
+    invitations.hasMember.mockResolvedValueOnce(true);
     await expect(service.invite('ws-1', ADMIN, request, ACTOR)).rejects.toBeInstanceOf(
       ConflictException,
     );

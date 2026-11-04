@@ -13,6 +13,7 @@ import {
   ChannelType,
 } from '@crossmart/connectors';
 import { ActivityOutcome, WorkspaceRole } from '@crossmart/database';
+import { type BuiltInRole, resolveRole } from '../../tenancy/permissions/role-permissions.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type { WorkspaceAccessService } from '../../tenancy/services/workspace-access.service.js';
@@ -32,7 +33,7 @@ const appConfig = {
   apiPublicUrl: 'http://localhost:3004',
 } as AppConfigService;
 
-function setup(role: WorkspaceRole = WorkspaceRole.OWNER) {
+function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
   const connector = new FakeOAuthConnector();
   const dataKeys = new InMemoryDataKeyStore();
   const ring = MasterKeyRing.fromSettings({
@@ -46,7 +47,9 @@ function setup(role: WorkspaceRole = WorkspaceRole.OWNER) {
     ),
   };
   const workspaceAccess = {
-    findRole: vi.fn<WorkspaceAccessService['findRole']>().mockResolvedValue(role),
+    findRole: vi
+      .fn<WorkspaceAccessService['findRole']>()
+      .mockResolvedValue(resolveRole(role, null)),
   };
   const activity = new InMemoryActivityRecorder();
   const states = new OAuthStateSigner(appConfig);

@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { WorkspaceRole } from '@crossmart/database';
+import type { ApiKeyIdentity, ResolvedRole } from '@crossmart/core';
 import type { PrincipalKind } from '../enums/principal-kind.enum.js';
 
 /** A signed-in person, authenticated by a Better Auth session. */
@@ -10,14 +10,12 @@ export interface UserPrincipal {
   email: string;
 }
 
-/** A program (an MCP server, a script), authenticated by a workspace API key. */
-export interface ApiKeyPrincipal {
+/**
+ * A program (an MCP server, a script), authenticated by a workspace API key. Actions are
+ * attributed to `createdById`, the user who created the key.
+ */
+export interface ApiKeyPrincipal extends ApiKeyIdentity {
   kind: PrincipalKind.ApiKey;
-  apiKeyId: string;
-  workspaceId: string;
-  role: WorkspaceRole;
-  /** The user who created the key; actions are attributed to them. */
-  createdById: string;
 }
 
 export type Principal = UserPrincipal | ApiKeyPrincipal;
@@ -25,5 +23,5 @@ export type Principal = UserPrincipal | ApiKeyPrincipal;
 export interface AuthenticatedRequest extends Request {
   principal?: Principal;
   /** Set by the workspace guard for routes under `/workspaces/:workspaceId`. */
-  workspaceRole?: WorkspaceRole;
+  workspaceAccess?: ResolvedRole;
 }

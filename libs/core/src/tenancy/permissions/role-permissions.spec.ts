@@ -2,10 +2,12 @@ import { ForbiddenException } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { WorkspacePermission } from '../enums/workspace-permission.enum.js';
 import {
-  assertRoleHasPermission,
-  permissionsOf,
-  roleCovers,
-  roleHasPermission,
+  assertHasPermission,
+  builtInPermissions,
+  type BuiltInRole,
+  permissionsCover,
+  resolveRole,
+  toPermissionList,
 } from './role-permissions.js';
 
 const VIEW_PERMISSIONS = [
@@ -18,66 +20,98 @@ const VIEW_PERMISSIONS = [
   WorkspacePermission.ViewChannels,
   WorkspacePermission.ViewActivity,
 ];
+const BUILT_IN_ROLES: BuiltInRole[] = [
+  WorkspaceRole.OWNER,
+  WorkspaceRole.ADMIN,
+  WorkspaceRole.EDITOR,
+  WorkspaceRole.APPROVER,
+  WorkspaceRole.VIEWER,
+];
+const listOf = (role: BuiltInRole) => toPermissionList(builtInPermissions(role));
 
-describe('roleHasPermission', () => {
-  it('lets every role see everything', () => {
-    for (const role of Object.values(WorkspaceRole)) {
-      for (const permission of VIEW_PERMISSIONS) {
-        expect(roleHasPermission(role, permission)).toBe(true);
-      }
+describe('built-in roles', () => {
+  it('let every role see everything and a viewer nothing more', () => {
+    for (const role of BUILT_IN_ROLES) {
+      expect(permissionsCover(builtInPermissions(role), VIEW_PERMISSIONS)).toBe(true);
     }
+    expect(listOf(WorkspaceRole.VIEWER)).toEqual(VIEW_PERMISSIONS);
   });
 
-  it('gives a viewer nothing more', () => {
-    expect(permissionsOf(WorkspaceRole.VIEWER)).toEqual(VIEW_PERMISSIONS);
+  it('reserve deleting a workspace for the owner, who has every permission', () => {
+    expect(listOf(WorkspaceRole.OWNER)).toEqual(Object.values(WorkspacePermission));
+    expect(builtInPermissions(WorkspaceRole.ADMIN).has(WorkspacePermission.DeleteWorkspace)).toBe(
+      false,
+    );
   });
 
-  it('reserves deleting a workspace for the owner', () => {
-    expect(roleHasPermission(WorkspaceRole.OWNER, WorkspacePermission.DeleteWorkspace)).toBe(true);
-    expect(roleHasPermission(WorkspaceRole.ADMIN, WorkspacePermission.DeleteWorkspace)).toBe(false);
+  it('let an editor work the catalog but not run stores or the team', () => {
+    const editor = builtInPermissions(WorkspaceRole.EDITOR);
+    expect(
+      permissionsCover(editor, [
+        WorkspacePermission.EditProducts,
+        WorkspacePermission.EditInventory,
+        WorkspacePermission.EditListings,
+      ]),
+    ).toBe(true);
+    expect(editor.has(WorkspacePermission.ManageChannels)).toBe(false);
+    expect(editor.has(WorkspacePermission.ManageMembers)).toBe(false);
+    expect(editor.has(WorkspacePermission.ApproveSuggestions)).toBe(false);
   });
 
-  it('lets an editor work the catalog but not run stores or the team', () => {
-    const editor = new Set(permissionsOf(WorkspaceRole.EDITOR));
-    expect(editor).toContain(WorkspacePermission.EditProducts);
-    expect(editor).toContain(WorkspacePermission.EditInventory);
-    expect(editor).toContain(WorkspacePermission.EditListings);
-    expect(editor).not.toContain(WorkspacePermission.ManageChannels);
-    expect(editor).not.toContain(WorkspacePermission.ManageMembers);
-    expect(editor).not.toContain(WorkspacePermission.ApproveSuggestions);
-  });
-
-  it('lets an approver approve and change nothing else', () => {
-    expect(permissionsOf(WorkspaceRole.APPROVER)).toEqual([
+  it('let an approver approve and change nothing else', () => {
+    expect(listOf(WorkspaceRole.APPROVER)).toEqual([
       ...VIEW_PERMISSIONS,
       WorkspacePermission.ApproveSuggestions,
     ]);
   });
+});
 
-  it('gives the owner every permission', () => {
-    expect(permissionsOf(WorkspaceRole.OWNER)).toEqual(Object.values(WorkspacePermission));
+describe('resolveRole', () => {
+  const stored = {
+    id: 'role-1',
+    name: 'Stock clerk',
+    permissions: [
+      WorkspacePermission.ViewWorkspace,
+      WorkspacePermission.EditInventory,
+      WorkspacePermission.DeleteWorkspace,
+      'reports:export',
+    ],
+  };
+
+  it('keeps known permissions of a custom role and never owner-only ones', () => {
+    const resolved = resolveRole(WorkspaceRole.CUSTOM, stored);
+    expect(resolved.customRole).toEqual({ id: 'role-1', name: 'Stock clerk' });
+    expect(toPermissionList(resolved.permissions)).toEqual([
+      WorkspacePermission.ViewWorkspace,
+      WorkspacePermission.EditInventory,
+    ]);
+  });
+
+  it('grants nothing for a custom role that is gone', () => {
+    expect(resolveRole(WorkspaceRole.CUSTOM, null).permissions.size).toBe(0);
+  });
+
+  it('ignores a custom role next to a built-in one', () => {
+    expect(resolveRole(WorkspaceRole.VIEWER, stored)).toMatchObject({ customRole: null });
   });
 });
 
-describe('assertRoleHasPermission', () => {
+describe('assertHasPermission', () => {
   it('refuses a missing permission', () => {
-    expect(() =>
-      assertRoleHasPermission(WorkspaceRole.VIEWER, WorkspacePermission.EditInventory),
-    ).toThrow(ForbiddenException);
-    expect(() =>
-      assertRoleHasPermission(WorkspaceRole.EDITOR, WorkspacePermission.EditInventory),
-    ).not.toThrow();
+    const viewer = builtInPermissions(WorkspaceRole.VIEWER);
+    expect(() => assertHasPermission(viewer, WorkspacePermission.EditInventory)).toThrow(
+      ForbiddenException,
+    );
+    expect(() => assertHasPermission(viewer, WorkspacePermission.ViewOrders)).not.toThrow();
   });
 });
 
-describe('roleCovers', () => {
-  it('lets an admin grant any role but owner', () => {
-    expect(roleCovers(WorkspaceRole.ADMIN, WorkspaceRole.EDITOR)).toBe(true);
-    expect(roleCovers(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)).toBe(false);
-  });
-
-  it('stops an editor from granting approval rights', () => {
-    expect(roleCovers(WorkspaceRole.EDITOR, WorkspaceRole.APPROVER)).toBe(false);
-    expect(roleCovers(WorkspaceRole.EDITOR, WorkspaceRole.VIEWER)).toBe(true);
+describe('permissionsCover', () => {
+  it('lets an admin grant any role but owner, and stops an editor granting approval', () => {
+    const admin = builtInPermissions(WorkspaceRole.ADMIN);
+    expect(permissionsCover(admin, builtInPermissions(WorkspaceRole.EDITOR))).toBe(true);
+    expect(permissionsCover(admin, builtInPermissions(WorkspaceRole.OWNER))).toBe(false);
+    const editor = builtInPermissions(WorkspaceRole.EDITOR);
+    expect(permissionsCover(editor, builtInPermissions(WorkspaceRole.APPROVER))).toBe(false);
   });
 });

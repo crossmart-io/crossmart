@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { generateSecureToken, hashSecret } from '@crossmart/common';
-import type { ApiKey, WorkspaceRole } from '@crossmart/database';
+import type { ApiKey } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
@@ -11,8 +11,9 @@ import type {
   IssuedApiKey,
   NewApiKey,
 } from '../entities/api-key-identity.js';
-import { roleCovers } from '../permissions/role-permissions.js';
-import { ApiKeyRepository } from '../repositories/api-key.repository.js';
+import type { MembershipManager } from '../entities/workspace-invitation.js';
+import { permissionsCover, resolveRole } from '../permissions/role-permissions.js';
+import { ApiKeyRepository, type ApiKeyWithRole } from '../repositories/api-key.repository.js';
 import {
   API_KEY_ASSIGNABLE_ROLES,
   API_KEY_LAST_USED_THROTTLE_MS,
@@ -20,34 +21,32 @@ import {
   API_KEY_TOKEN_PREFIX,
   API_KEY_VISIBLE_PREFIX_LENGTH,
 } from '../tenancy.constants.js';
-
-export interface ApiKeyIssuer {
-  userId: string;
-  role: WorkspaceRole;
-}
+import { RoleResolver } from './role-resolver.js';
 
 /** Workspace API keys for the REST API and the MCP server. Only hashes are stored. */
 @Injectable()
 export class ApiKeysService {
   constructor(
     private readonly apiKeys: ApiKeyRepository,
+    private readonly roles: RoleResolver,
     private readonly activity: ActivityRecorder,
   ) {}
 
-  /** The issuer's role caps the key's; `actor` is who the activity log credits. */
+  /** The issuer's permissions cap the key's; `actor` is who the activity log credits. */
   async issue(
     workspaceId: string,
-    issuer: ApiKeyIssuer,
+    issuer: MembershipManager,
     request: NewApiKey,
     actor: Actor,
   ): Promise<IssuedApiKey> {
-    this.assertAssignable(issuer.role, request.role);
+    await this.assertAssignable(workspaceId, issuer, request);
     const secret = `${API_KEY_TOKEN_PREFIX}${generateSecureToken(API_KEY_SECRET_BYTES)}`;
     const apiKey = await this.apiKeys.create({
       workspaceId,
       createdById: issuer.userId,
       name: request.name,
       role: request.role,
+      customRoleId: request.customRoleId ?? null,
       prefix: secret.slice(0, API_KEY_VISIBLE_PREFIX_LENGTH),
       hash: hashSecret(secret),
       expiresAt: request.expiresAt,
@@ -82,16 +81,21 @@ export class ApiKeysService {
     return {
       apiKeyId: apiKey.id,
       workspaceId: apiKey.workspaceId,
-      role: apiKey.role,
       createdById: apiKey.createdById,
+      ...resolveRole(apiKey.role, apiKey.customRole),
     };
   }
 
-  private assertAssignable(issuerRole: WorkspaceRole, requestedRole: WorkspaceRole): void {
-    if (!API_KEY_ASSIGNABLE_ROLES.includes(requestedRole)) {
-      throw new ForbiddenException(`API keys cannot have the ${requestedRole} role`);
+  private async assertAssignable(
+    workspaceId: string,
+    issuer: MembershipManager,
+    request: NewApiKey,
+  ): Promise<void> {
+    if (!API_KEY_ASSIGNABLE_ROLES.includes(request.role)) {
+      throw new ForbiddenException(`API keys cannot have the ${request.role} role`);
     }
-    if (!roleCovers(issuerRole, requestedRole)) {
+    const { permissions } = await this.roles.resolve(workspaceId, request);
+    if (!permissionsCover(issuer.permissions, permissions)) {
       throw new ForbiddenException('An API key cannot have more access than its creator');
     }
   }
@@ -121,11 +125,13 @@ export class ApiKeysService {
     });
   }
 
-  private toSummary(apiKey: ApiKey): ApiKeySummary {
+  private toSummary(apiKey: ApiKeyWithRole): ApiKeySummary {
+    const { customRole } = resolveRole(apiKey.role, apiKey.customRole);
     return {
       id: apiKey.id,
       name: apiKey.name,
       role: apiKey.role,
+      customRole,
       prefix: apiKey.prefix,
       lastUsedAt: apiKey.lastUsedAt,
       expiresAt: apiKey.expiresAt,

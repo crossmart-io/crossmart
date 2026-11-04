@@ -7,11 +7,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
-  roleHasPermission,
+  type ResolvedRole,
   WorkspaceAccessService,
   type WorkspacePermission,
 } from '@crossmart/core';
-import type { WorkspaceRole } from '@crossmart/database';
 import { REQUIRED_PERMISSION_METADATA_KEY, WORKSPACE_ID_PARAM } from '../auth.constants.js';
 import { PrincipalKind } from '../enums/principal-kind.enum.js';
 import type { AuthenticatedRequest, Principal } from '../entities/principal.js';
@@ -37,23 +36,28 @@ export class WorkspaceAccessGuard implements CanActivate {
     }
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const workspaceId = request.params[WORKSPACE_ID_PARAM];
-    const role =
+    const access =
       request.principal && typeof workspaceId === 'string'
-        ? await this.findRole(request.principal, workspaceId)
+        ? await this.findAccess(request.principal, workspaceId)
         : null;
-    if (!role) {
+    if (!access) {
       throw new NotFoundException('Workspace not found');
     }
-    if (!roleHasPermission(role, permission)) {
+    if (!access.permissions.has(permission)) {
       throw new ForbiddenException(`Requires the ${permission} permission`);
     }
-    request.workspaceRole = role;
+    request.workspaceAccess = access;
     return true;
   }
 
-  private async findRole(principal: Principal, workspaceId: string): Promise<WorkspaceRole | null> {
+  /** An API key carries its resolved role; a user's comes from their membership. */
+  private async findAccess(
+    principal: Principal,
+    workspaceId: string,
+  ): Promise<ResolvedRole | null> {
     if (principal.kind === PrincipalKind.ApiKey) {
-      return principal.workspaceId === workspaceId ? principal.role : null;
+      const { role, customRole, permissions } = principal;
+      return principal.workspaceId === workspaceId ? { role, customRole, permissions } : null;
     }
     return this.workspaceAccess.findRole(workspaceId, principal.userId);
   }

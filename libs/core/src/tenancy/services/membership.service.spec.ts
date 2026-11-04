@@ -4,16 +4,28 @@ import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type { WorkspaceMemberProfile } from '../entities/workspace-access.js';
-import type { ApiKeyRepository } from '../repositories/api-key.repository.js';
+import {
+  builtInPermissions,
+  type BuiltInRole,
+  resolveRole,
+} from '../permissions/role-permissions.js';
+import { fakeRoleResolver, managerWith } from '../testing/role-fixtures.js';
+import type { ApiKeyCleanup } from './api-key-cleanup.js';
 import type { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
 import { MembershipService } from './membership.service.js';
 
 const ACTOR = Actor.user('user-1');
-const OWNER = { userId: 'user-1', role: WorkspaceRole.OWNER };
-const ADMIN = { userId: 'user-1', role: WorkspaceRole.ADMIN };
+const OWNER = managerWith(WorkspaceRole.OWNER);
+const ADMIN = managerWith(WorkspaceRole.ADMIN);
 
-function member(role: WorkspaceRole): WorkspaceMemberProfile {
-  return { userId: 'user-2', name: 'Bo', email: 'bo@example.com', role, joinedAt: new Date() };
+function member(role: BuiltInRole): WorkspaceMemberProfile {
+  return {
+    userId: 'user-2',
+    name: 'Bo',
+    email: 'bo@example.com',
+    joinedAt: new Date(),
+    ...resolveRole(role, null),
+  };
 }
 
 function createService(target: WorkspaceMemberProfile | null, owners = 1) {
@@ -24,19 +36,20 @@ function createService(target: WorkspaceMemberProfile | null, owners = 1) {
     updateRole: vi.fn(),
     remove: vi.fn(),
   };
-  const apiKeys = { revokeCreatedBy: vi.fn() };
+  const keys = { revokeBeyond: vi.fn() };
   const activity = new InMemoryActivityRecorder();
   const service = new MembershipService(
     members as unknown as WorkspaceMemberRepository,
-    apiKeys as unknown as ApiKeyRepository,
+    fakeRoleResolver(),
+    keys as unknown as ApiKeyCleanup,
     activity,
   );
-  return { service, members, apiKeys, activity };
+  return { service, members, keys, activity };
 }
 
 describe('MembershipService.changeRole', () => {
   it('changes the role and revokes keys the new role could not have issued', async () => {
-    const { service, members, apiKeys, activity } = createService(member(WorkspaceRole.ADMIN));
+    const { service, members, keys, activity } = createService(member(WorkspaceRole.ADMIN));
 
     const changed = await service.changeRole(
       'ws-1',
@@ -46,12 +59,15 @@ describe('MembershipService.changeRole', () => {
     );
 
     expect(changed.role).toBe(WorkspaceRole.EDITOR);
-    expect(members.updateRole).toHaveBeenCalledWith('ws-1', 'user-2', WorkspaceRole.EDITOR);
-    const revokedRoles = apiKeys.revokeCreatedBy.mock.calls[0]?.[3] as WorkspaceRole[];
-    expect(revokedRoles).toEqual(
-      expect.arrayContaining([WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.APPROVER]),
+    expect(members.updateRole).toHaveBeenCalledWith('ws-1', 'user-2', {
+      role: WorkspaceRole.EDITOR,
+      customRoleId: null,
+    });
+    expect(keys.revokeBeyond).toHaveBeenCalledWith(
+      'ws-1',
+      'user-2',
+      builtInPermissions(WorkspaceRole.EDITOR),
     );
-    expect(revokedRoles).not.toContain(WorkspaceRole.EDITOR);
     expect(activity.entries[0]).toMatchObject({
       action: ActivityAction.MemberRoleChanged,
       detail: 'now Editor',
@@ -80,10 +96,10 @@ describe('MembershipService.changeRole', () => {
 
 describe('MembershipService.remove and leave', () => {
   it('removes a member and revokes all their keys', async () => {
-    const { service, members, apiKeys, activity } = createService(member(WorkspaceRole.EDITOR));
+    const { service, members, keys, activity } = createService(member(WorkspaceRole.EDITOR));
     await service.remove('ws-1', ADMIN, 'user-2', ACTOR);
     expect(members.remove).toHaveBeenCalledWith('ws-1', 'user-2');
-    expect(apiKeys.revokeCreatedBy).toHaveBeenCalledWith('ws-1', 'user-2', expect.any(Date));
+    expect(keys.revokeBeyond).toHaveBeenCalledWith('ws-1', 'user-2', null);
     expect(activity.entries[0]?.action).toBe(ActivityAction.MemberRemoved);
   });
 

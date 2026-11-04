@@ -30,6 +30,10 @@ export enum ActivityAction {
   MemberRemoved = 'member_removed',
   /** A member removed themselves. */
   MemberLeft = 'member_left',
+  CustomRoleCreated = 'custom_role_created',
+  /** A custom role's name or permissions changed. */
+  CustomRoleUpdated = 'custom_role_updated',
+  CustomRoleDeleted = 'custom_role_deleted',
   InventoryAdjusted = 'inventory_adjusted',
   /** A channel account (a Shopify store) was connected, or connected again. */
   ChannelConnected = 'channel_connected',

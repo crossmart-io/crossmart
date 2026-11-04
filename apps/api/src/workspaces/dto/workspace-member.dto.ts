@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type { WorkspaceMemberProfile } from '@crossmart/core';
 import { WorkspaceRole } from '@crossmart/database';
+import { CUSTOM_ROLE_PROPERTY, CustomRoleRefDto } from './role-assignment.dto.js';
 import { WORKSPACE_ROLE_SCHEMA_NAME } from '../workspaces.constants.js';
 
 export class WorkspaceMemberDto {
@@ -16,10 +17,21 @@ export class WorkspaceMemberDto {
   @ApiProperty({ enum: WorkspaceRole, enumName: WORKSPACE_ROLE_SCHEMA_NAME })
   role: WorkspaceRole;
 
+  @ApiProperty(CUSTOM_ROLE_PROPERTY)
+  customRole: CustomRoleRefDto | null;
+
   @ApiProperty()
   joinedAt: Date;
 
   static from(member: WorkspaceMemberProfile): WorkspaceMemberDto {
-    return Object.assign(new WorkspaceMemberDto(), member);
+    const { userId, name, email, role, customRole, joinedAt } = member;
+    return Object.assign(new WorkspaceMemberDto(), {
+      userId,
+      name,
+      email,
+      role,
+      customRole,
+      joinedAt,
+    });
   }
 }

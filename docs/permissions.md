@@ -36,3 +36,18 @@ those, not the role name, so they keep working when roles change.
 - A workspace always keeps at least one Owner. Members can't leave their only workspace.
 - API keys can't be Owners. A key never has more access than its creator. Keys are revoked when
   their creator is removed, and on a demotion when the new role couldn't have created them.
+
+## Custom roles
+
+Besides the five built-in roles, a workspace can define its own roles under
+`/api/v1/workspaces/{workspaceId}/roles`. Members, invitations and API keys hold one as
+`role: CUSTOM` plus `customRoleId`. The database refuses one without the other.
+
+- Creating, changing and deleting roles needs `members:manage`. Anyone with `members:view` can
+  list them.
+- A role never holds more than the person defining or editing it has, and never
+  `workspace:delete`. `workspace:view` is always added so its holders can open the workspace.
+- A change applies to everyone holding the role right away. API keys created by its members that
+  now allow more than the role are revoked. Keys that hold the role itself just narrow with it.
+- A role still held by a member, a pending invitation or an active API key can't be deleted.
+- A role that's somehow gone grants nothing.

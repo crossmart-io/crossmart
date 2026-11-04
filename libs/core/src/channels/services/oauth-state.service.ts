@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { ChannelType } from '@crossmart/connectors';
 import { WorkspacePermission } from '../../tenancy/enums/workspace-permission.enum.js';
-import { roleHasPermission } from '../../tenancy/permissions/role-permissions.js';
 import { WorkspaceAccessService } from '../../tenancy/services/workspace-access.service.js';
 import type { OAuthStateClaims, OAuthStatePayload } from '../entities/oauth-state.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
@@ -37,8 +36,8 @@ export class OAuthStateService {
   }
 
   async assertCanManage(payload: OAuthStatePayload): Promise<void> {
-    const role = await this.workspaceAccess.findRole(payload.workspaceId, payload.userId);
-    if (!role || !roleHasPermission(role, WorkspacePermission.ManageWorkspace)) {
+    const access = await this.workspaceAccess.findRole(payload.workspaceId, payload.userId);
+    if (!access?.permissions.has(WorkspacePermission.ManageChannels)) {
       throw new ChannelConnectError(ConnectFailure.NotPermitted);
     }
   }

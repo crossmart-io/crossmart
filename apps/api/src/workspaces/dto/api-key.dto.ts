@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type { ApiKeySummary, IssuedApiKey } from '@crossmart/core';
 import { WorkspaceRole } from '@crossmart/database';
+import { CUSTOM_ROLE_PROPERTY, CustomRoleRefDto } from './role-assignment.dto.js';
 import { WORKSPACE_ROLE_SCHEMA_NAME } from '../workspaces.constants.js';
 
 export class ApiKeyDto {
@@ -12,6 +13,9 @@ export class ApiKeyDto {
 
   @ApiProperty({ enum: WorkspaceRole, enumName: WORKSPACE_ROLE_SCHEMA_NAME })
   role: WorkspaceRole;
+
+  @ApiProperty(CUSTOM_ROLE_PROPERTY)
+  customRole: CustomRoleRefDto | null;
 
   @ApiProperty({ description: 'The first characters of the key, to tell keys apart' })
   prefix: string;

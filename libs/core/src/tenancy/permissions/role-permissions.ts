@@ -1,6 +1,10 @@
 import { ForbiddenException } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
+import type { ResolvedRole, StoredCustomRole } from '../entities/role-assignment.js';
 import { WorkspacePermission } from '../enums/workspace-permission.enum.js';
+
+/** The roles every workspace has. CUSTOM is a placeholder for the workspace's own roles. */
+export type BuiltInRole = Exclude<WorkspaceRole, typeof WorkspaceRole.CUSTOM>;
 
 /** Seeing everything in a workspace, changing nothing. */
 const READ_ONLY: readonly WorkspacePermission[] = [
@@ -30,7 +34,7 @@ const ADMINISTRATION: readonly WorkspacePermission[] = [
   WorkspacePermission.ApproveSuggestions,
 ];
 
-const ROLE_PERMISSIONS: Readonly<Record<WorkspaceRole, ReadonlySet<WorkspacePermission>>> = {
+const BUILT_IN_PERMISSIONS: Readonly<Record<BuiltInRole, ReadonlySet<WorkspacePermission>>> = {
   [WorkspaceRole.OWNER]: new Set([
     ...READ_ONLY,
     ...ADMINISTRATION,
@@ -42,30 +46,69 @@ const ROLE_PERMISSIONS: Readonly<Record<WorkspaceRole, ReadonlySet<WorkspacePerm
   [WorkspaceRole.VIEWER]: new Set(READ_ONLY),
 };
 
-export function roleHasPermission(role: WorkspaceRole, permission: WorkspacePermission): boolean {
-  return ROLE_PERMISSIONS[role].has(permission);
+/** Permissions only an owner holds; a custom role can never carry them. */
+export const OWNER_ONLY_PERMISSIONS: readonly WorkspacePermission[] = [
+  WorkspacePermission.DeleteWorkspace,
+];
+
+const NO_PERMISSIONS: ReadonlySet<WorkspacePermission> = new Set();
+
+export function isBuiltInRole(role: WorkspaceRole): role is BuiltInRole {
+  return role !== WorkspaceRole.CUSTOM;
 }
 
-/** Every permission of a role, in the enum's order, for clients that adapt to what one may do. */
-export function permissionsOf(role: WorkspaceRole): WorkspacePermission[] {
-  return Object.values(WorkspacePermission).filter((permission) =>
-    roleHasPermission(role, permission),
+export function builtInPermissions(role: BuiltInRole): ReadonlySet<WorkspacePermission> {
+  return BUILT_IN_PERMISSIONS[role];
+}
+
+/** A stored permission list, keeping only values this version knows and custom roles may hold. */
+export function customRolePermissions(stored: readonly string[]): Set<WorkspacePermission> {
+  return new Set(
+    Object.values(WorkspacePermission).filter(
+      (permission) => stored.includes(permission) && !OWNER_ONLY_PERMISSIONS.includes(permission),
+    ),
   );
 }
 
-/** For checks a route guard cannot make, such as one that depends on the request body. */
-export function assertRoleHasPermission(
+/**
+ * What a role allows. A CUSTOM role whose definition is gone (deleted) allows nothing, so a
+ * dangling reference fails closed.
+ */
+export function resolveRole(
   role: WorkspaceRole,
+  customRole: StoredCustomRole | null,
+): ResolvedRole {
+  if (isBuiltInRole(role)) {
+    return { role, customRole: null, permissions: BUILT_IN_PERMISSIONS[role] };
+  }
+  if (!customRole) {
+    return { role, customRole: null, permissions: NO_PERMISSIONS };
+  }
+  const { id, name, permissions } = customRole;
+  return { role, customRole: { id, name }, permissions: customRolePermissions(permissions) };
+}
+
+/** True when `holder` has every permission in `wanted`, so granting `wanted` is no escalation. */
+export function permissionsCover(
+  holder: ReadonlySet<WorkspacePermission>,
+  wanted: Iterable<WorkspacePermission>,
+): boolean {
+  return [...wanted].every((permission) => holder.has(permission));
+}
+
+/** For checks a route guard cannot make, such as one that depends on the request body. */
+export function assertHasPermission(
+  permissions: ReadonlySet<WorkspacePermission>,
   permission: WorkspacePermission,
 ): void {
-  if (!roleHasPermission(role, permission)) {
+  if (!permissions.has(permission)) {
     throw new ForbiddenException(`Requires the ${permission} permission`);
   }
 }
 
-/** True when `role` holds every permission of `otherRole`, so granting it is not an escalation. */
-export function roleCovers(role: WorkspaceRole, otherRole: WorkspaceRole): boolean {
-  return [...ROLE_PERMISSIONS[otherRole]].every((permission) =>
-    roleHasPermission(role, permission),
-  );
+/** A permission set in the enum's order, for responses. */
+export function toPermissionList(
+  permissions: ReadonlySet<WorkspacePermission>,
+): WorkspacePermission[] {
+  return Object.values(WorkspacePermission).filter((permission) => permissions.has(permission));
 }

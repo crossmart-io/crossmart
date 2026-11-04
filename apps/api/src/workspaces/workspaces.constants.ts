@@ -27,3 +27,6 @@ export const INVITATION_ACCEPT_ROUTE = 'accept';
 export const EMAIL_MAX_LENGTH = 254;
 /** Invitation tokens are 32 random bytes in base64url; anything far longer is not one. */
 export const INVITATION_TOKEN_MAX_LENGTH = 128;
+export const ROLES_TAG = 'Roles';
+export const CUSTOM_ROLES_ROUTE = 'workspaces/:workspaceId/roles';
+export const CUSTOM_ROLE_ID_PARAM = 'roleId';

@@ -17,19 +17,19 @@ import type {
   MembershipManager,
   NewInvitation,
 } from '../entities/workspace-invitation.js';
-import { roleCovers } from '../permissions/role-permissions.js';
+import { permissionsCover, resolveRole } from '../permissions/role-permissions.js';
 import {
   type PendingInvitation,
   WorkspaceInvitationRepository,
 } from '../repositories/workspace-invitation.repository.js';
-import { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
+import { roleName } from '../rules/role-name.js';
 import {
   INVITATION_TOKEN_BYTES,
   INVITATION_TTL_MS,
   MAX_PENDING_INVITATIONS,
-  WORKSPACE_ROLE_NAMES,
 } from '../tenancy.constants.js';
 import { InvitationMailer } from './invitation-mailer.js';
+import { RoleResolver } from './role-resolver.js';
 
 const INVALID_INVITATION = 'This invitation is invalid, used or expired';
 
@@ -41,7 +41,7 @@ const INVALID_INVITATION = 'This invitation is invalid, used or expired';
 export class InvitationsService {
   constructor(
     private readonly invitations: WorkspaceInvitationRepository,
-    private readonly members: WorkspaceMemberRepository,
+    private readonly roles: RoleResolver,
     private readonly mailer: InvitationMailer,
     private readonly activity: ActivityRecorder,
   ) {}
@@ -53,7 +53,8 @@ export class InvitationsService {
     request: NewInvitation,
     actor: Actor,
   ): Promise<InvitationSummary> {
-    if (!roleCovers(manager.role, request.role)) {
+    const granted = await this.roles.resolve(workspaceId, request);
+    if (!permissionsCover(manager.permissions, granted.permissions)) {
       throw new ForbiddenException('You cannot invite someone with more access than you have');
     }
     const email = normalizeEmail(request.email);
@@ -64,7 +65,8 @@ export class InvitationsService {
       {
         workspaceId,
         email,
-        role: request.role,
+        role: granted.role,
+        customRoleId: granted.customRole?.id ?? null,
         tokenHash: hashSecret(token),
         invitedById: manager.userId,
         expiresAt: new Date(now.getTime() + INVITATION_TTL_MS),
@@ -93,8 +95,10 @@ export class InvitationsService {
   }
 
   async preview(token: string): Promise<InvitationPreview> {
-    const { workspaceName, inviterName, email, role, expiresAt } = await this.findPending(token);
-    return { workspaceName, inviterName, email, role, expiresAt };
+    const invitation = await this.findPending(token);
+    const { workspaceName, inviterName, email, role, expiresAt } = invitation;
+    const roleName = this.roleNameOf(invitation);
+    return { workspaceName, inviterName, email, role, roleName, expiresAt };
   }
 
   async accept(token: string, invitee: Invitee, actor: Actor): Promise<AcceptedInvitation> {
@@ -107,18 +111,16 @@ export class InvitationsService {
     if (!(await this.invitations.accept(invitation, invitee.userId, new Date()))) {
       throw new NotFoundException(INVALID_INVITATION);
     }
-    const role =
-      (await this.members.findRole(invitation.workspaceId, invitee.userId)) ?? invitation.role;
     await this.activity.record(invitation.workspaceId, actor, {
       action: ActivityAction.MemberJoined,
       subject: { type: ActivitySubjectType.Member, id: invitee.userId, label: invitation.email },
-      detail: `as ${WORKSPACE_ROLE_NAMES[role]}`,
+      detail: `as ${this.roleNameOf(invitation)}`,
     });
-    return { workspaceId: invitation.workspaceId, role };
+    return { workspaceId: invitation.workspaceId, role: invitation.role };
   }
 
   private async assertInvitable(workspaceId: string, email: string, now: Date): Promise<void> {
-    if (await this.members.isMemberByEmail(workspaceId, email)) {
+    if (await this.invitations.hasMember(workspaceId, email)) {
       throw new ConflictException(`${email} is already a member of this workspace`);
     }
     if ((await this.invitations.countPending(workspaceId, now)) >= MAX_PENDING_INVITATIONS) {
@@ -128,12 +130,17 @@ export class InvitationsService {
     }
   }
 
+  /** A pending invitation whose role still exists; one whose custom role was deleted is void. */
   private async findPending(token: string): Promise<PendingInvitation> {
     const invitation = await this.invitations.findPendingByTokenHash(hashSecret(token), new Date());
-    if (!invitation) {
+    if (!invitation || resolveRole(invitation.role, invitation.customRole).permissions.size === 0) {
       throw new NotFoundException(INVALID_INVITATION);
     }
     return invitation;
+  }
+
+  private roleNameOf(invitation: PendingInvitation): string {
+    return roleName(resolveRole(invitation.role, invitation.customRole));
   }
 
   /** The address is the label: it is what managers know the invitee by. */
@@ -141,12 +148,14 @@ export class InvitationsService {
     workspaceId: string,
     actor: Actor,
     action: ActivityAction,
-    invitation: Pick<InvitationSummary, 'id' | 'email'> & Partial<Pick<InvitationSummary, 'role'>>,
+    invitation: Pick<InvitationSummary, 'id' | 'email'> &
+      Partial<Pick<InvitationSummary, 'role' | 'customRole'>>,
   ): Promise<void> {
+    const { id, email, role, customRole } = invitation;
     return this.activity.record(workspaceId, actor, {
       action,
-      subject: { type: ActivitySubjectType.Invitation, id: invitation.id, label: invitation.email },
-      ...(invitation.role ? { detail: `as ${WORKSPACE_ROLE_NAMES[invitation.role]}` } : {}),
+      subject: { type: ActivitySubjectType.Invitation, id, label: email },
+      ...(role ? { detail: `as ${roleName({ role, customRole: customRole ?? null })}` } : {}),
     });
   }
 }
