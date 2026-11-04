@@ -117,6 +117,7 @@ model Workspace {
   productViews   ProductView[]
   activity       ActivityEvent[]
   importJobs     ImportJob[]
+  orders         Order[]
   dataKey        WorkspaceDataKey?
   connections    ChannelConnection[]
   createdAt      DateTime            @default(now()) @map("created_at")
@@ -243,6 +244,7 @@ model Variant {
   inventoryItem    InventoryItem?
   listingVariants  ListingVariant[]
   listingPrices    ListingVariantOverride[]
+  orderLines       OrderLine[]
   createdAt        DateTime                 @default(now()) @map("created_at")
   updatedAt        DateTime                 @updatedAt @map("updated_at")
 
@@ -282,6 +284,8 @@ enum InventoryMovementReason {
   SOLD
   /// Stock set by an inventory file import.
   IMPORTED
+  /// Units a channel order shipped: they leave the stock on hand.
+  ORDER_SHIPPED
 
   @@map("inventory_movement_reason")
 }
@@ -521,8 +525,13 @@ model ChannelConnection {
   connectedAt          DateTime                @default(now()) @map("connected_at")
   disconnectedAt       DateTime?               @map("disconnected_at")
   lastSyncedAt         DateTime?               @map("last_synced_at")
+  /// Orders changed up to this time have been read; the next poll reads from here.
+  ordersPolledAt       DateTime?               @map("orders_polled_at")
+  /// When Crossmart started reading orders; earlier orders were sold from stock it never held.
+  ordersSyncedFrom     DateTime?               @map("orders_synced_from")
   listings             Listing[]
   importJobs           ImportJob[]
+  orders               Order[]
   createdAt            DateTime                @default(now()) @map("created_at")
   updatedAt            DateTime                @updatedAt @map("updated_at")
 
@@ -666,4 +675,62 @@ model ListingVariantOverride {
   @@unique([listingId, variantId])
   @@index([variantId])
   @@map("listing_variant_overrides")
+}
+
+/// Where a channel order stands, from its lines: nothing shipped, some, all, or cancelled.
+enum OrderStatus {
+  OPEN
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+
+  @@map("order_status")
+}
+
+/// An order from a connected channel, kept once per channel order. It holds no buyer details.
+model Order {
+  id                String            @id @default(uuid()) @db.Uuid
+  workspaceId       String            @map("workspace_id") @db.Uuid
+  workspace         Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connectionId      String            @map("connection_id") @db.Uuid
+  connection        ChannelConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  externalId        String            @map("external_id")
+  /// The number the merchant and buyer see, such as `#1001`.
+  name              String
+  status            OrderStatus
+  currencyCode      String            @map("currency_code")
+  total             Decimal           @db.Decimal(12, 2)
+  placedAt          DateTime          @map("placed_at")
+  /// When the channel last changed the order, so an older copy never overwrites a newer one.
+  externalUpdatedAt DateTime          @map("external_updated_at")
+  lines             OrderLine[]
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  @@unique([connectionId, externalId])
+  @@index([workspaceId, placedAt(sort: Desc), id(sort: Desc)])
+  @@index([workspaceId, status])
+  @@map("orders")
+}
+
+/// One line of an order, and the stock it holds: `reservedQuantity` waits to ship,
+/// `fulfilledQuantity` has left the stock on hand. Lines that match no variant hold none.
+model OrderLine {
+  id                String   @id @default(uuid()) @db.Uuid
+  workspaceId       String   @map("workspace_id") @db.Uuid
+  orderId           String   @map("order_id") @db.Uuid
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  externalId        String   @map("external_id")
+  variantId         String?  @map("variant_id") @db.Uuid
+  variant           Variant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  sku               String?
+  title             String
+  quantity          Int
+  unitPrice         Decimal  @map("unit_price") @db.Decimal(12, 2)
+  reservedQuantity  Int      @default(0) @map("reserved_quantity")
+  fulfilledQuantity Int      @default(0) @map("fulfilled_quantity")
+
+  @@unique([orderId, externalId])
+  @@index([variantId])
+  @@map("order_lines")
 }

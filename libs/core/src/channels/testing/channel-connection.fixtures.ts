@@ -26,6 +26,8 @@ export function connectionRecord(
     connectedAt: CONNECTED_AT,
     disconnectedAt: null,
     lastSyncedAt: null,
+    ordersPolledAt: null,
+    ordersSyncedFrom: null,
     createdAt: CONNECTED_AT,
     updatedAt: CONNECTED_AT,
     ...overrides,

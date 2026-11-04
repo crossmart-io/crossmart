@@ -8,6 +8,7 @@ import { ChannelsApiModule } from './channels/channels.module.js';
 import { HealthModule } from './health/health.module.js';
 import { InventoryApiModule } from './inventory/inventory.module.js';
 import { ListingsApiModule } from './listings/listings.module.js';
+import { OrdersApiModule } from './orders/orders.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
 @Module({
@@ -25,6 +26,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     InventoryApiModule,
     ChannelsApiModule,
     ListingsApiModule,
+    OrdersApiModule,
   ],
 })
 export class ApiModule {}

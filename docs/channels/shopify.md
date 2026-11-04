@@ -10,7 +10,7 @@ merchant back to the Channels page.
 |            |                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API        | GraphQL Admin API, version `2026-10` (`SHOPIFY_ADMIN_API_VERSION`)                                                                                                                            |
-| Scopes     | `read_products`, `write_products`, `read_inventory`, `write_inventory`, `read_locations`; optional `write_publications`                                                                       |
+| Scopes     | `read_products`, `write_products`, `read_inventory`, `write_inventory`, `read_locations`; optional `write_publications`, `read_orders`                                                        |
 | Tokens     | Expiring offline tokens (`expiring=1`): 1 hour access token, 90 day refresh token. Refreshed 5 minutes before expiry, under a database lock. Public apps must use these from January 1, 2027. |
 | Callback   | `{API_PUBLIC_URL}/api/v1/channels/shopify/oauth/callback`                                                                                                                                     |
 | Webhooks   | `{API_PUBLIC_URL}/api/v1/webhooks/shopify`, verified with `X-Shopify-Hmac-Sha256` over the raw body                                                                                           |
@@ -70,6 +70,28 @@ listed, pending, failed or removing, plus `removed_by_hand` ones that can be add
 products table filters by store (`storeFilter`: `in_store`, `not_in_store`, `in_no_store`,
 `with_errors`) and connections report `failedListings`.
 
+## Orders
+
+With `read_orders` (orders are protected customer data: request level 1 access in the Partner
+Dashboard; no name, email, phone or address fields), Crossmart reads each order's lines,
+quantities, shipped units, prices and totals, never the buyer.
+
+- **Webhooks** `orders/create`, `orders/updated` and `orders/cancelled` queue a read of the
+  order (`Order` query) on the `orders` queue, right after inventory in priority.
+- **Polling** every 2 minutes reads orders changed since the last poll (`Orders` query, sorted
+  by update time, 5 minutes of overlap), the fallback for missed webhooks and for local
+  development, where Shopify cannot reach the API.
+- Orders placed before Crossmart first read the store's orders are ignored: their stock was
+  sold before Crossmart held it.
+- **Stock** (ADR 0007): each line reserves its units (`available` down, `reserved` up) in the
+  same transaction that stores the order, under a lock on the order, so a webhook and a poll
+  apply it once. Shipped units leave the stock on hand (an `ORDER_SHIPPED` ledger entry);
+  cancelled or removed units go back to `available`. Every store that lists the variant gets
+  the new quantity at once. An order that takes more than is available is logged as
+  "Oversold".
+- Lines match catalog variants by the listing's variant id, else by SKU. Lines that match
+  none are kept without holding stock.
+
 ## Publishing and stock
 
 | Operation       | Admin GraphQL                                                                                                                                                                                                                        |
@@ -97,7 +119,7 @@ In a new app version, set:
 - **Embed app in Shopify admin**: off.
 - **Redirect URLs**: the callback above, for example
   `http://localhost:3000/api/v1/channels/shopify/oauth/callback`. It must match exactly.
-- **Scopes**: the five required scopes above, plus `write_publications`. A store connected without it keeps working, but its products are not shown in the Online Store; its page asks an admin to approve the app again.
+- **Scopes**: the five required scopes above, plus `write_publications` and `read_orders`. A store connected without it keeps working, but its products are not shown in the Online Store; its page asks an admin to approve the app again.
 - **Webhooks API version**: `2026-10`.
 
 ### Webhooks
@@ -111,7 +133,7 @@ in `shopify.app.toml` and deploy with `shopify app deploy`:
 embedded = false
 
 [access_scopes]
-scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,write_publications"
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,write_publications,read_orders"
 
 [auth]
 redirect_urls = ["https://api.example.com/api/v1/channels/shopify/oauth/callback"]
@@ -121,6 +143,10 @@ api_version = "2026-10"
 
   [[webhooks.subscriptions]]
   topics = ["app/uninstalled"]
+  uri = "https://api.example.com/api/v1/webhooks/shopify"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/create", "orders/updated", "orders/cancelled"]
   uri = "https://api.example.com/api/v1/webhooks/shopify"
 
   [[webhooks.subscriptions]]

@@ -152,6 +152,27 @@ export class ChannelConnectionRepository {
   }
 
   /** Records that the channel's catalog was last read into Crossmart at `syncedAt`. */
+  /** Starts reading the connection's orders from `at`, unless it already started; returns the start. */
+  async startOrderSync(workspaceId: string, connectionId: string, at: Date): Promise<Date> {
+    await this.prisma.channelConnection.updateMany({
+      where: { id: connectionId, workspaceId, ordersSyncedFrom: null },
+      data: { ordersSyncedFrom: at },
+    });
+    const { ordersSyncedFrom } = await this.prisma.channelConnection.findFirstOrThrow({
+      where: { id: connectionId, workspaceId },
+      select: { ordersSyncedFrom: true },
+    });
+    return ordersSyncedFrom ?? at;
+  }
+
+  /** Orders changed up to `polledAt` have been read from this connection. */
+  async markOrdersPolled(workspaceId: string, connectionId: string, polledAt: Date): Promise<void> {
+    await this.prisma.channelConnection.updateMany({
+      where: { id: connectionId, workspaceId },
+      data: { ordersPolledAt: polledAt },
+    });
+  }
+
   async markSynced(workspaceId: string, connectionId: string, syncedAt: Date): Promise<void> {
     await this.prisma.channelConnection.updateMany({
       where: { id: connectionId, workspaceId },

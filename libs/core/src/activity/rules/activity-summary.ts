@@ -134,6 +134,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Updating a listing',
     describe: (entry) => `Updated the listing of${named(entry)}${onStore(entry)}`,
   },
+  [ActivityAction.StockOversold]: {
+    operation: 'Reserving an order’s stock',
+    describe: (entry) => withDetail(`Oversold${named(entry)}`, entry),
+  },
   [ActivityAction.ListingSyncFailed]: {
     operation: 'Syncing a listing',
     describe: (entry) => `Could not sync${named(entry)}${onStore(entry)}`,
