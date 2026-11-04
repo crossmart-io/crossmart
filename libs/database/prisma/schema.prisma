@@ -110,6 +110,7 @@ model Workspace {
   members        WorkspaceMember[]
   apiKeys        ApiKey[]
   products       Product[]
+  productViews   ProductView[]
   createdAt      DateTime          @default(now()) @map("created_at")
   updatedAt      DateTime          @updatedAt @map("updated_at")
 
@@ -168,6 +169,22 @@ enum OutOfStockPolicy {
   CONTINUE_SELLING
 
   @@map("out_of_stock_policy")
+}
+
+/// A saved filter of the product list, shared by everyone in the workspace.
+model ProductView {
+  id          String         @id @default(uuid()) @db.Uuid
+  workspaceId String         @map("workspace_id") @db.Uuid
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  search      String?
+  status      ProductStatus?
+  /// A `CatalogGap` value; validated by the API, kept as text so new gaps need no migration.
+  gap         String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@unique([workspaceId, name])
+  @@map("product_views")
 }
 
 /// A product with its base content. Per-channel overrides live on its listings.

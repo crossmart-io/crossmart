@@ -3,7 +3,12 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
-import { CatalogGap, CatalogImportFormat, ImportIssueCode } from '@crossmart/core';
+import {
+  BulkProductAction,
+  CatalogGap,
+  CatalogImportFormat,
+  ImportIssueCode,
+} from '@crossmart/core';
 import { ProductStatus, WorkspaceRole } from '@crossmart/database';
 import { createTestApp, signUp } from './support/test-app.js';
 
@@ -263,5 +268,118 @@ describe('Catalog (e2e)', () => {
       'merino-crew-sweater',
       'stoneware-mug',
     ]);
+  });
+
+  describe('bulk actions and saved views', () => {
+    async function catalogOf(workspaceId: string, cookie: string) {
+      const response = await request(app.getHttpServer())
+        .get(`/api/v1/workspaces/${workspaceId}/products`)
+        .query({ limit: 100 })
+        .set('Cookie', cookie);
+      return response.body.items as {
+        id: string;
+        handle: string;
+        status: ProductStatus;
+        priceRange: { min: string };
+      }[];
+    }
+
+    function bulk(workspaceId: string, cookie: string, body: object) {
+      return request(app.getHttpServer())
+        .post(`/api/v1/workspaces/${workspaceId}/product-bulk-actions`)
+        .set('Cookie', cookie)
+        .send(body);
+    }
+
+    it('changes status, tags and prices of the selected products only', async () => {
+      const { cookie, workspaceId } = await signUp(app, 'Bulk Editor');
+      await importShopifyCsv(workspaceId, cookie);
+      const products = await catalogOf(workspaceId, cookie);
+      const mug = products.find((product) => product.handle === 'stoneware-mug')!;
+      const tote = products.find((product) => product.handle === 'canvas-tote-bag')!;
+      const selection = [mug.id, tote.id];
+
+      const archived = await bulk(workspaceId, cookie, {
+        productIds: selection,
+        action: BulkProductAction.SetStatus,
+        status: ProductStatus.ARCHIVED,
+      });
+      expect(archived.body).toEqual({ affected: 2 });
+
+      await bulk(workspaceId, cookie, {
+        productIds: selection,
+        action: BulkProductAction.AddTags,
+        tags: ['Sale', 'kitchen'],
+      });
+      await bulk(workspaceId, cookie, {
+        productIds: selection,
+        action: BulkProductAction.RemoveTags,
+        tags: ['SALE'],
+      });
+      await bulk(workspaceId, cookie, {
+        productIds: [mug.id],
+        action: BulkProductAction.AdjustPrices,
+        percent: -10,
+      });
+
+      const after = await catalogOf(workspaceId, cookie);
+      expect(after.filter((product) => product.status === ProductStatus.ARCHIVED)).toHaveLength(2);
+      expect(after.find((product) => product.id === mug.id)?.priceRange.min).toBe('19.80');
+      const detail = await request(app.getHttpServer())
+        .get(`/api/v1/workspaces/${workspaceId}/products/${tote.id}`)
+        .set('Cookie', cookie);
+      expect(detail.body.tags).toContain('kitchen');
+      expect(detail.body.tags).not.toContain('Sale');
+    });
+
+    it('leaves other workspaces alone and rejects an action without its field', async () => {
+      const owner = await signUp(app, 'Bulk Owner');
+      const intruder = await signUp(app, 'Bulk Intruder');
+      await importShopifyCsv(owner.workspaceId, owner.cookie);
+      const [first] = await catalogOf(owner.workspaceId, owner.cookie);
+
+      const foreign = await bulk(intruder.workspaceId, intruder.cookie, {
+        productIds: [first!.id],
+        action: BulkProductAction.Delete,
+      });
+      expect(foreign.body).toEqual({ affected: 0 });
+      expect(await catalogOf(owner.workspaceId, owner.cookie)).toHaveLength(8);
+
+      const missingStatus = await bulk(owner.workspaceId, owner.cookie, {
+        productIds: [first!.id],
+        action: BulkProductAction.SetStatus,
+      });
+      expect(missingStatus.status).toBe(HttpStatus.BAD_REQUEST);
+    });
+
+    it('saves, lists and deletes a view, refusing a duplicate name', async () => {
+      const { cookie, workspaceId } = await signUp(app, 'View Keeper');
+      const viewsUrl = `/api/v1/workspaces/${workspaceId}/product-views`;
+
+      const created = await request(app.getHttpServer())
+        .post(viewsUrl)
+        .set('Cookie', cookie)
+        .send({ name: 'Drafts to finish', status: ProductStatus.DRAFT, gap: CatalogGap.Images });
+      expect(created.status).toBe(HttpStatus.CREATED);
+      expect(created.body).toMatchObject({
+        name: 'Drafts to finish',
+        search: null,
+        gap: CatalogGap.Images,
+      });
+
+      const duplicate = await request(app.getHttpServer())
+        .post(viewsUrl)
+        .set('Cookie', cookie)
+        .send({ name: 'drafts to finish' });
+      expect(duplicate.status).toBe(HttpStatus.CONFLICT);
+
+      const listed = await request(app.getHttpServer()).get(viewsUrl).set('Cookie', cookie);
+      expect(listed.body).toHaveLength(1);
+
+      const deleted = await request(app.getHttpServer())
+        .delete(`${viewsUrl}/${created.body.id}`)
+        .set('Cookie', cookie);
+      expect(deleted.status).toBe(HttpStatus.NO_CONTENT);
+    });
   });
 });
