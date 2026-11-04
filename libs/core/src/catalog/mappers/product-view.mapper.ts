@@ -1,11 +1,7 @@
-import { AMOUNT_FRACTION_DIGITS } from '@crossmart/common';
 import type { Prisma } from '@crossmart/database';
 import type { PriceRange, ProductDetail, ProductSummary } from '../entities/product-views.js';
 import type { ProductDetailRecord, ProductSummaryRecord } from '../repositories/product.queries.js';
-
-function toAmount(value: Prisma.Decimal): string {
-  return value.toFixed(AMOUNT_FRACTION_DIGITS);
-}
+import { toAmount } from './decimal-amount.mapper.js';
 
 function toPriceRange(prices: Prisma.Decimal[]): PriceRange | null {
   const [first, ...rest] = prices;

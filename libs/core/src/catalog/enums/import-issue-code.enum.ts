@@ -13,4 +13,9 @@ export enum ImportIssueCode {
   NotTracked = 'not_tracked',
   /** The same SKU appears on an earlier row of the file. */
   DuplicateRow = 'duplicate_row',
+  /**
+   * An update row matches no variant of its product by SKU or option values, and lacks the
+   * option values a new variant needs; it was not applied.
+   */
+  UnmatchedVariant = 'unmatched_variant',
 }
