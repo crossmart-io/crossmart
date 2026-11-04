@@ -1,6 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiCookieAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { WorkspaceAccessService } from '@crossmart/core';
+import { Controller, Delete, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { AccountDeletionService, WorkspaceAccessService } from '@crossmart/core';
 import { CurrentPrincipal } from '../../auth/decorators/current-principal.decorator.js';
 import type { Principal } from '../../auth/entities/principal.js';
 import { requireUser } from '../../auth/principal.utils.js';
@@ -11,7 +17,10 @@ import { ME_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
 @ApiCookieAuth()
 @Controller(ME_ROUTE)
 export class MeController {
-  constructor(private readonly workspaceAccess: WorkspaceAccessService) {}
+  constructor(
+    private readonly workspaceAccess: WorkspaceAccessService,
+    private readonly accounts: AccountDeletionService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'The signed-in user and the workspaces they belong to' })
@@ -20,5 +29,18 @@ export class MeController {
     const user = requireUser(principal);
     const workspaces = await this.workspaceAccess.listWorkspacesForUser(user.userId);
     return MeDto.from(user, workspaces);
+  }
+
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete your account',
+    description:
+      'Deletes the workspaces only you use, with everything in them, and removes you from the ' +
+      'others. Refused (409) while you own a workspace other people use.',
+  })
+  @ApiNoContentResponse()
+  async deleteMe(@CurrentPrincipal() principal: Principal): Promise<void> {
+    await this.accounts.delete(requireUser(principal).userId);
   }
 }
