@@ -26,7 +26,10 @@ FROM base AS runtime
 ARG APP=api
 ENV NODE_ENV=production APP_ENTRY=dist/apps/${APP}/main.js
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts && pnpm rebuild @prisma/engines prisma
+# Lets the image apply migrations before it starts (`pnpm db:deploy`, Railway's pre-deploy step).
+COPY prisma.config.ts ./
+COPY libs/database/prisma ./libs/database/prisma
 COPY --from=build /app/dist ./dist
 USER node
 CMD ["sh", "-c", "node $APP_ENTRY"]
