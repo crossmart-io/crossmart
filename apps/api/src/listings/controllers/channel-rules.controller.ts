@@ -41,7 +41,7 @@ export class ChannelRulesController {
   ) {}
 
   @Put(PRICING_PATH)
-  @RequirePermission(WorkspacePermission.ManageWorkspace)
+  @RequirePermission(WorkspacePermission.ManageChannels)
   @ApiOperation({
     summary: 'Set the connection’s pricing rule',
     description:
@@ -62,7 +62,7 @@ export class ChannelRulesController {
 
   @Post(PRICING_PREVIEW_PATH)
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({
     summary: 'Price a real product with a rule, saved or not',
     description: 'Without `productId`, the first product of the selection is priced.',

@@ -12,7 +12,7 @@ export class InventoryReportController {
   constructor(private readonly inventory: InventoryReportService) {}
 
   @Get(INVENTORY_REPORT_PATH)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewReports)
   @ApiOperation({
     summary: 'Stock value, stock levels and each store’s listings, as of now',
     description: 'Values are in the workspace currency; variants without a cost are counted apart.',

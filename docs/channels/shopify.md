@@ -22,7 +22,7 @@ merchant back to the Channels page.
 
 **Import products from Shopify** on the Channels page (or
 `POST /api/v1/workspaces/{workspaceId}/channel-connections/{connectionId}/imports`, which needs
-`catalog:edit`) queues an import on the lowest-priority `import` queue. The worker reads the
+`products:edit`) queues an import on the lowest-priority `import` queue. The worker reads the
 store with the `CatalogProducts` query, 8 products per page in id order, each with its first 10
 variants and 10 images; products with more variants get `ProductVariants` pages of 100. Stock
 is read at the store's primary location. Cursor pages were chosen over a bulk operation so each

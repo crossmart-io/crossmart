@@ -14,7 +14,7 @@ export class ProductBulkActionsController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({
     summary: 'Change many products at once',
     description:

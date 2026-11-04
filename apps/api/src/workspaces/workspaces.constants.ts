@@ -11,6 +11,7 @@ export const API_KEY_NAME_MAX_LENGTH = 100;
 export const WORKSPACE_NAME_MAX_LENGTH = 200;
 /** The name the generated web client uses for the role enum. */
 export const WORKSPACE_ROLE_SCHEMA_NAME = 'WorkspaceRole';
+export const WORKSPACE_PERMISSION_SCHEMA_NAME = 'WorkspacePermission';
 export const MEMBERS_TAG = 'Members';
 export const WORKSPACE_MEMBERS_ROUTE = 'workspaces/:workspaceId/members';
 export const MEMBER_USER_ID_PARAM = 'userId';

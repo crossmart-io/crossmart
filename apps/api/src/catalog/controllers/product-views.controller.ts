@@ -29,7 +29,7 @@ export class ProductViewsController {
   constructor(private readonly views: ProductViewsService) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewProducts)
   @ApiOperation({ summary: 'Saved filters of the product list, oldest first' })
   @ApiOkResponse({ type: [ProductViewDto] })
   async list(
@@ -39,7 +39,7 @@ export class ProductViewsController {
   }
 
   @Post()
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({ summary: 'Save the current filters of the product list as a view' })
   @ApiCreatedResponse({ type: ProductViewDto })
   async create(
@@ -52,7 +52,7 @@ export class ProductViewsController {
 
   @Delete(`:${VIEW_ID_PARAM}`)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({ summary: 'Delete a saved view' })
   @ApiNoContentResponse()
   async delete(

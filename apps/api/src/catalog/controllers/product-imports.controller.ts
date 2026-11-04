@@ -20,17 +20,21 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import {
-  type Actor,
+  assertRoleHasPermission,
   CatalogImportService,
   IMPORT_FILE_NAME_MAX_LENGTH,
   IMPORT_MAX_FILE_BYTES,
   WorkspacePermission,
 } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
-import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
+import {
+  type ActingManager,
+  CurrentManager,
+} from '../../auth/decorators/current-manager.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import {
   CATALOG_TAG,
+  IMPORT_MODE_PERMISSIONS,
   PRODUCT_IMPORTS_ROUTE,
   UPLOAD_FILE_FIELD,
   UPLOAD_FILE_NAME_CHARSET,
@@ -56,7 +60,7 @@ const IMPORT_FORM_SCHEMA = {
 @ApiTags(CATALOG_TAG)
 @ApiExtraModels(ImportProductsDto)
 @Controller(PRODUCT_IMPORTS_ROUTE)
-@RequirePermission(WorkspacePermission.EditCatalog)
+@RequirePermission(WorkspacePermission.ViewProducts)
 export class ProductImportsController {
   constructor(private readonly catalogImport: CatalogImportService) {}
 
@@ -78,7 +82,8 @@ export class ProductImportsController {
       'matched by SKU, then by option values, and are never deleted; stock is left as it is. ' +
       'In `inventory` mode, a `sku,available` CSV sets the stock ' +
       'of tracked variants. Invalid records are reported; the rest are applied. Every import is ' +
-      'recorded in the import history.',
+      'recorded in the import history. Product modes need `products:edit`, `inventory` needs ' +
+      '`inventory:edit`.',
   })
   @ApiCreatedResponse({ type: CatalogImportResultDto })
   async import(
@@ -90,8 +95,10 @@ export class ProductImportsController {
       }),
     )
     file: Express.Multer.File,
-    @CurrentActor() actor: Actor,
+    @CurrentManager() { manager, actor }: ActingManager,
   ): Promise<CatalogImportResultDto> {
+    // The mode is in the multipart body, which is parsed after the route guard runs.
+    assertRoleHasPermission(manager.role, IMPORT_MODE_PERMISSIONS[body.mode]);
     const result = await this.catalogImport.importFile(workspaceId, {
       mode: body.mode,
       format: body.format,

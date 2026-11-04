@@ -1,3 +1,5 @@
+import { CatalogImportMode, WorkspacePermission } from '@crossmart/core';
+
 export const CATALOG_TAG = 'Catalog';
 export const PRODUCTS_ROUTE = 'workspaces/:workspaceId/products';
 export const PRODUCT_IMPORTS_ROUTE = 'workspaces/:workspaceId/product-imports';
@@ -36,3 +38,11 @@ export const IMAGE_CONTENT_TYPE_SCHEMA_NAME = 'ImageContentType';
 export const PRODUCT_FILTER_MAX_TAGS = 50;
 export const PRODUCT_STORE_FILTER_SCHEMA_NAME = 'ProductStoreFilter';
 export const PRODUCT_SORT_SCHEMA_NAME = 'ProductSort';
+
+/** What each import mode changes decides the permission it needs. */
+export const IMPORT_MODE_PERMISSIONS: Readonly<Record<CatalogImportMode, WorkspacePermission>> = {
+  [CatalogImportMode.Create]: WorkspacePermission.EditProducts,
+  [CatalogImportMode.Update]: WorkspacePermission.EditProducts,
+  [CatalogImportMode.CreateOrLink]: WorkspacePermission.EditProducts,
+  [CatalogImportMode.Inventory]: WorkspacePermission.EditInventory,
+};

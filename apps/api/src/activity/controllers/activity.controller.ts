@@ -13,7 +13,7 @@ export class ActivityController {
   constructor(private readonly activity: ActivityService) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewActivity)
   @ApiOperation({
     summary: 'Who changed what in the workspace, newest first',
     description: 'Includes operations that failed, such as an import that created nothing.',

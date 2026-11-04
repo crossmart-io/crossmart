@@ -21,7 +21,7 @@ export class StoreProductsController {
 
   @Post(ADD_PRODUCTS_PATH)
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
     summary: 'Add products to the store',
     description: 'They stay until removed and are published at once.',
@@ -39,7 +39,7 @@ export class StoreProductsController {
 
   @Post(REMOVE_PRODUCTS_PATH)
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
     summary: 'Remove products from the store',
     description: 'They are delisted at once, and the automatic rule leaves them out.',

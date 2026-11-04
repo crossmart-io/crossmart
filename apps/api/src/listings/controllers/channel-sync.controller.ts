@@ -42,7 +42,7 @@ export class ChannelSyncController {
 
   @Post(SYNC_PATH)
   @HttpCode(HttpStatus.ACCEPTED)
-  @RequirePermission(WorkspacePermission.ManageWorkspace)
+  @RequirePermission(WorkspacePermission.ManageChannels)
   @ApiOperation({
     summary: 'Publish the selected products and sync the connection',
     description:
@@ -60,7 +60,7 @@ export class ChannelSyncController {
   }
 
   @Get(LISTINGS_PATH)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({ summary: 'The connection’s listings, most recently changed first' })
   @ApiOkResponse({ type: ChannelListingPageDto })
   async listListings(

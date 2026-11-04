@@ -35,7 +35,7 @@ export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewProducts)
   @ApiOperation({ summary: 'Products of a workspace, in title order' })
   @ApiOkResponse({ type: ProductPageDto })
   async list(
@@ -46,7 +46,7 @@ export class ProductsController {
   }
 
   @Get(`:${PRODUCT_ID_PARAM}`)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewProducts)
   @ApiOperation({ summary: 'A product with its variants, stock and media' })
   @ApiOkResponse({ type: ProductDto })
   async get(
@@ -57,7 +57,7 @@ export class ProductsController {
   }
 
   @Post()
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({ summary: 'Create a product with its variants' })
   @ApiCreatedResponse({ type: ProductDto })
   async create(
@@ -69,7 +69,7 @@ export class ProductsController {
   }
 
   @Put(`:${PRODUCT_ID_PARAM}`)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({
     summary: 'Replace a product',
     description:
@@ -88,7 +88,7 @@ export class ProductsController {
   }
 
   @Delete(`:${PRODUCT_ID_PARAM}`)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a product, its variants and their stock' })
   @ApiNoContentResponse()

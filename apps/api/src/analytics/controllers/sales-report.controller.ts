@@ -13,7 +13,7 @@ export class SalesReportController {
   constructor(private readonly sales: SalesAnalyticsService) {}
 
   @Get(SALES_REPORT_PATH)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewReports)
   @ApiOperation({
     summary: 'Sales over time, by store, compared with the period before',
     description:

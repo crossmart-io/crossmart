@@ -18,7 +18,7 @@ export class ChannelProductsController {
   constructor(private readonly products: ChannelProductsService) {}
 
   @Get(CHANNEL_PRODUCTS_PATH)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({
     summary: 'The store’s products with their state on the channel',
     description:

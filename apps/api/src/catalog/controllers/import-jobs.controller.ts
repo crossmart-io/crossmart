@@ -12,7 +12,7 @@ import {
 
 @ApiTags(CATALOG_TAG)
 @Controller(IMPORT_JOBS_ROUTE)
-@RequirePermission(WorkspacePermission.ViewWorkspace)
+@RequirePermission(WorkspacePermission.ViewProducts)
 export class ImportJobsController {
   constructor(private readonly jobs: ImportJobsService) {}
 

@@ -71,7 +71,7 @@ This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
 
 - **People** sign up and sign in through [Better Auth](https://www.better-auth.com) at `/api/auth/*` (email and password for now). The session is a cookie. Every new user gets an organization and a workspace they own.
 - **Programs** (the MCP server, scripts) use a workspace API key in the `x-api-key` header. Keys are created at `POST /api/v1/workspaces/{workspaceId}/api-keys`, carry a role no higher than their creator's, are shown once and stored only as a SHA-256 hash.
-- **Roles** per workspace: `OWNER`, `ADMIN`, `EDITOR`, `APPROVER`, `VIEWER`. Routes declare the permission they need; callers outside the workspace get `404`.
+- **Roles** per workspace: `OWNER`, `ADMIN`, `EDITOR`, `APPROVER`, `VIEWER`, each a set of fine-grained permissions ([docs/permissions.md](docs/permissions.md)). Routes declare the permission they need; callers outside the workspace get `404`.
 
 ## Catalog
 

@@ -1,12 +1,35 @@
+import { ForbiddenException } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { WorkspacePermission } from '../enums/workspace-permission.enum.js';
-import { roleCovers, roleHasPermission } from './role-permissions.js';
+import {
+  assertRoleHasPermission,
+  permissionsOf,
+  roleCovers,
+  roleHasPermission,
+} from './role-permissions.js';
+
+const VIEW_PERMISSIONS = [
+  WorkspacePermission.ViewWorkspace,
+  WorkspacePermission.ViewMembers,
+  WorkspacePermission.ViewProducts,
+  WorkspacePermission.ViewInventory,
+  WorkspacePermission.ViewOrders,
+  WorkspacePermission.ViewReports,
+  WorkspacePermission.ViewChannels,
+  WorkspacePermission.ViewActivity,
+];
 
 describe('roleHasPermission', () => {
-  it('lets every role view the workspace', () => {
+  it('lets every role see everything', () => {
     for (const role of Object.values(WorkspaceRole)) {
-      expect(roleHasPermission(role, WorkspacePermission.ViewWorkspace)).toBe(true);
+      for (const permission of VIEW_PERMISSIONS) {
+        expect(roleHasPermission(role, permission)).toBe(true);
+      }
     }
+  });
+
+  it('gives a viewer nothing more', () => {
+    expect(permissionsOf(WorkspaceRole.VIEWER)).toEqual(VIEW_PERMISSIONS);
   });
 
   it('reserves deleting a workspace for the owner', () => {
@@ -14,15 +37,36 @@ describe('roleHasPermission', () => {
     expect(roleHasPermission(WorkspaceRole.ADMIN, WorkspacePermission.DeleteWorkspace)).toBe(false);
   });
 
-  it('separates editing from approving', () => {
-    expect(roleHasPermission(WorkspaceRole.EDITOR, WorkspacePermission.EditCatalog)).toBe(true);
-    expect(roleHasPermission(WorkspaceRole.EDITOR, WorkspacePermission.ApproveSuggestions)).toBe(
-      false,
-    );
-    expect(roleHasPermission(WorkspaceRole.APPROVER, WorkspacePermission.ApproveSuggestions)).toBe(
-      true,
-    );
-    expect(roleHasPermission(WorkspaceRole.APPROVER, WorkspacePermission.EditCatalog)).toBe(false);
+  it('lets an editor work the catalog but not run stores or the team', () => {
+    const editor = new Set(permissionsOf(WorkspaceRole.EDITOR));
+    expect(editor).toContain(WorkspacePermission.EditProducts);
+    expect(editor).toContain(WorkspacePermission.EditInventory);
+    expect(editor).toContain(WorkspacePermission.EditListings);
+    expect(editor).not.toContain(WorkspacePermission.ManageChannels);
+    expect(editor).not.toContain(WorkspacePermission.ManageMembers);
+    expect(editor).not.toContain(WorkspacePermission.ApproveSuggestions);
+  });
+
+  it('lets an approver approve and change nothing else', () => {
+    expect(permissionsOf(WorkspaceRole.APPROVER)).toEqual([
+      ...VIEW_PERMISSIONS,
+      WorkspacePermission.ApproveSuggestions,
+    ]);
+  });
+
+  it('gives the owner every permission', () => {
+    expect(permissionsOf(WorkspaceRole.OWNER)).toEqual(Object.values(WorkspacePermission));
+  });
+});
+
+describe('assertRoleHasPermission', () => {
+  it('refuses a missing permission', () => {
+    expect(() =>
+      assertRoleHasPermission(WorkspaceRole.VIEWER, WorkspacePermission.EditInventory),
+    ).toThrow(ForbiddenException);
+    expect(() =>
+      assertRoleHasPermission(WorkspaceRole.EDITOR, WorkspacePermission.EditInventory),
+    ).not.toThrow();
   });
 });
 
