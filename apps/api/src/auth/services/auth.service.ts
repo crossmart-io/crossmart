@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import { AppConfigService } from '@crossmart/common';
-import { TenancyProvisioningService } from '@crossmart/core';
+import { AccountEmailsService, TenancyProvisioningService } from '@crossmart/core';
 import { PrismaService } from '@crossmart/database';
 import { type BetterAuthInstance, createBetterAuth } from '../better-auth.factory.js';
 import { PrincipalKind } from '../enums/principal-kind.enum.js';
@@ -19,11 +19,13 @@ export class AuthService {
     appConfig: AppConfigService,
     prisma: PrismaService,
     provisioning: TenancyProvisioningService,
+    accountEmails: AccountEmailsService,
   ) {
     this.auth = createBetterAuth({
       appConfig,
       prisma,
       onUserCreated: (user) => provisioning.provisionForNewUser(user),
+      accountEmails,
     });
   }
 

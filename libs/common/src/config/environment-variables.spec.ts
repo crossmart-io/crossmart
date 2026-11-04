@@ -1,3 +1,4 @@
+import { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { Environment } from './environment.enum.js';
 import { validateEnvironment } from './environment-variables.js';
@@ -45,5 +46,18 @@ describe('validateEnvironment', () => {
     expect(() =>
       validateEnvironment({ ...VALID_ENVIRONMENT, BETTER_AUTH_SECRET: 'short' }),
     ).toThrow(/BETTER_AUTH_SECRET/);
+  });
+
+  it('logs email by default and needs a Resend key to send for real', () => {
+    expect(validateEnvironment(VALID_ENVIRONMENT).MAIL_DRIVER).toBe(MailDriver.Log);
+    expect(() => validateEnvironment({ ...VALID_ENVIRONMENT, MAIL_DRIVER: 'resend' })).toThrow(
+      /RESEND_API_KEY/,
+    );
+    const sending = validateEnvironment({
+      ...VALID_ENVIRONMENT,
+      MAIL_DRIVER: 'resend',
+      RESEND_API_KEY: 're_test',
+    });
+    expect(sending.MAIL_DRIVER).toBe(MailDriver.Resend);
   });
 });
