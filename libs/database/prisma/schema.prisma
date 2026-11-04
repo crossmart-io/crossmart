@@ -114,6 +114,8 @@ model Workspace {
   slug           String
   /// ISO 4217 code the catalog's prices are in.
   currency       String                @default("USD") @db.Char(3)
+  /// IANA zone that sets where a day starts for reports, such as "Asia/Jerusalem". Null until set.
+  timeZone       String?               @map("time_zone")
   members        WorkspaceMember[]
   invitations    WorkspaceInvitation[]
   customRoles    CustomRole[]
@@ -788,4 +790,20 @@ model OrderLine {
   @@unique([orderId, externalId])
   @@index([variantId])
   @@map("order_lines")
+}
+
+// ─── Currency ─────────────────────────────────────────────────────────────────
+
+/// A daily reference rate: how many units of `currency` one euro buys, as the European Central
+/// Bank published it on `publishedOn`. Any pair is converted through the euro.
+model ExchangeRate {
+  id          String   @id @default(uuid()) @db.Uuid
+  currency    String   @db.Char(3)
+  ratePerEuro Decimal  @map("rate_per_euro") @db.Decimal(18, 6)
+  publishedOn DateTime @map("published_on") @db.Date
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([currency, publishedOn])
+  @@index([publishedOn])
+  @@map("exchange_rates")
 }

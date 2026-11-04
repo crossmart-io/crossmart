@@ -10,6 +10,7 @@ import type { PricingFloor, PricingRule } from '../../channels/entities/pricing-
 import { CompareAtMode } from '../../channels/enums/compare-at-mode.enum.js';
 import { PriceRounding } from '../../channels/enums/price-rounding.enum.js';
 import type {
+  PriceConversion,
   PriceStep,
   PricingContext,
   ResolvedPrice,
@@ -32,6 +33,7 @@ import {
 const PLUS = '+';
 const MINUS = '-';
 const PERCENT = '%';
+const CONVERSION_ARROW = ' → ';
 
 /** The currency a resolution runs in: its precision, and how amounts read. */
 class Currency {
@@ -48,6 +50,12 @@ class Currency {
   format(value: FixedDecimal): string {
     return formatCurrency(this.amount(value), this.code);
   }
+}
+
+/** A variant's catalog amounts in the channel's currency, and what they were before. */
+interface ChannelAmounts extends VariantPricing {
+  /** Set when the amounts were converted from the catalog's currency. */
+  converted: { original: FixedDecimal; from: string; rate: string } | null;
 }
 
 /** The steps and warnings of one resolution, collected as it runs. */
@@ -85,8 +93,9 @@ export class ChannelPriceResolver {
     override?: VariantPriceOverride | null,
   ): ResolvedPrice {
     const trail = new PriceTrail(new Currency(context.currencyCode));
-    const { price, source } = this.resolvePrice(variant, context.rule, override ?? null, trail);
-    const compareAtPrice = this.resolveCompareAt(variant, context.rule, override ?? null, trail);
+    const amounts = this.inChannelCurrency(variant, context.conversion ?? null, trail);
+    const { price, source } = this.resolvePrice(amounts, context.rule, override ?? null, trail);
+    const compareAtPrice = this.resolveCompareAt(amounts, context.rule, override ?? null, trail);
     const sentCompareAt = this.keepIfAbove(compareAtPrice, price, trail);
     return {
       price: trail.currency.amount(price),
@@ -95,11 +104,41 @@ export class ChannelPriceResolver {
       steps: trail.steps,
       explanation: this.explain(trail, source, price),
       warnings: [...trail.warnings],
+      unitCost: amounts.cost ? trail.currency.amount(FixedDecimal.of(amounts.cost)) : null,
+    };
+  }
+
+  /**
+   * The variant's price, compare-at price and cost in the channel's currency. Without a known
+   * rate they stay as they are and the price is flagged, so it is never sent.
+   */
+  private inChannelCurrency(
+    variant: VariantPricing,
+    conversion: PriceConversion | null,
+    trail: PriceTrail,
+  ): ChannelAmounts {
+    if (!conversion) return { ...variant, converted: null };
+    if (!conversion.rate) {
+      trail.warnings.add(PriceWarning.NoExchangeRate);
+      return { ...variant, converted: null };
+    }
+    const rate = FixedDecimal.of(conversion.rate);
+    const convert = (amount: string | null): string | null =>
+      amount === null ? null : FixedDecimal.of(amount).times(rate).toString();
+    return {
+      price: convert(variant.price) ?? variant.price,
+      compareAtPrice: convert(variant.compareAtPrice),
+      cost: convert(variant.cost),
+      converted: {
+        original: FixedDecimal.of(variant.price),
+        from: conversion.from,
+        rate: conversion.rate,
+      },
     };
   }
 
   private resolvePrice(
-    variant: VariantPricing,
+    variant: ChannelAmounts,
     rule: PricingRule | null,
     override: VariantPriceOverride | null,
     trail: PriceTrail,
@@ -114,7 +153,7 @@ export class ChannelPriceResolver {
       this.warnIfBelowFloor(manual, variant.cost, rule?.floor ?? null, trail);
       return { price: manual, source: PriceSource.Override };
     }
-    trail.add(PriceStepKind.Base, trail.currency.format(base), base);
+    this.recordBase(variant, base, trail);
     if (!rule) {
       return { price: base, source: PriceSource.Base };
     }
@@ -123,6 +162,19 @@ export class ChannelPriceResolver {
       price: this.applyFloor(adjusted, variant.cost, rule, trail),
       source: PriceSource.Rule,
     };
+  }
+
+  /** The base price, in the catalog's currency and then converted when the two differ. */
+  private recordBase(variant: ChannelAmounts, base: FixedDecimal, trail: PriceTrail): void {
+    const { converted } = variant;
+    if (!converted) {
+      trail.add(PriceStepKind.Base, trail.currency.format(base), base);
+      return;
+    }
+    const original = formatCurrency(converted.original.toString(), converted.from);
+    trail.add(PriceStepKind.Base, original, converted.original);
+    const label = `× ${converted.rate} (${converted.from}${CONVERSION_ARROW}${trail.currency.code})`;
+    trail.add(PriceStepKind.Conversion, label, base);
   }
 
   /** Percent, then fixed amount, then rounding. Records the steps when `record` is set. */
@@ -214,7 +266,7 @@ export class ChannelPriceResolver {
   }
 
   private resolveCompareAt(
-    variant: VariantPricing,
+    variant: ChannelAmounts,
     rule: PricingRule | null,
     override: VariantPriceOverride | null,
     trail: PriceTrail,
@@ -243,7 +295,8 @@ export class ChannelPriceResolver {
 
   private explain(trail: PriceTrail, source: PriceSource, price: FixedDecimal): string {
     const result = trail.currency.format(price);
-    if (source === PriceSource.Base) {
+    const converted = trail.steps.some((step) => step.kind === PriceStepKind.Conversion);
+    if (source === PriceSource.Base && !converted) {
       return `${BASE_PRICE_LABEL}${PRICE_RESULT_SEPARATOR}${result}`;
     }
     const labels = trail.steps.map((step) => step.label);

@@ -8,4 +8,9 @@ export enum PriceWarning {
   CompareAtDropped = 'compare_at_dropped',
   /** The adjustment would make the price negative; it is sent as zero. */
   ClampedToZero = 'clamped_to_zero',
+  /**
+   * The store sells in another currency and no exchange rate is known: the price shown is not
+   * converted, and syncs refuse to send it.
+   */
+  NoExchangeRate = 'no_exchange_rate',
 }

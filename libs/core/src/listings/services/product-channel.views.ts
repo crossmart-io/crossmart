@@ -11,7 +11,8 @@ import { effectiveQuantity } from '../rules/effective-quantity.js';
 import { variantTitle } from '../rules/variant-title.js';
 import { ChannelPriceResolver } from './channel-price-resolver.js';
 import { ProductSelectionService } from './product-selection.service.js';
-import type { SyncConnection } from './sync-connection.loader.js';
+import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
+import { PricingContextFactory } from './pricing-context.factory.js';
 
 /** Builds how one product stands on one connection: listing, overrides, prices and stock. */
 @Injectable()
@@ -19,15 +20,16 @@ export class ProductChannelViews {
   constructor(
     private readonly prices: ChannelPriceResolver,
     private readonly selection: ProductSelectionService,
+    private readonly pricingContexts: PricingContextFactory,
   ) {}
 
   async build(
     workspaceId: string,
     product: ProductDetail,
-    connection: Pick<SyncConnection, 'view' | 'pricing'>,
+    view: ChannelConnectionView,
     listing: ListingSyncRecord | null,
   ): Promise<ProductChannelView> {
-    const { view, pricing } = connection;
+    const pricing = await this.pricingContexts.build(workspaceId, view.settings);
     const priceOverrides = toPriceOverrides(listing);
     return {
       connection: {

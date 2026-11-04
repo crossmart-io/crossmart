@@ -1,3 +1,5 @@
+import { WorkspaceSettingsRepository } from '../../workspace-settings/workspace-settings.repository.js';
+import { DEFAULT_SALES_TIME_ZONE } from '../analytics.constants.js';
 import { Injectable } from '@nestjs/common';
 import { SALES_RANGE_SPECS } from '../analytics.constants.js';
 import type { SalesReport, SalesReportQuery } from '../entities/sales-report.js';
@@ -22,12 +24,17 @@ interface PeriodSales {
  */
 @Injectable()
 export class SalesAnalyticsService {
-  constructor(private readonly sales: SalesRepository) {}
+  constructor(
+    private readonly sales: SalesRepository,
+    private readonly workspaces: WorkspaceSettingsRepository,
+  ) {}
 
   async report(workspaceId: string, query: SalesReportQuery): Promise<SalesReport> {
     const spec = SALES_RANGE_SPECS[query.range];
-    const currencyCode = await this.sales.workspaceCurrency(workspaceId);
-    const scope: SalesScope = { workspaceId, currencyCode, timeZone: query.timeZone, spec };
+    const settings = await this.workspaces.get(workspaceId);
+    const currencyCode = settings.currency;
+    const timeZone = query.timeZone ?? settings.timeZone ?? DEFAULT_SALES_TIME_ZONE;
+    const scope: SalesScope = { workspaceId, currencyCode, timeZone, spec };
     const [current, previous, stores] = await Promise.all([
       this.period(scope, 0),
       this.period(scope, spec.buckets),
@@ -40,7 +47,7 @@ export class SalesAnalyticsService {
     return {
       range: query.range,
       interval: spec.interval,
-      timeZone: query.timeZone,
+      timeZone,
       currencyCode,
       current: toSalesTotals(current.rows, current.units),
       previous: toSalesTotals(previous.rows, previous.units),

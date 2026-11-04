@@ -142,3 +142,6 @@ export * from './analytics/services/sales-analytics.service.js';
 export * from './notifications/notifications.module.js';
 export * from './notifications/services/account-emails.service.js';
 export * from './notifications/services/team-emails.service.js';
+export * from './currency/currency.module.js';
+export * from './currency/entities/exchange-rate.js';
+export * from './currency/services/exchange-rates.service.js';

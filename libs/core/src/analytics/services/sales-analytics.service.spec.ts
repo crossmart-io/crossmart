@@ -1,3 +1,4 @@
+import type { WorkspaceSettingsRepository } from '../../workspace-settings/workspace-settings.repository.js';
 import { Prisma } from '@crossmart/database';
 import { SALES_RANGE_SPECS } from '../analytics.constants.js';
 import type { BucketRow, PeriodBounds } from '../entities/sales-scope.js';
@@ -30,7 +31,6 @@ const PREVIOUS_ROWS = [row(0, 'store-a', '50.00', 1), row(1, null, '0', 0), row(
 
 function setup() {
   const repository = {
-    workspaceCurrency: vi.fn<SalesRepository['workspaceCurrency']>().mockResolvedValue('USD'),
     periodBounds: vi.fn<SalesRepository['periodBounds']>().mockResolvedValue(BOUNDS),
     bucketRows: vi
       .fn<SalesRepository['bucketRows']>()
@@ -50,7 +50,15 @@ function setup() {
       { id: 'store-c', channel: 'shopify', displayName: 'C' },
     ]),
   };
-  const service = new SalesAnalyticsService(repository as unknown as SalesRepository);
+  const workspaces = {
+    get: vi
+      .fn<WorkspaceSettingsRepository['get']>()
+      .mockResolvedValue({ currency: 'USD', timeZone: 'Asia/Jerusalem' }),
+  };
+  const service = new SalesAnalyticsService(
+    repository as unknown as SalesRepository,
+    workspaces as unknown as WorkspaceSettingsRepository,
+  );
   return { repository, service };
 }
 
@@ -118,5 +126,17 @@ describe('SalesAnalyticsService', () => {
     });
     expect(report.current.averageOrderValue).toBeNull();
     expect(report.topProducts[0].sales).toBe('80.00');
+  });
+});
+
+describe('SalesAnalyticsService time zone', () => {
+  it('follows the workspace time zone when the caller names none', async () => {
+    const { service, repository } = setup();
+    const report = await service.report(WORKSPACE_ID, { range: SalesRange.Last90Days });
+    expect(report.timeZone).toBe('Asia/Jerusalem');
+    expect(repository.periodBounds).toHaveBeenCalledWith(
+      expect.objectContaining({ timeZone: 'Asia/Jerusalem' }),
+      0,
+    );
   });
 });

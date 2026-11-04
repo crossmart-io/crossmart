@@ -48,6 +48,13 @@ export class ResolvedPriceDto implements ResolvedPrice {
   @ApiProperty({ enum: PriceWarning, enumName: PRICE_WARNING_SCHEMA_NAME, isArray: true })
   warnings: PriceWarning[];
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'The variant cost in the channel currency, converted like the price',
+  })
+  unitCost: string | null;
+
   static from(resolved: ResolvedPrice): ResolvedPriceDto {
     return Object.assign(new ResolvedPriceDto(), {
       ...resolved,

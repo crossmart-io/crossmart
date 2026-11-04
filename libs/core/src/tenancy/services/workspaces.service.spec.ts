@@ -15,6 +15,7 @@ function stored(fields: Partial<NewWorkspace> & { id?: string } = {}) {
     name: fields.name ?? 'EU store',
     slug: fields.slug ?? 'eu-store',
     currency: fields.currency ?? 'EUR',
+    timeZone: fields.timeZone ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
     organization: { name: 'Ana Cohen' },
@@ -28,7 +29,9 @@ function createService() {
     slugsLike: vi.fn().mockResolvedValue(['eu-store']),
     create: vi.fn((record: NewWorkspace) => Promise.resolve(stored(record))),
     findById: vi.fn().mockResolvedValue(stored({ name: 'Default' })),
-    rename: vi.fn((_id: string, name: string) => Promise.resolve(stored({ name }))),
+    update: vi.fn((_id: string, changes: { name?: string; timeZone?: string }) =>
+      Promise.resolve(stored({ name: changes.name ?? 'Default', timeZone: changes.timeZone })),
+    ),
   };
   const activity = new InMemoryActivityRecorder();
   const service = new WorkspacesService(workspaces as unknown as WorkspaceRepository, activity);
@@ -47,6 +50,7 @@ describe('WorkspacesService.create', () => {
       name: 'EU store',
       slug: 'eu-store-2',
       currency: 'EUR',
+      timeZone: null,
       ownerId: 'user-1',
     });
     expect(created).toMatchObject({ role: WorkspaceRole.OWNER, displayName: 'EU store' });
@@ -66,16 +70,37 @@ describe('WorkspacesService.create', () => {
   });
 });
 
-describe('WorkspacesService.rename', () => {
+describe('WorkspacesService.update', () => {
   it('records the old name', async () => {
     const { service, activity } = createService();
     const access = resolveRole(WorkspaceRole.ADMIN, null);
-    const renamed = await service.rename('ws-2', 'Main store', access, Actor.user('user-1'));
+    const renamed = await service.update(
+      'ws-2',
+      { name: 'Main store' },
+      access,
+      Actor.user('user-1'),
+    );
     expect(renamed.displayName).toBe('Main store');
     expect(activity.entries[0]).toMatchObject({
       action: ActivityAction.WorkspaceRenamed,
       detail: 'Default',
       subject: { label: 'Main store' },
+    });
+  });
+
+  it('records a new time zone', async () => {
+    const { service, activity } = createService();
+    const access = resolveRole(WorkspaceRole.ADMIN, null);
+    const updated = await service.update(
+      'ws-2',
+      { timeZone: 'Asia/Jerusalem' },
+      access,
+      Actor.user('user-1'),
+    );
+    expect(updated.timeZone).toBe('Asia/Jerusalem');
+    expect(activity.entries[0]).toMatchObject({
+      action: ActivityAction.WorkspaceTimeZoneChanged,
+      detail: 'Asia/Jerusalem',
     });
   });
 });

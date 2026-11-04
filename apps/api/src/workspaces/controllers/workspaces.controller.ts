@@ -23,7 +23,7 @@ import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CurrentWorkspaceAccess } from '../../auth/decorators/workspace-access.decorator.js';
 import { DeleteWorkspaceDto } from '../dto/delete-workspace.dto.js';
-import { RenameWorkspaceDto } from '../dto/workspace-input.dto.js';
+import { UpdateWorkspaceDto } from '../dto/workspace-input.dto.js';
 import { WorkspaceDto } from '../dto/workspace.dto.js';
 import { WORKSPACE_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
 
@@ -49,15 +49,16 @@ export class WorkspacesController {
 
   @Patch()
   @RequirePermission(WorkspacePermission.ManageWorkspace)
-  @ApiOperation({ summary: 'Rename a workspace' })
+  @ApiOperation({ summary: 'Rename a workspace or set its time zone' })
   @ApiOkResponse({ type: WorkspaceDto })
-  async rename(
+  async update(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
-    @Body() body: RenameWorkspaceDto,
+    @Body() body: UpdateWorkspaceDto,
     @CurrentWorkspaceAccess() access: ResolvedRole,
     @CurrentActor() actor: Actor,
   ): Promise<WorkspaceDto> {
-    return WorkspaceDto.from(await this.workspaces.rename(workspaceId, body.name, access, actor));
+    const changes = { name: body.name, timeZone: body.timeZone };
+    return WorkspaceDto.from(await this.workspaces.update(workspaceId, changes, access, actor));
   }
 
   @Delete()

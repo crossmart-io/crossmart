@@ -19,6 +19,13 @@ describe('FixedDecimal', () => {
     expect(of('10').minus(of('12.5')).toString()).toBe('-2.5');
   });
 
+  it('divides, rounding half up at six digits', () => {
+    expect(of('3.6').dividedBy(of('1.08')).toString()).toBe('3.333333');
+    expect(of('2').dividedBy(of('3')).toString()).toBe('0.666667');
+    expect(of('-1').dividedBy(of('8')).toString()).toBe('-0.125');
+    expect(() => of('1').dividedBy(of('0'))).toThrow(RangeError);
+  });
+
   it('moves a value by a percentage', () => {
     expect(of('89').adjustedByPercent(of('15')).toFixed(2)).toBe('102.35');
     expect(of('89').adjustedByPercent(of('-10')).toFixed(2)).toBe('80.10');

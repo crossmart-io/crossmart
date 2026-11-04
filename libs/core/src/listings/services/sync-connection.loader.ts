@@ -10,8 +10,9 @@ import { ChannelConnectionStatus } from '@crossmart/database';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import { ChannelSessionFactory } from '../../channels/services/channel-session.factory.js';
+import type { PricingRule } from '../../channels/entities/pricing-rule.js';
 import type { PricingContext } from '../entities/price-resolution.js';
-import { pricingContextOf } from '../rules/connection-currency.js';
+import { PricingContextFactory } from './pricing-context.factory.js';
 
 /** A connection a sync can run on: its settings, connector and pricing. */
 export interface SyncConnection {
@@ -27,6 +28,7 @@ export class SyncConnectionLoader {
     private readonly connections: ChannelConnectionsService,
     private readonly registry: ChannelConnectorRegistry,
     private readonly sessions: ChannelSessionFactory,
+    private readonly pricing: PricingContextFactory,
   ) {}
 
   /** The connection, or null when it is gone or no longer connected: such jobs are dropped. */
@@ -35,23 +37,36 @@ export class SyncConnectionLoader {
     if (!view || view.status !== ChannelConnectionStatus.CONNECTED) {
       return null;
     }
-    return this.toSyncConnection(view);
+    return this.toSyncConnection(workspaceId, view);
   }
 
-  /** The connection for API calls: it may be disconnected, but must exist. */
-  async require(workspaceId: string, connectionId: string): Promise<SyncConnection> {
-    return this.toSyncConnection(await this.connections.get(workspaceId, connectionId));
+  /**
+   * The connection for API calls: it may be disconnected, but must exist. `rule` prices with a
+   * rule being edited instead of the saved one.
+   */
+  async require(
+    workspaceId: string,
+    connectionId: string,
+    rule?: PricingRule | null,
+  ): Promise<SyncConnection> {
+    const view = await this.connections.get(workspaceId, connectionId);
+    return this.toSyncConnection(workspaceId, view, rule);
   }
 
   openSession(workspaceId: string, connectionId: string): Promise<ChannelSession> {
     return this.sessions.open(workspaceId, connectionId);
   }
 
-  private toSyncConnection(view: ChannelConnectionView): SyncConnection {
+  private async toSyncConnection(
+    workspaceId: string,
+    view: ChannelConnectionView,
+    rule?: PricingRule | null,
+  ): Promise<SyncConnection> {
+    const pricingRule = rule === undefined ? view.settings.pricing : rule;
     return {
       view,
       connector: this.registry.require(requireEnumValue(ChannelType, view.channel)),
-      pricing: pricingContextOf(view.settings),
+      pricing: await this.pricing.build(workspaceId, view.settings, pricingRule),
     };
   }
 

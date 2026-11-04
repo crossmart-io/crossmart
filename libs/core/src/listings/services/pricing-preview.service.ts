@@ -26,8 +26,10 @@ export class PricingPreviewService {
     rule: PricingRule | null,
     productId?: string,
   ): Promise<PricingPreview> {
-    const connection = await this.connections.require(workspaceId, connectionId);
-    const { currencyCode } = connection.pricing;
+    // Priced with the rule being edited, which may be null to show catalog prices.
+    const connection = await this.connections.require(workspaceId, connectionId, rule);
+    const { pricing } = connection;
+    const { currencyCode } = pricing;
     const exampleId =
       productId ??
       (await this.selection.firstSelectedId({
@@ -47,7 +49,7 @@ export class PricingPreviewService {
         title: variantTitle(variant),
         basePrice: variant.price,
         cost: variant.cost,
-        resolved: this.prices.resolve(variant, { rule, currencyCode }),
+        resolved: this.prices.resolve(variant, pricing),
       })),
     };
   }

@@ -5,7 +5,7 @@ import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type { NewWorkspace } from '../repositories/workspace.repository.js';
-import type { WorkspaceInput } from '../entities/new-workspace.js';
+import type { WorkspaceChanges, WorkspaceInput } from '../entities/new-workspace.js';
 import type { WorkspaceAccess } from '../entities/workspace-access.js';
 import type { ResolvedRole } from '../entities/role-assignment.js';
 import { resolveRole } from '../permissions/role-permissions.js';
@@ -44,6 +44,7 @@ export class WorkspacesService {
       name,
       slug: uniqueSlug(name, taken),
       currency: (input.currency ?? DEFAULT_WORKSPACE_CURRENCY).toUpperCase(),
+      timeZone: input.timeZone ?? null,
       ownerId,
     };
     const workspace = await this.workspaces.create(record);
@@ -51,16 +52,28 @@ export class WorkspacesService {
     return toAccess(workspace, resolveRole(WorkspaceRole.OWNER, null));
   }
 
-  async rename(
+  /** Renames the workspace or sets its time zone, recording each change. */
+  async update(
     workspaceId: string,
-    name: string,
+    changes: WorkspaceChanges,
     access: ResolvedRole,
     actor: Actor,
   ): Promise<WorkspaceAccess> {
     const before = await this.workspaces.findById(workspaceId);
-    const workspace = await this.workspaces.rename(workspaceId, name.trim());
+    const workspace = await this.workspaces.update(workspaceId, {
+      ...(changes.name === undefined ? {} : { name: changes.name.trim() }),
+      ...(changes.timeZone === undefined ? {} : { timeZone: changes.timeZone }),
+    });
     if (before && before.name !== workspace.name) {
       await this.record(workspace, actor, ActivityAction.WorkspaceRenamed, before.name);
+    }
+    if (before && workspace.timeZone && before.timeZone !== workspace.timeZone) {
+      await this.record(
+        workspace,
+        actor,
+        ActivityAction.WorkspaceTimeZoneChanged,
+        workspace.timeZone,
+      );
     }
     return toAccess(workspace, access);
   }
@@ -92,7 +105,7 @@ export class WorkspacesService {
 }
 
 function toAccess(workspace: WorkspaceWithOrganization, access: ResolvedRole): WorkspaceAccess {
-  const { id, organizationId, name, slug, currency } = workspace;
+  const { id, organizationId, name, slug, currency, timeZone } = workspace;
   const displayName = workspaceDisplayName(name, workspace.organization.name);
-  return { id, organizationId, name, displayName, slug, currency, ...access };
+  return { id, organizationId, name, displayName, slug, currency, timeZone, ...access };
 }

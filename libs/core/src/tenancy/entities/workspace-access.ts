@@ -10,6 +10,8 @@ export interface WorkspaceAccess extends ResolvedRole {
   slug: string;
   /** ISO 4217 code of the catalog's prices. */
   currency: string;
+  /** IANA zone where the workspace's day starts, or null until someone sets it. */
+  timeZone: string | null;
 }
 
 export interface WorkspaceMemberProfile extends ResolvedRole {

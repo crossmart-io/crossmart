@@ -145,6 +145,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
         ? `Renamed the workspace from “${entry.detail}” to “${entry.subject?.label ?? ''}”`
         : `Renamed the workspace${named(entry)}`,
   },
+  [ActivityAction.WorkspaceTimeZoneChanged]: {
+    operation: 'Changing the time zone',
+    describe: (entry) => withDetail('Changed the time zone', entry),
+  },
   [ActivityAction.CustomRoleCreated]: {
     operation: 'Creating a role',
     describe: (entry) => `Created the role${named(entry)}`,

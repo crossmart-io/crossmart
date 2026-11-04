@@ -3,8 +3,11 @@ import type { SalesRange } from '../enums/sales-range.enum.js';
 
 export interface SalesReportQuery {
   range: SalesRange;
-  /** IANA time zone the buckets follow, such as `America/New_York`. */
-  timeZone: string;
+  /**
+   * IANA time zone the buckets follow, such as `America/New_York`. Defaults to the workspace's
+   * time zone, else UTC.
+   */
+  timeZone?: string;
 }
 
 export interface SalesTotals {

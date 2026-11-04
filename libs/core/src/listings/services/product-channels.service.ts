@@ -5,9 +5,7 @@ import type { ChannelConnectionView } from '../../channels/entities/channel-conn
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import type { ProductChannelView } from '../entities/listing-views.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
-import { pricingContextOf } from '../rules/connection-currency.js';
 import { ProductChannelViews } from './product-channel.views.js';
-import type { SyncConnection } from './sync-connection.loader.js';
 import { SyncProductLoader } from './sync-product.loader.js';
 
 const PRODUCT_NOT_FOUND = 'Product not found';
@@ -32,7 +30,7 @@ export class ProductChannelsService {
     return Promise.all(
       publishable.map((connection) => {
         const listing = listings.find((entry) => entry.connectionId === connection.id) ?? null;
-        return this.views.build(workspaceId, product, this.syncConnection(connection), listing);
+        return this.views.build(workspaceId, product, connection, listing);
       }),
     );
   }
@@ -45,7 +43,7 @@ export class ProductChannelsService {
     const product = await this.requireProduct(workspaceId, productId);
     const connection = await this.connections.get(workspaceId, connectionId);
     const listing = await this.listings.findPrimary(workspaceId, connectionId, productId);
-    return this.views.build(workspaceId, product, this.syncConnection(connection), listing);
+    return this.views.build(workspaceId, product, connection, listing);
   }
 
   private async requireProduct(workspaceId: string, productId: string): Promise<ProductDetail> {
@@ -58,9 +56,5 @@ export class ProductChannelsService {
 
   private canList(connection: ChannelConnectionView): boolean {
     return connection.status !== ChannelConnectionStatus.DISCONNECTED;
-  }
-
-  private syncConnection(view: ChannelConnectionView): Pick<SyncConnection, 'view' | 'pricing'> {
-    return { view, pricing: pricingContextOf(view.settings) };
   }
 }

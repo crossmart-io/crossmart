@@ -33,6 +33,8 @@ export enum ActivityAction {
   WorkspaceCreated = 'workspace_created',
   /** The detail names the previous name. */
   WorkspaceRenamed = 'workspace_renamed',
+  /** The detail names the new time zone. */
+  WorkspaceTimeZoneChanged = 'workspace_time_zone_changed',
   CustomRoleCreated = 'custom_role_created',
   /** A custom role's name or permissions changed. */
   CustomRoleUpdated = 'custom_role_updated',
