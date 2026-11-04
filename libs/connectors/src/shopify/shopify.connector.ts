@@ -52,6 +52,11 @@ import { missingScopes } from './shopify-scopes.js';
 import { parseShopifySettings, type ShopifySettings } from './shopify-settings.js';
 import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
 
+interface VerifiedCallback {
+  shopDomain: string;
+  code: string;
+}
+
 function shopifyError(code: ChannelErrorCode, message: string): ChannelError {
   return new ChannelError(ChannelType.Shopify, code, message);
 }
@@ -116,21 +121,7 @@ export class ShopifyConnector
   }
 
   async completeAuthorization(callback: OAuthCallback): Promise<ChannelAuthorization> {
-    const { query } = callback;
-    if (!this.oauth.verifyCallback(query)) {
-      throw shopifyError(
-        ChannelErrorCode.InvalidSignature,
-        'The Shopify callback is not signed by Shopify',
-      );
-    }
-    const shopDomain = query[ShopifyOAuthParam.Shop];
-    const code = query[ShopifyOAuthParam.Code];
-    if (!shopDomain || !isShopDomain(shopDomain) || !code) {
-      throw shopifyError(
-        ChannelErrorCode.InvalidAccount,
-        'The Shopify callback names no valid store',
-      );
-    }
+    const { shopDomain, code } = this.verifiedCallback(callback);
     const grant = await this.oauth.exchangeCode(shopDomain, code);
     const missing = missingScopes(grant.grantedScopes, this.requiredScopes);
     if (missing.length > 0) {
@@ -139,7 +130,7 @@ export class ShopifyConnector
         `Shopify did not grant ${missing.join(', ')}`,
       );
     }
-    return { externalAccountId: shopDomain.toLowerCase(), ...grant };
+    return { externalAccountId: shopDomain, ...grant };
   }
 
   async refreshCredentials(
@@ -228,6 +219,31 @@ export class ShopifyConnector
 
   fetchOrder(session: ChannelSession, externalId: string): Promise<ExternalOrder | null> {
     return this.store.orders.fetchOrder(session, externalId);
+  }
+
+  /** The signed callback's store and code. It must be the store the merchant asked for. */
+  private verifiedCallback({ query, accountHandle }: OAuthCallback): VerifiedCallback {
+    if (!this.oauth.verifyCallback(query)) {
+      throw shopifyError(
+        ChannelErrorCode.InvalidSignature,
+        'The Shopify callback is not signed by Shopify',
+      );
+    }
+    const shopDomain = query[ShopifyOAuthParam.Shop]?.toLowerCase();
+    const code = query[ShopifyOAuthParam.Code];
+    if (!shopDomain || !isShopDomain(shopDomain) || !code) {
+      throw shopifyError(
+        ChannelErrorCode.InvalidAccount,
+        'The Shopify callback names no valid store',
+      );
+    }
+    if (shopDomain !== accountHandle) {
+      throw shopifyError(
+        ChannelErrorCode.InvalidAccount,
+        'Shopify replied for a different store than the one being connected',
+      );
+    }
+    return { shopDomain, code };
   }
 
   private toSettings({ shop, location }: ShopData): ShopifySettings {

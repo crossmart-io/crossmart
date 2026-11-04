@@ -1,5 +1,6 @@
 import { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
+import { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import { validateEnvironment } from './environment-variables.js';
 
@@ -59,5 +60,16 @@ describe('validateEnvironment', () => {
       RESEND_API_KEY: 're_test',
     });
     expect(sending.MAIL_DRIVER).toBe(MailDriver.Resend);
+  });
+
+  it('reads the eBay environment, sandbox by default', () => {
+    expect(validateEnvironment(VALID_ENVIRONMENT).EBAY_ENVIRONMENT).toBe(EbayEnvironment.Sandbox);
+    expect(
+      validateEnvironment({ ...VALID_ENVIRONMENT, EBAY_ENVIRONMENT: 'production' })
+        .EBAY_ENVIRONMENT,
+    ).toBe(EbayEnvironment.Production);
+    expect(() => validateEnvironment({ ...VALID_ENVIRONMENT, EBAY_ENVIRONMENT: 'live' })).toThrow(
+      /EBAY_ENVIRONMENT/,
+    );
   });
 });

@@ -1,0 +1,10 @@
+{
+  "errors": [
+    {
+      "errorId": 20403,
+      "domain": "API_ACCOUNT",
+      "category": "REQUEST",
+      "message": "Invalid . User is not eligible for Business Policy."
+    }
+  ]
+}

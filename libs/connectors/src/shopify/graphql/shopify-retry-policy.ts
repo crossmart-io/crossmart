@@ -1,9 +1,6 @@
 import { RETRY_AFTER_HEADER } from '../../sdk/http/http.constants.js';
-import {
-  MILLISECONDS_PER_SECOND,
-  SHOPIFY_BACKOFF_BASE_MS,
-  SHOPIFY_BACKOFF_MAX_MS,
-} from '../shopify.constants.js';
+import { MILLISECONDS_PER_SECOND } from '../../sdk/time/time.constants.js';
+import { SHOPIFY_BACKOFF_BASE_MS, SHOPIFY_BACKOFF_MAX_MS } from '../shopify.constants.js';
 import type { ShopifyQueryCost } from './shopify-graphql-response.js';
 
 const EXPONENT_BASE = 2;

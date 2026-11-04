@@ -64,7 +64,7 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
       workspaceId: WORKSPACE_ID,
       userId: USER_ID,
       channel: ChannelType.Shopify,
-      externalAccountId: FAKE_ACCOUNT,
+      accountHandle: FAKE_ACCOUNT,
     });
   return { service, connector, connections, activity, vault, state };
 }
@@ -85,6 +85,7 @@ describe('ChannelAuthorizationService', () => {
       });
 
       const url = new URL(started.authorizationUrl);
+      expect(started.accountHandle).toBe(FAKE_ACCOUNT);
       expect(started.externalAccountId).toBe(FAKE_ACCOUNT);
       expect(url.searchParams.get('redirect_uri')).toBe(
         'http://localhost:3004/api/v1/channels/shopify/oauth/callback',
@@ -110,7 +111,7 @@ describe('ChannelAuthorizationService', () => {
 
   describe('complete', () => {
     it('stores sealed credentials and records the connection', async () => {
-      const { service, connections, activity, vault, state } = setup();
+      const { service, connector, connections, activity, vault, state } = setup();
 
       const view = await service.complete(ChannelType.Shopify, {
         query: { state: state(), code: 'c' },
@@ -118,6 +119,12 @@ describe('ChannelAuthorizationService', () => {
       });
 
       expect(view.displayName).toBe('Demo Store');
+      expect(connector.completeAuthorization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountHandle: FAKE_ACCOUNT,
+          query: { state: expect.any(String), code: 'c' },
+        }),
+      );
       const [stored] = connections.upsertConnected.mock.calls[0];
       expect(stored.sealedCredentials).not.toContain('token-1');
       expect(stored.credentialsExpiresAt).toEqual(new Date('2026-11-03T11:00:00.000Z'));
@@ -164,7 +171,7 @@ describe('ChannelAuthorizationService', () => {
       ).toBe(ConnectFailure.InvalidState);
     });
 
-    it('records a failure when the user lost access, or the channel answers for another store', async () => {
+    it('records a failure when the user lost access, or the connector refuses the account', async () => {
       const lostAccess = setup(WorkspaceRole.VIEWER);
       expect(
         await failureOf(
@@ -181,10 +188,9 @@ describe('ChannelAuthorizationService', () => {
       });
 
       const otherStore = setup();
-      otherStore.connector.authorization = {
-        ...otherStore.connector.authorization,
-        externalAccountId: 'other.myshopify.com',
-      };
+      otherStore.connector.completeAuthorization.mockRejectedValueOnce(
+        new ChannelError(ChannelType.Shopify, ChannelErrorCode.InvalidAccount, 'other store'),
+      );
       expect(
         await failureOf(
           otherStore.service.complete(ChannelType.Shopify, {
@@ -194,6 +200,10 @@ describe('ChannelAuthorizationService', () => {
         ),
       ).toBe(ConnectFailure.InvalidAccount);
       expect(otherStore.connections.upsertConnected).not.toHaveBeenCalled();
+      expect(otherStore.activity.recorded[0].entry).toMatchObject({
+        action: ActivityAction.ChannelConnectFailed,
+        subject: { label: FAKE_ACCOUNT },
+      });
     });
 
     it('maps channel errors and declined approvals to failures', async () => {

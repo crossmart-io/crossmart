@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ChannelCredentials } from '../../sdk/auth/channel-credentials.js';
-import { MILLISECONDS_PER_SECOND } from '../shopify.constants.js';
+import { expiresAt } from '../../sdk/time/expires-at.js';
 import { parseScopes } from '../shopify-scopes.js';
 
 /** Shopify's access token response. Expiring offline tokens carry a refresh token. */
@@ -17,12 +17,6 @@ export type ShopifyTokenResponse = z.infer<typeof shopifyTokenResponseSchema>;
 export interface ShopifyGrant {
   credentials: ChannelCredentials;
   grantedScopes: string[];
-}
-
-function expiresAt(now: Date, seconds: number | undefined): string | undefined {
-  return seconds === undefined
-    ? undefined
-    : new Date(now.getTime() + seconds * MILLISECONDS_PER_SECOND).toISOString();
 }
 
 export function toShopifyGrant(response: ShopifyTokenResponse, now: Date): ShopifyGrant {

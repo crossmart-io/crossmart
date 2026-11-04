@@ -1,0 +1,11 @@
+{
+  "total": 1,
+  "paymentPolicies": [
+    {
+      "paymentPolicyId": "6000000101",
+      "name": "Managed payments",
+      "marketplaceId": "EBAY_US",
+      "immediatePay": true
+    }
+  ]
+}
