@@ -37,11 +37,12 @@ export class ProductViewRepository {
     });
   }
 
-  /** Returns false when the view does not exist in this workspace. */
-  async delete(workspaceId: string, viewId: string): Promise<boolean> {
-    const { count } = await this.prisma.productView.deleteMany({
-      where: { id: viewId, workspaceId },
-    });
-    return count > 0;
+  /** Returns the deleted view's name, or null when it is not in this workspace. */
+  async delete(workspaceId: string, viewId: string): Promise<Pick<ProductView, 'name'> | null> {
+    const where = { id: viewId, workspaceId };
+    const view = await this.prisma.productView.findFirst({ where, select: { name: true } });
+    if (!view) return null;
+    const { count } = await this.prisma.productView.deleteMany({ where });
+    return count > 0 ? view : null;
   }
 }

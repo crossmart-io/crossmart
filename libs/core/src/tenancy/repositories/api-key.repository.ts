@@ -30,13 +30,17 @@ export class ApiKeyRepository {
     });
   }
 
-  /** Returns false when the key does not exist in this workspace or is already revoked. */
-  async revoke(workspaceId: string, apiKeyId: string, revokedAt: Date): Promise<boolean> {
-    const { count } = await this.prisma.apiKey.updateMany({
-      where: { id: apiKeyId, workspaceId, revokedAt: null },
-      data: { revokedAt },
-    });
-    return count > 0;
+  /** Returns the revoked key, or null when it is not in this workspace or already revoked. */
+  async revoke(
+    workspaceId: string,
+    apiKeyId: string,
+    revokedAt: Date,
+  ): Promise<Pick<ApiKey, 'id' | 'name'> | null> {
+    const where = { id: apiKeyId, workspaceId, revokedAt: null };
+    const apiKey = await this.prisma.apiKey.findFirst({ where, select: { id: true, name: true } });
+    if (!apiKey) return null;
+    const { count } = await this.prisma.apiKey.updateMany({ where, data: { revokedAt } });
+    return count > 0 ? apiKey : null;
   }
 
   async markUsed(apiKeyId: string, usedAt: Date): Promise<void> {

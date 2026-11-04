@@ -1,4 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
+import { Actor } from '@crossmart/core';
 import { PrincipalKind } from './enums/principal-kind.enum.js';
 import type { Principal, UserPrincipal } from './entities/principal.js';
 
@@ -13,4 +14,11 @@ export function requireUser(principal: Principal): UserPrincipal {
     throw new ForbiddenException('This route needs a signed-in user, not an API key');
   }
   return principal;
+}
+
+/** Who the activity log credits: the signed-in user, or the API key itself. */
+export function toActor(principal: Principal): Actor {
+  return principal.kind === PrincipalKind.User
+    ? Actor.user(principal.userId)
+    : Actor.apiKey(principal.apiKeyId);
 }

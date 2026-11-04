@@ -16,14 +16,15 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { ApiKeysService, WorkspacePermission } from '@crossmart/core';
+import { type Actor, ApiKeysService, WorkspacePermission } from '@crossmart/core';
 import type { WorkspaceRole } from '@crossmart/database';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { CurrentPrincipal } from '../../auth/decorators/current-principal.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CurrentWorkspaceRole } from '../../auth/decorators/workspace-role.decorator.js';
 import type { Principal } from '../../auth/entities/principal.js';
-import { actingUserId } from '../../auth/principal.utils.js';
+import { actingUserId, toActor } from '../../auth/principal.utils.js';
 import { ApiKeyDto, IssuedApiKeyDto } from '../dto/api-key.dto.js';
 import { CreateApiKeyDto } from '../dto/create-api-key.dto.js';
 import { API_KEY_ID_PARAM, API_KEYS_ROUTE, API_KEYS_TAG } from '../workspaces.constants.js';
@@ -52,7 +53,8 @@ export class ApiKeysController {
     @Body() body: CreateApiKeyDto,
   ): Promise<IssuedApiKeyDto> {
     const issuer = { userId: actingUserId(principal), role };
-    return IssuedApiKeyDto.from(await this.apiKeys.issue(workspaceId, issuer, body));
+    const issued = await this.apiKeys.issue(workspaceId, issuer, body, toActor(principal));
+    return IssuedApiKeyDto.from(issued);
   }
 
   @Delete(`:${API_KEY_ID_PARAM}`)
@@ -62,7 +64,8 @@ export class ApiKeysController {
   revoke(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(API_KEY_ID_PARAM, ParseUUIDPipe) apiKeyId: string,
+    @CurrentActor() actor: Actor,
   ): Promise<void> {
-    return this.apiKeys.revoke(workspaceId, apiKeyId);
+    return this.apiKeys.revoke(workspaceId, apiKeyId, actor);
   }
 }

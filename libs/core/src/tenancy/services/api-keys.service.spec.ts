@@ -1,12 +1,16 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { hashSecret } from '@crossmart/common';
 import { type ApiKey, WorkspaceRole } from '@crossmart/database';
+import { Actor } from '../../activity/entities/actor.js';
+import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
+import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type { ApiKeyRepository } from '../repositories/api-key.repository.js';
 import { API_KEY_TOKEN_PREFIX } from '../tenancy.constants.js';
 import { ApiKeysService } from './api-keys.service.js';
 
 const NOW = new Date('2026-11-01T12:00:00Z');
 const ADMIN = { userId: 'user-1', role: WorkspaceRole.ADMIN };
+const ACTOR = Actor.user('user-1');
 
 function storedKey(overrides: Partial<ApiKey> = {}): ApiKey {
   return {
@@ -33,24 +37,32 @@ function createService() {
     revoke: vi.fn(),
     markUsed: vi.fn(),
   };
-  const service = new ApiKeysService(repository as unknown as ApiKeyRepository);
-  return { service, repository };
+  const activity = new InMemoryActivityRecorder();
+  const service = new ApiKeysService(repository as unknown as ApiKeyRepository, activity);
+  return { service, repository, activity };
 }
 
 describe('ApiKeysService.issue', () => {
   it('returns the secret once and stores only its hash', async () => {
-    const { service, repository } = createService();
+    const { service, repository, activity } = createService();
 
-    const { secret, apiKey } = await service.issue('ws-1', ADMIN, {
-      name: 'MCP',
-      role: WorkspaceRole.EDITOR,
-    });
+    const { secret, apiKey } = await service.issue(
+      'ws-1',
+      ADMIN,
+      { name: 'MCP', role: WorkspaceRole.EDITOR },
+      ACTOR,
+    );
 
     expect(secret.startsWith(API_KEY_TOKEN_PREFIX)).toBe(true);
     const [record] = repository.create.mock.calls[0];
     expect(record.hash).toBe(hashSecret(secret));
     expect(JSON.stringify(record)).not.toContain(secret);
     expect(secret.startsWith(apiKey.prefix)).toBe(true);
+    expect(activity.entries[0]).toMatchObject({
+      action: ActivityAction.ApiKeyCreated,
+      subject: { label: 'MCP' },
+    });
+    expect(JSON.stringify(activity.recorded)).not.toContain(secret);
   });
 
   it('never issues an owner key', async () => {
@@ -58,7 +70,7 @@ describe('ApiKeysService.issue', () => {
     const owner = { userId: 'user-1', role: WorkspaceRole.OWNER };
 
     await expect(
-      service.issue('ws-1', owner, { name: 'root', role: WorkspaceRole.OWNER }),
+      service.issue('ws-1', owner, { name: 'root', role: WorkspaceRole.OWNER }, ACTOR),
     ).rejects.toThrow(ForbiddenException);
   });
 
@@ -67,7 +79,7 @@ describe('ApiKeysService.issue', () => {
     const editor = { userId: 'user-2', role: WorkspaceRole.EDITOR };
 
     await expect(
-      service.issue('ws-1', editor, { name: 'approve', role: WorkspaceRole.APPROVER }),
+      service.issue('ws-1', editor, { name: 'approve', role: WorkspaceRole.APPROVER }, ACTOR),
     ).rejects.toThrow(ForbiddenException);
   });
 });
@@ -120,8 +132,20 @@ describe('ApiKeysService.authenticate', () => {
 describe('ApiKeysService.revoke', () => {
   it('reports a key that is not in the workspace as not found', async () => {
     const { service, repository } = createService();
-    repository.revoke.mockResolvedValue(false);
+    repository.revoke.mockResolvedValue(null);
 
-    await expect(service.revoke('ws-1', 'key-404')).rejects.toThrow(NotFoundException);
+    await expect(service.revoke('ws-1', 'key-404', ACTOR)).rejects.toThrow(NotFoundException);
+  });
+
+  it('records the revoked key by name', async () => {
+    const { service, repository, activity } = createService();
+    repository.revoke.mockResolvedValue({ id: 'key-1', name: 'MCP' });
+
+    await service.revoke('ws-1', 'key-1', ACTOR);
+
+    expect(activity.entries[0]).toMatchObject({
+      action: ActivityAction.ApiKeyRevoked,
+      subject: { id: 'key-1', label: 'MCP' },
+    });
   });
 });

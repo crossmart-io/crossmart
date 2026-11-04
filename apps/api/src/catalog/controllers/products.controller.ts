@@ -18,8 +18,9 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { ProductsService, WorkspacePermission } from '@crossmart/core';
+import { type Actor, ProductsService, WorkspacePermission } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
+import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CATALOG_TAG, PRODUCT_ID_PARAM, PRODUCTS_ROUTE } from '../catalog.constants.js';
 import { CreateProductDto } from '../dto/create-product.dto.js';
@@ -62,8 +63,9 @@ export class ProductsController {
   async create(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: CreateProductDto,
+    @CurrentActor() actor: Actor,
   ): Promise<ProductDto> {
-    return ProductDto.from(await this.products.create(workspaceId, body.toDraft()));
+    return ProductDto.from(await this.products.create(workspaceId, body.toDraft(), actor));
   }
 
   @Put(`:${PRODUCT_ID_PARAM}`)
@@ -79,8 +81,10 @@ export class ProductsController {
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
     @Body() body: UpdateProductDto,
+    @CurrentActor() actor: Actor,
   ): Promise<ProductDto> {
-    return ProductDto.from(await this.products.update(workspaceId, productId, body.toDraft()));
+    const draft = body.toDraft();
+    return ProductDto.from(await this.products.update(workspaceId, productId, draft, actor));
   }
 
   @Delete(`:${PRODUCT_ID_PARAM}`)
@@ -91,7 +95,8 @@ export class ProductsController {
   delete(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
+    @CurrentActor() actor: Actor,
   ): Promise<void> {
-    return this.products.delete(workspaceId, productId);
+    return this.products.delete(workspaceId, productId, actor);
   }
 }

@@ -4,6 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Actor } from '../../activity/entities/actor.js';
+import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
+import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
+import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type {
   CatalogStats,
@@ -27,6 +31,7 @@ export class ProductsService {
     private readonly products: ProductRepository,
     private readonly updateWriter: ProductUpdateWriter,
     private readonly conflicts: CatalogConflictsService,
+    private readonly activity: ActivityRecorder,
   ) {}
 
   async list(workspaceId: string, query: ProductListQuery): Promise<ProductPage> {
@@ -51,11 +56,13 @@ export class ProductsService {
     return toProductDetail(record);
   }
 
-  async create(workspaceId: string, input: ProductDraft): Promise<ProductDetail> {
+  async create(workspaceId: string, input: ProductDraft, actor: Actor): Promise<ProductDetail> {
     const draft = normalizeDraft(input);
     this.assertValid(draft);
     await this.assertNoConflicts(workspaceId, draft);
-    return toProductDetail(await this.products.create(workspaceId, draft));
+    const product = toProductDetail(await this.products.create(workspaceId, draft));
+    await this.recordChange(workspaceId, actor, ActivityAction.ProductCreated, product);
+    return product;
   }
 
   /** Replaces the product. Variants sent with their id are edited; missing ones are removed. */
@@ -63,20 +70,39 @@ export class ProductsService {
     workspaceId: string,
     productId: string,
     input: ProductDraft,
+    actor: Actor,
   ): Promise<ProductDetail> {
     const draft = normalizeDraft(input);
     this.assertValid(draft);
     await this.assertOwnVariants(workspaceId, productId, draft);
     await this.assertNoConflicts(workspaceId, draft, productId);
     await this.updateWriter.update(workspaceId, productId, draft);
-    return this.get(workspaceId, productId);
+    const product = await this.get(workspaceId, productId);
+    await this.recordChange(workspaceId, actor, ActivityAction.ProductUpdated, product);
+    return product;
   }
 
-  async delete(workspaceId: string, productId: string): Promise<void> {
+  async delete(workspaceId: string, productId: string, actor: Actor): Promise<void> {
     const deleted = await this.products.delete(workspaceId, productId);
     if (!deleted) {
       throw new NotFoundException(PRODUCT_NOT_FOUND);
     }
+    await this.recordChange(workspaceId, actor, ActivityAction.ProductDeleted, {
+      id: productId,
+      title: deleted.title,
+    });
+  }
+
+  private recordChange(
+    workspaceId: string,
+    actor: Actor,
+    action: ActivityAction,
+    product: Pick<ProductDetail, 'id' | 'title'>,
+  ): Promise<void> {
+    return this.activity.record(workspaceId, actor, {
+      action,
+      subject: { type: ActivitySubjectType.Product, id: product.id, label: product.title },
+    });
   }
 
   private assertValid(draft: ProductDraft): void {

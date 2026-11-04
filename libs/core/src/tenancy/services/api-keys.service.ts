@@ -1,6 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { generateSecureToken, hashSecret } from '@crossmart/common';
 import type { ApiKey, WorkspaceRole } from '@crossmart/database';
+import type { Actor } from '../../activity/entities/actor.js';
+import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
+import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
+import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type {
   ApiKeyIdentity,
   ApiKeySummary,
@@ -25,12 +29,17 @@ export interface ApiKeyIssuer {
 /** Workspace API keys for the REST API and the MCP server. Only hashes are stored. */
 @Injectable()
 export class ApiKeysService {
-  constructor(private readonly apiKeys: ApiKeyRepository) {}
+  constructor(
+    private readonly apiKeys: ApiKeyRepository,
+    private readonly activity: ActivityRecorder,
+  ) {}
 
+  /** The issuer's role caps the key's; `actor` is who the activity log credits. */
   async issue(
     workspaceId: string,
     issuer: ApiKeyIssuer,
     request: NewApiKey,
+    actor: Actor,
   ): Promise<IssuedApiKey> {
     this.assertAssignable(issuer.role, request.role);
     const secret = `${API_KEY_TOKEN_PREFIX}${generateSecureToken(API_KEY_SECRET_BYTES)}`;
@@ -43,6 +52,7 @@ export class ApiKeysService {
       hash: hashSecret(secret),
       expiresAt: request.expiresAt,
     });
+    await this.recordChange(workspaceId, actor, ActivityAction.ApiKeyCreated, apiKey);
     return { apiKey: this.toSummary(apiKey), secret };
   }
 
@@ -51,11 +61,12 @@ export class ApiKeysService {
     return apiKeys.map((apiKey) => this.toSummary(apiKey));
   }
 
-  async revoke(workspaceId: string, apiKeyId: string): Promise<void> {
+  async revoke(workspaceId: string, apiKeyId: string, actor: Actor): Promise<void> {
     const revoked = await this.apiKeys.revoke(workspaceId, apiKeyId, new Date());
     if (!revoked) {
       throw new NotFoundException('API key not found');
     }
+    await this.recordChange(workspaceId, actor, ActivityAction.ApiKeyRevoked, revoked);
   }
 
   /** Resolves a presented secret to its key, or null when it is unknown, revoked or expired. */
@@ -95,6 +106,19 @@ export class ApiKeysService {
     if (now.getTime() - lastUsedAt >= API_KEY_LAST_USED_THROTTLE_MS) {
       await this.apiKeys.markUsed(apiKey.id, now);
     }
+  }
+
+  /** Only the key's id and name are logged, never its secret or hash. */
+  private recordChange(
+    workspaceId: string,
+    actor: Actor,
+    action: ActivityAction,
+    apiKey: Pick<ApiKey, 'id' | 'name'>,
+  ): Promise<void> {
+    return this.activity.record(workspaceId, actor, {
+      action,
+      subject: { type: ActivitySubjectType.ApiKey, id: apiKey.id, label: apiKey.name },
+    });
   }
 
   private toSummary(apiKey: ApiKey): ApiKeySummary {

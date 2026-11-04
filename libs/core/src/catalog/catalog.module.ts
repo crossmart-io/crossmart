@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ActivityModule } from '../activity/activity.module.js';
 import { CATALOG_FILE_PARSERS } from './catalog.constants.js';
 import type { CatalogFileParser } from './entities/catalog-import.js';
 import { ShopifyCsvParser } from './import/shopify-csv/shopify-csv.parser.js';
@@ -14,6 +15,7 @@ import { ProductsService } from './services/products.service.js';
 
 /** Products, variants, media and catalog imports. Add a file format by registering its parser. */
 @Module({
+  imports: [ActivityModule],
   providers: [
     ProductRepository,
     ProductUpdateWriter,
