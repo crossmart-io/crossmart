@@ -34,7 +34,11 @@ export class CustomRoleInputDto implements CustomRoleInput {
   @MaxLength(CUSTOM_ROLE_NAME_MAX_LENGTH)
   name: string;
 
-  @ApiPropertyOptional({ maxLength: CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH, nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    maxLength: CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH,
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH)
