@@ -110,7 +110,9 @@ export class MembershipController {
   @RequirePermission(WorkspacePermission.ViewWorkspace)
   @ApiOperation({
     summary: 'Leave a workspace',
-    description: 'Your API keys here are revoked. Refused (409) for its last owner.',
+    description:
+      'Your API keys here are revoked. Refused (409) for its last owner and for your only ' +
+      'workspace.',
   })
   @ApiNoContentResponse()
   leave(

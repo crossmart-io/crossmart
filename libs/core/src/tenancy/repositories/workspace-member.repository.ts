@@ -30,8 +30,11 @@ export class WorkspaceMemberRepository {
   }
 
   async userHasAnyMembership(userId: string): Promise<boolean> {
-    const count = await this.prisma.workspaceMember.count({ where: { userId } });
-    return count > 0;
+    return (await this.countMemberships(userId)) > 0;
+  }
+
+  countMemberships(userId: string): Promise<number> {
+    return this.prisma.workspaceMember.count({ where: { userId } });
   }
 
   async listWorkspacesForUser(userId: string): Promise<WorkspaceAccess[]> {

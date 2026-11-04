@@ -20,6 +20,7 @@ function createService(target: WorkspaceMemberProfile | null, owners = 1) {
   const members = {
     findMember: vi.fn().mockResolvedValue(target),
     countOwners: vi.fn().mockResolvedValue(owners),
+    countMemberships: vi.fn().mockResolvedValue(2),
     updateRole: vi.fn(),
     remove: vi.fn(),
   };
@@ -93,6 +94,13 @@ describe('MembershipService.remove and leave', () => {
     const { service, activity } = createService(member(WorkspaceRole.OWNER), 2);
     await service.leave('ws-1', 'user-2', ACTOR);
     expect(activity.entries[0]?.action).toBe(ActivityAction.MemberLeft);
+  });
+
+  it('keeps the user in at least one workspace', async () => {
+    const { service, members } = createService(member(WorkspaceRole.EDITOR));
+    members.countMemberships.mockResolvedValueOnce(1);
+    await expect(service.leave('ws-1', 'user-2', ACTOR)).rejects.toBeInstanceOf(ConflictException);
+    expect(members.remove).not.toHaveBeenCalled();
   });
 
   it('says when the member is not there', async () => {

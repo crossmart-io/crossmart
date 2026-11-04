@@ -76,8 +76,12 @@ export class MembershipService {
     await this.record(workspaceId, actor, { action: ActivityAction.MemberRemoved, member });
   }
 
+  /** Refused for the user's only workspace: the app always needs one to open. */
   async leave(workspaceId: string, userId: string, actor: Actor): Promise<void> {
     const member = await this.requireMember(workspaceId, userId);
+    if ((await this.members.countMemberships(userId)) <= 1) {
+      throw new ConflictException('You cannot leave your only workspace');
+    }
     await this.removeMember(workspaceId, member);
     await this.record(workspaceId, actor, { action: ActivityAction.MemberLeft, member });
   }
