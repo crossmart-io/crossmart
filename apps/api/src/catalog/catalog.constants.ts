@@ -14,6 +14,7 @@ export const PRODUCT_MEDIA_MAX = 250;
 export const PRODUCT_SEARCH_MAX_LENGTH = 200;
 
 /** Schema names the generated web client uses for the catalog enums. */
+export const CATALOG_GAP_SCHEMA_NAME = 'CatalogGap';
 export const PRODUCT_STATUS_SCHEMA_NAME = 'ProductStatus';
 export const OUT_OF_STOCK_POLICY_SCHEMA_NAME = 'OutOfStockPolicy';
 export const CATALOG_IMPORT_FORMAT_SCHEMA_NAME = 'CatalogImportFormat';

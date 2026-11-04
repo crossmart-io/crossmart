@@ -15,6 +15,7 @@ export * from './catalog/entities/product-draft.js';
 export * from './catalog/entities/product-views.js';
 export * from './catalog/enums/catalog-import-format.enum.js';
 export * from './catalog/enums/import-issue-code.enum.js';
+export * from './catalog/enums/catalog-gap.enum.js';
 export * from './catalog/services/catalog-import.service.js';
 export * from './catalog/services/products.service.js';
 export * from './media/enums/image-content-type.enum.js';

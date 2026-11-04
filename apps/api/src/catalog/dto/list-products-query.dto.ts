@@ -2,12 +2,17 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 import {
+  CatalogGap,
   PRODUCT_PAGE_DEFAULT_LIMIT,
   PRODUCT_PAGE_MAX_LIMIT,
   type ProductListQuery,
 } from '@crossmart/core';
 import { ProductStatus } from '@crossmart/database';
-import { PRODUCT_SEARCH_MAX_LENGTH, PRODUCT_STATUS_SCHEMA_NAME } from '../catalog.constants.js';
+import {
+  CATALOG_GAP_SCHEMA_NAME,
+  PRODUCT_SEARCH_MAX_LENGTH,
+  PRODUCT_STATUS_SCHEMA_NAME,
+} from '../catalog.constants.js';
 
 export class ListProductsQueryDto implements ProductListQuery {
   @ApiPropertyOptional({ description: 'Matches title, handle or SKU' })
@@ -20,6 +25,15 @@ export class ListProductsQueryDto implements ProductListQuery {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  @ApiPropertyOptional({
+    enum: CatalogGap,
+    enumName: CATALOG_GAP_SCHEMA_NAME,
+    description: 'Only products that lack this value',
+  })
+  @IsOptional()
+  @IsEnum(CatalogGap)
+  gap?: CatalogGap;
 
   @ApiPropertyOptional({ format: 'uuid', description: '`nextCursor` from the previous page' })
   @IsOptional()
