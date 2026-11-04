@@ -17,6 +17,7 @@ import {
   type ConnectorDouble,
   LISTING_ID,
   listingRecord,
+  PRODUCT_ID,
   productDetail,
   publishedListing,
   syncConnection,
@@ -142,7 +143,10 @@ describe('ListingContentSync', () => {
 
     await sync.publish(syncJob());
 
-    expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/1');
+    expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/1', {
+      productId: PRODUCT_ID,
+      variantExternalIds: ['gid://shopify/ProductVariant/1'],
+    });
     expect(listings.markDelisted).toHaveBeenCalledWith(LISTING_ID, expect.any(Date));
     expect(activity.entries[0]?.action).toBe(ActivityAction.ListingDelisted);
   });
@@ -202,7 +206,11 @@ describe('ListingContentSync', () => {
   describe('a product deleted from the catalog', () => {
     const deletedJob = () => ({
       ...syncJob(),
-      deleted: { externalId: 'gid://shopify/Product/9', productTitle: 'Mug' },
+      deleted: {
+        externalId: 'gid://shopify/Product/9',
+        productTitle: 'Mug',
+        variantExternalIds: ['gid://shopify/ProductVariant/9'],
+      },
     });
 
     it('is archived on the channel with the id its job kept, and logged', async () => {
@@ -210,7 +218,10 @@ describe('ListingContentSync', () => {
 
       await sync.delist(deletedJob());
 
-      expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/9');
+      expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/9', {
+        productId: PRODUCT_ID,
+        variantExternalIds: ['gid://shopify/ProductVariant/9'],
+      });
       expect(listings.markDelisted).not.toHaveBeenCalled();
       expect(activity.entries).toEqual([
         expect.objectContaining({
@@ -249,7 +260,11 @@ describe('ListingContentSync', () => {
 
       await sync.delist(deletedJob());
 
-      expect(publisher.delist).toHaveBeenCalledWith(expect.anything(), 'gid://shopify/Product/1');
+      expect(publisher.delist).toHaveBeenCalledWith(
+        expect.anything(),
+        'gid://shopify/Product/1',
+        expect.objectContaining({ productId: PRODUCT_ID }),
+      );
       expect(listings.markDelisted).toHaveBeenCalled();
     });
   });

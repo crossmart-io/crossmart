@@ -25,6 +25,8 @@ import { ListingDraftBuilder } from './services/listing-draft.builder.js';
 import { ListingInventorySync } from './services/listing-inventory.sync.js';
 import { ListingOverrideWriter } from './services/listing-override.writer.js';
 import { ListingOverridesService } from './services/listing-overrides.service.js';
+import { ListingCategoryService } from './services/listing-category.service.js';
+import { ListingCategoryWriter } from './services/listing-category.writer.js';
 import { ListingPriceSync } from './services/listing-price.sync.js';
 import { ListingSyncFailures } from './services/listing-sync-failures.js';
 import { ListingSyncOutcomes } from './services/listing-sync-outcomes.js';
@@ -87,6 +89,8 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ProductChannelsService,
     ListingOverrideWriter,
     ListingOverridesService,
+    ListingCategoryWriter,
+    ListingCategoryService,
     InventoryReconciliationService,
     { provide: SyncJobQueue, useClass: BullSyncJobQueue },
   ],
@@ -102,6 +106,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     PricingPreviewService,
     ProductChannelsService,
     ListingOverridesService,
+    ListingCategoryService,
     ListingSyncRunner,
     InventoryReconciliationService,
     SyncJobQueue,

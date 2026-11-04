@@ -13,6 +13,7 @@ import {
 import { ListingSource, ListingStatus } from '@crossmart/database';
 import { LISTING_SOURCE_SCHEMA_NAME, LISTING_STATUS_SCHEMA_NAME } from '../listings.constants.js';
 import { PageNumberProperty } from '../../common/page-number.decorator.js';
+import { ChannelCategoryDto } from './channel-category.dto.js';
 
 export class ListingSummaryDto implements ListingSummary {
   @ApiProperty({ format: 'uuid' })
@@ -41,8 +42,18 @@ export class ListingSummaryDto implements ListingSummary {
   @ApiProperty({ type: Date, nullable: true })
   lastSyncedAt: Date | null;
 
+  @ApiProperty({
+    type: ChannelCategoryDto,
+    nullable: true,
+    description: 'The channel category it is listed in, on channels with categories (eBay)',
+  })
+  category: ChannelCategoryDto | null;
+
   static from(summary: ListingSummary): ListingSummaryDto {
-    return Object.assign(new ListingSummaryDto(), summary);
+    return Object.assign(new ListingSummaryDto(), {
+      ...summary,
+      category: ChannelCategoryDto.fromNullable(summary.category),
+    });
   }
 }
 
@@ -60,7 +71,10 @@ export class ChannelListingDto extends ListingSummaryDto implements ChannelListi
   variantCount: number;
 
   static fromRow(row: ChannelListingRow): ChannelListingDto {
-    return Object.assign(new ChannelListingDto(), row);
+    return Object.assign(new ChannelListingDto(), {
+      ...row,
+      category: ChannelCategoryDto.fromNullable(row.category),
+    });
   }
 }
 

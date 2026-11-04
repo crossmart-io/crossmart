@@ -118,7 +118,8 @@ interface ChannelConnector {
   readonly capabilities: ReadonlySet<ChannelCapability>;
   readonly auth: ChannelAuthStrategy;          // OAuth app | seller-provided credentials
 }
-interface ListingPublisher   { publish(...); update(...); delist(...); }
+interface ListingPublisher   { publish(...); update(...); delist(...); updatePrices(...); }
+interface TaxonomyProvider   { suggestCategories(...); }
 interface InventoryUpdater   { setQuantities(batch: InventoryUpdate[]): Promise<...>; }
 interface OrderSource        { fetchOrders(since): ...; parseWebhook(payload): ...; }
 interface FulfillmentSink    { pushTracking(...): ...; }
@@ -126,7 +127,7 @@ interface CatalogImporter    { importProducts(cursor): ...; }
 interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categoryId); }
 ```
 
-- **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md).
+- **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`, `TaxonomyProvider`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md) and eBay in [channels/ebay.md](channels/ebay.md). A `ListingDraft` carries the connection's account settings and the listing's channel category for channels that need them (eBay), and `delist` receives a `ListingReference` (product id and variant ids on the channel).
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
 - **Priority queues:** `inventory` > `orders` > `price` > `content` > `import`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
@@ -166,6 +167,10 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
   tags, a subset and order of the product's images (by URL, so they survive image re-uploads), visibility (show or
   hide on this channel whatever the product's status), an inventory buffer and a maximum shown quantity.
   `ListingVariantOverride` holds fixed prices per variant. Typed columns, no JSON. Null follows the product.
+- **Channel category.** On channels with categories (eBay), `Listing.channelCategoryId` / `channelCategoryName` hold
+  the category the listing is in: chosen by the merchant, or picked on first publish and saved from the
+  `PublishedListing`. It lives on the listing, not the override, because it is not catalog content: removing a
+  listing's overrides keeps it.
 - **Shown stock** is `available − buffer`, never below zero, capped by the maximum.
 
 **Sync jobs.** The API enqueues, `apps/worker` runs them (`ListingSyncRunner`):
@@ -175,7 +180,7 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 | inventory | `inventory` | Sets the shown stock of a listing's tracked variants, in `maxBatchSize` batches    |
 | price     | `price`     | Sends channel prices only                                                          |
 | content   | `content`   | Publishes the product, or updates the listing the channel holds (never duplicates) |
-| delist    | `content`   | Takes the listing off the channel (Shopify: archives the product)                  |
+| delist    | `content`   | Takes the listing off the channel (Shopify: archives; eBay: withdraws the offers)  |
 
 Jobs are keyed per kind, connection and product, and debounced (2 s for stock, 5 s for prices, 10 s for content):
 a newer job replaces the waiting one, so a burst of edits becomes one call. Jobs send current state, so coalescing

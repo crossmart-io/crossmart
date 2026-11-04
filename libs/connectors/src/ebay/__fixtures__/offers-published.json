@@ -1,0 +1,16 @@
+{
+  "total": 1,
+  "size": 1,
+  "offers": [
+    {
+      "offerId": "9000000001",
+      "sku": "SHIRT-S",
+      "marketplaceId": "EBAY_US",
+      "format": "FIXED_PRICE",
+      "availableQuantity": 7,
+      "categoryId": "57990",
+      "status": "PUBLISHED",
+      "listing": { "listingId": "110553000001", "listingStatus": "ACTIVE", "soldQuantity": 0 }
+    }
+  ]
+}

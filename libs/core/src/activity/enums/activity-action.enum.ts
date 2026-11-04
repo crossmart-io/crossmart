@@ -61,6 +61,12 @@ export enum ActivityAction {
   ListingOverrideUpdated = 'listing_override_updated',
   ChannelPricingUpdated = 'channel_pricing_updated',
   ChannelSelectionUpdated = 'channel_selection_updated',
+  /** The merchant changed an eBay connection's listing defaults (policies, condition, ship-from). */
+  ChannelListingDefaultsUpdated = 'channel_listing_defaults_updated',
+  /** The merchant opted an eBay account in to business policies. */
+  ChannelPoliciesOptedIn = 'channel_policies_opted_in',
+  /** The merchant chose the channel category one listing goes in; the detail names the store. */
+  ListingCategoryChanged = 'listing_category_changed',
   /** The merchant asked to publish the selected products and sync the rest. */
   ChannelSyncRequested = 'channel_sync_requested',
   /** An order took more units than were left: they were sold twice and need resolving. */

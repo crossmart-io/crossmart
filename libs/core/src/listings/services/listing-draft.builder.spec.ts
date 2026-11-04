@@ -1,3 +1,4 @@
+import { ChannelType } from '@crossmart/connectors';
 import { ListingVisibility, ProductStatus } from '@crossmart/database';
 import { CompareAtMode } from '../../channels/enums/compare-at-mode.enum.js';
 import { PriceRounding } from '../../channels/enums/price-rounding.enum.js';
@@ -27,6 +28,22 @@ const MARKUP = {
 };
 
 describe('ListingDraftBuilder', () => {
+  it('carries the account settings and the listing’s channel category', () => {
+    const account = { channel: ChannelType.Ebay };
+    const listing = listingRecord({ channelCategoryId: '20625', channelCategoryName: 'Mugs' });
+
+    const { draft } = builder.build({ product: productDetail(), listing, pricing: USD, account });
+
+    expect(draft.accountSettings).toBe(account);
+    expect(draft.category).toEqual({ id: '20625', name: 'Mugs' });
+    expect(
+      builder.build({ product: productDetail(), listing: null, pricing: USD }).draft,
+    ).toMatchObject({
+      accountSettings: null,
+      category: null,
+    });
+  });
+
   it('sends the product as it is in the catalog when the listing has no overrides', () => {
     const { draft, mediaDigest: digest } = builder.build({
       product: productDetail(),

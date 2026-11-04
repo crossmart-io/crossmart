@@ -18,6 +18,8 @@ const LISTING_SUMMARY_SELECT = {
   externalUrl: true,
   lastError: true,
   lastSyncedAt: true,
+  channelCategoryId: true,
+  channelCategoryName: true,
   updatedAt: true,
 } satisfies Prisma.ListingSelect;
 

@@ -51,4 +51,5 @@ export interface ListingPair {
 export interface HeldListing extends ListingPair {
   externalId: string;
   productTitle: string;
+  variantExternalIds: string[];
 }

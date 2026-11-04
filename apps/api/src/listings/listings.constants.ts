@@ -33,3 +33,9 @@ export const LISTING_SOURCE_SCHEMA_NAME = 'ListingSource';
 export const CHANNEL_PRODUCT_STATE_SCHEMA_NAME = 'ChannelProductState';
 export const CHANNEL_PRODUCT_SORT_SCHEMA_NAME = 'ChannelProductSort';
 export const LISTING_VISIBILITY_SCHEMA_NAME = 'ListingVisibility';
+
+export const CATEGORY_PATH = ':connectionId/category';
+export const CATEGORY_SUGGESTIONS_PATH = ':connectionId/category-suggestions';
+export const CATEGORY_ID_MAX_LENGTH = 64;
+export const CATEGORY_NAME_MAX_LENGTH = 500;
+export const CATEGORY_QUERY_MAX_LENGTH = 255;

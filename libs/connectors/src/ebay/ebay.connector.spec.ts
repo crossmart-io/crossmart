@@ -1,3 +1,4 @@
+import { ChannelCapability } from '../sdk/channel-capability.enum.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { HttpMethod } from '../sdk/http/http-method.enum.js';
@@ -37,7 +38,11 @@ describe('EbayConnector', () => {
       redirectUri: REDIRECT_URI,
     });
     expect(url.searchParams.get('redirect_uri')).toBe(TEST_RU_NAME);
-    expect(connector.capabilities.size).toBe(0);
+    expect([...connector.capabilities]).toEqual([
+      ChannelCapability.PublishListings,
+      ChannelCapability.UpdatePrice,
+      ChannelCapability.ProvideTaxonomy,
+    ]);
   });
 
   describe('completeAuthorization', () => {

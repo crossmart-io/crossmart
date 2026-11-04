@@ -9,6 +9,7 @@ import type { CatalogSource } from './catalog-source.js';
 import type { InventorySync } from './inventory-sync.js';
 import type { ListingPublisher } from './listing-publisher.js';
 import type { OrderSource } from './order-source.js';
+import type { TaxonomyProvider } from './taxonomy-provider.js';
 import type { WebhookReceiver } from './webhook-receiver.js';
 
 /** The interface each capability promises. A connector that declares one implements it. */
@@ -19,6 +20,7 @@ export interface CapabilityContracts {
   [ChannelCapability.UpdatePrice]: ListingPublisher;
   [ChannelCapability.UpdateInventory]: InventorySync;
   [ChannelCapability.FetchOrders]: OrderSource;
+  [ChannelCapability.ProvideTaxonomy]: TaxonomyProvider;
 }
 
 export type ContractCapability = keyof CapabilityContracts;

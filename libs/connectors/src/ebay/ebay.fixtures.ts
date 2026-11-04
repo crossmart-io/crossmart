@@ -2,12 +2,20 @@ import { EbayEnvironment } from '@crossmart/common';
 import { FakeHttpTransport } from '../sdk/testing/fake-http-transport.js';
 import { fixtureResponse } from '../sdk/testing/fixtures.js';
 import { HttpMethod } from '../sdk/http/http-method.enum.js';
+import { EbayBusinessPoliciesOptIn } from './account/ebay-business-policies.opt-in.js';
 import { EbayBusinessPoliciesReader } from './account/ebay-business-policies.reader.js';
 import { EbayIdentityReader } from './account/ebay-identity.reader.js';
+import { EbayLocationWriter } from './account/ebay-location.writer.js';
 import { EbayApiClient } from './api/ebay-api.client.js';
 import { EbayConnector } from './ebay.connector.js';
 import { EbayApp } from './ebay-app.js';
+import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
 import { EbayOAuthClient } from './oauth/ebay-oauth.client.js';
+import { EbayInventoryClient } from './publish/ebay-inventory.client.js';
+import { EbayListingPublisher } from './publish/ebay-listing-publisher.js';
+import { EbayOfferClient } from './publish/ebay-offer.client.js';
+import { EbayPriceUpdater } from './publish/ebay-price-updater.js';
+import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
 
 /** Fabricated responses in the shape of eBay's REST APIs; no real account, token or buyer data. */
 export const FIXTURES = new URL('./__fixtures__/', import.meta.url);
@@ -43,11 +51,26 @@ export function createEbayTestKit(app = new EbayApp(TEST_EBAY_APP)): EbayTestKit
   const http = new FakeHttpTransport();
   const oauth = new EbayOAuthClient(app, http);
   const api = new EbayApiClient(http);
-  const connector = new EbayConnector(
-    oauth,
+  const account = new EbayAccountServices(
     new EbayIdentityReader(app, api),
     new EbayBusinessPoliciesReader(app, api),
+    new EbayBusinessPoliciesOptIn(app, api),
+    new EbayLocationWriter(app, api),
   );
+  const offers = new EbayOfferClient(app, api);
+  const taxonomy = new EbayTaxonomyReader(app, api);
+  const publisher = new EbayListingPublisher(
+    app,
+    new EbayInventoryClient(app, api),
+    offers,
+    taxonomy,
+  );
+  const selling = new EbaySellingServices(
+    publisher,
+    new EbayPriceUpdater(app, api, offers),
+    taxonomy,
+  );
+  const connector = new EbayConnector(oauth, account, selling);
   return { http, oauth, connector };
 }
 

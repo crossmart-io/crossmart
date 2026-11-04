@@ -10,6 +10,7 @@ const CAPABILITY_METHODS: Partial<Record<ChannelCapability, readonly string[]>> 
   [ChannelCapability.UpdatePrice]: ['updatePrices'],
   [ChannelCapability.UpdateInventory]: ['setQuantities'],
   [ChannelCapability.FetchOrders]: ['fetchOrders', 'fetchOrder'],
+  [ChannelCapability.ProvideTaxonomy]: ['suggestCategories'],
 };
 
 const CONTRACT_STATE = 'contract-state';

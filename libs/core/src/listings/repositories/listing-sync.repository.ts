@@ -1,5 +1,6 @@
 import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable } from '@nestjs/common';
+import type { ChannelCategory } from '@crossmart/connectors';
 import { ListingSource, ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
 import type { ChannelListingQuery } from '../entities/listing-views.js';
@@ -28,6 +29,9 @@ export interface PublishedListingRecord {
   variants: ListingVariantMapping[];
   mediaDigest: string;
   syncedAt: Date;
+  /** The channel category it was listed in; absent keeps the stored one. */
+  channelCategoryId?: string;
+  channelCategoryName?: string;
 }
 
 /**
@@ -158,6 +162,17 @@ export class ListingSyncRepository {
     });
   }
 
+  /** Puts the listing in a channel category; null lets the next publish pick one. */
+  async saveCategory(listingId: string, category: ChannelCategory | null): Promise<void> {
+    await this.prisma.listing.update({
+      where: { id: listingId },
+      data: {
+        channelCategoryId: category?.id ?? null,
+        channelCategoryName: category?.name ?? null,
+      },
+    });
+  }
+
   /** A sync that only refreshed prices or stock. */
   async recordSynced(listingId: string, syncedAt: Date): Promise<void> {
     await this.prisma.listing.update({
@@ -208,10 +223,20 @@ export class ListingSyncRepository {
         productId: true,
         externalId: true,
         product: { select: { title: true } },
+        variants: { select: { externalId: true } },
       },
     });
-    return listings.flatMap(({ externalId, product, ...pair }) =>
-      externalId ? [{ ...pair, externalId, productTitle: product.title }] : [],
+    return listings.flatMap(({ externalId, product, variants, ...pair }) =>
+      externalId
+        ? [
+            {
+              ...pair,
+              externalId,
+              productTitle: product.title,
+              variantExternalIds: variants.map((variant) => variant.externalId),
+            },
+          ]
+        : [],
     );
   }
 

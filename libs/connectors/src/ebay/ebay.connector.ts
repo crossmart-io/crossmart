@@ -7,15 +7,23 @@ import type {
   OAuthCallback,
 } from '../sdk/auth/oauth-authorization.js';
 import { ChannelAuthStrategy } from '../sdk/channel-auth-strategy.enum.js';
-import type { ChannelCapability } from '../sdk/channel-capability.enum.js';
+import type {
+  ListingDraft,
+  ListingPublisher,
+  ListingReference,
+  PriceUpdate,
+  PublishedListing,
+} from '../sdk/capabilities/listing-publisher.js';
+import type { ChannelCategory, TaxonomyProvider } from '../sdk/capabilities/taxonomy-provider.js';
+import { ChannelCapability } from '../sdk/channel-capability.enum.js';
 import type { OAuthAppConnector } from '../sdk/channel-connector.interface.js';
 import type { ChannelAccountProfile } from '../sdk/channel-settings.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
 import { NO_BUSINESS_POLICIES } from './account/ebay-business-policies.js';
-import { EbayBusinessPoliciesReader } from './account/ebay-business-policies.reader.js';
-import { EbayIdentityReader } from './account/ebay-identity.reader.js';
+import { ebayAccountContext } from './api/ebay-account-context.js';
+import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
 import {
   EBAY_API_BUCKET_CAPACITY,
   EBAY_API_BUCKET_NAME,
@@ -34,19 +42,24 @@ import {
   normalizeMarketplaceId,
 } from './ebay-marketplace.js';
 import { type EbaySettings, parseEbaySettings } from './ebay-settings.js';
+import type { EbayShipFrom } from './listing/ebay-listing-defaults.js';
 import { EbayOAuthClient } from './oauth/ebay-oauth.client.js';
 
 /**
- * The eBay connector, phase one: the merchant picks a marketplace, signs in with eBay, and
- * Crossmart stores the connection with the account's name and business policies. Publishing,
- * stock and orders come later, so it declares no capabilities yet.
+ * The eBay connector: the merchant picks a marketplace and signs in with eBay; Crossmart
+ * stores the account's name and business policies, and publishes listings through the Sell
+ * Inventory API in the categories the Taxonomy API suggests. Stock sync and orders come later.
  */
 @Injectable()
-export class EbayConnector implements OAuthAppConnector {
+export class EbayConnector implements OAuthAppConnector, ListingPublisher, TaxonomyProvider {
   readonly channel = ChannelType.Ebay;
   readonly displayName = EBAY_DISPLAY_NAME;
   readonly authStrategy = ChannelAuthStrategy.OAuthApp;
-  readonly capabilities: ReadonlySet<ChannelCapability> = new Set();
+  readonly capabilities: ReadonlySet<ChannelCapability> = new Set([
+    ChannelCapability.PublishListings,
+    ChannelCapability.UpdatePrice,
+    ChannelCapability.ProvideTaxonomy,
+  ]);
   readonly requiredScopes = EBAY_REQUIRED_SCOPES;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {
@@ -59,8 +72,8 @@ export class EbayConnector implements OAuthAppConnector {
 
   constructor(
     private readonly oauth: EbayOAuthClient,
-    private readonly identity: EbayIdentityReader,
-    private readonly policies: EbayBusinessPoliciesReader,
+    private readonly account: EbayAccountServices,
+    private readonly selling: EbaySellingServices,
   ) {}
 
   isConfigured(): boolean {
@@ -84,7 +97,7 @@ export class EbayConnector implements OAuthAppConnector {
       throw ebayError(ChannelErrorCode.AccessDenied, 'The app was not approved on eBay');
     }
     const credentials = await this.oauth.exchangeCode(code);
-    const { userId } = await this.identity.readUser(credentials.accessToken);
+    const { userId } = await this.account.identity.readUser(credentials.accessToken);
     return {
       externalAccountId: formatEbayAccountId({ userId, marketplaceId }),
       credentials,
@@ -112,8 +125,8 @@ export class EbayConnector implements OAuthAppConnector {
     const { marketplaceId } = this.requireAccountId(session.externalAccountId);
     const accessToken = await session.accessToken();
     const [user, policies] = await Promise.all([
-      this.identity.readUser(accessToken),
-      this.policies.read(accessToken, marketplaceId),
+      this.account.identity.readUser(accessToken),
+      this.account.policies.read(accessToken, marketplaceId),
     ]);
     const { currencyCode, siteLabel } = EBAY_MARKETPLACES[marketplaceId];
     return {
@@ -132,6 +145,40 @@ export class EbayConnector implements OAuthAppConnector {
 
   parseSettings(raw: unknown): EbaySettings {
     return parseEbaySettings(raw);
+  }
+
+  publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
+    return this.selling.publisher.publish(session, draft);
+  }
+
+  update(
+    session: ChannelSession,
+    externalId: string,
+    draft: ListingDraft,
+  ): Promise<PublishedListing> {
+    return this.selling.publisher.update(session, externalId, draft);
+  }
+
+  delist(session: ChannelSession, externalId: string, reference?: ListingReference): Promise<void> {
+    return this.selling.publisher.delist(session, externalId, reference);
+  }
+
+  updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void> {
+    return this.selling.prices.update(session, updates);
+  }
+
+  async suggestCategories(session: ChannelSession, query: string): Promise<ChannelCategory[]> {
+    return this.selling.taxonomy.suggest(await ebayAccountContext(session), query);
+  }
+
+  /** Creates or updates the account's ship-from location; answers its `merchantLocationKey`. */
+  saveShipFromLocation(session: ChannelSession, shipFrom: EbayShipFrom): Promise<string> {
+    return this.account.location.save(session, shipFrom);
+  }
+
+  /** Opts the seller in to business policies; read them again with `describeAccount`. */
+  optInToBusinessPolicies(session: ChannelSession): Promise<void> {
+    return this.account.policiesOptIn.optIn(session);
   }
 
   private requireMarketplace(accountHandle: string): EbayMarketplaceId {

@@ -17,11 +17,13 @@ describe('normalizeMarketplaceId', () => {
 });
 
 describe('EBAY_MARKETPLACES', () => {
-  it('names a currency and a site for every marketplace', () => {
+  it('names a currency, a site and a language for every marketplace', () => {
     for (const marketplaceId of Object.values(EbayMarketplaceId)) {
       expect(isEbayMarketplaceId(marketplaceId)).toBe(true);
       expect(EBAY_MARKETPLACES[marketplaceId].currencyCode).toMatch(/^[A-Z]{3}$/);
       expect(EBAY_MARKETPLACES[marketplaceId].siteLabel).toMatch(/^eBay /);
+      expect(EBAY_MARKETPLACES[marketplaceId].contentLanguage).toMatch(/^[a-z]{2}-[A-Z]{2}$/);
+      expect(EBAY_MARKETPLACES[marketplaceId].siteHost).toMatch(/^www\.ebay\./);
     }
     expect(EBAY_MARKETPLACES[EbayMarketplaceId.UnitedKingdom].currencyCode).toBe('GBP');
   });

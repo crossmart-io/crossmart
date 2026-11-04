@@ -9,11 +9,21 @@ import type { ListingRowRecord, ListingSyncRecord } from '../repositories/listin
 
 type ListingFields = Pick<
   ListingSyncRecord,
-  'id' | 'status' | 'source' | 'externalId' | 'externalUrl' | 'lastError' | 'lastSyncedAt'
+  | 'id'
+  | 'status'
+  | 'source'
+  | 'externalId'
+  | 'externalUrl'
+  | 'lastError'
+  | 'lastSyncedAt'
+  | 'channelCategoryId'
+  | 'channelCategoryName'
 >;
 
 export function toListingSummary(record: ListingFields): ListingSummary {
+  const { channelCategoryId, channelCategoryName } = record;
   return {
+    category: channelCategoryId ? { id: channelCategoryId, name: channelCategoryName ?? '' } : null,
     id: record.id,
     status: record.status,
     source: record.source,

@@ -5,6 +5,7 @@ import { ChannelImportsController } from './controllers/channel-imports.controll
 import { ChannelConnectionsController } from './controllers/channel-connections.controller.js';
 import { ChannelOAuthController } from './controllers/channel-oauth.controller.js';
 import { ChannelWebhooksController } from './controllers/channel-webhooks.controller.js';
+import { EbayAccountController } from './controllers/ebay-account.controller.js';
 
 @Module({
   imports: [ChannelsModule, ChannelImportModule, ListingsModule, AuthModule],
@@ -13,6 +14,7 @@ import { ChannelWebhooksController } from './controllers/channel-webhooks.contro
     ChannelImportsController,
     ChannelOAuthController,
     ChannelWebhooksController,
+    EbayAccountController,
   ],
 })
 export class ChannelsApiModule {}

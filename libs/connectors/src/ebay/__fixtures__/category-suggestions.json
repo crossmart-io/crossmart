@@ -1,0 +1,36 @@
+{
+  "categorySuggestions": [
+    {
+      "category": { "categoryId": "57990", "categoryName": "Casual Button-Down Shirts" },
+      "categoryTreeNodeAncestors": [
+        {
+          "categoryId": "1059",
+          "categoryName": "Men's Clothing",
+          "categoryTreeNodeLevel": 2,
+          "categorySubtreeNodeHref": "https://api.sandbox.ebay.com/commerce/taxonomy/v1/category_tree/0/get_category_subtree?category_id=1059"
+        },
+        {
+          "categoryId": "11450",
+          "categoryName": "Clothing, Shoes & Accessories",
+          "categoryTreeNodeLevel": 1,
+          "categorySubtreeNodeHref": "https://api.sandbox.ebay.com/commerce/taxonomy/v1/category_tree/0/get_category_subtree?category_id=11450"
+        }
+      ],
+      "categoryTreeNodeLevel": 3,
+      "relevancy": "100"
+    },
+    {
+      "category": { "categoryId": "185100", "categoryName": "Shirts & Tops" },
+      "categoryTreeNodeAncestors": [
+        {
+          "categoryId": "260010",
+          "categoryName": "Women",
+          "categoryTreeNodeLevel": 1,
+          "categorySubtreeNodeHref": "https://api.sandbox.ebay.com/commerce/taxonomy/v1/category_tree/0/get_category_subtree?category_id=260010"
+        }
+      ],
+      "categoryTreeNodeLevel": 2,
+      "relevancy": "80"
+    }
+  ]
+}

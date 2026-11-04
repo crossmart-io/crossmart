@@ -78,6 +78,7 @@ export class ListingContentSync {
       product,
       listing,
       pricing: connection.pricing,
+      account: connection.view.settings.account,
     });
     try {
       const session = await this.connections.openSession(job.workspaceId, job.connectionId);
@@ -98,7 +99,10 @@ export class ListingContentSync {
     const synced = this.describe(job, connection, listing, product?.title ?? '');
     try {
       const session = await this.connections.openSession(job.workspaceId, job.connectionId);
-      await connection.connector.delist(session, listing.externalId);
+      await connection.connector.delist(session, listing.externalId, {
+        productId: job.productId,
+        variantExternalIds: listing.variants.map((variant) => variant.externalId),
+      });
       await this.outcomes.delisted(synced);
     } catch (error) {
       await this.outcomes.failed(synced, error);
@@ -119,7 +123,10 @@ export class ListingContentSync {
     };
     try {
       const session = await this.connections.openSession(job.workspaceId, job.connectionId);
-      await connection.connector.delist(session, deleted.externalId);
+      await connection.connector.delist(session, deleted.externalId, {
+        productId: job.productId,
+        variantExternalIds: deleted.variantExternalIds ?? [],
+      });
       await this.outcomes.deletedDelisted(product);
     } catch (error) {
       await this.outcomes.deletedFailed(product, error);
