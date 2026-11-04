@@ -134,6 +134,17 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Leaving the workspace',
     describe: (entry) => `${entry.subject?.label ?? 'A member'} left the workspace`,
   },
+  [ActivityAction.WorkspaceCreated]: {
+    operation: 'Creating the workspace',
+    describe: (entry) => `Created the workspace${named(entry)}`,
+  },
+  [ActivityAction.WorkspaceRenamed]: {
+    operation: 'Renaming the workspace',
+    describe: (entry) =>
+      entry.detail
+        ? `Renamed the workspace from “${entry.detail}” to “${entry.subject?.label ?? ''}”`
+        : `Renamed the workspace${named(entry)}`,
+  },
   [ActivityAction.CustomRoleCreated]: {
     operation: 'Creating a role',
     describe: (entry) => `Created the role${named(entry)}`,

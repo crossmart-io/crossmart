@@ -30,3 +30,6 @@ export const INVITATION_TOKEN_MAX_LENGTH = 128;
 export const ROLES_TAG = 'Roles';
 export const CUSTOM_ROLES_ROUTE = 'workspaces/:workspaceId/roles';
 export const CUSTOM_ROLE_ID_PARAM = 'roleId';
+/** Workspaces are created inside an organization, where billing will attach. */
+export const ORGANIZATION_WORKSPACES_ROUTE = 'organizations/:organizationId/workspaces';
+export const ORGANIZATION_ID_PARAM = 'organizationId';

@@ -8,6 +8,7 @@ export enum ActivitySubjectType {
   /** A workspace member; the id is their user id. */
   Member = 'member',
   Invitation = 'invitation',
+  Workspace = 'workspace',
   /** A role the workspace defined itself. */
   CustomRole = 'custom_role',
   ChannelConnection = 'channel_connection',

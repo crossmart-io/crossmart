@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
 } from '@nestjs/common';
 import { ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
@@ -15,12 +16,14 @@ import {
   WorkspaceAccessService,
   WorkspaceDeletionService,
   WorkspacePermission,
+  WorkspacesService,
 } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CurrentWorkspaceAccess } from '../../auth/decorators/workspace-access.decorator.js';
 import { DeleteWorkspaceDto } from '../dto/delete-workspace.dto.js';
+import { RenameWorkspaceDto } from '../dto/workspace-input.dto.js';
 import { WorkspaceDto } from '../dto/workspace.dto.js';
 import { WORKSPACE_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
 
@@ -30,6 +33,7 @@ export class WorkspacesController {
   constructor(
     private readonly workspaceAccess: WorkspaceAccessService,
     private readonly deletion: WorkspaceDeletionService,
+    private readonly workspaces: WorkspacesService,
   ) {}
 
   @Get()
@@ -41,6 +45,19 @@ export class WorkspacesController {
     @CurrentWorkspaceAccess() access: ResolvedRole,
   ): Promise<WorkspaceDto> {
     return WorkspaceDto.from(await this.workspaceAccess.getWorkspace(workspaceId, access));
+  }
+
+  @Patch()
+  @RequirePermission(WorkspacePermission.ManageWorkspace)
+  @ApiOperation({ summary: 'Rename a workspace' })
+  @ApiOkResponse({ type: WorkspaceDto })
+  async rename(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Body() body: RenameWorkspaceDto,
+    @CurrentWorkspaceAccess() access: ResolvedRole,
+    @CurrentActor() actor: Actor,
+  ): Promise<WorkspaceDto> {
+    return WorkspaceDto.from(await this.workspaces.rename(workspaceId, body.name, access, actor));
   }
 
   @Delete()

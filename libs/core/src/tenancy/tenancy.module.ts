@@ -16,6 +16,7 @@ import { MembershipService } from './services/membership.service.js';
 import { RoleResolver } from './services/role-resolver.js';
 import { TenancyProvisioningService } from './services/tenancy-provisioning.service.js';
 import { WorkspaceAccessService } from './services/workspace-access.service.js';
+import { WorkspacesService } from './services/workspaces.service.js';
 
 /** Organizations, workspaces, members, invitations, roles and workspace API keys. */
 @Module({
@@ -36,6 +37,7 @@ import { WorkspaceAccessService } from './services/workspace-access.service.js';
     RoleResolver,
     TenancyProvisioningService,
     WorkspaceAccessService,
+    WorkspacesService,
   ],
   exports: [
     ApiKeysService,
@@ -44,6 +46,7 @@ import { WorkspaceAccessService } from './services/workspace-access.service.js';
     MembershipService,
     TenancyProvisioningService,
     WorkspaceAccessService,
+    WorkspacesService,
   ],
 })
 export class TenancyModule {}
