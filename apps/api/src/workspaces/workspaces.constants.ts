@@ -1,6 +1,8 @@
 export const WORKSPACES_TAG = 'Workspaces';
 export const API_KEYS_TAG = 'API keys';
 export const ME_ROUTE = 'me';
+/** The API key making the request, so a program can find its workspace. */
+export const CURRENT_API_KEY_ROUTE = 'api-key';
 export const WORKSPACES_ROUTE = 'workspaces';
 export const WORKSPACE_ROUTE = 'workspaces/:workspaceId';
 export const MEMBERS_ROUTE = 'members';

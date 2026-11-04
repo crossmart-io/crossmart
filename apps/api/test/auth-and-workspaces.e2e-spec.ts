@@ -69,6 +69,13 @@ describe('Auth and workspaces (e2e)', () => {
     expect(withKey.status).toBe(HttpStatus.OK);
     expect(withKey.body.role).toBe(WorkspaceRole.EDITOR);
 
+    const whoAmI = await request(app.getHttpServer())
+      .get('/api/v1/api-key')
+      .set(API_KEY_HEADER, secret);
+    expect(whoAmI.body).toEqual({ apiKeyId: apiKey.id, workspaceId, role: WorkspaceRole.EDITOR });
+    const asUser = await request(app.getHttpServer()).get('/api/v1/api-key').set('Cookie', cookie);
+    expect(asUser.status).toBe(HttpStatus.FORBIDDEN);
+
     const editorManagingKeys = await request(app.getHttpServer())
       .get(apiKeysUrl)
       .set(API_KEY_HEADER, secret);
