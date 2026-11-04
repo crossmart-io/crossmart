@@ -40,7 +40,8 @@ those, not the role name, so they keep working when roles change.
 ## Custom roles
 
 Besides the five built-in roles, a workspace can define its own roles under
-`/api/v1/workspaces/{workspaceId}/roles`. Members, invitations and API keys hold one as
+`/api/v1/workspaces/{workspaceId}/roles`. Listing it returns both the built-in roles, with their
+permissions, and the custom ones. Members, invitations and API keys hold one as
 `role: CUSTOM` plus `customRoleId`. The database refuses one without the other.
 
 - Creating, changing and deleting roles needs `members:manage`. Anyone with `members:view` can

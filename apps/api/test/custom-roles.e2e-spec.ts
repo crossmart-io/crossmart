@@ -126,6 +126,22 @@ describe('Custom roles (e2e)', () => {
     expect(deleted.status).toBe(HttpStatus.CONFLICT);
   });
 
+  it('lists the built-in roles with their permissions next to the custom ones', async () => {
+    const owner = await signUp(app, 'Owner');
+    await createRole(owner, [WorkspacePermission.ViewOrders]);
+    const catalog = await request(server()).get(rolesUrl(owner)).set('Cookie', owner.cookie);
+    expect(catalog.body.builtIn.map((role: { role: string }) => role.role)).toEqual([
+      WorkspaceRole.OWNER,
+      WorkspaceRole.ADMIN,
+      WorkspaceRole.EDITOR,
+      WorkspaceRole.APPROVER,
+      WorkspaceRole.VIEWER,
+    ]);
+    expect(catalog.body.custom).toEqual([
+      expect.objectContaining({ name: 'Stock clerk', memberCount: 0 }),
+    ]);
+  });
+
   it('lets nobody define a role with more than they have', async () => {
     const owner = await signUp(app, 'Owner');
     const editorKey = await request(server())

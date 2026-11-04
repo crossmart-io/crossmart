@@ -53,6 +53,15 @@ export const OWNER_ONLY_PERMISSIONS: readonly WorkspacePermission[] = [
 
 const NO_PERMISSIONS: ReadonlySet<WorkspacePermission> = new Set();
 
+/** Every built-in role, most access first. */
+export const BUILT_IN_ROLES: readonly BuiltInRole[] = [
+  WorkspaceRole.OWNER,
+  WorkspaceRole.ADMIN,
+  WorkspaceRole.EDITOR,
+  WorkspaceRole.APPROVER,
+  WorkspaceRole.VIEWER,
+];
+
 export function isBuiltInRole(role: WorkspaceRole): role is BuiltInRole {
   return role !== WorkspaceRole.CUSTOM;
 }

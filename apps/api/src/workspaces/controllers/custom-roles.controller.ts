@@ -25,10 +25,10 @@ import {
   CurrentManager,
 } from '../../auth/decorators/current-manager.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
-import { CustomRoleDto, CustomRoleInputDto } from '../dto/custom-role.dto.js';
+import { CustomRoleDto, CustomRoleInputDto, RoleCatalogDto } from '../dto/custom-role.dto.js';
 import { CUSTOM_ROLE_ID_PARAM, CUSTOM_ROLES_ROUTE, ROLES_TAG } from '../workspaces.constants.js';
 
-/** The workspace's own roles. The built-in roles are fixed and listed in docs/permissions.md. */
+/** The roles of a workspace: the fixed built-in ones, and its own, which it can change. */
 @ApiTags(ROLES_TAG)
 @Controller(CUSTOM_ROLES_ROUTE)
 export class CustomRolesController {
@@ -36,13 +36,14 @@ export class CustomRolesController {
 
   @Get()
   @RequirePermission(WorkspacePermission.ViewMembers)
-  @ApiOperation({ summary: 'The workspace’s custom roles, by name' })
-  @ApiOkResponse({ type: [CustomRoleDto] })
+  @ApiOperation({
+    summary: 'Every role: the built-in ones with their permissions, and custom ones',
+  })
+  @ApiOkResponse({ type: RoleCatalogDto })
   async list(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
-  ): Promise<CustomRoleDto[]> {
-    const roles = await this.customRoles.list(workspaceId);
-    return roles.map((role) => CustomRoleDto.from(role));
+  ): Promise<RoleCatalogDto> {
+    return RoleCatalogDto.from(await this.customRoles.list(workspaceId));
   }
 
   @Post()

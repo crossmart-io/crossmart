@@ -9,13 +9,21 @@ import {
   MaxLength,
 } from 'class-validator';
 import {
+  BUILT_IN_ROLES,
+  builtInPermissions,
+  type BuiltInRole,
   CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH,
   CUSTOM_ROLE_NAME_MAX_LENGTH,
   type CustomRoleInput,
   type CustomRoleSummary,
+  toPermissionList,
   WorkspacePermission,
 } from '@crossmart/core';
-import { WORKSPACE_PERMISSION_SCHEMA_NAME } from '../workspaces.constants.js';
+import { WorkspaceRole } from '@crossmart/database';
+import {
+  WORKSPACE_PERMISSION_SCHEMA_NAME,
+  WORKSPACE_ROLE_SCHEMA_NAME,
+} from '../workspaces.constants.js';
 
 const PERMISSION_COUNT = Object.values(WorkspacePermission).length;
 
@@ -74,5 +82,40 @@ export class CustomRoleDto {
 
   static from(role: CustomRoleSummary): CustomRoleDto {
     return Object.assign(new CustomRoleDto(), role);
+  }
+}
+
+export class BuiltInRoleDto {
+  @ApiProperty({ enum: WorkspaceRole, enumName: WORKSPACE_ROLE_SCHEMA_NAME })
+  role: WorkspaceRole;
+
+  @ApiProperty({
+    enum: WorkspacePermission,
+    enumName: WORKSPACE_PERMISSION_SCHEMA_NAME,
+    isArray: true,
+  })
+  permissions: WorkspacePermission[];
+
+  static from(role: BuiltInRole): BuiltInRoleDto {
+    return Object.assign(new BuiltInRoleDto(), {
+      role,
+      permissions: toPermissionList(builtInPermissions(role)),
+    });
+  }
+}
+
+/** Every role a workspace can grant: the fixed built-in ones and its own. */
+export class RoleCatalogDto {
+  @ApiProperty({ type: [BuiltInRoleDto], description: 'Most access first' })
+  builtIn: BuiltInRoleDto[];
+
+  @ApiProperty({ type: [CustomRoleDto], description: 'By name' })
+  custom: CustomRoleDto[];
+
+  static from(custom: CustomRoleSummary[]): RoleCatalogDto {
+    return Object.assign(new RoleCatalogDto(), {
+      builtIn: BUILT_IN_ROLES.map((role) => BuiltInRoleDto.from(role)),
+      custom: custom.map((role) => CustomRoleDto.from(role)),
+    });
   }
 }
