@@ -8,6 +8,7 @@ import { ChannelsApiModule } from './channels/channels.module.js';
 import { HealthModule } from './health/health.module.js';
 import { InventoryApiModule } from './inventory/inventory.module.js';
 import { ListingsApiModule } from './listings/listings.module.js';
+import { AnalyticsApiModule } from './analytics/analytics.module.js';
 import { OrdersApiModule } from './orders/orders.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
@@ -27,6 +28,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     ChannelsApiModule,
     ListingsApiModule,
     OrdersApiModule,
+    AnalyticsApiModule,
   ],
 })
 export class ApiModule {}
