@@ -8,13 +8,27 @@ interface ActionWording {
   describe: (entry: ActivityEntry) => string;
 }
 
-const PRODUCT_NOUN = { one: 'product', other: 'products' };
+interface Noun {
+  one: string;
+  other: string;
+}
+
+const PRODUCT_NOUN: Noun = { one: 'product', other: 'products' };
+const VARIANT_NOUN: Noun = { one: 'variant', other: 'variants' };
 const pluralRules = new Intl.PluralRules('en');
 
-function countOfProducts(entry: ActivityEntry): string {
+function countOf(noun: Noun, entry: ActivityEntry): string {
   const count = entry.itemCount ?? 0;
-  const noun = pluralRules.select(count) === 'one' ? PRODUCT_NOUN.one : PRODUCT_NOUN.other;
-  return `${count} ${noun}`;
+  return `${count} ${pluralRules.select(count) === 'one' ? noun.one : noun.other}`;
+}
+
+function countOfProducts(entry: ActivityEntry): string {
+  return countOf(PRODUCT_NOUN, entry);
+}
+
+/** Names the imported file, which is the label of an import's subject. */
+function fromFile(entry: ActivityEntry): string {
+  return entry.subject?.label ? ` from “${entry.subject.label}”` : '';
 }
 
 function named(entry: ActivityEntry): string {
@@ -49,7 +63,16 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   },
   [ActivityAction.ProductsImported]: {
     operation: 'Product import',
-    describe: (entry) => withDetail(`Imported ${countOfProducts(entry)}`, entry),
+    describe: (entry) => withDetail(`Imported ${countOfProducts(entry)}${fromFile(entry)}`, entry),
+  },
+  [ActivityAction.ProductsUpdatedByImport]: {
+    operation: 'Product update import',
+    describe: (entry) => withDetail(`Updated ${countOfProducts(entry)}${fromFile(entry)}`, entry),
+  },
+  [ActivityAction.StockImported]: {
+    operation: 'Stock import',
+    describe: (entry) =>
+      withDetail(`Set stock of ${countOf(VARIANT_NOUN, entry)}${fromFile(entry)}`, entry),
   },
   [ActivityAction.ProductViewCreated]: {
     operation: 'Saving a view',

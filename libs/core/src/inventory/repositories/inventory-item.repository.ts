@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 import type { InventoryListQuery } from '../entities/inventory-views.js';
+import type { StockItemBySku } from '../entities/stock-levels.js';
 import {
   INVENTORY_ROW_INCLUDE,
   INVENTORY_ROW_ORDER,
@@ -38,6 +39,19 @@ export class InventoryItemRepository {
       select: { id: true },
     });
     return item !== null;
+  }
+
+  /** The stock items of the variants with these SKUs, in one query. */
+  async findBySkus(workspaceId: string, skus: string[]): Promise<StockItemBySku[]> {
+    const items = await this.prisma.inventoryItem.findMany({
+      where: { workspaceId, variant: { sku: { in: skus } } },
+      select: { id: true, tracked: true, variant: { select: { sku: true, productId: true } } },
+    });
+    return items.flatMap(({ id, tracked, variant }) =>
+      variant.sku
+        ? [{ inventoryItemId: id, productId: variant.productId, sku: variant.sku, tracked }]
+        : [],
+    );
   }
 
   private toListFilter(

@@ -7,8 +7,10 @@ import { CATALOG_GAP_FILTERS } from './catalog-gap.filters.js';
 import {
   PRODUCT_DETAIL_INCLUDE,
   PRODUCT_SUMMARY_INCLUDE,
+  PRODUCT_UPDATE_TARGET_SELECT,
   type ProductDetailRecord,
   type ProductSummaryRecord,
+  type ProductUpdateTargetRecord,
 } from './product.queries.js';
 import { toProductCreateInput } from './product-write.mapper.js';
 
@@ -70,6 +72,23 @@ export class ProductRepository {
     return new Set(rows.flatMap((row) => (row.sku ? [row.sku] : [])));
   }
 
+  /** The products with these handles, with what an update import matches against. */
+  findUpdateTargets(workspaceId: string, handles: string[]): Promise<ProductUpdateTargetRecord[]> {
+    return this.prisma.product.findMany({
+      where: { workspaceId, handle: { in: handles } },
+      select: PRODUCT_UPDATE_TARGET_SELECT,
+    });
+  }
+
+  /** The product that holds each of these SKUs in the workspace, by SKU. */
+  async findSkuOwners(workspaceId: string, skus: string[]): Promise<Map<string, string>> {
+    const rows = await this.prisma.variant.findMany({
+      where: { workspaceId, sku: { in: skus } },
+      select: { sku: true, productId: true },
+    });
+    return new Map(rows.flatMap((row) => (row.sku ? [[row.sku, row.productId] as const] : [])));
+  }
+
   create(workspaceId: string, draft: ProductDraft): Promise<ProductDetailRecord> {
     return this.prisma.product.create({
       data: toProductCreateInput(workspaceId, draft),
@@ -78,8 +97,9 @@ export class ProductRepository {
   }
 
   /** Creates the drafts in one transaction: all of them or none. */
-  async createAll(workspaceId: string, drafts: ProductDraft[]): Promise<void> {
-    await this.prisma.$transaction(
+  /** Creates the products in one transaction and returns their ids, in draft order. */
+  async createAll(workspaceId: string, drafts: ProductDraft[]): Promise<string[]> {
+    const created = await this.prisma.$transaction(
       drafts.map((draft) =>
         this.prisma.product.create({
           data: toProductCreateInput(workspaceId, draft),
@@ -87,6 +107,7 @@ export class ProductRepository {
         }),
       ),
     );
+    return created.map((product) => product.id);
   }
 
   /** Ids of the product's variants, or null when the product is not in this workspace. */

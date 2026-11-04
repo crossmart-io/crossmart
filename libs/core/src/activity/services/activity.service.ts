@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { toCursorPage } from '@crossmart/common';
 import type { ActivityPage, ActivityQuery } from '../entities/activity-event-view.js';
-import { ActivitySubjectType } from '../enums/activity-subject-type.enum.js';
 import { toActivityEventView } from '../mappers/activity-event.mapper.js';
 import { ActivityEventRepository } from '../repositories/activity-event.repository.js';
 
@@ -10,25 +10,22 @@ export class ActivityService {
   constructor(private readonly events: ActivityEventRepository) {}
 
   async list(workspaceId: string, query: ActivityQuery): Promise<ActivityPage> {
-    const records = await this.events.listPage(workspaceId, query);
-    const hasMore = records.length > query.limit;
-    const page = hasMore ? records.slice(0, query.limit) : records;
-    return {
-      items: page.flatMap((record) => toActivityEventView(record) ?? []),
-      nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
-    };
+    const { rows, nextCursor } = toCursorPage(
+      await this.events.listPage(workspaceId, query),
+      query.limit,
+    );
+    return { items: rows.flatMap((record) => toActivityEventView(record) ?? []), nextCursor };
   }
 
-  /** A product's history, including bulk actions that touched it and its deletion. */
+  /**
+   * A product's history, including its deletion and the bulk actions and imports that touched
+   * it, whatever their subject. Ids are UUIDs, so they never match a record of another type.
+   */
   listForProduct(
     workspaceId: string,
     productId: string,
     query: ActivityQuery,
   ): Promise<ActivityPage> {
-    return this.list(workspaceId, {
-      ...query,
-      subjectType: ActivitySubjectType.Product,
-      subjectId: productId,
-    });
+    return this.list(workspaceId, { ...query, subjectId: productId });
   }
 }

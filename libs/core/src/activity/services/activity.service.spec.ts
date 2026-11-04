@@ -76,15 +76,11 @@ describe('ActivityService', () => {
     expect(items.map((item) => item.id)).toEqual(['known']);
   });
 
-  it('reads a product history through its subject id', async () => {
+  it('reads a product history through its subject ids, whatever the event’s subject', async () => {
     const { service, repository } = setup([]);
 
     await service.listForProduct(WORKSPACE_ID, 'p-1', { limit: 5 });
 
-    expect(repository.listPage).toHaveBeenCalledWith(WORKSPACE_ID, {
-      limit: 5,
-      subjectType: ActivitySubjectType.Product,
-      subjectId: 'p-1',
-    });
+    expect(repository.listPage).toHaveBeenCalledWith(WORKSPACE_ID, { limit: 5, subjectId: 'p-1' });
   });
 });

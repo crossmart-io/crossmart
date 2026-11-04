@@ -3,6 +3,8 @@ export * from './prisma.service.js';
 export {
   ActivityActorType,
   ActivityOutcome,
+  ImportIssueOutcome,
+  ImportJobStatus,
   InventoryMovementReason,
   OutOfStockPolicy,
   ProductStatus,
@@ -12,6 +14,8 @@ export { Prisma } from './generated/prisma/client.js';
 export type {
   ActivityEvent,
   ApiKey,
+  ImportJob,
+  ImportJobIssue,
   InventoryItem,
   Organization,
   Product,

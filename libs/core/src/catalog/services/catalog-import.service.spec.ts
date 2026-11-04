@@ -1,142 +1,136 @@
 import { BadRequestException } from '@nestjs/common';
-import { ActivityOutcome, OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import { ActivityOutcome } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
+import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
-import type { CatalogFileParser, ImportIssue } from '../entities/catalog-import.js';
-import type { ProductDraft } from '../entities/product-draft.js';
+import type {
+  CatalogImportRequest,
+  CatalogImportStrategy,
+  ImportOutcome,
+} from '../entities/catalog-import.js';
 import { CatalogImportFormat } from '../enums/catalog-import-format.enum.js';
+import { CatalogImportMode } from '../enums/catalog-import-mode.enum.js';
 import { ImportIssueCode } from '../enums/import-issue-code.enum.js';
-import type { ProductRepository } from '../repositories/product.repository.js';
-import { CatalogConflictsService } from './catalog-conflicts.service.js';
+import { emptyOutcome } from '../import/import-issues.js';
 import { CatalogImportService } from './catalog-import.service.js';
+import type { ImportJobsService } from './import-jobs.service.js';
 
 const WORKSPACE_ID = 'ws-1';
+const JOB_ID = 'job-1';
 const ACTOR = Actor.user('user-1');
+const OUTCOME: ImportOutcome = { ...emptyOutcome(), updatedVariants: 3, productIds: ['p-1'] };
+const UNKNOWN_SKU = { code: ImportIssueCode.UnknownSku, message: 'unknown', sku: 'X', row: 2 };
 
-function product(handle: string, ...skus: string[]): ProductDraft {
+function request(overrides: Partial<CatalogImportRequest> = {}): CatalogImportRequest {
   return {
-    handle,
-    title: handle,
-    descriptionHtml: '',
-    tags: [],
-    status: ProductStatus.ACTIVE,
-    optionNames: skus.length > 1 ? ['Size'] : [],
-    variants: skus.map((sku, index) => ({
-      sku,
-      optionValues: skus.length > 1 ? [`S${index}`] : [],
-      price: '1.00',
-      requiresShipping: true,
-      taxable: true,
-      outOfStockPolicy: OutOfStockPolicy.STOP_SELLING,
-      inventory: { tracked: true, quantity: 1 },
-    })),
-    media: [],
+    mode: CatalogImportMode.Inventory,
+    format: CatalogImportFormat.InventoryCsv,
+    fileName: 'stock.csv',
+    content: Buffer.from('sku,available'),
+    actor: ACTOR,
+    ...overrides,
   };
 }
 
-function createService(parsed: ProductDraft[], parseIssues: ImportIssue[] = []) {
-  const repository = {
-    findExistingHandles: vi.fn<ProductRepository['findExistingHandles']>(() =>
-      Promise.resolve(new Set(['existing'])),
-    ),
-    findExistingSkus: vi.fn<ProductRepository['findExistingSkus']>(() =>
-      Promise.resolve(new Set(['TAKEN'])),
-    ),
-    createAll: vi.fn<ProductRepository['createAll']>(() => Promise.resolve()),
+function setup() {
+  const run = vi.fn<CatalogImportStrategy['run']>().mockResolvedValue(OUTCOME);
+  const strategy: CatalogImportStrategy = {
+    mode: CatalogImportMode.Inventory,
+    supports: (format) => format === CatalogImportFormat.InventoryCsv,
+    run,
   };
-  const parser: CatalogFileParser = {
-    format: CatalogImportFormat.ShopifyCsv,
-    parse: () => ({ products: parsed, issues: parseIssues }),
+  const jobs = {
+    start: vi.fn<ImportJobsService['start']>().mockResolvedValue(JOB_ID),
+    complete: vi.fn<ImportJobsService['complete']>().mockResolvedValue(),
+    fail: vi.fn<ImportJobsService['fail']>().mockResolvedValue(),
   };
-  const products = repository as unknown as ProductRepository;
   const activity = new InMemoryActivityRecorder();
   const service = new CatalogImportService(
-    [parser],
-    products,
-    new CatalogConflictsService(products),
+    [strategy],
+    jobs as unknown as ImportJobsService,
     activity,
   );
-  return { service, repository, activity };
+  return { service, jobs, run, activity };
 }
 
 describe('CatalogImportService', () => {
-  it('creates new products, skips existing handles and reports SKU clashes', async () => {
-    const parseIssue = {
-      code: ImportIssueCode.InvalidValue,
-      message: 'bad price',
-      handle: 'broken',
-      row: 9,
-    };
-    const { service, repository } = createService(
-      [
-        product('new', 'N-1', 'N-2'),
-        product('existing', 'E-1'),
-        product('clash', 'TAKEN'),
-        product('same-file', 'N-1'),
-      ],
-      [parseIssue],
-    );
+  it('runs the mode, records the job and returns its id', async () => {
+    const { service, jobs, run } = setup();
 
-    const result = await service.importFile(
-      WORKSPACE_ID,
-      CatalogImportFormat.ShopifyCsv,
-      Buffer.from(''),
-      ACTOR,
-    );
+    const result = await service.importFile(WORKSPACE_ID, request());
 
-    expect(result.createdProducts).toBe(1);
-    expect(result.createdVariants).toBe(2);
-    expect(result.skipped.map((issue) => issue.handle)).toEqual(['existing']);
-    expect(result.failed.map((issue) => issue.handle)).toEqual(['broken', 'clash', 'same-file']);
-    expect(repository.createAll).toHaveBeenCalledWith(WORKSPACE_ID, [
-      expect.objectContaining({ handle: 'new' }),
-    ]);
+    const { productIds: _productIds, ...counts } = OUTCOME;
+    expect(result).toEqual({ ...counts, jobId: JOB_ID, mode: CatalogImportMode.Inventory });
+    expect(jobs.start).toHaveBeenCalledWith(WORKSPACE_ID, {
+      mode: CatalogImportMode.Inventory,
+      format: CatalogImportFormat.InventoryCsv,
+      fileName: 'stock.csv',
+      actor: ACTOR,
+    });
+    expect(run).toHaveBeenCalledWith(WORKSPACE_ID, request());
+    expect(jobs.complete).toHaveBeenCalledWith(WORKSPACE_ID, JOB_ID, OUTCOME);
   });
 
-  it('writes nothing when every product is skipped', async () => {
-    const { service, repository } = createService([product('existing', 'E-1')]);
+  it('records a rejected file as a failed job and a failed import, then rethrows', async () => {
+    const { service, jobs, run, activity } = setup();
+    const rejection = new BadRequestException('The file is not a readable CSV');
+    run.mockRejectedValue(rejection);
 
-    await service.importFile(WORKSPACE_ID, CatalogImportFormat.ShopifyCsv, Buffer.from(''), ACTOR);
+    await expect(service.importFile(WORKSPACE_ID, request())).rejects.toBe(rejection);
 
-    expect(repository.createAll).not.toHaveBeenCalled();
-  });
-
-  it('refuses a format without a parser, and logs the failed import', async () => {
-    const { service, activity } = createService([]);
-    await expect(
-      service.importFile(WORKSPACE_ID, 'xlsx' as CatalogImportFormat, Buffer.from(''), ACTOR),
-    ).rejects.toThrow(BadRequestException);
+    expect(jobs.fail).toHaveBeenCalledWith(WORKSPACE_ID, JOB_ID, rejection);
+    expect(jobs.complete).not.toHaveBeenCalled();
     expect(activity.entries[0]).toMatchObject({
-      action: ActivityAction.ProductsImported,
+      action: ActivityAction.StockImported,
       outcome: ActivityOutcome.FAILED,
-      failureReason: 'Unsupported import format: xlsx',
+      failureReason: 'The file is not a readable CSV',
+      subject: { type: ActivitySubjectType.ImportJob, id: JOB_ID, label: 'stock.csv' },
     });
   });
 
-  it('logs how many products were created, skipped and rejected', async () => {
-    const { service, activity } = createService([
-      product('new', 'N-1'),
-      product('existing', 'E-1'),
-    ]);
+  it('refuses a mode it has no strategy for, or a format the mode cannot read, without a job', async () => {
+    const { service, jobs, activity } = setup();
 
-    await service.importFile(WORKSPACE_ID, CatalogImportFormat.ShopifyCsv, Buffer.from(''), ACTOR);
+    await expect(
+      service.importFile(WORKSPACE_ID, request({ format: CatalogImportFormat.ShopifyCsv })),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.importFile(WORKSPACE_ID, request({ mode: CatalogImportMode.Create })),
+    ).rejects.toThrow(BadRequestException);
+    expect(jobs.start).not.toHaveBeenCalled();
+    expect(activity.recorded).toEqual([]);
+  });
 
-    expect(activity.recorded[0]).toMatchObject({
+  it('logs the import with its file, counts and the products it touched', async () => {
+    const { service, run, activity } = setup();
+    run.mockResolvedValue({ ...OUTCOME, failed: [UNKNOWN_SKU] });
+
+    await service.importFile(WORKSPACE_ID, request());
+
+    expect(activity.recorded[0]).toEqual({
+      workspaceId: WORKSPACE_ID,
       actor: ACTOR,
-      entry: { action: ActivityAction.ProductsImported, itemCount: 1, detail: '1 skipped' },
+      entry: {
+        action: ActivityAction.StockImported,
+        subject: { type: ActivitySubjectType.ImportJob, id: JOB_ID, label: 'stock.csv' },
+        relatedSubjectIds: ['p-1'],
+        itemCount: 3,
+        detail: '1 failed',
+      },
     });
     expect(activity.entries[0]?.outcome).toBeUndefined();
   });
 
-  it('counts an import that rejected every product as failed', async () => {
-    const { service, activity } = createService([product('clash', 'TAKEN')]);
+  it('counts an import that rejected every record as failed', async () => {
+    const { service, run, activity } = setup();
+    run.mockResolvedValue({ ...emptyOutcome(), failed: [UNKNOWN_SKU] });
 
-    await service.importFile(WORKSPACE_ID, CatalogImportFormat.ShopifyCsv, Buffer.from(''), ACTOR);
+    await service.importFile(WORKSPACE_ID, request());
 
     expect(activity.entries[0]).toMatchObject({
       outcome: ActivityOutcome.FAILED,
-      failureReason: 'No product in the file could be imported',
+      failureReason: 'No stock level in the file could be set',
     });
   });
 });

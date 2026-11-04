@@ -33,6 +33,7 @@ export const MOVEMENT_REASON_LABELS: Record<InventoryMovementReason, string> = {
   [InventoryMovementReason.DAMAGED]: 'damaged',
   [InventoryMovementReason.LOST]: 'lost',
   [InventoryMovementReason.SOLD]: 'sold',
+  [InventoryMovementReason.IMPORTED]: 'imported',
 };
 /** Separates option values when a variant without a SKU is named: "Blue / Large". */
 export const OPTION_VALUE_SEPARATOR = ' / ';

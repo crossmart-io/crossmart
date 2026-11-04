@@ -12,6 +12,18 @@ export interface ConflictCheck {
   skuConflicts: ImportIssue[];
 }
 
+/** A file's product that will replace the catalog product `productId`. */
+export interface ProductReplacement {
+  productId: string;
+  draft: ProductDraft;
+}
+
+export interface ReplacementCheck {
+  accepted: ProductReplacement[];
+  /** SKUs held by another product, in the catalog or earlier in the same batch. */
+  skuConflicts: ImportIssue[];
+}
+
 /** Finds drafts that would clash with the catalog: two queries, whatever the batch size. */
 @Injectable()
 export class CatalogConflictsService {
@@ -38,6 +50,29 @@ export class CatalogConflictsService {
     return result;
   }
 
+  /** SKU clashes of products that replace existing ones: one query, whatever the batch size. */
+  async checkReplacements(
+    workspaceId: string,
+    replacements: ProductReplacement[],
+  ): Promise<ReplacementCheck> {
+    const owners = await this.products.findSkuOwners(
+      workspaceId,
+      replacements.flatMap(({ draft }) => skusOf(draft)),
+    );
+    const result: ReplacementCheck = { accepted: [], skuConflicts: [] };
+    for (const replacement of replacements) {
+      const { productId, draft } = replacement;
+      const takenSku = skusOf(draft).find((sku) => (owners.get(sku) ?? productId) !== productId);
+      if (takenSku) {
+        result.skuConflicts.push(skuConflict(draft.handle, takenSku));
+        continue;
+      }
+      skusOf(draft).forEach((sku) => owners.set(sku, productId));
+      result.accepted.push(replacement);
+    }
+    return result;
+  }
+
   private classify(
     draft: ProductDraft,
     existingHandles: Set<string>,
@@ -55,11 +90,7 @@ export class CatalogConflictsService {
     }
     const takenSku = skusOf(draft).find((sku) => takenSkus.has(sku));
     if (takenSku) {
-      result.skuConflicts.push({
-        code: ImportIssueCode.DuplicateSku,
-        message: `SKU ${takenSku} is already used by another product`,
-        handle,
-      });
+      result.skuConflicts.push(skuConflict(handle, takenSku));
       return;
     }
     skusOf(draft).forEach((sku) => takenSkus.add(sku));
@@ -70,4 +101,13 @@ export class CatalogConflictsService {
 
 function skusOf(draft: ProductDraft): string[] {
   return draft.variants.flatMap((variant) => (variant.sku ? [variant.sku] : []));
+}
+
+function skuConflict(handle: string, sku: string): ImportIssue {
+  return {
+    code: ImportIssueCode.DuplicateSku,
+    message: `SKU ${sku} is already used by another product`,
+    handle,
+    sku,
+  };
 }

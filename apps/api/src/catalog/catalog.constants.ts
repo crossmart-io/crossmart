@@ -7,6 +7,8 @@ export const PRODUCT_ID_PARAM = 'productId';
 export const VIEW_ID_PARAM = 'viewId';
 /** Multipart field that carries an uploaded file (catalog import or image). */
 export const UPLOAD_FILE_FIELD = 'file';
+/** Browsers send file names as UTF-8; multer would otherwise read them as Latin-1. */
+export const UPLOAD_FILE_NAME_CHARSET = 'utf8';
 
 export const PRODUCT_TITLE_MAX_LENGTH = 255;
 export const PRODUCT_HANDLE_MAX_LENGTH = 255;
@@ -23,6 +25,11 @@ export const PRODUCT_STATUS_SCHEMA_NAME = 'ProductStatus';
 export const OUT_OF_STOCK_POLICY_SCHEMA_NAME = 'OutOfStockPolicy';
 export const CATALOG_IMPORT_FORMAT_SCHEMA_NAME = 'CatalogImportFormat';
 export const IMPORT_ISSUE_CODE_SCHEMA_NAME = 'ImportIssueCode';
+export const CATALOG_IMPORT_MODE_SCHEMA_NAME = 'CatalogImportMode';
+export const IMPORT_JOB_STATUS_SCHEMA_NAME = 'ImportJobStatus';
+export const IMPORT_ISSUE_OUTCOME_SCHEMA_NAME = 'ImportIssueOutcome';
+export const IMPORT_JOBS_ROUTE = 'workspaces/:workspaceId/import-jobs';
+export const IMPORT_JOB_ID_PARAM = 'jobId';
 export const CATALOG_STATS_ROUTE = 'workspaces/:workspaceId/catalog-stats';
 export const PRODUCT_IMAGES_ROUTE = 'workspaces/:workspaceId/media/product-images';
 export const IMAGE_CONTENT_TYPE_SCHEMA_NAME = 'ImageContentType';

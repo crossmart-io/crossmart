@@ -1,3 +1,4 @@
+import { findEnumValue } from '@crossmart/common';
 import { ActivityOutcome, type Prisma } from '@crossmart/database';
 import {
   ACTIVITY_FAILURE_REASON_MAX_LENGTH,
@@ -51,21 +52,14 @@ export function toActivityEventInput(
   };
 }
 
-function toEnumValue<Value extends string>(
-  values: Value[],
-  value: string | null,
-): Value | undefined {
-  return values.find((candidate) => candidate === value);
-}
-
 function toSubjectView(record: ActivityEventRecord): ActivitySubjectView | null {
-  const type = toEnumValue(Object.values(ActivitySubjectType), record.subjectType);
+  const type = findEnumValue(ActivitySubjectType, record.subjectType);
   return type ? { type, id: record.subjectId, label: record.subjectLabel } : null;
 }
 
 /** Null for an action this version does not know, such as one written by a newer release. */
 export function toActivityEventView(record: ActivityEventRecord): ActivityEventView | null {
-  const action = toEnumValue(Object.values(ActivityAction), record.action);
+  const action = findEnumValue(ActivityAction, record.action);
   if (!action) return null;
   return {
     id: record.id,

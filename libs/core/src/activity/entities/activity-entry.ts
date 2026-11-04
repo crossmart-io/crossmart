@@ -15,7 +15,10 @@ export interface ActivityEntry {
   /** Defaults to succeeded. */
   outcome?: ActivityOutcome;
   subject?: ActivitySubject;
-  /** Further subjects of the same type, for bulk actions; each one's history shows the event. */
+  /**
+   * Products the event touched besides its subject, such as those of a bulk edit or an import;
+   * each one's history shows the event.
+   */
   relatedSubjectIds?: string[];
   /** How many items the action covered. */
   itemCount?: number;

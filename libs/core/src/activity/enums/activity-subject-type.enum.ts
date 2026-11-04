@@ -2,6 +2,7 @@
 export enum ActivitySubjectType {
   Product = 'product',
   ProductView = 'product_view',
-  CatalogImport = 'catalog_import',
+  /** An entry of the import history; the event links to it. */
+  ImportJob = 'import_job',
   ApiKey = 'api_key',
 }

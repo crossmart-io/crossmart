@@ -1,7 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { parse as parseCsv } from 'csv-parse/sync';
+import { Injectable } from '@nestjs/common';
 import { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
-import { IMPORT_MAX_ROWS } from '../../catalog.constants.js';
 import type {
   CatalogFileParser,
   CatalogParseResult,
@@ -11,6 +9,7 @@ import type { MediaDraft, ProductDraft, VariantDraft } from '../../entities/prod
 import { CatalogImportFormat } from '../../enums/catalog-import-format.enum.js';
 import { ImportIssueCode } from '../../enums/import-issue-code.enum.js';
 import { findDraftProblems } from '../../rules/product-draft.rules.js';
+import { assertCsvColumns, FIRST_DATA_ROW, readCsvRecords } from '../csv/csv-records.js';
 import {
   SHOPIFY_CONTINUE_SELLING_POLICY,
   SHOPIFY_DEFAULT_OPTION_NAME,
@@ -22,8 +21,7 @@ import {
 } from './shopify-csv-column.enum.js';
 import { ShopifyCsvRow, ShopifyRowError } from './shopify-csv-row.js';
 
-/** The header is spreadsheet row 1, so the first record is row 2. */
-const FIRST_DATA_ROW = 2;
+const SHOPIFY_FILE_KIND = 'a Shopify product CSV';
 
 const STATUS_BY_SHOPIFY_VALUE: Readonly<Record<string, ProductStatus>> = {
   active: ProductStatus.ACTIVE,
@@ -40,53 +38,24 @@ export class ShopifyCsvParser implements CatalogFileParser {
   readonly format = CatalogImportFormat.ShopifyCsv;
 
   parse(content: Buffer): CatalogParseResult {
-    const products: ProductDraft[] = [];
-    const issues: ImportIssue[] = [];
+    const result = { products: [] as ProductDraft[], issues: [] as ImportIssue[] };
+    const rowByHandle = new Map<string, number>();
     for (const [handle, rows] of this.groupByHandle(this.readRows(content))) {
+      rowByHandle.set(handle, rows[0]?.row ?? FIRST_DATA_ROW);
       const outcome = this.toDraft(handle, rows);
       if ('issue' in outcome) {
-        issues.push(outcome.issue);
+        result.issues.push(outcome.issue);
       } else {
-        products.push(outcome.draft);
+        result.products.push(outcome.draft);
       }
     }
-    return { products, issues };
+    return { ...result, rowByHandle };
   }
 
   private readRows(content: Buffer): ShopifyCsvRow[] {
-    const records = this.parseRecords(content);
-    if (records.length > IMPORT_MAX_ROWS) {
-      throw new BadRequestException(`The file has more than ${IMPORT_MAX_ROWS} rows`);
-    }
+    const records = readCsvRecords(content);
+    assertCsvColumns(records, SHOPIFY_REQUIRED_COLUMNS, SHOPIFY_FILE_KIND);
     return records.map((cells, index) => new ShopifyCsvRow(index + FIRST_DATA_ROW, cells));
-  }
-
-  private parseRecords(content: Buffer): Record<string, string>[] {
-    let records: Record<string, string>[];
-    try {
-      records = parseCsv(content, {
-        columns: true,
-        bom: true,
-        skip_empty_lines: true,
-        relax_column_count: true,
-      });
-    } catch {
-      throw new BadRequestException('The file is not a readable CSV');
-    }
-    this.assertShopifyHeader(records);
-    return records;
-  }
-
-  private assertShopifyHeader(records: Record<string, string>[]): void {
-    const [firstRecord] = records;
-    const missing = SHOPIFY_REQUIRED_COLUMNS.filter(
-      (column) => !firstRecord || !(column in firstRecord),
-    );
-    if (missing.length > 0) {
-      throw new BadRequestException(
-        `This does not look like a Shopify product CSV: missing ${missing.join(', ')}`,
-      );
-    }
   }
 
   private groupByHandle(rows: ShopifyCsvRow[]): Map<string, ShopifyCsvRow[]> {
