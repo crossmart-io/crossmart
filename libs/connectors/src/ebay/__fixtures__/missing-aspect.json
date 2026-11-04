@@ -1,0 +1,18 @@
+{
+  "errors": [
+    {
+      "errorId": 25002,
+      "domain": "API_INVENTORY",
+      "subdomain": "Selling",
+      "category": "REQUEST",
+      "message": "A user error has occurred. The item specific Department is missing. Add Department to this listing, enter a valid value, and then try again.",
+      "parameters": [
+        {
+          "name": "0",
+          "value": "The item specific Department is missing. Add Department to this listing, enter a valid value, and then try again."
+        },
+        { "name": "2", "value": "Department" }
+      ]
+    }
+  ]
+}

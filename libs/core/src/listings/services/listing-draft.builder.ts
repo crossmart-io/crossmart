@@ -1,5 +1,7 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import type {
+  ChannelCategory,
+  ChannelSettings,
   ExternalImage,
   ListingDraft,
   ListingDraftVariant,
@@ -24,12 +26,20 @@ export interface ListingDraftInput {
   /** The listing being published or updated; its overrides and channel ids apply. */
   listing: ListingSyncRecord | null;
   pricing: PricingContext;
+  /** The connection's account settings, for channels whose listings need them. */
+  account?: ChannelSettings | null;
 }
 
 export interface BuiltListingDraft {
   draft: ListingDraft;
   /** Digest of the images sent, stored once the publish succeeds. */
   mediaDigest: string;
+}
+
+/** The channel category the listing is in, once chosen or picked. */
+function listingCategory(listing: ListingSyncRecord | null): ChannelCategory | null {
+  if (!listing?.channelCategoryId) return null;
+  return { id: listing.channelCategoryId, name: listing.channelCategoryName ?? '' };
 }
 
 /**
@@ -40,31 +50,42 @@ export interface BuiltListingDraft {
 export class ListingDraftBuilder {
   constructor(private readonly prices: ChannelPriceResolver) {}
 
-  build({ product, listing, pricing }: ListingDraftInput): BuiltListingDraft {
-    const override = listing?.override ?? null;
+  build({ product, listing, pricing, account }: ListingDraftInput): BuiltListingDraft {
     const images = this.images(product, listing);
     const digest = mediaDigest(images);
     const priceOverrides = toPriceOverrides(listing);
     return {
       draft: {
         productId: product.id,
-        product: {
-          handle: product.handle,
-          title: override?.title ?? product.title,
-          descriptionHtml: override?.descriptionHtml ?? product.descriptionHtml,
-          vendor: product.vendor,
-          productType: product.productType,
-          tags: override?.tagsOverridden ? override.tags : product.tags,
-          active: this.isActive(product, listing),
-          optionNames: product.optionNames,
-          images,
-        },
+        product: this.content(product, listing, images),
         variants: product.variants.map((variant) =>
           this.variant(variant, listing, pricing, priceOverrides.get(variant.id)),
         ),
         imagesChanged: digest !== listing?.mediaDigest,
+        accountSettings: account ?? null,
+        category: listingCategory(listing),
       },
       mediaDigest: digest,
+    };
+  }
+
+  /** The product's content with the listing's overrides applied. */
+  private content(
+    product: ProductDetail,
+    listing: ListingSyncRecord | null,
+    images: ExternalImage[],
+  ): ListingDraft['product'] {
+    const override = listing?.override ?? null;
+    return {
+      handle: product.handle,
+      title: override?.title ?? product.title,
+      descriptionHtml: override?.descriptionHtml ?? product.descriptionHtml,
+      vendor: product.vendor,
+      productType: product.productType,
+      tags: override?.tagsOverridden ? override.tags : product.tags,
+      active: this.isActive(product, listing),
+      optionNames: product.optionNames,
+      images,
     };
   }
 

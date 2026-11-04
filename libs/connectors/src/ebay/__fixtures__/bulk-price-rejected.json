@@ -1,0 +1,17 @@
+{
+  "responses": [
+    {
+      "statusCode": 400,
+      "sku": "SHIRT-S",
+      "offerId": "9000000001",
+      "errors": [
+        {
+          "errorId": 25709,
+          "domain": "API_INVENTORY",
+          "category": "REQUEST",
+          "message": "Invalid value for price. The price must be greater than 0.99."
+        }
+      ]
+    }
+  ]
+}

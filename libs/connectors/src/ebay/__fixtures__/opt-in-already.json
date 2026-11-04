@@ -1,0 +1,10 @@
+{
+  "errors": [
+    {
+      "errorId": 20409,
+      "domain": "API_ACCOUNT",
+      "category": "REQUEST",
+      "message": "The seller is already opted in to the program."
+    }
+  ]
+}

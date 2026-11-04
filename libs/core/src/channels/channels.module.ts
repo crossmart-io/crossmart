@@ -15,6 +15,8 @@ import { OAuthConnectorResolver } from './services/oauth-connector.resolver.js';
 import { OAuthStateService } from './services/oauth-state.service.js';
 import { ConnectionCredentialsVault } from './services/connection-credentials.vault.js';
 import { OAuthStateSigner } from './services/oauth-state.signer.js';
+import { ConnectionAccountStore } from './services/connection-account.store.js';
+import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.service.js';
 
 /**
  * Channel connections: OAuth install, sealed credentials, sessions with token refresh,
@@ -34,11 +36,14 @@ import { OAuthStateSigner } from './services/oauth-state.signer.js';
     ChannelAuthorizationService,
     ChannelConnectionsService,
     ChannelWebhooksService,
+    ConnectionAccountStore,
+    EbayAccountSetupService,
   ],
   exports: [
     ChannelAuthorizationService,
     ChannelConnectionsService,
     ChannelWebhooksService,
+    EbayAccountSetupService,
     ChannelSessionFactory,
     ChannelConnectionRepository,
     ListingRepository,

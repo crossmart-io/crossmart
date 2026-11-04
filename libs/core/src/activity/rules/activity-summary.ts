@@ -217,6 +217,18 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Saving a product selection',
     describe: (entry) => withDetail(`Changed the products listed on${named(entry)}`, entry),
   },
+  [ActivityAction.ChannelListingDefaultsUpdated]: {
+    operation: 'Saving listing defaults',
+    describe: (entry) => `Changed the listing defaults of${named(entry)}`,
+  },
+  [ActivityAction.ChannelPoliciesOptedIn]: {
+    operation: 'Opting in to business policies',
+    describe: (entry) => `Opted${named(entry)} in to eBay business policies`,
+  },
+  [ActivityAction.ListingCategoryChanged]: {
+    operation: 'Choosing a channel category',
+    describe: (entry) => `Changed the channel category of${named(entry)}${onStore(entry)}`,
+  },
   [ActivityAction.ChannelSyncRequested]: {
     operation: 'Starting a sync',
     describe: (entry) => withDetail(`Started a sync of${named(entry)}`, entry),

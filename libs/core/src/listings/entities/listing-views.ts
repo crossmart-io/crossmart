@@ -1,4 +1,4 @@
-import type { ChannelType } from '@crossmart/connectors';
+import type { ChannelCategory, ChannelType } from '@crossmart/connectors';
 import type { ChannelConnectionStatus, ListingSource, ListingStatus } from '@crossmart/database';
 import type { ListingOverrideView } from './listing-override.js';
 import type { ResolvedPrice } from './price-resolution.js';
@@ -13,6 +13,8 @@ export interface ListingSummary {
   externalUrl: string | null;
   lastError: string | null;
   lastSyncedAt: Date | null;
+  /** The channel category it is listed in, on channels that have categories (eBay). */
+  category: ChannelCategory | null;
 }
 
 /** One row of a connection's listings table. */

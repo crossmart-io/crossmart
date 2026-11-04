@@ -76,6 +76,8 @@ export function listingRecord(overrides: Partial<ListingSyncRecord> = {}): Listi
     lastError: null,
     lastSyncedAt: null,
     mediaDigest: null,
+    channelCategoryId: null,
+    channelCategoryName: null,
     variants: [],
     override: null,
     variantOverrides: [],

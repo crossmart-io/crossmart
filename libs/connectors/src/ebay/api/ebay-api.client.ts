@@ -5,15 +5,16 @@ import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
 import {
   ACCEPT_HEADER,
   AUTHORIZATION_HEADER,
+  CONTENT_TYPE_HEADER,
   JSON_CONTENT_TYPE,
 } from '../../sdk/http/http.constants.js';
 import { HttpMethod } from '../../sdk/http/http-method.enum.js';
 import { isSuccessStatus } from '../../sdk/http/http-status.js';
 import { HttpTransport, type HttpResponse } from '../../sdk/http/http-transport.js';
 import { parseJsonBody } from '../../sdk/http/parse-json.js';
-import { BEARER_AUTH_SCHEME } from '../ebay.constants.js';
+import { BEARER_AUTH_SCHEME, CONTENT_LANGUAGE_HEADER } from '../ebay.constants.js';
 import { ebayError } from '../ebay-errors.js';
-import { ebayErrorCode } from './ebay-api-error.js';
+import { ebayErrorCode, ebayRejectionMessage } from './ebay-api-error.js';
 
 /** Merchant-readable messages by error code; never the response body or the token. */
 const ERROR_MESSAGES: Readonly<Record<ChannelErrorCode, string>> = {
@@ -28,9 +29,23 @@ const ERROR_MESSAGES: Readonly<Record<ChannelErrorCode, string>> = {
   [ChannelErrorCode.RequestRejected]: 'eBay rejected the request',
 };
 
+const REJECTION_SEPARATOR = ': ';
+
+/** One call to an eBay REST API on behalf of a user. */
+export interface EbayRequest {
+  method: HttpMethod;
+  url: URL;
+  accessToken: string;
+  /** Sent as JSON. */
+  body?: unknown;
+  /** The listing language the Inventory API needs on item and offer writes. */
+  contentLanguage?: string;
+}
+
 /**
  * Calls eBay's REST APIs with a user access token and validates each response against a
- * schema. Failures become `ChannelError`s that name a cause and never carry the body.
+ * schema. Failures become `ChannelError`s that name a cause; a rejected request carries
+ * eBay's own messages (never the body or the token), so merchants can fix their listing.
  */
 @Injectable()
 export class EbayApiClient {
@@ -41,16 +56,29 @@ export class EbayApiClient {
     return this.parse(await this.send(url, accessToken), schema);
   }
 
-  /** The raw response, for callers that handle some eBay errors themselves. */
-  async send(url: URL, accessToken: string): Promise<HttpResponse> {
+  /** The raw response of a read, for callers that handle some eBay errors themselves. */
+  send(url: URL, accessToken: string): Promise<HttpResponse> {
+    return this.request({ method: HttpMethod.Get, url, accessToken });
+  }
+
+  /** Sends the request and validates the JSON it answers. */
+  async call<TData>(request: EbayRequest, schema: z.ZodType<TData>): Promise<TData> {
+    return this.parse(await this.request(request), schema);
+  }
+
+  /** Sends a request whose success has no body worth reading (204, or an echo). */
+  async execute(request: EbayRequest): Promise<void> {
+    this.assertSuccess(await this.request(request));
+  }
+
+  /** The raw response, whatever its status. Rejects only when eBay could not be reached. */
+  async request(request: EbayRequest): Promise<HttpResponse> {
     try {
       return await this.http.send({
-        method: HttpMethod.Get,
-        url: url.toString(),
-        headers: {
-          [AUTHORIZATION_HEADER]: `${BEARER_AUTH_SCHEME} ${accessToken}`,
-          [ACCEPT_HEADER]: JSON_CONTENT_TYPE,
-        },
+        method: request.method,
+        url: request.url.toString(),
+        headers: this.headers(request),
+        ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
       });
     } catch {
       throw this.error(ChannelErrorCode.ChannelUnavailable);
@@ -58,9 +86,7 @@ export class EbayApiClient {
   }
 
   parse<TData>(response: HttpResponse, schema: z.ZodType<TData>): TData {
-    if (!isSuccessStatus(response.status)) {
-      throw this.error(ebayErrorCode(response.status));
-    }
+    this.assertSuccess(response);
     const parsed = schema.safeParse(parseJsonBody(response.body));
     if (!parsed.success) {
       throw this.error(ChannelErrorCode.ChannelUnavailable);
@@ -68,7 +94,26 @@ export class EbayApiClient {
     return parsed.data;
   }
 
-  private error(code: ChannelErrorCode): ChannelError {
-    return ebayError(code, ERROR_MESSAGES[code]);
+  /** Throws the `ChannelError` a failed response means. */
+  assertSuccess(response: HttpResponse): void {
+    if (isSuccessStatus(response.status)) return;
+    const code = ebayErrorCode(response.status);
+    const rejection =
+      code === ChannelErrorCode.RequestRejected ? ebayRejectionMessage(response) : null;
+    throw this.error(code, rejection);
+  }
+
+  private headers(request: EbayRequest): Record<string, string> {
+    return {
+      [AUTHORIZATION_HEADER]: `${BEARER_AUTH_SCHEME} ${request.accessToken}`,
+      [ACCEPT_HEADER]: JSON_CONTENT_TYPE,
+      ...(request.body === undefined ? {} : { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE }),
+      ...(request.contentLanguage ? { [CONTENT_LANGUAGE_HEADER]: request.contentLanguage } : {}),
+    };
+  }
+
+  private error(code: ChannelErrorCode, detail: string | null = null): ChannelError {
+    const message = ERROR_MESSAGES[code];
+    return ebayError(code, detail ? `${message}${REJECTION_SEPARATOR}${detail}` : message);
   }
 }

@@ -629,27 +629,32 @@ enum ListingSource {
 /// several listings on one connection (eBay variations of title or pack size), so only the
 /// external id is unique per connection.
 model Listing {
-  id               String                   @id @default(uuid()) @db.Uuid
-  workspaceId      String                   @map("workspace_id") @db.Uuid
-  connectionId     String                   @map("connection_id") @db.Uuid
-  connection       ChannelConnection        @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  productId        String                   @map("product_id") @db.Uuid
-  product          Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  /// The product's id on the channel (a Shopify product GID); null until it is published.
-  externalId       String?                  @map("external_id")
-  externalUrl      String?                  @map("external_url")
-  status           ListingStatus            @default(PENDING)
-  source           ListingSource            @default(RULE)
+  id                  String                   @id @default(uuid()) @db.Uuid
+  workspaceId         String                   @map("workspace_id") @db.Uuid
+  connectionId        String                   @map("connection_id") @db.Uuid
+  connection          ChannelConnection        @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  productId           String                   @map("product_id") @db.Uuid
+  product             Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The product's id on the channel (a Shopify product GID, an eBay listing id); null until it is published.
+  externalId          String?                  @map("external_id")
+  externalUrl         String?                  @map("external_url")
+  status              ListingStatus            @default(PENDING)
+  source              ListingSource            @default(RULE)
   /// A short, user-facing reason for `ERROR`. Never holds secrets.
-  lastError        String?                  @map("last_error")
-  lastSyncedAt     DateTime?                @map("last_synced_at")
+  lastError           String?                  @map("last_error")
+  lastSyncedAt        DateTime?                @map("last_synced_at")
   /// A digest of the images last sent, so an update re-sends media only when they changed.
-  mediaDigest      String?                  @map("media_digest")
-  variants         ListingVariant[]
-  override         ListingOverride?
-  variantOverrides ListingVariantOverride[]
-  createdAt        DateTime                 @default(now()) @map("created_at")
-  updatedAt        DateTime                 @updatedAt @map("updated_at")
+  mediaDigest         String?                  @map("media_digest")
+  /// The channel category the listing is in (an eBay leaf category id), chosen by the merchant
+  /// or picked on first publish; null for channels without categories.
+  channelCategoryId   String?                  @map("channel_category_id")
+  /// The category with its ancestors, as the channel names it: "Home & Garden > Kitchen > Mugs".
+  channelCategoryName String?                  @map("channel_category_name")
+  variants            ListingVariant[]
+  override            ListingOverride?
+  variantOverrides    ListingVariantOverride[]
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
 
   @@unique([connectionId, externalId])
   @@index([connectionId, status])
@@ -667,7 +672,7 @@ model ListingVariant {
   listing             Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   variantId           String   @map("variant_id") @db.Uuid
   variant             Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  /// The variant's id on the channel (a Shopify ProductVariant GID).
+  /// The variant's id on the channel (a Shopify ProductVariant GID, an eBay SKU).
   externalId          String   @map("external_id")
   /// The id stock is set on, where the channel has one (a Shopify InventoryItem GID).
   externalInventoryId String?  @map("external_inventory_id")

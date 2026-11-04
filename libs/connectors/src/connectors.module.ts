@@ -24,6 +24,6 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
     },
     ChannelConnectorRegistry,
   ],
-  exports: [ChannelConnectorRegistry, ShopifyConnectorModule],
+  exports: [ChannelConnectorRegistry, ShopifyConnectorModule, EbayConnectorModule],
 })
 export class ConnectorsModule {}

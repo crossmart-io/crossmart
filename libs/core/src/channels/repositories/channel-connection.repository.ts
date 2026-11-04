@@ -23,7 +23,27 @@ function keepMerchantRules(
   stored: Prisma.JsonValue | undefined,
   incoming: Prisma.InputJsonObject,
 ): Prisma.InputJsonObject {
-  return isJsonObject(stored) ? { ...stored, account: incoming.account } : incoming;
+  return isJsonObject(stored)
+    ? { ...stored, account: keepAccountChoices(stored.account, incoming.account) }
+    : incoming;
+}
+
+/**
+ * The account as the connector read it again, plus what the merchant chose that the connector
+ * never reads (an eBay connection's listing defaults): fields it read win, others are kept.
+ */
+function keepAccountChoices(
+  stored: Prisma.JsonValue | undefined,
+  incoming: Prisma.InputJsonValue | null | undefined,
+): Prisma.InputJsonValue | null {
+  if (!isJsonObject(stored) || !isInputJsonObject(incoming)) return incoming ?? null;
+  return stored.channel === incoming.channel ? { ...stored, ...incoming } : incoming;
+}
+
+function isInputJsonObject(
+  value: Prisma.InputJsonValue | null | undefined,
+): value is Prisma.InputJsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Only the account's identity, so passing a whole record never widens the filter. */

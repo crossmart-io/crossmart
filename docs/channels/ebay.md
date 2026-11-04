@@ -5,8 +5,9 @@ merchant picks an eBay marketplace (such as eBay US) on the Channels page and si
 eBay then redirects to the API, which stores the connection and sends the merchant back to the
 Channels page.
 
-This is phase one: Crossmart connects the account and reads its details. Publishing listings,
-stock, prices and orders come next. Until then, the connector declares no capabilities.
+Crossmart connects the account, reads its details and business policies, and publishes
+listings through eBay's Sell Inventory API. The connector declares `publish_listings`,
+`update_price` and `provide_taxonomy`. Stock sync, orders and webhooks come in later phases.
 
 ## What Crossmart uses
 
@@ -16,6 +17,9 @@ stock, prices and orders come next. Until then, the connector declares no capabi
 | Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                          |
 | Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                              |
 | Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                  |
+| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                    |
+| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)        |
+| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)             |
 | Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL         |
 | Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only. |
 
@@ -43,16 +47,16 @@ does not list them, so a connection records the requested scopes as granted.
 
 The account handle is the **marketplace id** the merchant picks. Supported marketplaces:
 
-| Marketplace | Site           | Currency |
-| ----------- | -------------- | -------- |
-| `EBAY_US`   | eBay US        | USD      |
-| `EBAY_GB`   | eBay UK        | GBP      |
-| `EBAY_DE`   | eBay Germany   | EUR      |
-| `EBAY_AU`   | eBay Australia | AUD      |
-| `EBAY_CA`   | eBay Canada    | CAD      |
-| `EBAY_FR`   | eBay France    | EUR      |
-| `EBAY_IT`   | eBay Italy     | EUR      |
-| `EBAY_ES`   | eBay Spain     | EUR      |
+| Marketplace | Site           | Currency | `Content-Language` | Listing pages     |
+| ----------- | -------------- | -------- | ------------------ | ----------------- |
+| `EBAY_US`   | eBay US        | USD      | `en-US`            | `www.ebay.com`    |
+| `EBAY_GB`   | eBay UK        | GBP      | `en-GB`            | `www.ebay.co.uk`  |
+| `EBAY_DE`   | eBay Germany   | EUR      | `de-DE`            | `www.ebay.de`     |
+| `EBAY_AU`   | eBay Australia | AUD      | `en-AU`            | `www.ebay.com.au` |
+| `EBAY_CA`   | eBay Canada    | CAD      | `en-CA`            | `www.ebay.ca`     |
+| `EBAY_FR`   | eBay France    | EUR      | `fr-FR`            | `www.ebay.fr`     |
+| `EBAY_IT`   | eBay Italy     | EUR      | `it-IT`            | `www.ebay.it`     |
+| `EBAY_ES`   | eBay Spain     | EUR      | `es-ES`            | `www.ebay.es`     |
 
 Crossmart does not know the eBay account before the merchant signs in. The marketplace travels
 in the signed OAuth state, and the connector names the connection after sign-in:
@@ -70,7 +74,12 @@ the connection use the marketplace's currency.
 - **Settings** (`settings.account`, validated by the connector): `marketplaceId`,
   `currencyCode`, `username`, `userId`, `businessPoliciesEnabled`, and `policies`, the
   `{ id, name }` lists of the account's fulfillment, payment and return policies on the
-  marketplace.
+  marketplace, and `listingDefaults` (below). `listingDefaults` is optional, so settings stored
+  before it existed still parse. Connecting the account again, or refreshing its policies,
+  replaces what the connector reads and keeps `listingDefaults`.
+- **Per listing:** `Listing.externalId` is the eBay listing id, each `ListingVariant.externalId`
+  is the variant's eBay SKU (`externalInventoryId` is null), and `Listing.channelCategoryId` /
+  `channelCategoryName` hold the eBay category the listing is in.
 
 ## Token refresh
 
@@ -86,18 +95,112 @@ Listing through eBay's Inventory API needs fulfillment, payment and return busin
 An account that has not opted in to business policies gets an error from the Account API
 (error `20403`, "not eligible for Business Policy"). Connecting still succeeds: the settings
 record `businessPoliciesEnabled: false` with empty lists, and the web app tells the merchant
-that business policies are off. Publishing (next phase) will require them.
+that business policies are off. The connection's Settings tab offers **Opt in to business
+policies** (`POST …/channel-connections/:id/ebay/business-policies/opt-in`), which calls the
+Account API's `opt_in` and reads the policies again. eBay can take a while to enable them, and
+merchants create the policies themselves on eBay
+([business policies](https://www.ebay.com/bp/manage)); **Refresh policies**
+(`POST …/ebay/business-policies/refresh`) reads them again. Both keep the listing defaults.
+
+## Listing defaults
+
+Every listing on a connection is sold under the merchant's **listing defaults**
+(`PUT …/channel-connections/:id/ebay/listing-defaults`, permission `channels:manage`):
+
+| Field                                                      | Meaning                                                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `fulfillmentPolicyId`, `paymentPolicyId`, `returnPolicyId` | One of the account's policies. Null uses the account's only policy of that type, when it has exactly one.     |
+| `condition`                                                | `NEW` by default; any Inventory API condition (`USED_EXCELLENT`, `FOR_PARTS_OR_NOT_WORKING`…).                |
+| `location`                                                 | Ship-from `postalCode`, `country` (ISO 3166 alpha-2) and optional `city`.                                     |
+| `merchantLocationKey`                                      | Set by Crossmart: saving a location creates the inventory location `crossmart-default` on eBay (`WAREHOUSE`). |
+
+Saving a location calls `POST /location/crossmart-default`; when it exists (409, or error
+`25803`), Crossmart updates its address with `update_location_details`, so saving twice is
+harmless. Policy ids must be among the account's stored policies. A chosen policy that later
+disappears from the account falls back to the only remaining one, or to none. The API returns
+the resolved defaults, and `readyToList` says whether every policy and the location are set.
+
+## Publishing
+
+A content job publishes a product, or revises the listing eBay already holds. Calls carry
+`Content-Language` from the marketplace. Before calling eBay, the connector checks the
+listing defaults: a connection without policies fails the listing with "Choose shipping,
+payment and return policies for this eBay connection." and one without a ship-from address
+with "Set where items ship from in this eBay connection's listing defaults." Neither is retried.
+
+1. **Category.** The listing's stored category, or eBay's top suggestion for the title
+   (`get_default_category_tree_id` once per marketplace and process, then
+   `get_category_suggestions`). An auto-picked category is saved on the listing, so updates
+   stay in it and the merchant sees it in the listing override sheet, where they can search
+   for another (`GET /products/:id/channels/:connectionId/category-suggestions?search=…`) and
+   choose it (`PUT …/category`, which queues an update). Category names are stored with their
+   ancestors: `Home & Garden > Kitchen > Mugs`.
+2. **Inventory items.** `PUT /inventory_item/{sku}` per variant: title (cut to 80 characters
+   on whole characters), description (HTML, the title when empty, at most 500,000), up to 24
+   https image URLs, `condition`, `availability.shipToLocationAvailability.quantity` (the shown
+   stock, never below 0; untracked variants list 1 unit), and `aspects`: `Brand` from the
+   vendor, plus the variant's option values (`Size: ["M"]`). A 12-digit barcode is sent as a
+   UPC, a 13-digit one as an EAN.
+3. **Groups.** A product with more than one variant is listed as one multi-variant listing
+   through `PUT /inventory_item_group/{groupKey}`, with `variantSKUs` and
+   `variesBy.specifications` built from the product's option names and values. The group key
+   is `CM` followed by the product id's 32 hex digits.
+4. **Offers.** One per SKU: `GET /offer?sku=…&marketplace_id=…` finds an existing offer, which
+   is replaced with `PUT /offer/{offerId}`; otherwise `POST /offer` creates one (`FIXED_PRICE`,
+   category, policies, `merchantLocationKey`, price in the marketplace currency). Prices arrive
+   already converted by the connection's pricing; compare-at prices are not sent.
+5. **Publish.** `POST /offer/{offerId}/publish` for one variant,
+   `POST /offer/publish_by_inventory_item_group` for a group. Publishing again revises the
+   live listing. The answer's `listingId` becomes the listing's `externalId`, and its URL is
+   `https://{site}/itm/{listingId}` (`https://sandbox.ebay.com/itm/…` in the sandbox).
+
+eBay has no hidden listings: publishing a product that is not active (or is hidden on the
+store) is refused, and updating one ends its listing (it can be published again later).
+
+### SKUs
+
+A variant keeps the SKU it was first listed with (its `ListingVariant.externalId`), so editing
+the catalog SKU never orphans the eBay item. A new variant uses its catalog SKU when eBay
+accepts it (letters, digits, `-` and `_`, at most 50 characters) and no other variant of the
+product shares it; otherwise its SKU is `CM` followed by the variant id's 32 hex digits. eBay
+SKUs are unique per seller account, so two products with the same catalog SKU would share an
+eBay item: keep SKUs unique across the catalog.
+
+### Offer ids
+
+Crossmart does not store offer ids. Updates, price changes and delisting find each offer by SKU
+with `GET /offer?sku=`. This costs one read per SKU but needs no schema change and cannot go
+stale when an offer is recreated on eBay.
+
+### Ending listings
+
+Delisting withdraws the offers and keeps the inventory items, which are cheap and are reused if
+the product is listed again: `POST /offer/{offerId}/withdraw` for one variant (only when the
+offer is live), `POST /offer/withdraw_by_inventory_item_group` for a group. The connector needs
+the listing's SKUs and product id for this, which core passes to `delist` as a
+`ListingReference` (kept on delist jobs of deleted products too).
+
+### Prices
+
+Price-only syncs use `POST /bulk_update_price_quantity`, 25 SKUs per call, with the offers found
+by SKU. A response that rejects some prices fails the sync with eBay's messages.
 
 ## API errors
 
-| eBay answers                 | Crossmart reports      |
-| ---------------------------- | ---------------------- |
-| 401                          | `credentials_rejected` |
-| 429                          | `rate_limited`         |
-| 5xx, or a body it can't read | `channel_unavailable`  |
-| Other 4xx                    | `request_rejected`     |
+| eBay answers                 | Crossmart reports      | Retried |
+| ---------------------------- | ---------------------- | ------- |
+| 401                          | `credentials_rejected` | No      |
+| 429                          | `rate_limited`         | Yes     |
+| 5xx, or a body it can't read | `channel_unavailable`  | Yes     |
+| Other 4xx                    | `request_rejected`     | No      |
 
-Messages never include tokens or response bodies.
+eBay errors look like `{ "errors": [{ "errorId", "message", "parameters" }] }`. A rejected
+request's message is built from eBay's `message` fields only (without its "A user error has
+occurred." prefix, falling back to the parameters when nothing is left), such as "eBay rejected
+the request: The item specific Department is missing. Add Department to this listing…", so the
+merchant sees which item specific to add. Messages never include tokens or whole response
+bodies. In API requests (defaults, opt-in, category suggestions), a rejection answers 422, a
+token eBay refuses 409, a rate limit 429 and an outage 502.
 
 Rate limits: eBay meters Sell API calls per app per day and publishes no per-account burst
 limit. The connector declares one per-connection bucket of 10 calls, refilled at 2 calls per
@@ -125,7 +228,12 @@ added before eBay is offered in production.
 
 ## Next phases
 
-- Publishing listings through the Inventory API (inventory items, offers, business policies).
-- Stock and price updates.
-- Orders through the Fulfillment API.
+- Stock sync (`update_inventory`) through `bulk_update_price_quantity`; today stock is sent
+  only when a listing is published or updated.
+- An item-specifics editor: today aspects come from the vendor and options, and eBay's message
+  names any required aspect that is missing.
+- Variant-specific images (`aspectsImageVariesBy`), compare-at (strikethrough) prices, and
+  moving a listing between single-variant and multi-variant shapes when variants are added or
+  removed after publishing.
+- Orders through the Fulfillment API, and notifications.
 - The marketplace account deletion notification endpoint.

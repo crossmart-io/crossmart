@@ -7,6 +7,8 @@ export type ListingJobKind = Exclude<SyncJobKind, SyncJobKind.ReconcileInventory
 export interface DeletedProductListing {
   externalId: string;
   productTitle: string;
+  /** The variants' ids on the channel; absent on jobs queued before they were kept. */
+  variantExternalIds?: string[];
 }
 
 /** Sync work for one product on one connection. Jobs for the same pair coalesce. */

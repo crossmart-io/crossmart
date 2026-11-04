@@ -58,12 +58,12 @@ export class ListingSyncScheduler implements CatalogChangeListener, OnModuleInit
     const held = await this.listings.findHeldForProducts(event.workspaceId, event.productIds);
     if (held.length === 0) return;
     await this.queue.enqueue(
-      held.map(({ connectionId, productId, externalId, productTitle }) => ({
+      held.map(({ connectionId, productId, externalId, productTitle, variantExternalIds }) => ({
         kind: SyncJobKind.Delist,
         workspaceId: event.workspaceId,
         connectionId,
         productId,
-        deleted: { externalId, productTitle },
+        deleted: { externalId, productTitle, variantExternalIds },
       })),
     );
   }

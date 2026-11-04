@@ -25,11 +25,15 @@ function setup() {
     findPairsForInventoryItems: vi
       .fn<ListingSyncRepository['findPairsForInventoryItems']>()
       .mockResolvedValue([{ connectionId: 'c1', productId: 'p2' }]),
-    findHeldForProducts: vi
-      .fn<ListingSyncRepository['findHeldForProducts']>()
-      .mockResolvedValue([
-        { connectionId: 'c1', productId: 'p1', externalId: 'gid://1', productTitle: 'Mug' },
-      ]),
+    findHeldForProducts: vi.fn<ListingSyncRepository['findHeldForProducts']>().mockResolvedValue([
+      {
+        connectionId: 'c1',
+        productId: 'p1',
+        externalId: 'gid://1',
+        productTitle: 'Mug',
+        variantExternalIds: ['gid://v1'],
+      },
+    ]),
   };
   const bus = new CatalogEventBus();
   const queue = new CapturingQueue();
@@ -118,7 +122,7 @@ describe('ListingSyncScheduler', () => {
         workspaceId: WS,
         connectionId: 'c1',
         productId: 'p1',
-        deleted: { externalId: 'gid://1', productTitle: 'Mug' },
+        deleted: { externalId: 'gid://1', productTitle: 'Mug', variantExternalIds: ['gid://v1'] },
       },
     ]);
   });

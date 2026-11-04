@@ -96,3 +96,80 @@ export const EBAY_API_RESTORE_PER_SECOND = 2;
 export const EBAY_ACCOUNT_ID_SEPARATOR = ':';
 /** Joins the account name and the site in the connection's display name. */
 export const EBAY_DISPLAY_NAME_SEPARATOR = ' · ';
+
+/** Sell Inventory API: inventory items, groups, offers and locations. */
+export const EBAY_INVENTORY_API_PATH = '/sell/inventory/v1';
+export const EBAY_INVENTORY_ITEM_PATH = `${EBAY_INVENTORY_API_PATH}/inventory_item/`;
+export const EBAY_INVENTORY_ITEM_GROUP_PATH = `${EBAY_INVENTORY_API_PATH}/inventory_item_group/`;
+export const EBAY_OFFER_PATH = `${EBAY_INVENTORY_API_PATH}/offer`;
+export const EBAY_PUBLISH_SUFFIX = '/publish';
+export const EBAY_WITHDRAW_SUFFIX = '/withdraw';
+export const EBAY_PUBLISH_GROUP_PATH = `${EBAY_OFFER_PATH}/publish_by_inventory_item_group`;
+export const EBAY_WITHDRAW_GROUP_PATH = `${EBAY_OFFER_PATH}/withdraw_by_inventory_item_group`;
+export const EBAY_BULK_PRICE_QUANTITY_PATH = `${EBAY_INVENTORY_API_PATH}/bulk_update_price_quantity`;
+export const EBAY_LOCATION_PATH = `${EBAY_INVENTORY_API_PATH}/location/`;
+export const EBAY_UPDATE_LOCATION_SUFFIX = '/update_location_details';
+export const EBAY_SKU_PARAM = 'sku';
+
+/** Account API: opting in to business policies. */
+export const EBAY_OPT_IN_PATH = '/sell/account/v1/program/opt_in';
+export const EBAY_SELLING_POLICY_PROGRAM = 'SELLING_POLICY_MANAGEMENT';
+
+/** Taxonomy API: the marketplace's category tree and suggestions in it. */
+export const EBAY_DEFAULT_CATEGORY_TREE_PATH = '/commerce/taxonomy/v1/get_default_category_tree_id';
+export const EBAY_CATEGORY_TREE_PATH = '/commerce/taxonomy/v1/category_tree/';
+export const EBAY_CATEGORY_SUGGESTIONS_SUFFIX = '/get_category_suggestions';
+export const EBAY_QUERY_PARAM = 'q';
+/** Joins a category's ancestors and its name, as eBay's site shows the path. */
+export const EBAY_CATEGORY_PATH_SEPARATOR = ' > ';
+
+export const CONTENT_LANGUAGE_HEADER = 'content-language';
+
+/** Inventory API limits, from eBay's reference. */
+export const EBAY_TITLE_MAX_LENGTH = 80;
+export const EBAY_DESCRIPTION_MAX_LENGTH = 500_000;
+export const EBAY_MAX_IMAGES = 24;
+export const EBAY_SKU_MAX_LENGTH = 50;
+export const EBAY_BULK_PRICE_MAX_SKUS = 25;
+/** Merchant SKUs eBay accepts as they are; others get one derived from the variant id. */
+export const EBAY_SKU_PATTERN = /^[A-Za-z0-9_-]{1,50}$/;
+/** Prefixes keys Crossmart derives from its own ids, so they read as Crossmart's. */
+export const EBAY_DERIVED_KEY_PREFIX = 'CM';
+export const UUID_SEPARATOR_PATTERN = /-/g;
+export const HTTPS_PROTOCOL = 'https:';
+
+/** Barcode lengths: a UPC-A has 12 digits, an EAN-13 has 13. */
+export const UPC_LENGTH = 12;
+export const EAN_LENGTH = 13;
+export const DIGITS_PATTERN = /^\d+$/;
+
+/** Stock sent for variants that do not track it; eBay needs a quantity to list. */
+export const EBAY_UNTRACKED_QUANTITY = 1;
+
+/** The aspect eBay reads the brand from. */
+export const EBAY_BRAND_ASPECT = 'Brand';
+
+/** Where items ship from: the one inventory location Crossmart creates per connection. */
+export const EBAY_MERCHANT_LOCATION_KEY = 'crossmart-default';
+export const EBAY_LOCATION_NAME = 'Crossmart ship-from location';
+
+/** A listing's page on eBay; the sandbox has one site for every marketplace. */
+export const EBAY_ITEM_PATH = '/itm/';
+export const EBAY_SANDBOX_SITE_HOST = 'sandbox.ebay.com';
+
+/** Phrases eBay prefixes its messages with, dropped from what merchants read. */
+export const EBAY_MESSAGE_NOISE = /^A user error has occurred\.\s*/i;
+/** Caps each eBay message Crossmart repeats; listing failures are capped again by core. */
+export const EBAY_MESSAGE_MAX_LENGTH = 300;
+/** The error eBay answers when the seller already opted in to a program. */
+export const EBAY_ALREADY_OPTED_IN_ERROR_IDS: ReadonlySet<number> = new Set([20409]);
+/** The error eBay answers when a location with that key exists already. */
+export const EBAY_LOCATION_EXISTS_ERROR_IDS: ReadonlySet<number> = new Set([25803]);
+
+/** Ship-from address limits: an ISO 3166 alpha-2 country, and eBay's field lengths. */
+export const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
+export const POSTAL_CODE_MAX_LENGTH = 32;
+export const CITY_MAX_LENGTH = 128;
+export const POLICY_ID_MAX_LENGTH = 64;
+/** Errors `GET /offer?sku=` answers when the SKU has no offer (or no item) yet. */
+export const EBAY_NO_OFFER_ERROR_IDS: ReadonlySet<number> = new Set([25702, 25713]);

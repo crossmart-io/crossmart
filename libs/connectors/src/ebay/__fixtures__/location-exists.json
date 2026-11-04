@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "errorId": 25803,
+      "domain": "API_INVENTORY",
+      "subdomain": "Selling",
+      "category": "REQUEST",
+      "message": "crossmart-default already exists"
+    }
+  ]
+}

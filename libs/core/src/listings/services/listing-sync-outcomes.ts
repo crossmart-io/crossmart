@@ -39,6 +39,12 @@ export class ListingSyncOutcomes {
       variants: published.variants,
       mediaDigest,
       syncedAt,
+      ...(published.category
+        ? {
+            channelCategoryId: published.category.id,
+            channelCategoryName: published.category.name,
+          }
+        : {}),
     });
     await this.connections.markSynced(listing.workspaceId, listing.connectionId, syncedAt);
     const action = listing.wasPublished

@@ -30,3 +30,12 @@ export const CONNECT_FAILURE_SCHEMA_NAME = 'ConnectFailure';
 export const EBAY_MARKETPLACE_ID_SCHEMA_NAME = 'EbayMarketplaceId';
 /** Imports of a connection's catalog, under the connection. */
 export const CHANNEL_IMPORTS_PATH = `:${CONNECTION_ID_PARAM}/imports`;
+/** eBay-only setup of a connection, under the connection. */
+export const EBAY_LISTING_DEFAULTS_PATH = `:${CONNECTION_ID_PARAM}/ebay/listing-defaults`;
+export const EBAY_POLICIES_OPT_IN_PATH = `:${CONNECTION_ID_PARAM}/ebay/business-policies/opt-in`;
+export const EBAY_POLICIES_REFRESH_PATH = `:${CONNECTION_ID_PARAM}/ebay/business-policies/refresh`;
+export const EBAY_CONDITION_SCHEMA_NAME = 'EbayCondition';
+export const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
+export const POSTAL_CODE_MAX_LENGTH = 32;
+export const CITY_MAX_LENGTH = 128;
+export const POLICY_ID_MAX_LENGTH = 64;

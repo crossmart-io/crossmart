@@ -1,5 +1,7 @@
 import type { ChannelSession } from '../auth/channel-session.js';
+import type { ChannelSettings } from '../channel-settings.js';
 import type { ExternalProduct, ExternalVariant } from './catalog.types.js';
+import type { ChannelCategory } from './taxonomy-provider.js';
 
 /**
  * A variant to publish: the channel's own variant shape, keyed by the Crossmart variant id.
@@ -22,6 +24,13 @@ export interface ListingDraft {
    * (channels re-download sent images). Publishing always sends them.
    */
   imagesChanged?: boolean;
+  /**
+   * The connection's account settings as its connector validated them, for channels whose
+   * listings need account-level choices (eBay's business policies and ship-from location).
+   */
+  accountSettings?: ChannelSettings | null;
+  /** The category the listing was put in on the channel, chosen by the merchant or earlier. */
+  category?: ChannelCategory | null;
 }
 
 /** The ids the channel gave a published listing, to store as `Listing` / `ListingVariant`. */
@@ -30,6 +39,15 @@ export interface PublishedListing {
   externalUrl: string | null;
   active: boolean;
   variants: { variantId: string; externalId: string; externalInventoryId: string | null }[];
+  /** The category the channel listed it in, when it needs one; stored for later updates. */
+  category?: ChannelCategory | null;
+}
+
+/** What a channel may need, besides the listing's id, to find a listing it published. */
+export interface ListingReference {
+  productId: string;
+  /** The variants' ids on the channel, as last published (eBay SKUs). */
+  variantExternalIds: readonly string[];
 }
 
 export interface PriceUpdate {
@@ -47,6 +65,7 @@ export interface ListingPublisher {
     externalId: string,
     draft: ListingDraft,
   ): Promise<PublishedListing>;
-  delist(session: ChannelSession, externalId: string): Promise<void>;
+  /** `reference` is always passed by Crossmart; connectors that need it reject calls without it. */
+  delist(session: ChannelSession, externalId: string, reference?: ListingReference): Promise<void>;
   updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void>;
 }
