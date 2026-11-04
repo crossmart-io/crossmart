@@ -8,8 +8,11 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
+import { DEFAULT_MAIL_FROM } from '../mail/mail.constants.js';
+import { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { Environment } from './environment.enum.js';
 import {
@@ -96,6 +99,20 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CREDENTIALS_RETIRED_MASTER_KEYS?: string;
+
+  /** How email is sent: `log` (development) or `resend`. */
+  @IsEnum(MailDriver)
+  MAIL_DRIVER: MailDriver = MailDriver.Log;
+
+  /** Resend API key with sending access. Required when `MAIL_DRIVER` is `resend`. */
+  @ValidateIf((environment: EnvironmentVariables) => environment.MAIL_DRIVER === MailDriver.Resend)
+  @IsString()
+  @MinLength(1)
+  RESEND_API_KEY?: string;
+
+  /** The sender of every email, on a domain verified in Resend. */
+  @IsString()
+  MAIL_FROM: string = DEFAULT_MAIL_FROM;
 
   /** Client ID of the Crossmart Shopify app (Shopify Dev Dashboard). */
   @IsOptional()

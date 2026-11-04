@@ -130,3 +130,5 @@ export * from './analytics/enums/sales-interval.enum.js';
 export * from './analytics/enums/sales-range.enum.js';
 export * from './analytics/services/inventory-report.service.js';
 export * from './analytics/services/sales-analytics.service.js';
+export * from './notifications/notifications.module.js';
+export * from './notifications/services/account-emails.service.js';

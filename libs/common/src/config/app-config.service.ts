@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { CORS_ORIGINS_SEPARATOR } from './config.constants.js';
 import { Environment } from './environment.enum.js';
@@ -10,6 +11,13 @@ import type { MasterKeySettings } from '../crypto/envelope/master-key-ring.js';
 export interface OAuthAppCredentials {
   clientId: string;
   clientSecret: string;
+}
+
+export interface MailSettings {
+  driver: MailDriver;
+  /** Set whenever the driver is `resend`; validation refuses to start without it. */
+  resendApiKey: string;
+  from: string;
 }
 
 /** Typed, read-only access to validated configuration. */
@@ -79,6 +87,14 @@ export class AppConfigService {
       currentKey: this.configService.get('CREDENTIALS_MASTER_KEY', { infer: true }),
       currentVersion: this.configService.get('CREDENTIALS_MASTER_KEY_VERSION', { infer: true }),
       retiredKeys: this.configService.get('CREDENTIALS_RETIRED_MASTER_KEYS', { infer: true }),
+    };
+  }
+
+  get mailSettings(): MailSettings {
+    return {
+      driver: this.configService.get('MAIL_DRIVER', { infer: true }),
+      resendApiKey: this.configService.get('RESEND_API_KEY', { infer: true }) ?? '',
+      from: this.configService.get('MAIL_FROM', { infer: true }),
     };
   }
 
