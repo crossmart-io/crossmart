@@ -14,6 +14,8 @@ export enum ShopifyScope {
   ReadLocations = 'read_locations',
   /** Puts published products on the Online Store sales channel (covers `read_publications`). */
   WritePublications = 'write_publications',
+  /** Reads orders to reserve their stock. Order data is protected customer data (level 1). */
+  ReadOrders = 'read_orders',
 }
 
 export const SHOPIFY_REQUIRED_SCOPES: readonly ShopifyScope[] = [
@@ -29,6 +31,7 @@ export const SHOPIFY_REQUIRED_SCOPES: readonly ShopifyScope[] = [
  */
 export const SHOPIFY_OPTIONAL_SCOPES = [
   { scope: ShopifyScope.WritePublications, feature: ChannelFeature.StorefrontVisibility },
+  { scope: ShopifyScope.ReadOrders, feature: ChannelFeature.OrderSync },
 ] as const satisfies readonly OptionalScope[];
 /** What the install asks for: the required scopes, then the optional ones. */
 export const SHOPIFY_REQUESTED_SCOPES: readonly ShopifyScope[] = [
@@ -89,7 +92,17 @@ export enum ShopifyWebhookTopic {
   CustomersDataRequest = 'customers/data_request',
   CustomersRedact = 'customers/redact',
   ShopRedact = 'shop/redact',
+  OrdersCreate = 'orders/create',
+  OrdersUpdated = 'orders/updated',
+  OrdersCancelled = 'orders/cancelled',
 }
+
+/** Orders read per page when polling; each carries up to `SHOPIFY_ORDER_LINES_PAGE_SIZE` lines. */
+export const SHOPIFY_ORDERS_PAGE_SIZE = 25;
+/** Lines read per order. Orders with more are rare; their extra lines are not read yet. */
+export const SHOPIFY_ORDER_LINES_PAGE_SIZE = 100;
+/** The search syntax `orders(query:)` filters by update time with. */
+export const SHOPIFY_ORDERS_UPDATED_SINCE_FIELD = 'updated_at:>=';
 
 /** The cost bucket of a Standard plan store; the client reads the real one from responses. */
 export const SHOPIFY_GRAPHQL_BUCKET_NAME = 'admin-graphql';

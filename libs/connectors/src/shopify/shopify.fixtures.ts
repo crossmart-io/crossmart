@@ -5,6 +5,7 @@ import { ShopifyCatalogReader } from './catalog/shopify-catalog.reader.js';
 import { ShopifyAdminClient } from './graphql/shopify-admin.client.js';
 import { ShopifyInventorySync } from './inventory/shopify-inventory-sync.js';
 import { ShopifyOnlineStore } from './publish/shopify-online-store.js';
+import { ShopifyOrderSource } from './orders/shopify-order-source.js';
 import { ShopifyLocations } from './inventory/shopify-locations.js';
 import { ShopifyOAuthClient } from './oauth/shopify-oauth.client.js';
 import { ShopifyListingPublisher } from './publish/shopify-listing-publisher.js';
@@ -48,6 +49,7 @@ export function createShopifyTestKit(
       new ShopifyCatalogReader(admin),
       new ShopifyListingPublisher(admin, locations, new ShopifyOnlineStore(admin)),
       new ShopifyInventorySync(admin, locations),
+      new ShopifyOrderSource(admin),
     ),
   );
   return { http, sleeper, oauth, admin, connector };

@@ -28,7 +28,7 @@ describe('ShopifyOAuthClient', () => {
     expect(Object.fromEntries(url.searchParams)).toEqual({
       client_id: TEST_CLIENT_ID,
       scope:
-        'read_products,write_products,read_inventory,write_inventory,read_locations,write_publications',
+        'read_products,write_products,read_inventory,write_inventory,read_locations,write_publications,read_orders',
       redirect_uri: 'http://localhost:3004/api/v1/channels/shopify/oauth/callback',
       state: 'signed-state',
     });

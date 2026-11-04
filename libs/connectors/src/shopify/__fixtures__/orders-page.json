@@ -1,0 +1,47 @@
+{
+  "data": {
+    "orders": {
+      "nodes": [
+        {
+          "id": "gid://shopify/Order/5001",
+          "name": "#1001",
+          "createdAt": "2026-11-04T08:00:00Z",
+          "updatedAt": "2026-11-04T08:05:00Z",
+          "cancelledAt": null,
+          "currencyCode": "USD",
+          "currentTotalPriceSet": { "shopMoney": { "amount": "130.00" } },
+          "lineItems": {
+            "nodes": [
+              {
+                "id": "gid://shopify/LineItem/6001",
+                "sku": "SHIRT-S",
+                "name": "Linen shirt - S",
+                "currentQuantity": 2,
+                "unfulfilledQuantity": 1,
+                "variant": { "id": "gid://shopify/ProductVariant/8001" },
+                "originalUnitPriceSet": { "shopMoney": { "amount": "45.00" } }
+              },
+              {
+                "id": "gid://shopify/LineItem/6002",
+                "sku": "",
+                "name": "Gift wrap",
+                "currentQuantity": 1,
+                "unfulfilledQuantity": 1,
+                "variant": null,
+                "originalUnitPriceSet": { "shopMoney": { "amount": "40.00" } }
+              }
+            ]
+          }
+        }
+      ],
+      "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 60,
+      "actualQueryCost": 12,
+      "throttleStatus": { "maximumAvailable": 2000, "currentlyAvailable": 1988, "restoreRate": 100 }
+    }
+  }
+}

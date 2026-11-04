@@ -8,6 +8,8 @@ export enum ChannelWebhookKind {
   CustomerRedactionRequested = 'customer_redaction_requested',
   /** All data about the account must be erased, some time after it disconnected. */
   AccountRedactionRequested = 'account_redaction_requested',
+  /** An order was placed, edited, paid, fulfilled or cancelled; `resourceId` names it. */
+  OrderChanged = 'order_changed',
   /** A topic this version of Crossmart does not handle; acknowledged and ignored. */
   Unhandled = 'unhandled',
 }
@@ -28,6 +30,8 @@ export interface ChannelWebhookEvent {
   deliveryId: string | null;
   /** The parsed body; shape depends on the topic. */
   payload: unknown;
+  /** The channel's id of what the event is about (the order, for `OrderChanged`). */
+  resourceId?: string;
 }
 
 /** `ChannelCapability.ReceiveWebhooks`: verifies and parses webhook deliveries. */
