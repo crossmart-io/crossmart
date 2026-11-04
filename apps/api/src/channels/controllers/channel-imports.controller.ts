@@ -19,7 +19,7 @@ export class ChannelImportsController {
 
   @Post(CHANNEL_IMPORTS_PATH)
   @HttpCode(HttpStatus.ACCEPTED)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({
     summary: 'Import the connected channel’s catalog',
     description:

@@ -13,7 +13,7 @@ export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewOrders)
   @ApiOperation({
     summary: 'Orders from every connected store, newest first',
     description: 'Orders hold no buyer details. Each line shows the stock it holds.',
@@ -27,7 +27,7 @@ export class OrdersController {
   }
 
   @Get(ORDER_PATH)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewOrders)
   @ApiOperation({ summary: 'One order with its lines and the stock each holds' })
   @ApiOkResponse({ type: OrderDetailDto })
   async get(

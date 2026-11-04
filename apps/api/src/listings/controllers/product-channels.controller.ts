@@ -33,7 +33,7 @@ export class ProductChannelsController {
   ) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({
     summary: 'The product on each connected channel',
     description:
@@ -49,7 +49,7 @@ export class ProductChannelsController {
   }
 
   @Post(PRODUCT_CHANNEL_PATH)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
     summary: 'Add the product to a store',
     description:
@@ -66,7 +66,7 @@ export class ProductChannelsController {
   }
 
   @Delete(PRODUCT_CHANNEL_PATH)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
     summary: 'Remove the product from a store',
     description: 'The product is delisted there at once, and the automatic rule leaves it out.',
@@ -81,7 +81,7 @@ export class ProductChannelsController {
   }
 
   @Put(OVERRIDE_PATH)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
     summary: 'Override the product on one channel',
     description:
@@ -99,7 +99,7 @@ export class ProductChannelsController {
   }
 
   @Delete(OVERRIDE_PATH)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({ summary: 'Remove the product’s overrides on one channel' })
   @ApiOkResponse({ type: ProductChannelDto })
   async clearOverride(

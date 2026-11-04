@@ -12,7 +12,7 @@ export class CatalogStatsController {
   constructor(private readonly products: ProductsService) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewProducts)
   @ApiOperation({ summary: 'Product and stock counts for the workspace overview' })
   @ApiOkResponse({ type: CatalogStatsDto })
   async get(

@@ -47,7 +47,7 @@ export class ChannelSelectionController {
   ) {}
 
   @Put(SELECTION_PATH)
-  @RequirePermission(WorkspacePermission.ManageWorkspace)
+  @RequirePermission(WorkspacePermission.ManageChannels)
   @ApiOperation({
     summary: 'Set the store’s automatic rule',
     description:
@@ -69,7 +69,7 @@ export class ChannelSelectionController {
 
   @Post(SELECTION_PREVIEW_PATH)
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({ summary: 'The products a selection lists, with counts, saved or not' })
   @ApiOkResponse({ type: SelectionPreviewDto })
   async previewSelection(

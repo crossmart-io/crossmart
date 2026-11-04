@@ -32,7 +32,7 @@ const IMAGE_FORM_SCHEMA = {
 
 @ApiTags(CATALOG_TAG)
 @Controller(PRODUCT_IMAGES_ROUTE)
-@RequirePermission(WorkspacePermission.EditCatalog)
+@RequirePermission(WorkspacePermission.EditProducts)
 export class ProductImagesController {
   constructor(private readonly media: MediaService) {}
 

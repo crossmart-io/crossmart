@@ -50,7 +50,7 @@ export class ChannelConnectionsController {
   ) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({ summary: 'Channel accounts connected to the workspace, in connection order' })
   @ApiOkResponse({ type: [ChannelConnectionDto] })
   async list(
@@ -62,7 +62,7 @@ export class ChannelConnectionsController {
   }
 
   @Post(AUTHORIZATIONS_PATH)
-  @RequirePermission(WorkspacePermission.ManageWorkspace)
+  @RequirePermission(WorkspacePermission.ManageChannels)
   @ApiOperation({
     summary: 'Start connecting a channel account',
     description:
@@ -81,7 +81,7 @@ export class ChannelConnectionsController {
   }
 
   @Get(`:${CONNECTION_ID_PARAM}`)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewChannels)
   @ApiOperation({ summary: 'One channel connection' })
   @ApiOkResponse({ type: ChannelConnectionDto })
   async get(
@@ -97,7 +97,7 @@ export class ChannelConnectionsController {
 
   @Post(DISCONNECT_PATH)
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.ManageWorkspace)
+  @RequirePermission(WorkspacePermission.ManageChannels)
   @ApiOperation({
     summary: 'Disconnect a channel account',
     description:

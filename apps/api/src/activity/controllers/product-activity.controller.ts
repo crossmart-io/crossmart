@@ -14,7 +14,7 @@ export class ProductActivityController {
   constructor(private readonly activity: ActivityService) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewActivity)
   @ApiOperation({
     summary: 'The history of one product, newest first',
     description: 'Includes bulk actions that changed it, and its deletion.',

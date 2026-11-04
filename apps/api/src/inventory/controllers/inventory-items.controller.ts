@@ -41,7 +41,7 @@ export class InventoryItemsController {
   ) {}
 
   @Get()
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewInventory)
   @ApiOperation({ summary: 'Stock of every variant, by product title' })
   @ApiOkResponse({ type: InventoryPageDto })
   async list(
@@ -53,7 +53,7 @@ export class InventoryItemsController {
 
   @Post(ADJUSTMENTS_PATH)
   @HttpCode(HttpStatus.OK)
-  @RequirePermission(WorkspacePermission.EditCatalog)
+  @RequirePermission(WorkspacePermission.EditInventory)
   @ApiOperation({
     summary: 'Adjust the stock on hand of a variant',
     description:
@@ -73,7 +73,7 @@ export class InventoryItemsController {
   }
 
   @Get(MOVEMENTS_PATH)
-  @RequirePermission(WorkspacePermission.ViewWorkspace)
+  @RequirePermission(WorkspacePermission.ViewInventory)
   @ApiOperation({ summary: 'Stock history of a variant, newest first' })
   @ApiOkResponse({ type: InventoryMovementPageDto })
   async history(
