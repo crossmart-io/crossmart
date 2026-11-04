@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { OrderStatus } from '@crossmart/database';
+import { OrderStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
 import { WORKSPACE_PATH } from '../mcp.constants.js';
 import { defineTool } from './api-tool.js';

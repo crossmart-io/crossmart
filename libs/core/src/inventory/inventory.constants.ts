@@ -1,4 +1,5 @@
-import { InventoryMovementReason } from '@crossmart/database';
+// The enums file alone, so the MCP server can read these constants without the database module.
+import { InventoryMovementReason } from '@crossmart/database/generated/prisma/enums.js';
 
 export const INVENTORY_PAGE_DEFAULT_LIMIT = 50;
 export const INVENTORY_PAGE_MAX_LIMIT = 100;

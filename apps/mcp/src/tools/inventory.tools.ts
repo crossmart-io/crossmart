@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { MANUAL_MOVEMENT_REASONS, StockAdjustmentMode, StockLevel } from '@crossmart/core';
+import { StockAdjustmentMode } from '@crossmart/core/inventory/enums/stock-adjustment-mode.enum.js';
+import { StockLevel } from '@crossmart/core/inventory/enums/stock-level.enum.js';
+import { MANUAL_MOVEMENT_REASONS } from '@crossmart/core/inventory/inventory.constants.js';
 import { HttpMethod } from '../api/api-call.js';
 import { NOTE_MAX_LENGTH, WORKSPACE_PATH } from '../mcp.constants.js';
 import { defineTool } from './api-tool.js';
