@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AppConfigModule, QueuesModule } from '@crossmart/common';
+import { AppConfigModule, MailModule, QueuesModule } from '@crossmart/common';
 import { DatabaseModule } from '@crossmart/database';
 import { ChannelImportWorkerModule } from './channel-import/channel-import-worker.module.js';
 import { OrdersWorkerModule } from './orders/orders-worker.module.js';
@@ -10,6 +10,8 @@ import { SyncModule } from './sync/sync.module.js';
   imports: [
     AppConfigModule,
     DatabaseModule,
+    // Domain modules the processors use can send email, such as tenancy's invitations.
+    MailModule,
     QueuesModule,
     ChannelImportWorkerModule,
     OrdersWorkerModule,
