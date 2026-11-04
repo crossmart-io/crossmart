@@ -72,6 +72,8 @@ import { ProductsService } from './services/products.service.js';
     },
   ],
   exports: [
+    ProductRepository,
+    CatalogConflictsService,
     ProductsService,
     CatalogImportService,
     ImportJobsService,

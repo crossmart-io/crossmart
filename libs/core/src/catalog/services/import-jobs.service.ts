@@ -55,6 +55,7 @@ export class ImportJobsService {
 function toCounts(outcome: ImportOutcome): ImportJobCounts {
   return {
     created: outcome.createdProducts,
+    linked: 0,
     updated: outcome.updatedProducts + outcome.updatedVariants,
     skipped: outcome.skipped.length,
     failed: outcome.failed.length,

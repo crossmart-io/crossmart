@@ -253,7 +253,7 @@ describe('Catalog imports and history (e2e)', () => {
       status: ImportJobStatus.COMPLETED,
       mode: CatalogImportMode.Inventory,
       fileName: 'stock-מלאי.csv',
-      counts: { created: 0, updated: 1, skipped: 1, failed: 2 },
+      counts: { created: 0, linked: 0, updated: 1, skipped: 1, failed: 2 },
       actor: { userName: 'Stocker', apiKeyId: null },
     });
     expect(
@@ -303,7 +303,7 @@ describe('Catalog imports and history (e2e)', () => {
       expect.objectContaining({
         mode: CatalogImportMode.Create,
         status: ImportJobStatus.COMPLETED,
-        counts: { created: 8, updated: 0, skipped: 0, failed: 0 },
+        counts: { created: 8, linked: 0, updated: 0, skipped: 0, failed: 0 },
       }),
     ]);
     expect(secondPage.body.nextCursor).toBeNull();

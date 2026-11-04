@@ -39,6 +39,11 @@ function withDetail(text: string, entry: ActivityEntry): string {
   return entry.detail ? `${text}: ${entry.detail}` : text;
 }
 
+/** The channel an event is about ("Shopify"), which channel events pass as their detail. */
+function channelOf(entry: ActivityEntry): string {
+  return entry.detail ?? 'a channel';
+}
+
 /** One entry per action, so adding an action without its wording does not compile. */
 const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.ProductCreated]: {
@@ -74,6 +79,16 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     describe: (entry) =>
       withDetail(`Set stock of ${countOf(VARIANT_NOUN, entry)}${fromFile(entry)}`, entry),
   },
+  [ActivityAction.ChannelCatalogImported]: {
+    operation: 'Channel import',
+    describe: (entry) =>
+      withDetail(
+        entry.itemCount
+          ? `Imported ${countOfProducts(entry)}${fromFile(entry)}`
+          : `Read the catalog${fromFile(entry)}`,
+        entry,
+      ),
+  },
   [ActivityAction.ProductViewCreated]: {
     operation: 'Saving a view',
     describe: (entry) => `Saved view${named(entry)}`,
@@ -93,6 +108,18 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.InventoryAdjusted]: {
     operation: 'Stock adjustment',
     describe: (entry) => withDetail(`Adjusted stock of${named(entry)}`, entry),
+  },
+  [ActivityAction.ChannelConnected]: {
+    operation: 'Connecting a channel',
+    describe: (entry) => `Connected ${channelOf(entry)}${named(entry)}`,
+  },
+  [ActivityAction.ChannelDisconnected]: {
+    operation: 'Disconnecting a channel',
+    describe: (entry) => `Disconnected ${channelOf(entry)}${named(entry)}`,
+  },
+  [ActivityAction.ChannelConnectFailed]: {
+    operation: 'Connecting a channel',
+    describe: (entry) => `Could not connect ${channelOf(entry)}${named(entry)}`,
   },
 };
 

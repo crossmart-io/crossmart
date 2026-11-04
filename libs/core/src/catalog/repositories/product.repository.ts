@@ -20,6 +20,26 @@ export interface DeletedProduct {
   title: string;
 }
 
+/** A created variant with the ids an import maps to the channel and sets stock on. */
+export interface CreatedVariant {
+  id: string;
+  position: number;
+  inventoryItemId: string | null;
+}
+
+export interface CreatedProduct {
+  id: string;
+  variants: CreatedVariant[];
+}
+
+const CREATED_PRODUCT_SELECT = {
+  id: true,
+  variants: {
+    select: { id: true, position: true, inventoryItem: { select: { id: true } } },
+    orderBy: { position: 'asc' },
+  },
+} satisfies Prisma.ProductSelect;
+
 @Injectable()
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -108,6 +128,32 @@ export class ProductRepository {
       ),
     );
     return created.map((product) => product.id);
+  }
+
+  /**
+   * Creates the products in one transaction and returns them in draft order, with their
+   * variants in position order and the stock item of each.
+   */
+  async createAllWithVariants(
+    workspaceId: string,
+    drafts: ProductDraft[],
+  ): Promise<CreatedProduct[]> {
+    const created = await this.prisma.$transaction(
+      drafts.map((draft) =>
+        this.prisma.product.create({
+          data: toProductCreateInput(workspaceId, draft),
+          select: CREATED_PRODUCT_SELECT,
+        }),
+      ),
+    );
+    return created.map((product) => ({
+      id: product.id,
+      variants: product.variants.map((variant) => ({
+        id: variant.id,
+        position: variant.position,
+        inventoryItemId: variant.inventoryItem?.id ?? null,
+      })),
+    }));
   }
 
   /** Ids of the product's variants, or null when the product is not in this workspace. */

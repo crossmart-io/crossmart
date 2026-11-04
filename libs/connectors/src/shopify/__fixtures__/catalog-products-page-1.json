@@ -1,0 +1,584 @@
+{
+  "data": {
+    "productsCount": {
+      "count": 4
+    },
+    "products": {
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "eyJsYXN0X2lkIjo5MDAzfQ=="
+      },
+      "nodes": [
+        {
+          "id": "gid://shopify/Product/9001",
+          "handle": "leather-card-holder",
+          "title": "Leather Card Holder",
+          "descriptionHtml": "<p>Leather Card Holder made by hand.</p>",
+          "vendor": "Northfield Goods",
+          "productType": "Accessories",
+          "tags": ["leather", "wallet"],
+          "status": "ACTIVE",
+          "onlineStoreUrl": "https://shop.example.com/products/leather-card-holder",
+          "hasOnlyDefaultVariant": true,
+          "options": [
+            {
+              "name": "Title",
+              "position": 1
+            }
+          ],
+          "media": {
+            "nodes": [
+              {
+                "image": {
+                  "url": "https://cdn.shopify.com/s/files/1/0001/products/card-holder.jpg",
+                  "altText": "Card holder, front"
+                }
+              },
+              {}
+            ]
+          },
+          "variants": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "id": "gid://shopify/ProductVariant/8001",
+                "sku": "NF-LCH-01",
+                "barcode": "0123456789012",
+                "price": "39.00",
+                "compareAtPrice": null,
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Title",
+                    "value": "Default Title"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8501",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": {
+                    "amount": "12.50"
+                  },
+                  "measurement": {
+                    "weight": {
+                      "unit": "KILOGRAMS",
+                      "value": 0.04
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 14
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "gid://shopify/Product/9002",
+          "handle": "canvas-tote",
+          "title": "Canvas Tote",
+          "descriptionHtml": "<p>Canvas Tote made by hand.</p>",
+          "vendor": "Northfield Goods",
+          "productType": "Bags",
+          "tags": ["canvas"],
+          "status": "ACTIVE",
+          "onlineStoreUrl": null,
+          "hasOnlyDefaultVariant": false,
+          "options": [
+            {
+              "name": "Color",
+              "position": 1
+            },
+            {
+              "name": "Size",
+              "position": 2
+            }
+          ],
+          "media": {
+            "nodes": [
+              {
+                "image": {
+                  "url": "https://cdn.shopify.com/s/files/1/0001/products/tote-black.jpg",
+                  "altText": null
+                }
+              }
+            ]
+          },
+          "variants": {
+            "pageInfo": {
+              "hasNextPage": true,
+              "endCursor": "eyJsYXN0X2lkIjo4MTA5fQ=="
+            },
+            "nodes": [
+              {
+                "id": "gid://shopify/ProductVariant/8100",
+                "sku": "NF-TOTE-BLA-S",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Black"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "S"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8600",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8101",
+                "sku": "NF-TOTE-BLA-M",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Black"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "M"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8601",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8102",
+                "sku": "NF-TOTE-BLA-L",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Black"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "L"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8602",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8103",
+                "sku": "NF-TOTE-TAN-S",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Tan"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "S"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8603",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8104",
+                "sku": "NF-TOTE-TAN-M",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Tan"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "M"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8604",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8105",
+                "sku": "NF-TOTE-TAN-L",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Tan"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "L"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8605",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8106",
+                "sku": "NF-TOTE-OLI-S",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Olive"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "S"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8606",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8107",
+                "sku": "NF-TOTE-OLI-M",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Olive"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "M"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8607",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8108",
+                "sku": "NF-TOTE-OLI-L",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Olive"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "L"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8608",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8109",
+                "sku": "NF-TOTE-NAV-S",
+                "barcode": null,
+                "price": "68.00",
+                "compareAtPrice": "80.00",
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Navy"
+                  },
+                  {
+                    "name": "Size",
+                    "value": "S"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8609",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "OUNCES",
+                      "value": 16
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": 3
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "gid://shopify/Product/9003",
+          "handle": "gift-card-sleeve",
+          "title": "Gift Card Sleeve",
+          "descriptionHtml": "<p>Gift Card Sleeve made by hand.</p>",
+          "vendor": "",
+          "productType": "",
+          "tags": [],
+          "status": "DRAFT",
+          "onlineStoreUrl": null,
+          "hasOnlyDefaultVariant": true,
+          "options": [
+            {
+              "name": "Title",
+              "position": 1
+            }
+          ],
+          "media": {
+            "nodes": [{}]
+          },
+          "variants": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "id": "gid://shopify/ProductVariant/8201",
+                "sku": null,
+                "barcode": null,
+                "price": "5.00",
+                "compareAtPrice": null,
+                "taxable": true,
+                "inventoryPolicy": "CONTINUE",
+                "selectedOptions": [
+                  {
+                    "name": "Title",
+                    "value": "Default Title"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8701",
+                  "tracked": false,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": null
+                  },
+                  "inventoryLevel": null
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 842,
+      "actualQueryCost": 61,
+      "throttleStatus": {
+        "maximumAvailable": 2000.0,
+        "currentlyAvailable": 1900,
+        "restoreRate": 100.0
+      }
+    }
+  }
+}

@@ -14,9 +14,16 @@ export enum ActivityAction {
   ProductsUpdatedByImport = 'products_updated_by_import',
   /** An inventory import: stock levels set from a file. */
   StockImported = 'stock_imported',
+  /** A channel import: products created or linked from a connected store's catalog. */
+  ChannelCatalogImported = 'channel_catalog_imported',
   ProductViewCreated = 'product_view_created',
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',
   ApiKeyRevoked = 'api_key_revoked',
   InventoryAdjusted = 'inventory_adjusted',
+  /** A channel account (a Shopify store) was connected, or connected again. */
+  ChannelConnected = 'channel_connected',
+  /** By the merchant, or by the channel when the app was uninstalled. */
+  ChannelDisconnected = 'channel_disconnected',
+  ChannelConnectFailed = 'channel_connect_failed',
 }

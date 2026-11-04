@@ -35,6 +35,11 @@ const MODE_ACTIVITY: Record<CatalogImportMode, ModeActivity> = {
     count: (outcome) => outcome.updatedVariants,
     nothingApplied: 'No stock level in the file could be set',
   },
+  [CatalogImportMode.CreateOrLink]: {
+    action: ActivityAction.ChannelCatalogImported,
+    count: (outcome) => outcome.createdProducts,
+    nothingApplied: 'No product of the store could be imported',
+  },
 };
 
 /** The event of an import, linked to its history entry. Outcome and counts are added on top. */

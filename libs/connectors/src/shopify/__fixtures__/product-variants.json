@@ -1,0 +1,103 @@
+{
+  "data": {
+    "product": {
+      "variants": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "eyJsYXN0X2lkIjo4MTExfQ=="
+        },
+        "nodes": [
+          {
+            "id": "gid://shopify/ProductVariant/8110",
+            "sku": "NF-TOTE-NAV-M",
+            "barcode": null,
+            "price": "68.00",
+            "compareAtPrice": "80.00",
+            "taxable": true,
+            "inventoryPolicy": "DENY",
+            "selectedOptions": [
+              {
+                "name": "Color",
+                "value": "Navy"
+              },
+              {
+                "name": "Size",
+                "value": "M"
+              }
+            ],
+            "inventoryItem": {
+              "id": "gid://shopify/InventoryItem/8610",
+              "tracked": true,
+              "requiresShipping": true,
+              "unitCost": null,
+              "measurement": {
+                "weight": {
+                  "unit": "OUNCES",
+                  "value": 16
+                }
+              },
+              "inventoryLevel": {
+                "quantities": [
+                  {
+                    "name": "available",
+                    "quantity": 3
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/ProductVariant/8111",
+            "sku": "NF-TOTE-NAV-L",
+            "barcode": null,
+            "price": "68.00",
+            "compareAtPrice": "80.00",
+            "taxable": true,
+            "inventoryPolicy": "DENY",
+            "selectedOptions": [
+              {
+                "name": "Color",
+                "value": "Navy"
+              },
+              {
+                "name": "Size",
+                "value": "L"
+              }
+            ],
+            "inventoryItem": {
+              "id": "gid://shopify/InventoryItem/8611",
+              "tracked": true,
+              "requiresShipping": true,
+              "unitCost": null,
+              "measurement": {
+                "weight": {
+                  "unit": "OUNCES",
+                  "value": 16
+                }
+              },
+              "inventoryLevel": {
+                "quantities": [
+                  {
+                    "name": "available",
+                    "quantity": 3
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 802,
+      "actualQueryCost": 9,
+      "throttleStatus": {
+        "maximumAvailable": 2000.0,
+        "currentlyAvailable": 1900,
+        "restoreRate": 100.0
+      }
+    }
+  }
+}

@@ -123,9 +123,10 @@ interface CatalogImporter    { importProducts(cursor): ...; }
 interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categoryId); }
 ```
 
+- **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md).
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
 - **Priority queues:** `inventory` > `orders` > `price` > `content` > `import`.
-- **Credentials:** encrypted with envelope encryption (a data key per workspace, wrapped by a master key from env/KMS). They are never logged and never returned by the API.
+- **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
 - **Feed channels:** a generic template-based feed exporter (XML/CSV/TSV), so most simple channels are configuration only.
 - A **test kit** of recorded fixtures and contract tests is required for every connector PR.
 
@@ -138,6 +139,8 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 3. Fan-out jobs are enqueued on the `inventory` priority queue for every other listing of that variant.
 4. The inventory policy (buffer, low-stock lock to the primary channel, allocation) computes the quantity per channel.
 5. If `available < 0`, an `OversellIncident` and a resolution `Suggestion` are created.
+
+**Channel catalog import:** the API records an `ImportJob` (format `shopify_api`, mode `create_or_link`) and queues it on `import`. The worker reads the catalog through the connector's `CatalogSource` page by page, links or creates products, writes listings with their variant ids, sets new stock through the ledger, and stores the cursor with each page's counts, so retries resume. See [channels/shopify.md](channels/shopify.md#catalog-import).
 
 **Reconciliation:** inventory every 15 minutes and everything else daily. The job compares each channel's state to Crossmart and corrects drift, logging what it changed.
 

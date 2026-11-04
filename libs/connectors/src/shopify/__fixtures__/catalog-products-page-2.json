@@ -1,0 +1,122 @@
+{
+  "data": {
+    "productsCount": {
+      "count": 4
+    },
+    "products": {
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "eyJsYXN0X2lkIjo5MDA0fQ=="
+      },
+      "nodes": [
+        {
+          "id": "gid://shopify/Product/9004",
+          "handle": "wool-scarf",
+          "title": "Wool Scarf",
+          "descriptionHtml": "<p>Wool Scarf made by hand.</p>",
+          "vendor": "Northfield Goods",
+          "productType": "Accessories",
+          "tags": ["wool"],
+          "status": "ARCHIVED",
+          "onlineStoreUrl": null,
+          "hasOnlyDefaultVariant": false,
+          "options": [
+            {
+              "name": "Color",
+              "position": 1
+            }
+          ],
+          "media": {
+            "nodes": [
+              {
+                "image": {
+                  "url": "https://cdn.shopify.com/s/files/1/0001/products/scarf.jpg",
+                  "altText": null
+                }
+              }
+            ]
+          },
+          "variants": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "id": "gid://shopify/ProductVariant/8301",
+                "sku": "NF-SCF-GRY",
+                "barcode": null,
+                "price": "45.00",
+                "compareAtPrice": null,
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Grey"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8801",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": {
+                      "unit": "POUNDS",
+                      "value": 0.5
+                    }
+                  },
+                  "inventoryLevel": {
+                    "quantities": [
+                      {
+                        "name": "available",
+                        "quantity": -2
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "id": "gid://shopify/ProductVariant/8302",
+                "sku": "NF-SCF-RED",
+                "barcode": null,
+                "price": "45.00",
+                "compareAtPrice": null,
+                "taxable": true,
+                "inventoryPolicy": "DENY",
+                "selectedOptions": [
+                  {
+                    "name": "Color",
+                    "value": "Red"
+                  }
+                ],
+                "inventoryItem": {
+                  "id": "gid://shopify/InventoryItem/8802",
+                  "tracked": true,
+                  "requiresShipping": true,
+                  "unitCost": null,
+                  "measurement": {
+                    "weight": null
+                  },
+                  "inventoryLevel": null
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 842,
+      "actualQueryCost": 24,
+      "throttleStatus": {
+        "maximumAvailable": 2000.0,
+        "currentlyAvailable": 1900,
+        "restoreRate": 100.0
+      }
+    }
+  }
+}

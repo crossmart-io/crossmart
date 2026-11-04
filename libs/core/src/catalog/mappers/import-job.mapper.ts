@@ -19,9 +19,12 @@ export function toImportJobSummary(record: ImportJobSummaryRecord): ImportJobSum
     mode: requireEnumValue(CatalogImportMode, record.mode),
     format: requireEnumValue(CatalogImportFormat, record.format),
     fileName: record.fileName,
+    connectionId: record.connectionId,
+    totalCount: record.totalCount,
     status: record.status,
     counts: {
       created: record.createdCount,
+      linked: record.linkedCount,
       updated: record.updatedCount,
       skipped: record.skippedCount,
       failed: record.failedCount,
