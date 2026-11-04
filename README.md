@@ -83,11 +83,22 @@ This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
 
 ## Using Crossmart from Claude, ChatGPT or Cursor
 
-Build the MCP server and register it with your client:
+Crossmart has an MCP server, so an AI agent can run the catalog with the same rules as the dashboard. Create an API key in **Settings → API keys** (an Editor key is enough for most work), then add the server to your client. See [docs/mcp.md](docs/mcp.md) for the tools and the details.
 
-```bash
-pnpm build:mcp
+**Remote** (Crossmart Cloud, or your own deployment run with `MCP_TRANSPORT=http`):
+
+```json
+{
+  "mcpServers": {
+    "crossmart": {
+      "url": "https://mcp.crossmart.io/mcp",
+      "headers": { "Authorization": "Bearer <your API key>" }
+    }
+  }
+}
 ```
+
+**Local** (stdio), after `pnpm build:mcp`:
 
 ```json
 {
@@ -95,7 +106,7 @@ pnpm build:mcp
     "crossmart": {
       "command": "node",
       "args": ["/path/to/crossmart/dist/apps/mcp/main.js"],
-      "env": { "CROSSMART_API_URL": "http://localhost:3000" }
+      "env": { "CROSSMART_API_URL": "http://localhost:3000", "CROSSMART_API_KEY": "<your API key>" }
     }
   }
 }

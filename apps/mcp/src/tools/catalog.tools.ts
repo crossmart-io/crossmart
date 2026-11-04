@@ -17,7 +17,7 @@ const VARIANT_INPUT = z.object({
   weightGrams: z.number().int().min(0).optional(),
   outOfStockPolicy: z.enum(OutOfStockPolicy).optional(),
   tracked: z.boolean().optional().describe('Whether Crossmart counts its stock (default true)'),
-  quantity: z.number().int().min(0).optional().describe('Opening stock, for new variants'),
+  quantity: z.number().int().min(0).optional().describe('Units on hand'),
 });
 
 /** A variant of a product being replaced: keep its id to keep it, omit the id to add one. */
@@ -73,7 +73,8 @@ export const CATALOG_TOOLS = [
     description:
       'Save a product as given: fields and variants left out are removed. Read it with ' +
       'get_product first, change what you need, and send the whole product back, keeping each ' +
-      'variant’s id. Stock is not changed here; use adjust_stock.',
+      'variant’s id. A changed quantity is recorded as a stock adjustment; to give a reason, ' +
+      'such as a delivery, use adjust_stock instead.',
     input: { productId: ID_INPUT, ...PRODUCT_INPUT, variants: z.array(SAVED_VARIANT_INPUT).min(1) },
     readOnly: false,
     destructive: true,
