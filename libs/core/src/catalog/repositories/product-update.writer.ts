@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InventoryMovementReason, type Prisma, PrismaService } from '@crossmart/database';
+import type { Actor } from '../../activity/entities/actor.js';
+import { toMovementActor } from '../../inventory/mappers/movement-actor.mapper.js';
 import type { ProductDraft, VariantDraft } from '../entities/product-draft.js';
 import {
   toMediaInputs,
@@ -13,6 +15,7 @@ type Transaction = Prisma.TransactionClient;
 interface CurrentStock {
   inventoryItemId: string;
   available: number;
+  reserved: number;
 }
 
 interface VariantEdit {
@@ -25,19 +28,26 @@ interface VariantEdit {
 /**
  * Replaces a product's content, variants and media in one transaction. Variants keep their
  * ids (and their listings, later) when edited; stock changes become ledger adjustments.
+ * The editor's quantity is the available stock: reserved units stay reserved. Ledger entries
+ * are credited to the editor, like manual adjustments.
  */
 @Injectable()
 export class ProductUpdateWriter {
   constructor(private readonly prisma: PrismaService) {}
 
-  async update(workspaceId: string, productId: string, draft: ProductDraft): Promise<void> {
+  async update(
+    workspaceId: string,
+    productId: string,
+    draft: ProductDraft,
+    actor: Actor,
+  ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const stock = await this.readCurrentStock(tx, productId);
       await this.removeDroppedVariants(tx, productId, draft.variants);
       for (const [position, variant] of draft.variants.entries()) {
         const current = variant.id ? stock.get(variant.id) : undefined;
         if (variant.id && current) {
-          await this.updateVariant(tx, workspaceId, {
+          await this.updateVariant(tx, workspaceId, actor, {
             variantId: variant.id,
             variant,
             position,
@@ -63,12 +73,12 @@ export class ProductUpdateWriter {
   ): Promise<Map<string, CurrentStock>> {
     const items = await tx.inventoryItem.findMany({
       where: { variant: { productId } },
-      select: { id: true, variantId: true, available: true },
+      select: { id: true, variantId: true, available: true, reserved: true },
     });
     return new Map(
       items.map((item) => [
         item.variantId,
-        { inventoryItemId: item.id, available: item.available },
+        { inventoryItemId: item.id, available: item.available, reserved: item.reserved },
       ]),
     );
   }
@@ -85,6 +95,7 @@ export class ProductUpdateWriter {
   private async updateVariant(
     tx: Transaction,
     workspaceId: string,
+    actor: Actor,
     { variantId, variant, position, current }: VariantEdit,
   ): Promise<void> {
     await tx.variant.update({ where: { id: variantId }, data: toVariantFields(variant, position) });
@@ -99,7 +110,9 @@ export class ProductUpdateWriter {
           workspaceId,
           inventoryItemId: current.inventoryItemId,
           delta,
+          quantityAfter: variant.inventory.quantity + current.reserved,
           reason: InventoryMovementReason.ADJUSTMENT,
+          ...toMovementActor(actor),
         },
       });
     }

@@ -34,4 +34,14 @@ describe('summarizeActivity', () => {
       }),
     ).toBe('Product import failed');
   });
+
+  it('describes a stock adjustment with the product, variant and change', () => {
+    expect(
+      summarizeActivity({
+        action: ActivityAction.InventoryAdjusted,
+        subject: { type: ActivitySubjectType.Product, id: 'p-1', label: 'Mug' },
+        detail: 'MUG-BLUE +5, received',
+      }),
+    ).toBe('Adjusted stock of “Mug”: MUG-BLUE +5, received');
+  });
 });
