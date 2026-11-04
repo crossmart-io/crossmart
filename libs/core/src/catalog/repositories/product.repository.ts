@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { InventoryMovementReason, type Prisma, PrismaService } from '@crossmart/database';
-import type { ProductListQuery } from '../entities/product-views.js';
-import type { MediaDraft, ProductDraft, VariantDraft } from '../entities/product-draft.js';
+import { type Prisma, PrismaService, ProductStatus } from '@crossmart/database';
+import type { ProductDraft } from '../entities/product-draft.js';
+import type { CatalogStats, ProductListQuery } from '../entities/product-views.js';
 import {
   PRODUCT_DETAIL_INCLUDE,
   PRODUCT_SUMMARY_INCLUDE,
   type ProductDetailRecord,
   type ProductSummaryRecord,
 } from './product.queries.js';
+import { toProductCreateInput } from './product-write.mapper.js';
 
 const INSENSITIVE = 'insensitive' as const;
 
@@ -33,17 +34,31 @@ export class ProductRepository {
     });
   }
 
-  async findExistingHandles(workspaceId: string, handles: string[]): Promise<Set<string>> {
+  /** Handles taken in the workspace, ignoring `exceptProductId` (the product being edited). */
+  async findExistingHandles(
+    workspaceId: string,
+    handles: string[],
+    exceptProductId?: string,
+  ): Promise<Set<string>> {
     const rows = await this.prisma.product.findMany({
-      where: { workspaceId, handle: { in: handles } },
+      where: { workspaceId, handle: { in: handles }, NOT: this.except(exceptProductId) },
       select: { handle: true },
     });
     return new Set(rows.map((row) => row.handle));
   }
 
-  async findExistingSkus(workspaceId: string, skus: string[]): Promise<Set<string>> {
+  /** SKUs taken in the workspace, ignoring the variants of `exceptProductId`. */
+  async findExistingSkus(
+    workspaceId: string,
+    skus: string[],
+    exceptProductId?: string,
+  ): Promise<Set<string>> {
     const rows = await this.prisma.variant.findMany({
-      where: { workspaceId, sku: { in: skus } },
+      where: {
+        workspaceId,
+        sku: { in: skus },
+        NOT: exceptProductId ? { productId: exceptProductId } : undefined,
+      },
       select: { sku: true },
     });
     return new Set(rows.flatMap((row) => (row.sku ? [row.sku] : [])));
@@ -51,7 +66,7 @@ export class ProductRepository {
 
   create(workspaceId: string, draft: ProductDraft): Promise<ProductDetailRecord> {
     return this.prisma.product.create({
-      data: this.toCreateInput(workspaceId, draft),
+      data: toProductCreateInput(workspaceId, draft),
       include: PRODUCT_DETAIL_INCLUDE,
     });
   }
@@ -61,11 +76,40 @@ export class ProductRepository {
     await this.prisma.$transaction(
       drafts.map((draft) =>
         this.prisma.product.create({
-          data: this.toCreateInput(workspaceId, draft),
+          data: toProductCreateInput(workspaceId, draft),
           select: { id: true },
         }),
       ),
     );
+  }
+
+  /** Ids of the product's variants, or null when the product is not in this workspace. */
+  async findVariantIds(workspaceId: string, productId: string): Promise<Set<string> | null> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+      select: { variants: { select: { id: true } } },
+    });
+    return product ? new Set(product.variants.map((variant) => variant.id)) : null;
+  }
+
+  async countStats(workspaceId: string): Promise<CatalogStats> {
+    const [byStatus, variants, outOfStockVariants] = await Promise.all([
+      this.prisma.product.groupBy({ by: ['status'], where: { workspaceId }, _count: true }),
+      this.prisma.variant.count({ where: { workspaceId } }),
+      this.prisma.inventoryItem.count({
+        where: { workspaceId, tracked: true, available: { lte: 0 } },
+      }),
+    ]);
+    const countOf = (status: ProductStatus): number =>
+      byStatus.find((group) => group.status === status)?._count ?? 0;
+    return {
+      products: byStatus.reduce((sum, group) => sum + group._count, 0),
+      activeProducts: countOf(ProductStatus.ACTIVE),
+      draftProducts: countOf(ProductStatus.DRAFT),
+      archivedProducts: countOf(ProductStatus.ARCHIVED),
+      variants,
+      outOfStockVariants,
+    };
   }
 
   /** Returns false when the product does not exist in this workspace. */
@@ -93,65 +137,7 @@ export class ProductRepository {
     };
   }
 
-  private toCreateInput(workspaceId: string, draft: ProductDraft): Prisma.ProductCreateInput {
-    return {
-      workspace: { connect: { id: workspaceId } },
-      handle: draft.handle,
-      title: draft.title,
-      descriptionHtml: draft.descriptionHtml,
-      vendor: draft.vendor,
-      productType: draft.productType,
-      tags: draft.tags,
-      status: draft.status,
-      optionNames: draft.optionNames,
-      variants: {
-        create: draft.variants.map((variant, position) =>
-          this.toVariantInput(workspaceId, variant, position),
-        ),
-      },
-      media: {
-        create: draft.media.map((media, position) =>
-          this.toMediaInput(workspaceId, media, position),
-        ),
-      },
-    };
-  }
-
-  private toVariantInput(
-    workspaceId: string,
-    variant: VariantDraft,
-    position: number,
-  ): Prisma.VariantCreateWithoutProductInput {
-    const { inventory, ...fields } = variant;
-    return {
-      ...fields,
-      workspaceId,
-      position,
-      inventoryItem: {
-        create: {
-          workspaceId,
-          tracked: inventory.tracked,
-          available: inventory.quantity,
-          movements:
-            inventory.quantity === 0
-              ? undefined
-              : {
-                  create: {
-                    workspaceId,
-                    delta: inventory.quantity,
-                    reason: InventoryMovementReason.OPENING_BALANCE,
-                  },
-                },
-        },
-      },
-    };
-  }
-
-  private toMediaInput(
-    workspaceId: string,
-    media: MediaDraft,
-    position: number,
-  ): Prisma.ProductMediaCreateWithoutProductInput {
-    return { workspaceId, url: media.url, altText: media.altText, position };
+  private except(productId: string | undefined): Prisma.ProductWhereInput | undefined {
+    return productId ? { id: productId } : undefined;
   }
 }

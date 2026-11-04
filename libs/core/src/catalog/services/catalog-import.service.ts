@@ -4,6 +4,7 @@ import type { CatalogFileParser, CatalogImportResult } from '../entities/catalog
 import type { ProductDraft } from '../entities/product-draft.js';
 import type { CatalogImportFormat } from '../enums/catalog-import-format.enum.js';
 import { ProductRepository } from '../repositories/product.repository.js';
+import { normalizeDraft } from '../rules/normalize-draft.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
 
 /**
@@ -23,7 +24,8 @@ export class CatalogImportService {
     format: CatalogImportFormat,
     content: Buffer,
   ): Promise<CatalogImportResult> {
-    const { products: drafts, issues } = this.parserFor(format).parse(content);
+    const { products, issues } = this.parserFor(format).parse(content);
+    const drafts = products.map((draft) => normalizeDraft(draft));
     const { accepted, existing, skuConflicts } = await this.conflicts.check(workspaceId, drafts);
     await this.createInBatches(workspaceId, accepted);
     return {

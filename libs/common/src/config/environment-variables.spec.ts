@@ -1,3 +1,4 @@
+import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { Environment } from './environment.enum.js';
 import { validateEnvironment } from './environment-variables.js';
 
@@ -25,6 +26,13 @@ describe('validateEnvironment', () => {
 
     expect(environment.NODE_ENV).toBe(Environment.Development);
     expect(environment.API_PORT).toBe(3000);
+    expect(environment.STORAGE_DRIVER).toBe(StorageDriver.Local);
+  });
+
+  it('rejects an unknown storage driver', () => {
+    expect(() => validateEnvironment({ ...VALID_ENVIRONMENT, STORAGE_DRIVER: 'ftp' })).toThrow(
+      /STORAGE_DRIVER/,
+    );
   });
 
   it('rejects a missing database url', () => {

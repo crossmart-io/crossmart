@@ -3,6 +3,8 @@ node_modules/
 
 # Build output
 dist/
+# Uploaded files of the local storage driver
+/storage/
 *.tsbuildinfo
 coverage/
 

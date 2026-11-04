@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AppConfigModule } from '@crossmart/common';
+import { AppConfigModule, StorageModule } from '@crossmart/common';
 import { DatabaseModule } from '@crossmart/database';
 import { AuthModule } from './auth/auth.module.js';
 import { CatalogApiModule } from './catalog/catalog.module.js';
@@ -10,6 +10,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
   imports: [
     AppConfigModule,
     DatabaseModule,
+    StorageModule,
     AuthModule,
     HealthModule,
     WorkspacesModule,

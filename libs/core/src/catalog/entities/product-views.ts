@@ -66,6 +66,16 @@ export interface ProductDetail {
   updatedAt: Date;
 }
 
+export interface CatalogStats {
+  products: number;
+  activeProducts: number;
+  draftProducts: number;
+  archivedProducts: number;
+  variants: number;
+  /** Tracked variants with nothing available. */
+  outOfStockVariants: number;
+}
+
 export interface ProductListQuery {
   search?: string;
   status?: ProductStatus;
