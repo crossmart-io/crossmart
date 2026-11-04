@@ -20,6 +20,16 @@ export enum ActivityAction {
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',
   ApiKeyRevoked = 'api_key_revoked',
+  /** Someone was invited by email; the subject is the invitation, labelled with the address. */
+  MemberInvited = 'member_invited',
+  InvitationRevoked = 'invitation_revoked',
+  /** An invitation was accepted; the actor is the new member. */
+  MemberJoined = 'member_joined',
+  /** The detail names the new role. */
+  MemberRoleChanged = 'member_role_changed',
+  MemberRemoved = 'member_removed',
+  /** A member removed themselves. */
+  MemberLeft = 'member_left',
   InventoryAdjusted = 'inventory_adjusted',
   /** A channel account (a Shopify store) was connected, or connected again. */
   ChannelConnected = 'channel_connected',

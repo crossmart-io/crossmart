@@ -46,4 +46,22 @@ export class ApiKeyRepository {
   async markUsed(apiKeyId: string, usedAt: Date): Promise<void> {
     await this.prisma.apiKey.update({ where: { id: apiKeyId }, data: { lastUsedAt: usedAt } });
   }
+
+  /** Revokes the active keys a user created here, only those with `roles` when given. */
+  async revokeCreatedBy(
+    workspaceId: string,
+    createdById: string,
+    revokedAt: Date,
+    roles?: readonly WorkspaceRole[],
+  ): Promise<void> {
+    await this.prisma.apiKey.updateMany({
+      where: {
+        workspaceId,
+        createdById,
+        revokedAt: null,
+        ...(roles ? { role: { in: [...roles] } } : {}),
+      },
+      data: { revokedAt },
+    });
+  }
 }

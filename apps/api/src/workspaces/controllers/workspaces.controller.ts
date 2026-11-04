@@ -21,9 +21,8 @@ import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { CurrentWorkspaceRole } from '../../auth/decorators/workspace-role.decorator.js';
 import { DeleteWorkspaceDto } from '../dto/delete-workspace.dto.js';
-import { WorkspaceMemberDto } from '../dto/workspace-member.dto.js';
 import { WorkspaceDto } from '../dto/workspace.dto.js';
-import { MEMBERS_ROUTE, WORKSPACE_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
+import { WORKSPACE_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
 
 @ApiTags(WORKSPACES_TAG)
 @Controller(WORKSPACE_ROUTE)
@@ -60,16 +59,5 @@ export class WorkspacesController {
     @CurrentActor() actor: Actor,
   ): Promise<void> {
     await this.deletion.deleteConfirmed(workspaceId, body.confirmName, actor);
-  }
-
-  @Get(MEMBERS_ROUTE)
-  @RequirePermission(WorkspacePermission.ViewMembers)
-  @ApiOperation({ summary: 'The members of a workspace' })
-  @ApiOkResponse({ type: [WorkspaceMemberDto] })
-  async listMembers(
-    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
-  ): Promise<WorkspaceMemberDto[]> {
-    const members = await this.workspaceAccess.listMembers(workspaceId);
-    return members.map((member) => WorkspaceMemberDto.from(member));
   }
 }

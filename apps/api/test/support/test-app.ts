@@ -10,6 +10,7 @@ export const TEST_PASSWORD = 'correct-horse-battery';
 const SET_COOKIE_HEADER = 'set-cookie';
 
 export interface SignedUpUser {
+  email: string;
   cookie: string;
   workspaceId: string;
 }
@@ -30,13 +31,14 @@ export async function createTestApp(
 
 /** Signs up a fresh user and returns their session cookie and first workspace. */
 export async function signUp(app: INestApplication<App>, name: string): Promise<SignedUpUser> {
+  const email = `${randomUUID()}@example.com`;
   const signUpResponse = await request(app.getHttpServer())
     .post('/api/auth/sign-up/email')
-    .send({ name, email: `${randomUUID()}@example.com`, password: TEST_PASSWORD });
+    .send({ name, email, password: TEST_PASSWORD });
   expect(signUpResponse.status).toBe(HttpStatus.OK);
   const cookie = [signUpResponse.headers[SET_COOKIE_HEADER]].flat().join('; ');
 
   const meResponse = await request(app.getHttpServer()).get('/api/v1/me').set('Cookie', cookie);
   expect(meResponse.status).toBe(HttpStatus.OK);
-  return { cookie, workspaceId: meResponse.body.workspaces[0].id };
+  return { email, cookie, workspaceId: meResponse.body.workspaces[0].id };
 }

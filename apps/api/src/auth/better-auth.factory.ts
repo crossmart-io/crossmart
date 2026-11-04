@@ -6,6 +6,7 @@ import type { PrismaService } from '@crossmart/database';
 import {
   AUTH_APP_NAME,
   AUTH_BASE_PATH,
+  CLIENT_IP_HEADERS,
   MIN_PASSWORD_LENGTH,
   PASSWORD_RESET_TTL_SECONDS,
 } from './auth.constants.js';
@@ -59,7 +60,10 @@ export function createBetterAuth({
       sendVerificationEmail: ({ user, url }) =>
         Promise.resolve(accountEmails.sendEmailVerification(toInput(user, url))),
     },
-    advanced: { database: { generateId: 'uuid' } },
+    advanced: {
+      database: { generateId: 'uuid' },
+      ipAddress: { ipAddressHeaders: CLIENT_IP_HEADERS },
+    },
     databaseHooks: { user: { create: { after: onUserCreated } } },
   });
 }

@@ -13,6 +13,11 @@ export class WorkspaceDto {
   @ApiProperty()
   name: string;
 
+  @ApiProperty({
+    description: 'The name to show: the organization name while the workspace is named Default',
+  })
+  displayName: string;
+
   @ApiProperty()
   slug: string;
 
