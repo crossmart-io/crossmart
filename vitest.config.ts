@@ -3,10 +3,14 @@ import { defineConfig } from 'vitest/config';
 
 const WORKSPACE_LIBRARIES = ['common', 'connectors', 'core', 'database'];
 
-const libraryAliases = WORKSPACE_LIBRARIES.map((library) => ({
-  find: `@crossmart/${library}`,
-  replacement: fileURLToPath(new URL(`./libs/${library}/src/index.ts`, import.meta.url)),
-}));
+const librarySource = (library: string): string =>
+  fileURLToPath(new URL(`./libs/${library}/src/`, import.meta.url));
+
+/** `@crossmart/<library>` is its index, and `@crossmart/<library>/<path>` a file in it (as in tsconfig). */
+const libraryAliases = WORKSPACE_LIBRARIES.flatMap((library) => [
+  { find: new RegExp(`^@crossmart/${library}$`), replacement: `${librarySource(library)}index.ts` },
+  { find: new RegExp(`^@crossmart/${library}/(.*)$`), replacement: `${librarySource(library)}$1` },
+]);
 
 /** Shared by unit and e2e runs. NestJS relies on legacy decorators and their emitted metadata. */
 export const sharedConfig = defineConfig({
