@@ -16,6 +16,7 @@ export const API_KEY_ASSIGNABLE_ROLES: readonly WorkspaceRole[] = [
   WorkspaceRole.EDITOR,
   WorkspaceRole.APPROVER,
   WorkspaceRole.VIEWER,
+  WorkspaceRole.CUSTOM,
 ];
 
 /** Roles as people read them, in emails. */
@@ -25,6 +26,7 @@ export const WORKSPACE_ROLE_NAMES: Readonly<Record<WorkspaceRole, string>> = {
   [WorkspaceRole.EDITOR]: 'Editor',
   [WorkspaceRole.APPROVER]: 'Approver',
   [WorkspaceRole.VIEWER]: 'Viewer',
+  [WorkspaceRole.CUSTOM]: 'Custom',
 };
 
 /** How long an invitation link works. Stated in the email. */
@@ -37,3 +39,8 @@ export const MAX_PENDING_INVITATIONS = 50;
 /** The web app page an invitation link opens, with the token in the query. */
 export const INVITATION_ACCEPT_PATH = '/invitations/accept';
 export const INVITATION_TOKEN_QUERY = 'token';
+
+export const CUSTOM_ROLE_NAME_MAX_LENGTH = 60;
+export const CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH = 200;
+/** Enough for real teams, and a bound on what one workspace stores. */
+export const MAX_CUSTOM_ROLES = 30;

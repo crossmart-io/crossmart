@@ -1,32 +1,46 @@
 import { Injectable } from '@nestjs/common';
 import { type ApiKey, PrismaService, type WorkspaceRole } from '@crossmart/database';
+import type { StoredCustomRole } from '../entities/role-assignment.js';
+import { CUSTOM_ROLE_SELECT } from './custom-role.repository.js';
 
 export interface ApiKeyRecord {
   workspaceId: string;
   createdById: string;
   name: string;
   role: WorkspaceRole;
+  customRoleId: string | null;
   prefix: string;
   hash: string;
   expiresAt?: Date;
 }
 
+/** A key with the custom role it may hold, for resolving its permissions. */
+export type ApiKeyWithRole = ApiKey & { customRole: StoredCustomRole | null };
+
 @Injectable()
 export class ApiKeyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(record: ApiKeyRecord): Promise<ApiKey> {
-    return this.prisma.apiKey.create({ data: record });
+  create(record: ApiKeyRecord): Promise<ApiKeyWithRole> {
+    return this.prisma.apiKey.create({ data: record, include: CUSTOM_ROLE_SELECT });
   }
 
-  findByHash(hash: string): Promise<ApiKey | null> {
-    return this.prisma.apiKey.findUnique({ where: { hash } });
+  findByHash(hash: string): Promise<ApiKeyWithRole | null> {
+    return this.prisma.apiKey.findUnique({ where: { hash }, include: CUSTOM_ROLE_SELECT });
   }
 
-  listActive(workspaceId: string): Promise<ApiKey[]> {
+  listActive(workspaceId: string): Promise<ApiKeyWithRole[]> {
     return this.prisma.apiKey.findMany({
       where: { workspaceId, revokedAt: null },
+      include: CUSTOM_ROLE_SELECT,
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  listActiveCreatedBy(workspaceId: string, createdById: string): Promise<ApiKeyWithRole[]> {
+    return this.prisma.apiKey.findMany({
+      where: { workspaceId, createdById, revokedAt: null },
+      include: CUSTOM_ROLE_SELECT,
     });
   }
 
@@ -43,25 +57,15 @@ export class ApiKeyRepository {
     return count > 0 ? apiKey : null;
   }
 
-  async markUsed(apiKeyId: string, usedAt: Date): Promise<void> {
-    await this.prisma.apiKey.update({ where: { id: apiKeyId }, data: { lastUsedAt: usedAt } });
-  }
-
-  /** Revokes the active keys a user created here, only those with `roles` when given. */
-  async revokeCreatedBy(
-    workspaceId: string,
-    createdById: string,
-    revokedAt: Date,
-    roles?: readonly WorkspaceRole[],
-  ): Promise<void> {
+  async revokeMany(apiKeyIds: readonly string[], revokedAt: Date): Promise<void> {
+    if (apiKeyIds.length === 0) return;
     await this.prisma.apiKey.updateMany({
-      where: {
-        workspaceId,
-        createdById,
-        revokedAt: null,
-        ...(roles ? { role: { in: [...roles] } } : {}),
-      },
+      where: { id: { in: [...apiKeyIds] }, revokedAt: null },
       data: { revokedAt },
     });
+  }
+
+  async markUsed(apiKeyId: string, usedAt: Date): Promise<void> {
+    await this.prisma.apiKey.update({ where: { id: apiKeyId }, data: { lastUsedAt: usedAt } });
   }
 }

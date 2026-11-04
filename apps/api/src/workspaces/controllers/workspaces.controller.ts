@@ -11,15 +11,15 @@ import {
 import { ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type Actor,
+  type ResolvedRole,
   WorkspaceAccessService,
   WorkspaceDeletionService,
   WorkspacePermission,
 } from '@crossmart/core';
-import type { WorkspaceRole } from '@crossmart/database';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
-import { CurrentWorkspaceRole } from '../../auth/decorators/workspace-role.decorator.js';
+import { CurrentWorkspaceAccess } from '../../auth/decorators/workspace-access.decorator.js';
 import { DeleteWorkspaceDto } from '../dto/delete-workspace.dto.js';
 import { WorkspaceDto } from '../dto/workspace.dto.js';
 import { WORKSPACE_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
@@ -38,9 +38,9 @@ export class WorkspacesController {
   @ApiOkResponse({ type: WorkspaceDto })
   async getWorkspace(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
-    @CurrentWorkspaceRole() role: WorkspaceRole,
+    @CurrentWorkspaceAccess() access: ResolvedRole,
   ): Promise<WorkspaceDto> {
-    return WorkspaceDto.from(await this.workspaceAccess.getWorkspace(workspaceId, role));
+    return WorkspaceDto.from(await this.workspaceAccess.getWorkspace(workspaceId, access));
   }
 
   @Delete()

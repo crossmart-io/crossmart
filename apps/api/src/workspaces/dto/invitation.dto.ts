@@ -6,6 +6,7 @@ import {
   INVITATION_TOKEN_MAX_LENGTH,
   WORKSPACE_ROLE_SCHEMA_NAME,
 } from '../workspaces.constants.js';
+import { CUSTOM_ROLE_PROPERTY, CustomRoleRefDto } from './role-assignment.dto.js';
 
 export class InvitationDto {
   @ApiProperty({ format: 'uuid' })
@@ -16,6 +17,9 @@ export class InvitationDto {
 
   @ApiProperty({ enum: WorkspaceRole, enumName: WORKSPACE_ROLE_SCHEMA_NAME })
   role: WorkspaceRole;
+
+  @ApiProperty(CUSTOM_ROLE_PROPERTY)
+  customRole: CustomRoleRefDto | null;
 
   @ApiProperty()
   invitedByName: string;
@@ -52,6 +56,9 @@ export class InvitationPreviewDto {
 
   @ApiProperty({ enum: WorkspaceRole, enumName: WORKSPACE_ROLE_SCHEMA_NAME })
   role: WorkspaceRole;
+
+  @ApiProperty({ example: 'Editor', description: 'The role as people read it' })
+  roleName: string;
 
   @ApiProperty()
   expiresAt: Date;

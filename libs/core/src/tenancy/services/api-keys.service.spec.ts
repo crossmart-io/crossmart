@@ -1,18 +1,20 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { hashSecret } from '@crossmart/common';
-import { type ApiKey, WorkspaceRole } from '@crossmart/database';
+import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
-import type { ApiKeyRepository } from '../repositories/api-key.repository.js';
+import type { ApiKeyRepository, ApiKeyWithRole } from '../repositories/api-key.repository.js';
+import { builtInPermissions } from '../permissions/role-permissions.js';
+import { fakeRoleResolver, managerWith } from '../testing/role-fixtures.js';
 import { API_KEY_TOKEN_PREFIX } from '../tenancy.constants.js';
 import { ApiKeysService } from './api-keys.service.js';
 
 const NOW = new Date('2026-11-01T12:00:00Z');
-const ADMIN = { userId: 'user-1', role: WorkspaceRole.ADMIN };
+const ADMIN = managerWith(WorkspaceRole.ADMIN);
 const ACTOR = Actor.user('user-1');
 
-function storedKey(overrides: Partial<ApiKey> = {}): ApiKey {
+function storedKey(overrides: Partial<ApiKeyWithRole> = {}): ApiKeyWithRole {
   return {
     id: 'key-1',
     workspaceId: 'ws-1',
@@ -20,6 +22,8 @@ function storedKey(overrides: Partial<ApiKey> = {}): ApiKey {
     name: 'MCP',
     role: WorkspaceRole.EDITOR,
     prefix: 'cm_abcdefg',
+    customRoleId: null,
+    customRole: null,
     hash: 'hash',
     lastUsedAt: null,
     expiresAt: null,
@@ -38,7 +42,11 @@ function createService() {
     markUsed: vi.fn(),
   };
   const activity = new InMemoryActivityRecorder();
-  const service = new ApiKeysService(repository as unknown as ApiKeyRepository, activity);
+  const service = new ApiKeysService(
+    repository as unknown as ApiKeyRepository,
+    fakeRoleResolver(),
+    activity,
+  );
   return { service, repository, activity };
 }
 
@@ -67,7 +75,7 @@ describe('ApiKeysService.issue', () => {
 
   it('never issues an owner key', async () => {
     const { service } = createService();
-    const owner = { userId: 'user-1', role: WorkspaceRole.OWNER };
+    const owner = managerWith(WorkspaceRole.OWNER);
 
     await expect(
       service.issue('ws-1', owner, { name: 'root', role: WorkspaceRole.OWNER }, ACTOR),
@@ -76,7 +84,7 @@ describe('ApiKeysService.issue', () => {
 
   it('never issues a key with more access than its creator', async () => {
     const { service } = createService();
-    const editor = { userId: 'user-2', role: WorkspaceRole.EDITOR };
+    const editor = managerWith(WorkspaceRole.EDITOR, 'user-2');
 
     await expect(
       service.issue('ws-1', editor, { name: 'approve', role: WorkspaceRole.APPROVER }, ACTOR),
@@ -95,6 +103,8 @@ describe('ApiKeysService.authenticate', () => {
       apiKeyId: 'key-1',
       workspaceId: 'ws-1',
       role: WorkspaceRole.EDITOR,
+      customRole: null,
+      permissions: builtInPermissions(WorkspaceRole.EDITOR),
       createdById: 'user-1',
     });
     expect(repository.markUsed).toHaveBeenCalledWith('key-1', NOW);

@@ -75,7 +75,7 @@ export class MembersController {
     @Body() body: UpdateMemberRoleDto,
     @CurrentManager() { manager, actor }: ActingManager,
   ): Promise<WorkspaceMemberDto> {
-    const change = { userId, role: body.role };
+    const change = { userId, role: body.role, customRoleId: body.customRoleId };
     return WorkspaceMemberDto.from(
       await this.membership.changeRole(workspaceId, manager, change, actor),
     );

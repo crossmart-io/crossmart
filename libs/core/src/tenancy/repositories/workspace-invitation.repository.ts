@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService, type WorkspaceRole } from '@crossmart/database';
-import type { InvitationPreview, InvitationSummary } from '../entities/workspace-invitation.js';
+import type { StoredCustomRole } from '../entities/role-assignment.js';
+import type { InvitationSummary } from '../entities/workspace-invitation.js';
+import { resolveRole } from '../permissions/role-permissions.js';
 import { workspaceDisplayName } from '../rules/workspace-display-name.js';
+import { CUSTOM_ROLE_SELECT } from './custom-role.repository.js';
 
 export interface InvitationRecord {
   workspaceId: string;
   email: string;
   role: WorkspaceRole;
+  customRoleId: string | null;
   tokenHash: string;
   invitedById: string;
   expiresAt: Date;
@@ -17,13 +21,32 @@ export interface CreatedInvitation extends InvitationSummary {
   workspaceName: string;
 }
 
-/** A pending invitation found by its link, with what accepting it needs. */
-export interface PendingInvitation extends InvitationPreview {
+/** A pending invitation found by its link, with what showing and accepting it needs. */
+export interface PendingInvitation {
   id: string;
   workspaceId: string;
+  workspaceName: string;
+  inviterName: string;
+  email: string;
+  role: WorkspaceRole;
+  customRole: StoredCustomRole | null;
+  expiresAt: Date;
 }
 
-const INVITER_NAME = { invitedBy: { select: { name: true } } } as const;
+interface InvitationRow {
+  id: string;
+  email: string;
+  role: WorkspaceRole;
+  customRole: StoredCustomRole | null;
+  expiresAt: Date;
+  createdAt: Date;
+  invitedBy: { name: string };
+}
+
+const INVITATION_DETAILS = {
+  invitedBy: { select: { name: true } },
+  ...CUSTOM_ROLE_SELECT,
+} as const;
 const WORKSPACE_NAMES = {
   workspace: { select: { name: true, organization: { select: { name: true } } } },
 } as const;
@@ -45,7 +68,7 @@ export class WorkspaceInvitationRepository {
       }),
       this.prisma.workspaceInvitation.create({
         data: record,
-        include: { ...INVITER_NAME, ...WORKSPACE_NAMES },
+        include: { ...INVITATION_DETAILS, ...WORKSPACE_NAMES },
       }),
     ]);
     return { ...this.toSummary(invitation), workspaceName: displayNameOf(invitation.workspace) };
@@ -55,10 +78,17 @@ export class WorkspaceInvitationRepository {
     return this.prisma.workspaceInvitation.count({ where: this.pendingWhere(workspaceId, now) });
   }
 
+  async hasMember(workspaceId: string, email: string): Promise<boolean> {
+    const count = await this.prisma.workspaceMember.count({
+      where: { workspaceId, user: { email: { equals: email, mode: 'insensitive' } } },
+    });
+    return count > 0;
+  }
+
   async listPending(workspaceId: string, now: Date): Promise<InvitationSummary[]> {
     const invitations = await this.prisma.workspaceInvitation.findMany({
       where: this.pendingWhere(workspaceId, now),
-      include: INVITER_NAME,
+      include: INVITATION_DETAILS,
       orderBy: { createdAt: 'desc' },
     });
     return invitations.map((invitation) => this.toSummary(invitation));
@@ -82,7 +112,7 @@ export class WorkspaceInvitationRepository {
   async findPendingByTokenHash(tokenHash: string, now: Date): Promise<PendingInvitation | null> {
     const invitation = await this.prisma.workspaceInvitation.findFirst({
       where: { tokenHash, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
-      include: { ...INVITER_NAME, ...WORKSPACE_NAMES },
+      include: { ...INVITATION_DETAILS, ...WORKSPACE_NAMES },
     });
     if (!invitation) return null;
     return {
@@ -92,6 +122,7 @@ export class WorkspaceInvitationRepository {
       inviterName: invitation.invitedBy.name,
       email: invitation.email,
       role: invitation.role,
+      customRole: invitation.customRole,
       expiresAt: invitation.expiresAt,
     };
   }
@@ -107,10 +138,13 @@ export class WorkspaceInvitationRepository {
         data: { acceptedAt: now },
       });
       if (count === 0) return false;
-      await transaction.workspaceMember.createMany({
-        data: [{ workspaceId: invitation.workspaceId, userId, role: invitation.role }],
-        skipDuplicates: true,
-      });
+      const membership = {
+        workspaceId: invitation.workspaceId,
+        userId,
+        role: invitation.role,
+        customRoleId: invitation.customRole?.id ?? null,
+      };
+      await transaction.workspaceMember.createMany({ data: [membership], skipDuplicates: true });
       return true;
     });
   }
@@ -122,15 +156,17 @@ export class WorkspaceInvitationRepository {
     return { workspaceId, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } };
   }
 
-  private toSummary(invitation: {
-    id: string;
-    email: string;
-    role: WorkspaceRole;
-    expiresAt: Date;
-    createdAt: Date;
-    invitedBy: { name: string };
-  }): InvitationSummary {
+  private toSummary(invitation: InvitationRow): InvitationSummary {
     const { id, email, role, expiresAt, createdAt } = invitation;
-    return { id, email, role, invitedByName: invitation.invitedBy.name, expiresAt, createdAt };
+    const { customRole } = resolveRole(role, invitation.customRole);
+    return {
+      id,
+      email,
+      role,
+      customRole,
+      invitedByName: invitation.invitedBy.name,
+      expiresAt,
+      createdAt,
+    };
   }
 }

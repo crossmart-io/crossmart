@@ -134,6 +134,18 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Leaving the workspace',
     describe: (entry) => `${entry.subject?.label ?? 'A member'} left the workspace`,
   },
+  [ActivityAction.CustomRoleCreated]: {
+    operation: 'Creating a role',
+    describe: (entry) => `Created the role${named(entry)}`,
+  },
+  [ActivityAction.CustomRoleUpdated]: {
+    operation: 'Changing a role',
+    describe: (entry) => `Changed the role${named(entry)}`,
+  },
+  [ActivityAction.CustomRoleDeleted]: {
+    operation: 'Deleting a role',
+    describe: (entry) => `Deleted the role${named(entry)}`,
+  },
   [ActivityAction.InventoryAdjusted]: {
     operation: 'Stock adjustment',
     describe: (entry) => withDetail(`Adjusted stock of${named(entry)}`, entry),

@@ -1,7 +1,7 @@
-import type { WorkspaceRole } from '@crossmart/database';
+import type { ResolvedRole } from './role-assignment.js';
 
-/** A workspace as seen by one member: the workspace plus that member's role in it. */
-export interface WorkspaceAccess {
+/** A workspace as seen by one member: the workspace plus that member's role and permissions. */
+export interface WorkspaceAccess extends ResolvedRole {
   id: string;
   organizationId: string;
   name: string;
@@ -10,13 +10,11 @@ export interface WorkspaceAccess {
   slug: string;
   /** ISO 4217 code of the catalog's prices. */
   currency: string;
-  role: WorkspaceRole;
 }
 
-export interface WorkspaceMemberProfile {
+export interface WorkspaceMemberProfile extends ResolvedRole {
   userId: string;
   name: string;
   email: string;
-  role: WorkspaceRole;
   joinedAt: Date;
 }

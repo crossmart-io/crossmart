@@ -20,7 +20,7 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import {
-  assertRoleHasPermission,
+  assertHasPermission,
   CatalogImportService,
   IMPORT_FILE_NAME_MAX_LENGTH,
   IMPORT_MAX_FILE_BYTES,
@@ -98,7 +98,7 @@ export class ProductImportsController {
     @CurrentManager() { manager, actor }: ActingManager,
   ): Promise<CatalogImportResultDto> {
     // The mode is in the multipart body, which is parsed after the route guard runs.
-    assertRoleHasPermission(manager.role, IMPORT_MODE_PERMISSIONS[body.mode]);
+    assertHasPermission(manager.permissions, IMPORT_MODE_PERMISSIONS[body.mode]);
     const result = await this.catalogImport.importFile(workspaceId, {
       mode: body.mode,
       format: body.format,

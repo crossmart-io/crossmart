@@ -1,23 +1,22 @@
-import type { WorkspaceRole } from '@crossmart/database';
+import type { CustomRoleRef, ResolvedRole, RoleAssignment } from './role-assignment.js';
 
-/** Who is calling when a request carries an API key. */
-export interface ApiKeyIdentity {
+/** Who is calling when a request carries an API key, with what its role allows. */
+export interface ApiKeyIdentity extends ResolvedRole {
   apiKeyId: string;
   workspaceId: string;
-  role: WorkspaceRole;
   createdById: string;
 }
 
-export interface NewApiKey {
+export interface NewApiKey extends RoleAssignment {
   name: string;
-  role: WorkspaceRole;
   expiresAt?: Date;
 }
 
 export interface ApiKeySummary {
   id: string;
   name: string;
-  role: WorkspaceRole;
+  role: ResolvedRole['role'];
+  customRole: CustomRoleRef | null;
   prefix: string;
   lastUsedAt: Date | null;
   expiresAt: Date | null;
