@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SalesRange } from '@crossmart/core';
+import { SalesRange } from '@crossmart/core/analytics/enums/sales-range.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { API_HEALTH_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
 import { defineTool } from './api-tool.js';
