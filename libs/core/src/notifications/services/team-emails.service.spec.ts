@@ -14,7 +14,7 @@ describe('TeamEmailsService', () => {
     });
     const message = send.mock.calls[0]?.[0] as MailMessage;
     expect(message.to).toBe('bo@example.com');
-    expect(message.subject).toBe('Ana invited you to Shop <i> on Crossmart');
+    expect(message.subject).toBe('Ana invited you to Crossmart');
     expect(message.html).toContain('Shop &lt;i&gt;');
     expect(message.text).toContain('with the Editor role');
     expect(message.text).toContain('works for 7 days');

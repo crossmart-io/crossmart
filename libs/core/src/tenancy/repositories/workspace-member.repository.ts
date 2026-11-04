@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService, WorkspaceRole } from '@crossmart/database';
 import type { WorkspaceAccess, WorkspaceMemberProfile } from '../entities/workspace-access.js';
+import { workspaceDisplayName } from '../rules/workspace-display-name.js';
+
+const ORGANIZATION_NAME = { organization: { select: { name: true } } } as const;
 
 const MEMBER_PROFILE = {
   role: true,
@@ -34,13 +37,14 @@ export class WorkspaceMemberRepository {
   async listWorkspacesForUser(userId: string): Promise<WorkspaceAccess[]> {
     const memberships = await this.prisma.workspaceMember.findMany({
       where: { userId },
-      select: { role: true, workspace: true },
+      select: { role: true, workspace: { include: ORGANIZATION_NAME } },
       orderBy: { createdAt: 'asc' },
     });
     return memberships.map(({ role, workspace }) => ({
       id: workspace.id,
       organizationId: workspace.organizationId,
       name: workspace.name,
+      displayName: workspaceDisplayName(workspace.name, workspace.organization.name),
       slug: workspace.slug,
       currency: workspace.currency,
       role,

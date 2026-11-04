@@ -5,6 +5,8 @@ export interface WorkspaceAccess {
   id: string;
   organizationId: string;
   name: string;
+  /** The name to show: the organization's while the workspace has the default name. */
+  displayName: string;
   slug: string;
   /** ISO 4217 code of the catalog's prices. */
   currency: string;

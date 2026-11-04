@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService, type WorkspaceRole } from '@crossmart/database';
 import type { InvitationPreview, InvitationSummary } from '../entities/workspace-invitation.js';
+import { workspaceDisplayName } from '../rules/workspace-display-name.js';
 
 export interface InvitationRecord {
   workspaceId: string;
@@ -23,6 +24,13 @@ export interface PendingInvitation extends InvitationPreview {
 }
 
 const INVITER_NAME = { invitedBy: { select: { name: true } } } as const;
+const WORKSPACE_NAMES = {
+  workspace: { select: { name: true, organization: { select: { name: true } } } },
+} as const;
+
+function displayNameOf(workspace: { name: string; organization: { name: string } }): string {
+  return workspaceDisplayName(workspace.name, workspace.organization.name);
+}
 
 @Injectable()
 export class WorkspaceInvitationRepository {
@@ -37,10 +45,10 @@ export class WorkspaceInvitationRepository {
       }),
       this.prisma.workspaceInvitation.create({
         data: record,
-        include: { ...INVITER_NAME, workspace: { select: { name: true } } },
+        include: { ...INVITER_NAME, ...WORKSPACE_NAMES },
       }),
     ]);
-    return { ...this.toSummary(invitation), workspaceName: invitation.workspace.name };
+    return { ...this.toSummary(invitation), workspaceName: displayNameOf(invitation.workspace) };
   }
 
   countPending(workspaceId: string, now: Date): Promise<number> {
@@ -74,13 +82,13 @@ export class WorkspaceInvitationRepository {
   async findPendingByTokenHash(tokenHash: string, now: Date): Promise<PendingInvitation | null> {
     const invitation = await this.prisma.workspaceInvitation.findFirst({
       where: { tokenHash, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
-      include: { ...INVITER_NAME, workspace: { select: { name: true } } },
+      include: { ...INVITER_NAME, ...WORKSPACE_NAMES },
     });
     if (!invitation) return null;
     return {
       id: invitation.id,
       workspaceId: invitation.workspaceId,
-      workspaceName: invitation.workspace.name,
+      workspaceName: displayNameOf(invitation.workspace),
       inviterName: invitation.invitedBy.name,
       email: invitation.email,
       role: invitation.role,

@@ -23,6 +23,7 @@ export interface InvitationSummary {
 
 /** What the invitation link shows before the invitee accepts it. */
 export interface InvitationPreview {
+  /** The workspace's display name. */
   workspaceName: string;
   inviterName: string;
   email: string;

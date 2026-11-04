@@ -41,7 +41,7 @@ export class InvitationTokenDto {
 }
 
 export class InvitationPreviewDto {
-  @ApiProperty()
+  @ApiProperty({ description: "The workspace's display name" })
   workspaceName: string;
 
   @ApiProperty()

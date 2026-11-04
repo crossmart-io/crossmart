@@ -3,6 +3,7 @@ import type { WorkspaceRole } from '@crossmart/database';
 import type { WorkspaceAccess, WorkspaceMemberProfile } from '../entities/workspace-access.js';
 import { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
 import { WorkspaceRepository } from '../repositories/workspace.repository.js';
+import { workspaceDisplayName } from '../rules/workspace-display-name.js';
 
 /** Answers who belongs to which workspace, and with which role. */
 @Injectable()
@@ -24,7 +25,8 @@ export class WorkspaceAccessService {
       throw new NotFoundException('Workspace not found');
     }
     const { id, organizationId, name, slug, currency } = workspace;
-    return { id, organizationId, name, slug, currency, role };
+    const displayName = workspaceDisplayName(name, workspace.organization.name);
+    return { id, organizationId, name, displayName, slug, currency, role };
   }
 
   listWorkspacesForUser(userId: string): Promise<WorkspaceAccess[]> {

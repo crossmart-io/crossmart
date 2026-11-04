@@ -14,10 +14,10 @@ export function workspaceInvitationEmail(input: WorkspaceInvitationEmailInput): 
   const { to, inviterName, workspaceName, roleName, url, expiresInDays } = input;
   return renderEmail({
     to,
-    subject: `${inviterName} invited you to ${workspaceName} on Crossmart`,
-    heading: `Join ${workspaceName} on Crossmart`,
+    subject: `${inviterName} invited you to Crossmart`,
+    heading: 'You are invited to a Crossmart workspace',
     paragraphs: [
-      `${inviterName} invited you to the ${workspaceName} workspace with the ${roleName} role.`,
+      `${inviterName} invited you to the “${workspaceName}” workspace with the ${roleName} role.`,
       `Sign in or create an account with this address to accept. The link works for ` +
         `${expiresInDays} days.`,
     ],
