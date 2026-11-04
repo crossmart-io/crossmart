@@ -13,6 +13,8 @@ export * from './tenancy/services/workspace-access.service.js';
 export * from './tenancy/services/invitations.service.js';
 export * from './tenancy/services/membership.service.js';
 export * from './tenancy/services/custom-roles.service.js';
+export * from './tenancy/services/workspaces.service.js';
+export * from './tenancy/entities/new-workspace.js';
 export * from './tenancy/tenancy.constants.js';
 export * from './tenancy/tenancy.module.js';
 export * from './catalog/catalog.constants.js';

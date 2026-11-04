@@ -30,6 +30,9 @@ export enum ActivityAction {
   MemberRemoved = 'member_removed',
   /** A member removed themselves. */
   MemberLeft = 'member_left',
+  WorkspaceCreated = 'workspace_created',
+  /** The detail names the previous name. */
+  WorkspaceRenamed = 'workspace_renamed',
   CustomRoleCreated = 'custom_role_created',
   /** A custom role's name or permissions changed. */
   CustomRoleUpdated = 'custom_role_updated',

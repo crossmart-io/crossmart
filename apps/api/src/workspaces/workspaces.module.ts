@@ -6,6 +6,7 @@ import { CustomRolesController } from './controllers/custom-roles.controller.js'
 import { InvitationLinksController } from './controllers/invitation-links.controller.js';
 import { InvitationsController } from './controllers/invitations.controller.js';
 import { MeController } from './controllers/me.controller.js';
+import { OrganizationWorkspacesController } from './controllers/organization-workspaces.controller.js';
 import { MembersController, MembershipController } from './controllers/members.controller.js';
 import { WorkspacesController } from './controllers/workspaces.controller.js';
 
@@ -14,6 +15,7 @@ import { WorkspacesController } from './controllers/workspaces.controller.js';
   controllers: [
     MeController,
     WorkspacesController,
+    OrganizationWorkspacesController,
     MembersController,
     MembershipController,
     InvitationsController,
