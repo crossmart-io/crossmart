@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChannelFeature, ChannelType, isShopifySettings } from '@crossmart/connectors';
+import {
+  ChannelFeature,
+  ChannelType,
+  isEbaySettings,
+  isShopifySettings,
+} from '@crossmart/connectors';
 import type { ChannelConnectionView } from '@crossmart/core';
 import { ChannelConnectionStatus } from '@crossmart/database';
 import {
@@ -9,6 +14,7 @@ import {
 } from '../channels.constants.js';
 import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
+import { EbaySettingsDto } from './ebay-settings.dto.js';
 
 /** A channel connection. Credentials are never part of it. */
 export class ChannelConnectionDto {
@@ -49,6 +55,13 @@ export class ChannelConnectionDto {
   shopify: ShopifySettingsDto | null;
 
   @ApiProperty({
+    type: EbaySettingsDto,
+    nullable: true,
+    description: 'The account’s details on its marketplace, for eBay connections',
+  })
+  ebay: EbaySettingsDto | null;
+
+  @ApiProperty({
     type: ProductSelectionRuleDto,
     nullable: true,
     description: 'Which products the connection lists; null lists every product',
@@ -87,6 +100,7 @@ export class ChannelConnectionDto {
       ...fields,
       failedListings,
       shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
+      ebay: account && isEbaySettings(account) ? EbaySettingsDto.from(account) : null,
       productSelection: productSelection ? ProductSelectionRuleDto.from(productSelection) : null,
       pricing: pricing ? PricingRuleDto.from(pricing) : null,
     });

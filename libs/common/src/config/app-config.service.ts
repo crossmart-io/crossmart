@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { CORS_ORIGINS_SEPARATOR } from './config.constants.js';
+import type { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
 import type { MasterKeySettings } from '../crypto/envelope/master-key-ring.js';
@@ -11,6 +12,13 @@ import type { MasterKeySettings } from '../crypto/envelope/master-key-ring.js';
 export interface OAuthAppCredentials {
   clientId: string;
   clientSecret: string;
+}
+
+/** The eBay keyset and RuName Crossmart signs merchants in with. */
+export interface EbayAppSettings extends OAuthAppCredentials {
+  /** The redirect URL name eBay issued for the callback; sent as `redirect_uri`. */
+  ruName: string;
+  environment: EbayEnvironment;
 }
 
 export interface MailSettings {
@@ -103,5 +111,17 @@ export class AppConfigService {
     const clientId = this.configService.get('SHOPIFY_CLIENT_ID', { infer: true });
     const clientSecret = this.configService.get('SHOPIFY_CLIENT_SECRET', { infer: true });
     return clientId && clientSecret ? { clientId, clientSecret } : null;
+  }
+
+  /** The eBay app, or null unless its client id, secret and RuName are all set. */
+  get ebayApp(): EbayAppSettings | null {
+    const clientId = this.configService.get('EBAY_CLIENT_ID', { infer: true });
+    const clientSecret = this.configService.get('EBAY_CLIENT_SECRET', { infer: true });
+    const ruName = this.configService.get('EBAY_RU_NAME', { infer: true });
+    if (!clientId || !clientSecret || !ruName) {
+      return null;
+    }
+    const environment = this.configService.get('EBAY_ENVIRONMENT', { infer: true });
+    return { clientId, clientSecret, ruName, environment };
   }
 }

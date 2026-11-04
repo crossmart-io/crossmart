@@ -8,7 +8,7 @@ const CLAIMS = {
   workspaceId: '0b6c1d4e-7f0a-4c55-9a39-3c1f4b7e9d01',
   userId: '5a0e7c3b-2d1f-4e8a-b6c9-8f7e6d5c4b3a',
   channel: ChannelType.Shopify,
-  externalAccountId: 'demo-store.myshopify.com',
+  accountHandle: 'demo-store.myshopify.com',
 };
 
 function signer(secret = 'a-test-auth-secret-of-at-least-32-chars'): OAuthStateSigner {

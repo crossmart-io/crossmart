@@ -24,7 +24,9 @@ export interface ChannelConnectionView {
 export interface StartedAuthorization {
   /** Where to send the merchant to approve the app. */
   authorizationUrl: string;
-  /** The account the merchant named, normalized (`demo-store.myshopify.com`). */
+  /** The account the merchant named, normalized (`demo-store.myshopify.com`, `EBAY_US`). */
+  accountHandle: string;
+  /** @deprecated The same value as `accountHandle`, kept for existing API clients. */
   externalAccountId: string;
 }
 

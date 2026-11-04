@@ -11,6 +11,7 @@ import {
   type IncomingWebhook,
   type OAuthAppConnector,
   type OAuthAuthorizeRequest,
+  type OAuthCallback,
   RateLimitScope,
   type WebhookReceiver,
   type OptionalScope,
@@ -40,7 +41,7 @@ export class FakeOAuthConnector implements OAuthAppConnector, WebhookReceiver {
     },
     grantedScopes: ['read_products'],
   };
-  completeAuthorization = vi.fn<(callback: unknown) => Promise<ChannelAuthorization>>(() =>
+  completeAuthorization = vi.fn<(callback: OAuthCallback) => Promise<ChannelAuthorization>>(() =>
     Promise.resolve(this.authorization),
   );
   refreshCredentials = vi.fn<

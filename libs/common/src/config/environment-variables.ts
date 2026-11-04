@@ -14,6 +14,7 @@ import {
 import { DEFAULT_MAIL_FROM } from '../mail/mail.constants.js';
 import { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
+import { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import {
   DEFAULT_API_PORT,
@@ -123,6 +124,25 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   SHOPIFY_CLIENT_SECRET?: string;
+
+  /** App ID (client ID) of the Crossmart eBay app (eBay Developers Program keyset). */
+  @IsOptional()
+  @IsString()
+  EBAY_CLIENT_ID?: string;
+
+  /** Cert ID (client secret) of the eBay keyset. Authenticates token requests; never logged. */
+  @IsOptional()
+  @IsString()
+  EBAY_CLIENT_SECRET?: string;
+
+  /** The RuName eBay issued for the callback URL. eBay takes it in place of a redirect URL. */
+  @IsOptional()
+  @IsString()
+  EBAY_RU_NAME?: string;
+
+  /** The eBay the keyset belongs to: `sandbox` or `production`. */
+  @IsEnum(EbayEnvironment)
+  EBAY_ENVIRONMENT: EbayEnvironment = EbayEnvironment.Sandbox;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {

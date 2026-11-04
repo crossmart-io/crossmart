@@ -12,6 +12,12 @@ export interface OAuthAuthorizeRequest {
 export interface OAuthCallback {
   query: Readonly<Record<string, string>>;
   redirectUri: string;
+  /**
+   * The normalized account handle the merchant started with, carried in the signed state. The
+   * connector checks that the channel answered for it (Shopify: the same store), since only
+   * the connector knows how a handle relates to the account it authorizes.
+   */
+  accountHandle: string;
 }
 
 /** The outcome of a completed authorization: who the account is and how to call it. */

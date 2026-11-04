@@ -3,10 +3,12 @@ export const HTTP_REQUEST_TIMEOUT_MS = 30_000;
 
 export const CONTENT_TYPE_HEADER = 'content-type';
 export const ACCEPT_HEADER = 'accept';
+export const AUTHORIZATION_HEADER = 'authorization';
 export const RETRY_AFTER_HEADER = 'retry-after';
 export const JSON_CONTENT_TYPE = 'application/json';
 export const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 
+export const HTTP_STATUS_BAD_REQUEST = 400;
 export const HTTP_STATUS_UNAUTHORIZED = 401;
 export const HTTP_STATUS_FORBIDDEN = 403;
 export const HTTP_STATUS_TOO_MANY_REQUESTS = 429;

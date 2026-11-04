@@ -113,7 +113,6 @@ export const SHOPIFY_THROTTLED_CODE = 'THROTTLED';
 export const SHOPIFY_MAX_ATTEMPTS = 5;
 export const SHOPIFY_BACKOFF_BASE_MS = 500;
 export const SHOPIFY_BACKOFF_MAX_MS = 10_000;
-export const MILLISECONDS_PER_SECOND = 1000;
 
 /**
  * Catalog import page sizes. A query's requested cost is roughly products × (variants × 8 +

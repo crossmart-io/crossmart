@@ -34,6 +34,7 @@ describe('ShopifyConnector', () => {
       const authorization = await connector.completeAuthorization({
         query: signShopifyQuery(CALLBACK),
         redirectUri: REDIRECT_URI,
+        accountHandle: SHOP,
       });
 
       expect(authorization.externalAccountId).toBe(SHOP);
@@ -49,10 +50,31 @@ describe('ShopifyConnector', () => {
       });
 
       await expect(
-        connector.completeAuthorization({ query: CALLBACK, redirectUri: REDIRECT_URI }),
+        connector.completeAuthorization({
+          query: CALLBACK,
+          redirectUri: REDIRECT_URI,
+          accountHandle: SHOP,
+        }),
       ).rejects.toMatchObject({ code: ChannelErrorCode.InvalidSignature });
       await expect(
-        connector.completeAuthorization({ query: attacker, redirectUri: REDIRECT_URI }),
+        connector.completeAuthorization({
+          query: attacker,
+          redirectUri: REDIRECT_URI,
+          accountHandle: SHOP,
+        }),
+      ).rejects.toMatchObject({ code: ChannelErrorCode.InvalidAccount });
+      expect(http.requests).toEqual([]);
+    });
+
+    it('refuses a signed callback for another store than the one being connected', async () => {
+      const { connector, http } = createShopifyTestKit();
+
+      await expect(
+        connector.completeAuthorization({
+          query: signShopifyQuery(CALLBACK),
+          redirectUri: REDIRECT_URI,
+          accountHandle: 'other-store.myshopify.com',
+        }),
       ).rejects.toMatchObject({ code: ChannelErrorCode.InvalidAccount });
       expect(http.requests).toEqual([]);
     });
@@ -69,6 +91,7 @@ describe('ShopifyConnector', () => {
         connector.completeAuthorization({
           query: signShopifyQuery(CALLBACK),
           redirectUri: REDIRECT_URI,
+          accountHandle: SHOP,
         }),
       ).rejects.toMatchObject({ code: ChannelErrorCode.MissingScopes });
     });

@@ -1,0 +1,17 @@
+{
+  "total": 2,
+  "fulfillmentPolicies": [
+    {
+      "fulfillmentPolicyId": "6000000001",
+      "name": "Free shipping",
+      "marketplaceId": "EBAY_US",
+      "handlingTime": { "value": 1, "unit": "DAY" }
+    },
+    {
+      "fulfillmentPolicyId": "6000000002",
+      "name": "Express",
+      "marketplaceId": "EBAY_US",
+      "handlingTime": { "value": 0, "unit": "DAY" }
+    }
+  ]
+}

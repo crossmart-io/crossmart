@@ -6,6 +6,7 @@ import {
   ACCEPT_HEADER,
   CONTENT_TYPE_HEADER,
   FORM_CONTENT_TYPE,
+  HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_UNAUTHORIZED,
   JSON_CONTENT_TYPE,
 } from '../../sdk/http/http.constants.js';
@@ -32,7 +33,6 @@ import {
   toShopifyGrant,
 } from './shopify-token-response.js';
 
-const HTTP_STATUS_BAD_REQUEST = 400;
 const EXCHANGE_FAILED = 'Shopify did not issue an access token';
 const REFRESH_REJECTED = 'Shopify no longer accepts this connection. Connect the store again.';
 

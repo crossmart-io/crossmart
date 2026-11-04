@@ -42,12 +42,18 @@ export interface ChannelConnector {
 export interface OAuthAppConnector extends ChannelConnector {
   readonly authStrategy: ChannelAuthStrategy.OAuthApp;
 
-  /** The account id for what the merchant typed, or null when it is not valid. */
+  /**
+   * What the merchant typed or picked, normalized (a shop domain, an eBay marketplace), or null
+   * when it is not valid. It travels in the signed state and comes back on the callback.
+   */
   normalizeAccountHandle(accountHandle: string): string | null;
 
   authorizationUrl(request: OAuthAuthorizeRequest): URL;
 
-  /** Verifies the callback (signature, account) and exchanges its code for credentials. */
+  /**
+   * Verifies the callback (signature, and that it answers for `callback.accountHandle`) and
+   * exchanges its code for credentials. Throws `InvalidAccount` for another account.
+   */
   completeAuthorization(callback: OAuthCallback): Promise<ChannelAuthorization>;
 
   /** Exchanges a refresh token for new credentials. Throws `CredentialsRejected` when expired. */

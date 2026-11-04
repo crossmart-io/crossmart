@@ -41,22 +41,22 @@ export class ChannelAuthorizationService {
 
   start(workspaceId: string, userId: string, request: AuthorizationRequest): StartedAuthorization {
     const connector = this.connectors.requireReady(request.channel);
-    const externalAccountId = connector.normalizeAccountHandle(request.accountHandle);
-    if (!externalAccountId) {
+    const accountHandle = connector.normalizeAccountHandle(request.accountHandle);
+    if (!accountHandle) {
       throw new BadRequestException(`That is not a valid ${connector.displayName} account`);
     }
     const state = this.states.issue({
       workspaceId,
       userId,
       channel: request.channel,
-      externalAccountId,
+      accountHandle,
     });
     const url = connector.authorizationUrl({
-      accountHandle: externalAccountId,
+      accountHandle,
       state,
       redirectUri: this.connectors.redirectUri(request.channel),
     });
-    return { authorizationUrl: url.toString(), externalAccountId };
+    return { authorizationUrl: url.toString(), accountHandle, externalAccountId: accountHandle };
   }
 
   /** Throws `ChannelConnectError`, whose `failure` the API passes back to the web app. */
@@ -80,14 +80,12 @@ export class ChannelAuthorizationService {
       throw new ChannelConnectError(ConnectFailure.AccessDenied);
     }
     const connector = this.connectors.requireReady(state.channel);
+    // The connector checks that the channel answered for the account the merchant named.
     const authorization = await connector.completeAuthorization({
       query,
       redirectUri: this.connectors.redirectUri(state.channel),
+      accountHandle: state.accountHandle,
     });
-    // The channel must answer for the account the merchant asked to connect.
-    if (authorization.externalAccountId !== state.externalAccountId) {
-      throw new ChannelConnectError(ConnectFailure.InvalidAccount);
-    }
     const view = await this.accounts.save(state, connector, authorization);
     await this.recordConnected(state, connector, view);
     return view;
@@ -113,7 +111,7 @@ export class ChannelAuthorizationService {
     return this.activity.record(state.workspaceId, Actor.user(state.userId), {
       action: ActivityAction.ChannelConnectFailed,
       outcome: ActivityOutcome.FAILED,
-      subject: { type: ActivitySubjectType.ChannelConnection, label: state.externalAccountId },
+      subject: { type: ActivitySubjectType.ChannelConnection, label: state.accountHandle },
       detail: this.connectors.displayName(state.channel),
       failureReason: failure.message,
     });

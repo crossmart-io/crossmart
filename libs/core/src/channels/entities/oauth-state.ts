@@ -6,7 +6,8 @@ export const oauthStatePayloadSchema = z.object({
   workspaceId: z.uuid(),
   userId: z.uuid(),
   channel: z.enum(ChannelType),
-  externalAccountId: z.string().min(1),
+  /** The normalized account handle the merchant started with; the connector checks it. */
+  accountHandle: z.string().min(1),
   nonce: z.string().min(1),
   /** Milliseconds since the epoch. */
   expiresAt: z.number().int().positive(),

@@ -12,7 +12,8 @@ export class StartAuthorizationDto implements AuthorizationRequest {
   @ApiProperty({
     maxLength: ACCOUNT_HANDLE_MAX_LENGTH,
     example: 'demo-store.myshopify.com',
-    description: 'The account to connect. For Shopify, the store’s myshopify.com domain or handle.',
+    description:
+      'The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`.',
   })
   @IsString()
   @IsNotEmpty()
@@ -24,7 +25,18 @@ export class StartedAuthorizationDto implements StartedAuthorization {
   @ApiProperty({ description: 'Send the merchant here to approve the app on the channel' })
   authorizationUrl: string;
 
-  @ApiProperty({ example: 'demo-store.myshopify.com' })
+  @ApiProperty({
+    example: 'demo-store.myshopify.com',
+    description:
+      'The account handle, normalized: a myshopify.com domain, or an eBay marketplace id',
+  })
+  accountHandle: string;
+
+  @ApiProperty({
+    example: 'demo-store.myshopify.com',
+    deprecated: true,
+    description: 'The same value as `accountHandle`. Use `accountHandle` instead.',
+  })
   externalAccountId: string;
 
   static from(started: StartedAuthorization): StartedAuthorizationDto {

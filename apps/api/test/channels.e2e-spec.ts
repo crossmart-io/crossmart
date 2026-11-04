@@ -143,6 +143,7 @@ describe('Channels (e2e)', () => {
     const response = await startAuthorization(owner, 'My-Store');
 
     expect(response.status).toBe(HttpStatus.CREATED);
+    expect(response.body.accountHandle).toBe('my-store.myshopify.com');
     expect(response.body.externalAccountId).toBe('my-store.myshopify.com');
     const url = new URL(response.body.authorizationUrl);
     expect(`${url.origin}${url.pathname}`).toBe(
@@ -261,6 +262,20 @@ describe('Channels (e2e)', () => {
     });
   });
 
+  it('refuses a signed callback for another store than the one being connected', async () => {
+    const owner = await signUp(app, 'Switched Store');
+    const started = await startAuthorization(owner, newShop());
+    const state = new URL(started.body.authorizationUrl).searchParams.get('state') ?? '';
+
+    const response = await callback(
+      signQuery({ code: 'code', shop: newShop(), state, timestamp: '1' }),
+      owner.cookie,
+    );
+
+    expect(response.headers.location).toBe(errorRedirect(ConnectFailure.InvalidAccount));
+    http.assertDone();
+  });
+
   it('rejects expired, forged and other users’ states', async () => {
     const owner = await signUp(app, 'Slow Merchant');
     const other = await signUp(app, 'Other User');
@@ -269,7 +284,7 @@ describe('Channels (e2e)', () => {
       workspaceId: owner.workspaceId,
       userId: randomUUID(),
       channel: ChannelType.Shopify,
-      externalAccountId: shop,
+      accountHandle: shop,
     };
     const signer = app.get(OAuthStateSigner, { strict: false });
     const expired = signer.sign(claims, new Date(Date.now() - 11 * 60_000));
