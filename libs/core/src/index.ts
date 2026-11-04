@@ -119,3 +119,6 @@ export * from './orders/queue/order-job.queue.js';
 export * from './orders/services/order-sync.service.js';
 export * from './orders/services/orders.service.js';
 export * from './orders/services/order-retention.service.js';
+export * from './accounts/accounts.module.js';
+export * from './accounts/services/account-deletion.service.js';
+export * from './accounts/services/workspace-deletion.service.js';
