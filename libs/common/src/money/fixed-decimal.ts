@@ -95,6 +95,21 @@ export class FixedDecimal {
     );
   }
 
+  /** The quotient, rounded half up to the internal scale. The divisor must not be zero. */
+  dividedBy(divisor: FixedDecimal): FixedDecimal {
+    if (divisor.units === NO_UNITS) {
+      throw new RangeError('Division by zero');
+    }
+    const negative = divisor.units < NO_UNITS;
+    const dividend = this.units * UNITS_PER_ONE;
+    const quotient = divideRounded(
+      negative ? -dividend : dividend,
+      negative ? -divisor.units : divisor.units,
+      RoundingMode.HalfUp,
+    );
+    return new FixedDecimal(quotient);
+  }
+
   /** The value moved by `percent`: 89 moved by 15 is 102.35, moved by -10 is 80.10. */
   adjustedByPercent(percent: FixedDecimal): FixedDecimal {
     const factorUnits = HUNDRED * UNITS_PER_ONE + percent.units;

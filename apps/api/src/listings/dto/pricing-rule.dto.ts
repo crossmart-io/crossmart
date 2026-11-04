@@ -1,7 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsOptional, Matches, ValidateNested } from 'class-validator';
-import { CompareAtMode, PriceRounding, type PricingFloor, type PricingRule } from '@crossmart/core';
+import {
+  CompareAtMode,
+  EXCHANGE_RATE_PATTERN,
+  PriceRounding,
+  type PricingFloor,
+  type PricingRule,
+} from '@crossmart/core';
 import {
   COMPARE_AT_MODE_SCHEMA_NAME,
   PRICE_ROUNDING_SCHEMA_NAME,
@@ -54,6 +60,20 @@ export class PricingRuleDto implements PricingRule {
   @IsEnum(CompareAtMode)
   compareAt: CompareAtMode;
 
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: '0.92',
+    description:
+      'Store-currency units per catalog-currency unit, used instead of the ECB daily rate. ' +
+      'Only applies when the store sells in another currency than the workspace.',
+  })
+  @IsOptional()
+  @Matches(EXCHANGE_RATE_PATTERN, {
+    message: 'fixedExchangeRate must be a positive decimal with at most six fraction digits',
+  })
+  fixedExchangeRate?: string | null;
+
   static from(rule: PricingRule): PricingRuleDto {
     return Object.assign(new PricingRuleDto(), {
       ...rule,
@@ -68,6 +88,7 @@ export class PricingRuleDto implements PricingRule {
       rounding: this.rounding,
       floor: this.floor ? { minMarginPercent: this.floor.minMarginPercent } : null,
       compareAt: this.compareAt,
+      fixedExchangeRate: this.fixedExchangeRate ?? null,
     };
   }
 }

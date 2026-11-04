@@ -29,6 +29,14 @@ export class WorkspaceDto {
   currency: string;
 
   @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'Asia/Jerusalem',
+    description: 'IANA time zone that reports follow; null until set',
+  })
+  timeZone: string | null;
+
+  @ApiProperty({
     enum: WorkspaceRole,
     enumName: WORKSPACE_ROLE_SCHEMA_NAME,
     description: 'Your role here',

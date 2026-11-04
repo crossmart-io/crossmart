@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
+import { PricingContextFactory } from './services/pricing-context.factory.js';
 import { ActivityModule } from '../activity/activity.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { ChannelsModule } from '../channels/channels.module.js';
+import { CurrencyModule } from '../currency/currency.module.js';
+import { WorkspaceSettingsModule } from '../workspace-settings/workspace-settings.module.js';
 import { EventsModule } from '../events/events.module.js';
 import { ListingOverrideRepository } from './repositories/listing-override.repository.js';
 import { ListingSyncRepository } from './repositories/listing-sync.repository.js';
@@ -43,8 +46,16 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
  * The API enqueues jobs; `apps/worker` runs them with `ListingSyncRunner`.
  */
 @Module({
-  imports: [ActivityModule, CatalogModule, ChannelsModule, EventsModule],
+  imports: [
+    ActivityModule,
+    CatalogModule,
+    ChannelsModule,
+    CurrencyModule,
+    EventsModule,
+    WorkspaceSettingsModule,
+  ],
   providers: [
+    PricingContextFactory,
     ListingSyncRepository,
     ListingOverrideRepository,
     ProductSelectionRepository,

@@ -1,8 +1,8 @@
+import type { WorkspaceSettingsRepository } from '../../workspace-settings/workspace-settings.repository.js';
 import { ChannelConnectionStatus, ListingStatus, Prisma } from '@crossmart/database';
 import { StockLevel } from '../../inventory/enums/stock-level.enum.js';
 import { LOW_STOCK_THRESHOLD } from '../../inventory/inventory.constants.js';
 import type { InventoryReportRepository } from '../repositories/inventory-report.repository.js';
-import type { SalesRepository } from '../repositories/sales.repository.js';
 import { InventoryReportService } from './inventory-report.service.js';
 
 const LEVEL_COUNTS: Record<StockLevel, number> = {
@@ -44,12 +44,14 @@ function setup() {
       { connectionId: 'c-1', status: ListingStatus.ERROR, count: 1 },
     ]),
   };
-  const sales = {
-    workspaceCurrency: vi.fn<SalesRepository['workspaceCurrency']>().mockResolvedValue('EUR'),
+  const workspaces = {
+    get: vi
+      .fn<WorkspaceSettingsRepository['get']>()
+      .mockResolvedValue({ currency: 'EUR', timeZone: null }),
   };
   const service = new InventoryReportService(
     inventory as unknown as InventoryReportRepository,
-    sales as unknown as SalesRepository,
+    workspaces as unknown as WorkspaceSettingsRepository,
   );
   return { service };
 }

@@ -10,6 +10,7 @@ export interface NewWorkspace {
   name: string;
   slug: string;
   currency: string;
+  timeZone: string | null;
   ownerId: string;
 }
 
@@ -56,10 +57,13 @@ export class WorkspaceRepository {
     });
   }
 
-  rename(workspaceId: string, name: string): Promise<WorkspaceWithOrganization> {
+  update(
+    workspaceId: string,
+    changes: { name?: string; timeZone?: string },
+  ): Promise<WorkspaceWithOrganization> {
     return this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { name },
+      data: changes,
       include: ORGANIZATION_NAME,
     });
   }

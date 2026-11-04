@@ -25,14 +25,6 @@ interface SalesWindow {
 export class SalesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async workspaceCurrency(workspaceId: string): Promise<string> {
-    const workspace = await this.prisma.workspace.findUniqueOrThrow({
-      where: { id: workspaceId },
-      select: { currency: true },
-    });
-    return workspace.currency;
-  }
-
   async periodBounds(scope: SalesScope, offset: number): Promise<PeriodBounds> {
     const { unit, step, first, last } = this.window(scope, offset);
     const [bounds] = await this.prisma.$queryRaw<PeriodBounds[]>`

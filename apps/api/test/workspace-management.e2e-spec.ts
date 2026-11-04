@@ -68,4 +68,25 @@ describe('Creating and renaming workspaces (e2e)', () => {
       .send({ name: 'Main store' });
     expect(renamed.body).toMatchObject({ name: 'Main store', displayName: 'Main store' });
   });
+
+  it('sets a time zone that sales reports then follow', async () => {
+    const owner = await signUp(app, 'Owner');
+    const url = `/api/v1/workspaces/${owner.workspaceId}`;
+    const invalid = await request(server())
+      .patch(url)
+      .set('Cookie', owner.cookie)
+      .send({ timeZone: 'Mars/Olympus' });
+    expect(invalid.status).toBe(HttpStatus.BAD_REQUEST);
+
+    const updated = await request(server())
+      .patch(url)
+      .set('Cookie', owner.cookie)
+      .send({ timeZone: 'Asia/Jerusalem' });
+    expect(updated.body).toMatchObject({ timeZone: 'Asia/Jerusalem', name: 'Default' });
+
+    const report = await request(server())
+      .get(`${url}/analytics/sales`)
+      .set('Cookie', owner.cookie);
+    expect(report.body.timeZone).toBe('Asia/Jerusalem');
+  });
 });

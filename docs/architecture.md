@@ -155,6 +155,13 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
   `$89.00 → +15% → .99 = $102.99`, or `$50.00 → -10% → .99 → floor $52.00 (cost $40.00 + 30%) = $52.99`. Warnings
   flag a floor that could not apply (no cost), a manual price below the floor, and a compare-at price that is not
   above the price (it is dropped, as channels show no sale then).
+- **Currency conversion.** Catalog prices are in the workspace's currency. When a store sells in another one,
+  `PricingContextFactory` adds a conversion and the resolver converts price, compare-at and cost before the rule:
+  `$10.00 → × 0.92 (USD → EUR) → +10% → .99 = €10.99`. The rate is the rule's `fixedExchangeRate` when set, else the
+  European Central Bank's latest daily reference rate (`libs/core/src/currency`): stored in `exchange_rates`, any pair
+  converted through the euro, refreshed on use when older than a day. Manual prices are already in the store's
+  currency and are not converted. Without a rate the price is flagged `no_exchange_rate`, shown unconverted in
+  previews, and a sync refuses to send it.
 - **Overrides (ChannelContent).** `ListingOverride` holds what one listing shows differently: title, description,
   tags, a subset and order of the product's images (by URL, so they survive image re-uploads), visibility (show or
   hide on this channel whatever the product's status), an inventory buffer and a maximum shown quantity.

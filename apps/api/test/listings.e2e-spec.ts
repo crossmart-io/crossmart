@@ -201,7 +201,7 @@ describe('Listings (e2e)', () => {
       );
       expect(invalid[0].body.detail ?? invalid[0].body.message).toContain('between -90 and 500');
       expect(saved.status).toBe(HttpStatus.OK);
-      expect(saved.body.pricing).toEqual(RULE);
+      expect(saved.body.pricing).toEqual({ ...RULE, fixedExchangeRate: null });
       expect(preview.body).toMatchObject({
         currencyCode: 'USD',
         product: { id: product.id, title: 'Stoneware Mug' },

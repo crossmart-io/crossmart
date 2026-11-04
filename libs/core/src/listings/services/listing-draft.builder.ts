@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import type {
   ExternalImage,
   ListingDraft,
@@ -7,7 +7,12 @@ import type {
 } from '@crossmart/connectors';
 import { ListingVisibility, OutOfStockPolicy, ProductStatus } from '@crossmart/database';
 import type { ProductDetail, VariantView } from '../../catalog/entities/product-views.js';
-import type { PricingContext, VariantPriceOverride } from '../entities/price-resolution.js';
+import type {
+  PricingContext,
+  ResolvedPrice,
+  VariantPriceOverride,
+} from '../entities/price-resolution.js';
+import { PriceWarning } from '../enums/price-warning.enum.js';
 import { toPriceOverrides } from '../mappers/listing.mapper.js';
 import type { ListingSyncRecord } from '../repositories/listing-sync.queries.js';
 import { effectiveQuantity } from '../rules/effective-quantity.js';
@@ -74,7 +79,10 @@ export class ListingDraftBuilder {
     return listing.variants.flatMap((mapping) => {
       const variant = byVariant.get(mapping.variantId);
       if (!variant) return [];
-      const prices = this.prices.resolve(variant, pricing, overrides.get(variant.id));
+      const prices = this.sendable(
+        this.prices.resolve(variant, pricing, overrides.get(variant.id)),
+        pricing,
+      );
       return [
         {
           externalProductId: listing.externalId,
@@ -84,6 +92,17 @@ export class ListingDraftBuilder {
         },
       ];
     });
+  }
+
+  /** A price that could not be converted into the store's currency is never sent. */
+  private sendable(prices: ResolvedPrice, pricing: PricingContext): ResolvedPrice {
+    if (prices.warnings.includes(PriceWarning.NoExchangeRate)) {
+      const from = pricing.conversion?.from ?? '';
+      throw new UnprocessableEntityException(
+        `No exchange rate from ${from} to ${pricing.currencyCode}. Set one in the store's pricing.`,
+      );
+    }
+    return prices;
   }
 
   /** The product's images, or the listing's chosen subset in its order. */
@@ -112,7 +131,7 @@ export class ListingDraftBuilder {
     pricing: PricingContext,
     priceOverride: VariantPriceOverride | undefined,
   ): ListingDraftVariant {
-    const prices = this.prices.resolve(variant, pricing, priceOverride);
+    const prices = this.sendable(this.prices.resolve(variant, pricing, priceOverride), pricing);
     const mapping = listing?.variants.find((entry) => entry.variantId === variant.id);
     return {
       variantId: variant.id,
@@ -122,7 +141,7 @@ export class ListingDraftBuilder {
       optionValues: variant.optionValues,
       price: prices.price,
       compareAtPrice: prices.compareAtPrice,
-      unitCost: variant.cost,
+      unitCost: prices.unitCost,
       tracked: variant.tracked,
       available: variant.tracked
         ? effectiveQuantity(variant.available, listing?.override ?? null)

@@ -22,6 +22,14 @@ function decimalBetween(min: number, max: number): z.ZodString {
     }, `must be between ${min} and ${max}`);
 }
 
+/** Units of the store's currency per unit of the catalog's, above zero, up to six digits. */
+export const EXCHANGE_RATE_PATTERN = /^\d{1,9}(\.\d{1,6})?$/;
+
+const exchangeRateSchema = z
+  .string()
+  .regex(EXCHANGE_RATE_PATTERN, 'must be a positive decimal with at most six fraction digits')
+  .refine((text) => !FixedDecimal.of(text).isZero(), 'must be above zero');
+
 /** Never sell below cost plus this margin. Variants without a cost are not floored. */
 export const pricingFloorSchema = z
   .object({ minMarginPercent: decimalBetween(0, PRICING_MAX_MARGIN_PERCENT) })
@@ -38,6 +46,11 @@ export const pricingRuleSchema = z
     rounding: z.enum(PriceRounding),
     floor: pricingFloorSchema.nullable(),
     compareAt: z.enum(CompareAtMode),
+    /**
+     * Converts catalog prices into the store's currency at this rate instead of the ECB's
+     * daily one. Only used when the two currencies differ.
+     */
+    fixedExchangeRate: exchangeRateSchema.nullable().optional(),
   })
   .strict();
 

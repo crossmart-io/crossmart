@@ -61,6 +61,7 @@ export class WorkspaceMemberRepository {
       displayName: workspaceDisplayName(workspace.name, workspace.organization.name),
       slug: workspace.slug,
       currency: workspace.currency,
+      timeZone: workspace.timeZone,
       ...resolveRole(role, customRole),
     }));
   }

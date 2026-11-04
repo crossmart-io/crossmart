@@ -2,6 +2,7 @@ import type { PricingRule } from '../../channels/entities/pricing-rule.js';
 import { CompareAtMode } from '../../channels/enums/compare-at-mode.enum.js';
 import { PriceRounding } from '../../channels/enums/price-rounding.enum.js';
 import type { VariantPricing } from '../entities/price-resolution.js';
+import { ExchangeRateSource } from '../enums/exchange-rate-source.enum.js';
 import { PriceSource } from '../enums/price-source.enum.js';
 import { PriceStepKind } from '../enums/price-step-kind.enum.js';
 import { PriceWarning } from '../enums/price-warning.enum.js';
@@ -207,5 +208,61 @@ describe('ChannelPriceResolver', () => {
 
       expect(resolved.price).toBe('10.33');
     });
+  });
+});
+
+describe('ChannelPriceResolver conversion', () => {
+  const toEuro = (rate: string | null) => ({
+    from: USD,
+    to: 'EUR',
+    rate,
+    source: ExchangeRateSource.Ecb,
+    publishedOn: '2026-11-04',
+  });
+
+  it('converts the catalog price before the rule and shows the step', () => {
+    const resolved = resolver.resolve(variant({ price: '10.00', cost: '4.00' }), {
+      rule: rule({ adjustmentPercent: '10', rounding: PriceRounding.Ending99 }),
+      currencyCode: 'EUR',
+      conversion: toEuro('0.92'),
+    });
+
+    expect(resolved.steps.map((step) => step.kind)).toEqual([
+      PriceStepKind.Base,
+      PriceStepKind.Conversion,
+      PriceStepKind.Percent,
+      PriceStepKind.Rounding,
+    ]);
+    expect(resolved.price).toBe('10.99');
+    expect(resolved.unitCost).toBe('3.68');
+    expect(resolved.explanation).toContain('× 0.92 (USD → EUR)');
+  });
+
+  it('explains a conversion even without a rule', () => {
+    const resolved = resolver.resolve(variant({ price: '10.00' }), {
+      rule: null,
+      currencyCode: 'EUR',
+      conversion: toEuro('0.92'),
+    });
+    expect(resolved.price).toBe('9.20');
+    expect(resolved.explanation).toMatch(/0\.92.*= €9\.20/);
+  });
+
+  it('leaves a manual price alone: it is already in the store’s currency', () => {
+    const resolved = resolver.resolve(
+      variant({ price: '10.00' }),
+      { rule: null, currencyCode: 'EUR', conversion: toEuro('0.92') },
+      { price: '12.00', compareAtPrice: null },
+    );
+    expect(resolved).toMatchObject({ price: '12.00', source: PriceSource.Override });
+  });
+
+  it('flags a price it could not convert', () => {
+    const resolved = resolver.resolve(variant(), {
+      rule: null,
+      currencyCode: 'EUR',
+      conversion: toEuro(null),
+    });
+    expect(resolved.warnings).toContain(PriceWarning.NoExchangeRate);
   });
 });

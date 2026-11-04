@@ -1,3 +1,4 @@
+import { WorkspaceSettingsRepository } from '../../workspace-settings/workspace-settings.repository.js';
 import { Injectable } from '@nestjs/common';
 import { ListingStatus } from '@crossmart/database';
 import { toAmount } from '../../catalog/mappers/decimal-amount.mapper.js';
@@ -13,7 +14,6 @@ import {
   type ListingCountRow,
   type StoreRecord,
 } from '../repositories/inventory-report.repository.js';
-import { SalesRepository } from '../repositories/sales.repository.js';
 
 function toStoreHealth(stores: StoreRecord[], counts: ListingCountRow[]): StoreHealth[] {
   return stores.map((store) => {
@@ -41,12 +41,12 @@ function toStoreHealth(stores: StoreRecord[], counts: ListingCountRow[]): StoreH
 export class InventoryReportService {
   constructor(
     private readonly inventory: InventoryReportRepository,
-    private readonly sales: SalesRepository,
+    private readonly workspaces: WorkspaceSettingsRepository,
   ) {}
 
   async report(workspaceId: string): Promise<InventoryReport> {
     const [currencyCode, value, stockLevels, stores, listingCounts] = await Promise.all([
-      this.sales.workspaceCurrency(workspaceId),
+      this.workspaces.get(workspaceId).then((settings) => settings.currency),
       this.inventory.value(workspaceId),
       this.stockLevels(workspaceId),
       this.inventory.stores(workspaceId),
