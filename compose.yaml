@@ -8,6 +8,8 @@ x-app-environment: &app-environment
   NODE_ENV: production
   DATABASE_URL: postgresql://crossmart:crossmart@postgres:5432/crossmart
   REDIS_URL: redis://redis:6379
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET (openssl rand -base64 32)}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
 
 services:
   postgres:

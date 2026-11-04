@@ -22,6 +22,8 @@
     "paths": {
       "@crossmart/common": ["./libs/common/src/index.ts"],
       "@crossmart/common/*": ["./libs/common/src/*"],
+      "@crossmart/core": ["./libs/core/src/index.ts"],
+      "@crossmart/core/*": ["./libs/core/src/*"],
       "@crossmart/connectors": ["./libs/connectors/src/index.ts"],
       "@crossmart/connectors/*": ["./libs/connectors/src/*"],
       "@crossmart/database": ["./libs/database/src/index.ts"],
@@ -43,6 +45,18 @@
     },
     {
       "path": "./apps/mcp/tsconfig.app.json"
+    },
+    {
+      "path": "./libs/common/tsconfig.lib.json"
+    },
+    {
+      "path": "./libs/connectors/tsconfig.lib.json"
+    },
+    {
+      "path": "./libs/core/tsconfig.lib.json"
+    },
+    {
+      "path": "./libs/database/tsconfig.lib.json"
     }
   ]
 }

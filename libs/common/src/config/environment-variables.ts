@@ -1,7 +1,12 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsInt, IsString, IsUrl, Max, Min, validateSync } from 'class-validator';
+import { IsEnum, IsInt, IsString, IsUrl, Max, Min, MinLength, validateSync } from 'class-validator';
 import { Environment } from './environment.enum.js';
-import { DEFAULT_API_PORT, MAX_PORT, MIN_PORT } from './config.constants.js';
+import {
+  DEFAULT_API_PORT,
+  MAX_PORT,
+  MIN_AUTH_SECRET_LENGTH,
+  MIN_PORT,
+} from './config.constants.js';
 
 /**
  * Every environment variable the platform reads, validated once at boot.
@@ -24,6 +29,15 @@ export class EnvironmentVariables {
 
   @IsUrl({ protocols: ['redis', 'rediss'], require_tld: false })
   REDIS_URL: string;
+
+  /** Signs sessions and cookies. Generate with `openssl rand -base64 32`. */
+  @IsString()
+  @MinLength(MIN_AUTH_SECRET_LENGTH)
+  BETTER_AUTH_SECRET: string;
+
+  /** Public base URL of this API, used for auth callbacks and cookies. */
+  @IsUrl({ require_tld: false })
+  BETTER_AUTH_URL: string;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {

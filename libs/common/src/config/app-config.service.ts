@@ -36,4 +36,12 @@ export class AppConfigService {
   get redisUrl(): string {
     return this.configService.get('REDIS_URL', { infer: true });
   }
+
+  get authSecret(): string {
+    return this.configService.get('BETTER_AUTH_SECRET', { infer: true });
+  }
+
+  get authBaseUrl(): string {
+    return this.configService.get('BETTER_AUTH_URL', { infer: true });
+  }
 }
