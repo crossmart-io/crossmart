@@ -152,6 +152,9 @@ describe('ShopifyConnector', () => {
       ['customers/data_request', ChannelWebhookKind.CustomerDataRequested],
       ['customers/redact', ChannelWebhookKind.CustomerRedactionRequested],
       ['shop/redact', ChannelWebhookKind.AccountRedactionRequested],
+      ['orders/create', ChannelWebhookKind.OrderChanged],
+      ['orders/updated', ChannelWebhookKind.OrderChanged],
+      ['orders/cancelled', ChannelWebhookKind.OrderChanged],
       ['products/update', ChannelWebhookKind.Unhandled],
     ])('maps %s to %s', (topic, kind) => {
       const { connector } = createShopifyTestKit();
@@ -160,6 +163,24 @@ describe('ShopifyConnector', () => {
         connector.verifyWebhook({ rawBody: body, headers: headers({ 'x-shopify-topic': topic }) })
           ?.kind,
       ).toBe(kind);
+    });
+
+    it('names the order an order webhook is about by its Admin GraphQL id', () => {
+      const { connector } = createShopifyTestKit();
+      const order = Buffer.from(loadFixture(FIXTURES, 'order-webhook.json'));
+
+      const event = connector.verifyWebhook({
+        rawBody: order,
+        headers: {
+          ...headers({ 'x-shopify-topic': 'orders/updated' }),
+          'x-shopify-hmac-sha256': signShopifyBody(order),
+        },
+      });
+
+      expect(event).toMatchObject({
+        kind: ChannelWebhookKind.OrderChanged,
+        resourceId: 'gid://shopify/Order/5001',
+      });
     });
 
     it('rejects bad signatures, other secrets, and invalid shop domains', () => {

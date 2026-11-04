@@ -81,7 +81,12 @@ export function answerGraphql(
   }
 }
 
-function expectTokenExchange(http: FakeHttpTransport, shop: string): void {
+/** What the fake store grants: the required scopes, without the optional ones. */
+export const DEFAULT_GRANTED_SCOPES = 'write_products,write_inventory,read_locations';
+/** Granted by stores that approved reading orders. */
+export const ORDER_GRANTED_SCOPES = `${DEFAULT_GRANTED_SCOPES},read_orders`;
+
+function expectTokenExchange(http: FakeHttpTransport, shop: string, scope: string): void {
   http.expect(
     HttpMethod.Post,
     `https://${shop}/admin/oauth/access_token`,
@@ -90,7 +95,7 @@ function expectTokenExchange(http: FakeHttpTransport, shop: string): void {
       refresh_token: SHOPIFY_REFRESH_TOKEN,
       expires_in: 3600,
       refresh_token_expires_in: 7_776_000,
-      scope: 'write_products,write_inventory,read_locations',
+      scope,
     }),
   );
 }
@@ -115,15 +120,17 @@ export async function connectShopifyStore(
   app: INestApplication<App>,
   http: FakeHttpTransport,
   user: SignedUpUser,
-  shop = newShop(),
+  store: string | { shop?: string; scope?: string } = {},
 ): Promise<string> {
+  const { shop = newShop(), scope = DEFAULT_GRANTED_SCOPES } =
+    typeof store === 'string' ? { shop: store } : store;
   const server = app.getHttpServer();
   const started = await request(server)
     .post(`/api/v1/workspaces/${user.workspaceId}/channel-connections/authorizations`)
     .set('Cookie', user.cookie)
     .send({ channel: ChannelType.Shopify, accountHandle: shop });
   const state = new URL(started.body.authorizationUrl).searchParams.get('state') ?? '';
-  expectTokenExchange(http, shop);
+  expectTokenExchange(http, shop, scope);
   expectShopDetails(http, shop);
   await request(server)
     .get('/api/v1/channels/shopify/oauth/callback')

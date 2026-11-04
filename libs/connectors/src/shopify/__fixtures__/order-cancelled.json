@@ -1,0 +1,14 @@
+{
+  "data": {
+    "order": {
+      "id": "gid://shopify/Order/5001",
+      "name": "#1001",
+      "createdAt": "2026-11-04T08:00:00Z",
+      "updatedAt": "2026-11-04T09:00:00Z",
+      "cancelledAt": "2026-11-04T09:00:00Z",
+      "currencyCode": "USD",
+      "currentTotalPriceSet": { "shopMoney": { "amount": "0.00" } },
+      "lineItems": { "nodes": [] }
+    }
+  }
+}

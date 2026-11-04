@@ -6,6 +6,7 @@ import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activ
 import type { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { connectionRecord } from '../testing/channel-connection.fixtures.js';
 import { FAKE_ACCOUNT, FakeOAuthConnector } from '../testing/fake-oauth-connector.js';
+import { ChannelEventBus } from '../../events/services/channel-event-bus.js';
 import { ChannelWebhooksService } from './channel-webhooks.service.js';
 
 const WEBHOOK = { rawBody: Buffer.from('{}'), headers: {} };
@@ -28,22 +29,26 @@ function setup() {
     redactAccount: vi.fn<ChannelConnectionRepository['redactAccount']>().mockResolvedValue(1),
   };
   const activity = new InMemoryActivityRecorder();
+  const events = new ChannelEventBus();
+  const orderChanged = vi.spyOn(events, 'orderChanged');
   const service = new ChannelWebhooksService(
     new ChannelConnectorRegistry([connector]),
     connections as unknown as ChannelConnectionRepository,
     activity,
+    events,
   );
-  const deliver = (kind: ChannelWebhookKind) => {
+  const deliver = (kind: ChannelWebhookKind, resourceId?: string) => {
     connector.webhookEvent = {
       kind,
       topic: 'topic',
       externalAccountId: FAKE_ACCOUNT,
       deliveryId: 'd-1',
       payload: {},
+      resourceId,
     };
     return service.handle(ChannelType.Shopify, WEBHOOK);
   };
-  return { service, connector, connections, activity, deliver };
+  return { service, connector, connections, activity, deliver, orderChanged };
 }
 
 describe('ChannelWebhooksService', () => {
@@ -62,6 +67,7 @@ describe('ChannelWebhooksService', () => {
       new ChannelConnectorRegistry([connector]),
       {} as ChannelConnectionRepository,
       new InMemoryActivityRecorder(),
+      new ChannelEventBus(),
     );
 
     await expect(service.handle(ChannelType.Shopify, WEBHOOK)).rejects.toThrow(NotFoundException);
@@ -92,5 +98,17 @@ describe('ChannelWebhooksService', () => {
 
     expect(connections.redactAccount).toHaveBeenCalledTimes(1);
     expect(connections.markDisconnected).not.toHaveBeenCalled();
+  });
+
+  it('tells every connected workspace of the store that one of its orders changed', async () => {
+    const { deliver, orderChanged } = setup();
+
+    await deliver(ChannelWebhookKind.OrderChanged, 'gid://shopify/Order/1');
+    await deliver(ChannelWebhookKind.OrderChanged);
+
+    expect(orderChanged.mock.calls.map(([event]) => event)).toEqual([
+      { workspaceId: 'ws-1', connectionId: 'c-1', externalOrderId: 'gid://shopify/Order/1' },
+      { workspaceId: 'ws-2', connectionId: 'c-2', externalOrderId: 'gid://shopify/Order/1' },
+    ]);
   });
 });

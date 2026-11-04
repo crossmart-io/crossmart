@@ -44,4 +44,6 @@ export enum ActivityAction {
   ChannelSelectionUpdated = 'channel_selection_updated',
   /** The merchant asked to publish the selected products and sync the rest. */
   ChannelSyncRequested = 'channel_sync_requested',
+  /** An order took more units than were left: they were sold twice and need resolving. */
+  StockOversold = 'stock_oversold',
 }

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Injectable } from '@nestjs/common';
 import {
   ChannelWebhookKind,
@@ -11,10 +12,16 @@ import { ShopifySignatures } from '../shopify-signatures.js';
 
 const TOPIC_KINDS: Readonly<Record<string, ChannelWebhookKind>> = {
   [ShopifyWebhookTopic.AppUninstalled]: ChannelWebhookKind.AccountDisconnected,
+  [ShopifyWebhookTopic.OrdersCreate]: ChannelWebhookKind.OrderChanged,
+  [ShopifyWebhookTopic.OrdersUpdated]: ChannelWebhookKind.OrderChanged,
+  [ShopifyWebhookTopic.OrdersCancelled]: ChannelWebhookKind.OrderChanged,
   [ShopifyWebhookTopic.CustomersDataRequest]: ChannelWebhookKind.CustomerDataRequested,
   [ShopifyWebhookTopic.CustomersRedact]: ChannelWebhookKind.CustomerRedactionRequested,
   [ShopifyWebhookTopic.ShopRedact]: ChannelWebhookKind.AccountRedactionRequested,
 };
+
+/** Resource webhooks (orders, products) name their subject by its Admin GraphQL id. */
+const resourceIdSchema = z.object({ admin_graphql_api_id: z.string() });
 
 /**
  * Verifies a delivery's HMAC over the raw body before reading anything else, then maps its
@@ -34,12 +41,14 @@ export class ShopifyWebhookParser {
     if (!topic || !shopDomain || !isShopDomain(shopDomain)) {
       return null;
     }
+    const payload = parseJsonBody(rawBody.toString());
     return {
       kind: TOPIC_KINDS[topic] ?? ChannelWebhookKind.Unhandled,
       topic,
       externalAccountId: shopDomain.toLowerCase(),
       deliveryId: headers[ShopifyWebhookHeader.WebhookId] ?? null,
-      payload: parseJsonBody(rawBody.toString()),
+      payload,
+      resourceId: resourceIdSchema.safeParse(payload).data?.admin_graphql_api_id,
     };
   }
 }

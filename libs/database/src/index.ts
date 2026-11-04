@@ -8,6 +8,7 @@ export {
   ImportJobStatus,
   InventoryMovementReason,
   ListingSource,
+  OrderStatus,
   ListingStatus,
   ListingVisibility,
   OutOfStockPolicy,

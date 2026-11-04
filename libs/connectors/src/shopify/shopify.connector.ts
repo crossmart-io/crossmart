@@ -1,3 +1,4 @@
+import type { ExternalOrder, OrderSource } from '../sdk/capabilities/order-source.js';
 import { Injectable } from '@nestjs/common';
 import { ChannelAuthStrategy } from '../sdk/channel-auth-strategy.enum.js';
 import { ChannelCapability } from '../sdk/channel-capability.enum.js';
@@ -57,11 +58,17 @@ function shopifyError(code: ChannelErrorCode, message: string): ChannelError {
 
 /**
  * The Shopify connector: OAuth install, store details, webhooks, catalog import, publishing
- * listings and setting stock. Each capability is implemented by its own class and delegated to here.
+ * listings, setting stock and reading orders. Each capability is implemented by its own class and delegated to here.
  */
 @Injectable()
 export class ShopifyConnector
-  implements OAuthAppConnector, WebhookReceiver, CatalogSource, ListingPublisher, InventorySync
+  implements
+    OAuthAppConnector,
+    WebhookReceiver,
+    CatalogSource,
+    ListingPublisher,
+    InventorySync,
+    OrderSource
 {
   readonly channel = ChannelType.Shopify;
   readonly displayName = SHOPIFY_DISPLAY_NAME;
@@ -72,6 +79,7 @@ export class ShopifyConnector
     ChannelCapability.PublishListings,
     ChannelCapability.UpdatePrice,
     ChannelCapability.UpdateInventory,
+    ChannelCapability.FetchOrders,
   ]);
   readonly requiredScopes = SHOPIFY_REQUIRED_SCOPES;
   readonly optionalScopes = SHOPIFY_OPTIONAL_SCOPES;
@@ -208,6 +216,18 @@ export class ShopifyConnector
     externalInventoryIds: readonly string[],
   ): Promise<Map<string, number>> {
     return this.store.inventory.readQuantities(session, externalInventoryIds);
+  }
+
+  fetchOrders(
+    session: ChannelSession,
+    updatedSince: Date,
+    cursor: string | null,
+  ): Promise<ChannelPage<ExternalOrder>> {
+    return this.store.orders.fetchOrders(session, updatedSince, cursor);
+  }
+
+  fetchOrder(session: ChannelSession, externalId: string): Promise<ExternalOrder | null> {
+    return this.store.orders.fetchOrder(session, externalId);
   }
 
   private toSettings({ shop, location }: ShopData): ShopifySettings {

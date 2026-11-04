@@ -14,6 +14,7 @@ import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { ChannelEventBus } from '../../events/services/channel-event-bus.js';
 import type { ChannelConnectionRecord } from '../repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 
@@ -31,6 +32,7 @@ export class ChannelWebhooksService {
     private readonly registry: ChannelConnectorRegistry,
     private readonly connections: ChannelConnectionRepository,
     private readonly activity: ActivityRecorder,
+    private readonly events: ChannelEventBus,
   ) {}
 
   /** Throws 401 when the signature does not verify; otherwise acknowledges every topic. */
@@ -54,12 +56,31 @@ export class ChannelWebhooksService {
       case ChannelWebhookKind.AccountRedactionRequested:
         await this.connections.redactAccount(account, new Date());
         return this.acknowledge(event, 'account data erased');
+      case ChannelWebhookKind.OrderChanged:
+        return this.orderChanged(account, event.resourceId);
       case ChannelWebhookKind.CustomerDataRequested:
       case ChannelWebhookKind.CustomerRedactionRequested:
-        // Crossmart stores no buyer data yet: orders are not ingested.
+        // Orders are stored without buyer details, so there is nothing about a buyer to send or erase.
         return this.acknowledge(event, 'no customer data stored');
       case ChannelWebhookKind.Unhandled:
         return this.acknowledge(event, 'topic not handled');
+    }
+  }
+
+  /** Every connection of the account reads the order; each may belong to another workspace. */
+  private async orderChanged(
+    account: { channel: ChannelType; externalAccountId: string },
+    externalOrderId: string | undefined,
+  ): Promise<void> {
+    if (!externalOrderId) return;
+    const connections = await this.connections.findByAccount(account);
+    for (const connection of connections) {
+      if (connection.status !== ChannelConnectionStatus.CONNECTED) continue;
+      await this.events.orderChanged({
+        workspaceId: connection.workspaceId,
+        connectionId: connection.id,
+        externalOrderId,
+      });
     }
   }
 

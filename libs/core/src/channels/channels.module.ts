@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EventsModule } from '../events/events.module.js';
 import { ConnectorsModule } from '@crossmart/connectors';
 import { ActivityModule } from '../activity/activity.module.js';
 import { CredentialsModule } from '../credentials/credentials.module.js';
@@ -20,7 +21,7 @@ import { OAuthStateSigner } from './services/oauth-state.signer.js';
  * webhooks, and the listing id mappings import and publish build on.
  */
 @Module({
-  imports: [ActivityModule, ConnectorsModule, CredentialsModule, TenancyModule],
+  imports: [ActivityModule, ConnectorsModule, CredentialsModule, EventsModule, TenancyModule],
   providers: [
     ChannelConnectionRepository,
     ListingRepository,
