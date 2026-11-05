@@ -6,6 +6,7 @@ import {
   DIGITS_PATTERN,
   EAN_LENGTH,
   EBAY_BRAND_ASPECT,
+  EBAY_UNBRANDED,
   EBAY_DESCRIPTION_MAX_LENGTH,
   EBAY_MAX_IMAGES,
   EBAY_TITLE_MAX_LENGTH,
@@ -45,10 +46,10 @@ export function listingImageUrls(draft: ListingDraft): string[] {
     .slice(0, EBAY_MAX_IMAGES);
 }
 
-/** Aspects of the whole product: the brand, when the catalog names a vendor. */
+/** Aspects of the whole product: the vendor as its brand, or unbranded without one. */
 function productAspects(draft: ListingDraft): EbayAspects {
   const brand = draft.product.vendor?.trim();
-  return brand ? { [EBAY_BRAND_ASPECT]: [brand] } : {};
+  return { [EBAY_BRAND_ASPECT]: [brand || EBAY_UNBRANDED] };
 }
 
 /** The product's aspects plus the variant's option values, such as `Size: ["M"]`. */

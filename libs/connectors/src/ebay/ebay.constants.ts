@@ -154,6 +154,11 @@ export const EBAY_UNTRACKED_QUANTITY = 1;
 
 /** The aspect eBay reads the brand from. */
 export const EBAY_BRAND_ASPECT = 'Brand';
+/**
+ * eBay's value for products without a brand. Many categories require Brand, so a product
+ * whose catalog names no vendor is listed as unbranded rather than rejected.
+ */
+export const EBAY_UNBRANDED = 'Unbranded';
 
 /** Where items ship from: the one inventory location Crossmart creates per connection. */
 export const EBAY_MERCHANT_LOCATION_KEY = 'crossmart-default';
