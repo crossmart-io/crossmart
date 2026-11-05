@@ -1,0 +1,15 @@
+{
+  "errors": [
+    {
+      "errorId": 20400,
+      "domain": "API_ACCOUNT",
+      "category": "REQUEST",
+      "message": "Invalid request.",
+      "longMessage": "This policy already exists",
+      "parameters": [
+        { "name": "DuplicateProfileName", "value": "Crossmart payment" },
+        { "name": "DuplicateProfileType", "value": "PAYMENT" }
+      ]
+    }
+  ]
+}

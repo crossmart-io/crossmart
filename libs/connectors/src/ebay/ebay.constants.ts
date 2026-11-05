@@ -173,3 +173,26 @@ export const CITY_MAX_LENGTH = 128;
 export const POLICY_ID_MAX_LENGTH = 64;
 /** Errors `GET /offer?sku=` answers when the SKU has no offer (or no item) yet. */
 export const EBAY_NO_OFFER_ERROR_IDS: ReadonlySet<number> = new Set([25702, 25713]);
+
+/**
+ * The business policies Crossmart creates for a seller who has none ("Create default
+ * policies"): free standard shipping, immediate payment, and 30-day returns the buyer ships.
+ */
+export const EBAY_DEFAULT_FULFILLMENT_POLICY_NAME = 'Crossmart standard shipping';
+export const EBAY_DEFAULT_PAYMENT_POLICY_NAME = 'Crossmart payment';
+export const EBAY_DEFAULT_RETURN_POLICY_NAME = 'Crossmart 30-day returns';
+/** Business days between a cleared payment and handing the order to the carrier. */
+export const EBAY_DEFAULT_HANDLING_DAYS = 3;
+export const EBAY_DEFAULT_RETURN_DAYS = 30;
+/** Free shipping is a flat rate of zero; eBay takes amounts as decimal strings. */
+export const EBAY_FREE_SHIPPING_AMOUNT = '0.00';
+/** The first (and only) domestic shipping service of the default policy. */
+export const EBAY_FIRST_SORT_ORDER = 1;
+/**
+ * eBay answers a policy that duplicates an existing one with error 20400 ("Invalid request.
+ * This policy already exists"). 20400 is also eBay's generic invalid request, so a duplicate is
+ * recognised by the parameters that name the existing policy, too.
+ */
+export const EBAY_DUPLICATE_POLICY_ERROR_IDS: ReadonlySet<number> = new Set([20400]);
+export const EBAY_DUPLICATE_POLICY_ID_PARAM = 'DuplicateProfileId';
+export const EBAY_DUPLICATE_POLICY_NAME_PARAM = 'DuplicateProfileName';

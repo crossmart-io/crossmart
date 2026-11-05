@@ -2,6 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   type EbayBusinessPolicies,
   EbayConnector,
+  type EbayDefaultPolicyIds,
+  type EbayListingDefaults,
   type EbayPolicy,
   type EbaySettings,
   type EbayShipFrom,
@@ -30,8 +32,8 @@ const POLICY_FIELDS = [
 
 /**
  * What an eBay connection needs before it can list: the merchant's listing defaults (policies,
- * condition and ship-from location), business policies opted in to, and policies read again
- * after the merchant edits them on eBay. Every change keeps the merchant's other choices.
+ * condition and ship-from location), business policies opted in to or created with sensible
+ * defaults, and policies read again after the merchant edits them on eBay. Every change keeps the merchant's other choices.
  */
 @Injectable()
 export class EbayAccountSetupService {
@@ -75,6 +77,33 @@ export class EbayAccountSetupService {
     return saved;
   }
 
+  /**
+   * Creates default shipping, payment and return policies on the eBay account (opting it in
+   * first when needed), reads the policies again, and chooses the new ones as the defaults.
+   */
+  async createDefaultPolicies(
+    workspaceId: string,
+    connectionId: string,
+    actor: Actor,
+  ): Promise<ChannelConnectionView> {
+    const { connection, settings } = await this.load(workspaceId, connectionId);
+    const session = await this.sessions.open(workspaceId, connectionId);
+    const created = await callChannel(() =>
+      this.ebay.createDefaultBusinessPolicies(session, {
+        currencyCode: settings.currencyCode,
+        businessPoliciesEnabled: settings.businessPoliciesEnabled,
+      }),
+    );
+    const profile = await callChannel(() => this.ebay.describeAccount(session));
+    const account: EbaySettings = {
+      ...profile.settings,
+      listingDefaults: this.choosePolicies(settings.listingDefaults, created),
+    };
+    const saved = await this.store.saveAccount(workspaceId, connection, account);
+    await this.record(workspaceId, saved, actor, ActivityAction.ChannelDefaultPoliciesCreated);
+    return saved;
+  }
+
   /** Reads the account and its policies again; the listing defaults are kept. */
   async refreshPolicies(workspaceId: string, connectionId: string): Promise<ChannelConnectionView> {
     const { connection, settings } = await this.load(workspaceId, connectionId);
@@ -106,6 +135,19 @@ export class EbayAccountSetupService {
   ): Promise<string> {
     const session = await this.sessions.open(workspaceId, connectionId);
     return callChannel(() => this.ebay.saveShipFromLocation(session, location));
+  }
+
+  /** The merchant's defaults with the created policies chosen; the rest is kept. */
+  private choosePolicies(
+    defaults: EbayListingDefaults | undefined,
+    created: EbayDefaultPolicyIds,
+  ): EbayListingDefaults {
+    return ebayListingDefaultsSchema.parse({
+      ...defaults,
+      fulfillmentPolicyId: created.fulfillment,
+      paymentPolicyId: created.payment,
+      returnPolicyId: created.return,
+    });
   }
 
   private assertOwnPolicies(input: EbayListingDefaultsInput, policies: EbayBusinessPolicies): void {

@@ -1,0 +1,10 @@
+{
+  "returnPolicyId": "6300000001",
+  "name": "Crossmart 30-day returns",
+  "marketplaceId": "EBAY_US",
+  "categoryTypes": [{ "name": "ALL_EXCLUDING_MOTORS_VEHICLES", "default": false }],
+  "returnsAccepted": true,
+  "returnPeriod": { "value": 30, "unit": "DAY" },
+  "refundMethod": "MONEY_BACK",
+  "returnShippingCostPayer": "BUYER"
+}

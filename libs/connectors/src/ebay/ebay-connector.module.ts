@@ -3,6 +3,7 @@ import { AppConfigService } from '@crossmart/common';
 import { ConnectorRuntimeModule } from '../sdk/connector-runtime.module.js';
 import { EbayBusinessPoliciesOptIn } from './account/ebay-business-policies.opt-in.js';
 import { EbayBusinessPoliciesReader } from './account/ebay-business-policies.reader.js';
+import { EbayBusinessPoliciesWriter } from './account/ebay-business-policies.writer.js';
 import { EbayIdentityReader } from './account/ebay-identity.reader.js';
 import { EbayLocationWriter } from './account/ebay-location.writer.js';
 import { EbayApiClient } from './api/ebay-api.client.js';
@@ -30,6 +31,7 @@ import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
     EbayIdentityReader,
     EbayBusinessPoliciesReader,
     EbayBusinessPoliciesOptIn,
+    EbayBusinessPoliciesWriter,
     EbayLocationWriter,
     EbayAccountServices,
     EbayInventoryClient,

@@ -18,6 +18,7 @@ listings through eBay's Sell Inventory API. The connector declares `publish_list
 | Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                              |
 | Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                  |
 | Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                    |
+| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")       |
 | Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)        |
 | Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)             |
 | Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL         |
@@ -101,6 +102,42 @@ Account API's `opt_in` and reads the policies again. eBay can take a while to en
 merchants create the policies themselves on eBay
 ([business policies](https://www.ebay.com/bp/manage)); **Refresh policies**
 (`POST …/ebay/business-policies/refresh`) reads them again. Both keep the listing defaults.
+
+### Default policies
+
+The sandbox has no usable Seller Hub page for business policies, and new sellers often have
+none, so the Listing defaults card offers **Create default policies**
+(`POST …/ebay/business-policies/defaults`, permission `channels:manage`). It opts the account
+in first when `businessPoliciesEnabled` is false, then creates one policy of each type on the
+connection's marketplace, reads the policies again, chooses the three as the listing defaults
+(the condition and ship-from are kept), and records `channel_default_policies_created`.
+
+| Policy      | Name                          | Terms                                                                                                                                |
+| ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Fulfillment | `Crossmart standard shipping` | `ALL_EXCLUDING_MOTORS_VEHICLES`, 3 business days handling, one domestic `FLAT_RATE` service, free (0.00 in the marketplace currency) |
+| Payment     | `Crossmart payment`           | `immediatePay: true`; eBay manages payments, so no payment methods are sent                                                          |
+| Return      | `Crossmart 30-day returns`    | Returns accepted within 30 days, `returnShippingCostPayer: BUYER`                                                                    |
+
+The shipping service is the marketplace's standard one (eBay's `ShippingServiceCodeType`):
+
+| Marketplace | Service                           |
+| ----------- | --------------------------------- |
+| `EBAY_US`   | `USPSPriority`                    |
+| `EBAY_GB`   | `UK_RoyalMailSecondClassStandard` |
+| `EBAY_DE`   | `DE_DHLPaket`                     |
+| `EBAY_AU`   | `AU_StandardDelivery`             |
+
+Other marketplaces (`EBAY_CA`, `EBAY_FR`, `EBAY_IT`, `EBAY_ES`) answer 422 before calling eBay:
+the merchant creates a shipping policy on eBay and refreshes.
+
+eBay refuses a policy that duplicates an existing one with error `20400` ("Invalid request.",
+long message "This policy already exists") and parameters `DuplicateProfileName`,
+`DuplicateProfileType` and `DuplicateProfileId`. Because `20400` is also eBay's generic invalid
+request, Crossmart treats it as a duplicate only when those parameters are present. It then
+uses `DuplicateProfileId`, or, without one, the policy of that type with the default name in
+the account's lists. So running the action twice is harmless. eBay detects duplicates by
+their terms too, so an equivalent policy under another name may be the one chosen. Any other
+refusal answers 422 with eBay's message.
 
 ## Listing defaults
 

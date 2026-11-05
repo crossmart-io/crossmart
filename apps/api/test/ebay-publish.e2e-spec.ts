@@ -30,6 +30,44 @@ vi.hoisted(() => {
 });
 
 const NO_CONTENT = { status: 204, headers: {}, body: '' };
+const ACCOUNT_API = `${EBAY_API}/sell/account/v1`;
+const POLICY_TYPES = ['fulfillment', 'payment', 'return'] as const;
+type PolicyIds = Record<(typeof POLICY_TYPES)[number], string>;
+
+/** eBay creating each default policy under the given ids. */
+function expectPolicyCreates(http: FakeHttpTransport, ids: PolicyIds): void {
+  for (const type of POLICY_TYPES) {
+    http.expect(
+      HttpMethod.Post,
+      `${ACCOUNT_API}/${type}_policy`,
+      jsonResponse({ [`${type}PolicyId`]: ids[type] }, HttpStatus.CREATED),
+    );
+  }
+}
+
+/** eBay answering that each default policy exists already, naming its id. */
+function expectPolicyDuplicates(http: FakeHttpTransport, ids: PolicyIds): void {
+  for (const type of POLICY_TYPES) {
+    const parameters = [{ name: 'DuplicateProfileId', value: ids[type] }];
+    http.expect(
+      HttpMethod.Post,
+      `${ACCOUNT_API}/${type}_policy`,
+      jsonResponse({ errors: [{ errorId: 20400, message: 'Invalid request.', parameters }] }, 400),
+    );
+  }
+}
+
+/** The account's policy lists once the defaults exist. */
+function expectCreatedPolicyLists(http: FakeHttpTransport, ids: PolicyIds): void {
+  for (const type of POLICY_TYPES) {
+    const policies = [{ [`${type}PolicyId`]: ids[type], name: `Crossmart ${type}` }];
+    http.expect(
+      HttpMethod.Get,
+      `${ACCOUNT_API}/${type}_policy?marketplace_id=EBAY_US`,
+      jsonResponse({ [`${type}Policies`]: policies }),
+    );
+  }
+}
 const LISTING_ID = '110553009999';
 const CATEGORY = { id: '20625', name: 'Home & Garden > Kitchen > Mugs' };
 
@@ -296,6 +334,83 @@ describe('eBay publishing (e2e)', () => {
       readyToList: false,
       listingDefaults: { fulfillmentPolicyId: 'f-1', merchantLocationKey: null },
     });
+  });
+
+  it('creates default policies on an account without any, chooses them, and is safe to repeat', async () => {
+    const owner = await signUp(app, 'eBay Starter');
+    const connectionId = await connectEbayAccount(app, http, owner, {
+      userId: 'e2eStarter',
+      withPolicies: false,
+    });
+    const path = `${base(owner)}/channel-connections/${connectionId}/ebay/business-policies/defaults`;
+    const created = { fulfillment: 'f-new', payment: 'p-new', return: 'r-new' };
+
+    http.expect(HttpMethod.Post, `${ACCOUNT_API}/program/opt_in`, jsonResponse({}));
+    expectPolicyCreates(http, created);
+    expectEbayUser(http, 'e2eStarter');
+    expectCreatedPolicyLists(http, created);
+    const first = await request(server()).post(path).set('Cookie', owner.cookie);
+
+    http.assertDone();
+    expect(first.status).toBe(HttpStatus.OK);
+    expect(first.body.ebay).toMatchObject({
+      businessPoliciesEnabled: true,
+      readyToList: false,
+      listingDefaults: {
+        fulfillmentPolicyId: 'f-new',
+        paymentPolicyId: 'p-new',
+        returnPolicyId: 'r-new',
+      },
+    });
+    const bodies = http.requests.slice(-7, -4).map(({ body }) => JSON.parse(body ?? ''));
+    expect(bodies.map(({ name }) => name)).toEqual([
+      'Crossmart standard shipping',
+      'Crossmart payment',
+      'Crossmart 30-day returns',
+    ]);
+    expect(bodies[0].shippingOptions[0].shippingServices[0]).toMatchObject({
+      shippingServiceCode: 'USPSPriority',
+      shippingCost: { value: '0.00', currency: 'USD' },
+    });
+
+    expectPolicyDuplicates(http, created);
+    expectEbayUser(http, 'e2eStarter');
+    expectCreatedPolicyLists(http, created);
+    const again = await request(server()).post(path).set('Cookie', owner.cookie);
+
+    http.assertDone();
+    expect(again.status).toBe(HttpStatus.OK);
+    expect(again.body.ebay.listingDefaults).toEqual(first.body.ebay.listingDefaults);
+    const activity = await request(server())
+      .get(`${base(owner)}/activity`)
+      .set('Cookie', owner.cookie);
+    const actions = (activity.body.items as { action: ActivityAction }[]).map(
+      (item) => item.action,
+    );
+    expect(
+      actions.filter((action) => action === ActivityAction.ChannelDefaultPoliciesCreated),
+    ).toHaveLength(2);
+  });
+
+  it('answers 422 with eBay’s reason when it refuses a default policy', async () => {
+    const owner = await signUp(app, 'eBay Refused');
+    const connectionId = await connectEbayAccount(app, http, owner, {
+      userId: 'e2eRefused',
+      withPolicies: true,
+    });
+    http.expect(
+      HttpMethod.Post,
+      `${ACCOUNT_API}/fulfillment_policy`,
+      jsonResponse({ errors: [{ errorId: 20403, message: 'Invalid shippingServiceCode.' }] }, 400),
+    );
+
+    const refused = await request(server())
+      .post(`${base(owner)}/channel-connections/${connectionId}/ebay/business-policies/defaults`)
+      .set('Cookie', owner.cookie);
+
+    http.assertDone();
+    expect(refused.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(refused.body.message).toBe('eBay rejected the request: Invalid shippingServiceCode.');
   });
 
   it('rejects policies the account does not have and countries that are not ISO codes', async () => {

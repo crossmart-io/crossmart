@@ -1,0 +1,29 @@
+{
+  "fulfillmentPolicyId": "6100000001",
+  "name": "Crossmart standard shipping",
+  "marketplaceId": "EBAY_US",
+  "categoryTypes": [{ "name": "ALL_EXCLUDING_MOTORS_VEHICLES" }],
+  "handlingTime": { "value": 3, "unit": "DAY" },
+  "shippingOptions": [
+    {
+      "optionType": "DOMESTIC",
+      "costType": "FLAT_RATE",
+      "shippingServices": [
+        {
+          "sortOrder": 1,
+          "shippingCarrierCode": "USPS",
+          "shippingServiceCode": "USPSPriority",
+          "shippingCost": { "value": "0.0", "currency": "USD" },
+          "freeShipping": true,
+          "buyerResponsibleForShipping": false,
+          "buyerResponsibleForPickup": false
+        }
+      ],
+      "insuranceOffered": false
+    }
+  ],
+  "globalShipping": false,
+  "pickupDropOff": false,
+  "freightShipping": false,
+  "localPickup": false
+}

@@ -1,0 +1,7 @@
+{
+  "total": 2,
+  "paymentPolicies": [
+    { "paymentPolicyId": "6000000101", "name": "Managed payments", "marketplaceId": "EBAY_US" },
+    { "paymentPolicyId": "6200000002", "name": "Crossmart payment", "marketplaceId": "EBAY_US" }
+  ]
+}

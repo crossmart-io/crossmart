@@ -22,6 +22,10 @@ import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
 import { NO_BUSINESS_POLICIES } from './account/ebay-business-policies.js';
+import type {
+  EbayDefaultPoliciesRequest,
+  EbayDefaultPolicyIds,
+} from './account/ebay-default-policies.js';
 import { ebayAccountContext } from './api/ebay-account-context.js';
 import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
 import {
@@ -178,7 +182,19 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
 
   /** Opts the seller in to business policies; read them again with `describeAccount`. */
   optInToBusinessPolicies(session: ChannelSession): Promise<void> {
-    return this.account.policiesOptIn.optIn(session);
+    return this.account.policySetup.optInToPolicies(session);
+  }
+
+  /**
+   * Creates free standard shipping, immediate payment and 30-day return policies on the
+   * account (opting it in first when `businessPoliciesEnabled` is false), or uses the ones
+   * that exist already; answers the policy of each kind to list under.
+   */
+  createDefaultBusinessPolicies(
+    session: ChannelSession,
+    request: EbayDefaultPoliciesRequest,
+  ): Promise<EbayDefaultPolicyIds> {
+    return this.account.policySetup.createDefaults(session, request);
   }
 
   private requireMarketplace(accountHandle: string): EbayMarketplaceId {

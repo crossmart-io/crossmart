@@ -1,0 +1,18 @@
+{
+  "errors": [
+    {
+      "errorId": 20400,
+      "domain": "API_ACCOUNT",
+      "category": "REQUEST",
+      "message": "Invalid request.",
+      "longMessage": "This policy already exists",
+      "inputRefIds": [null],
+      "parameters": [
+        { "name": "DuplicateProfileName", "value": "Crossmart standard shipping" },
+        { "name": "Shipping Profile Id", "value": "6100000001" },
+        { "name": "DuplicateProfileType", "value": "SHIPPING" },
+        { "name": "DuplicateProfileId", "value": "6100000001" }
+      ]
+    }
+  ]
+}

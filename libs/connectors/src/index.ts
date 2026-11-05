@@ -41,6 +41,7 @@ export * from './ebay/ebay-connector.module.js';
 export * from './ebay/ebay-marketplace.js';
 export * from './ebay/ebay-settings.js';
 export * from './ebay/account/ebay-business-policies.js';
+export * from './ebay/account/ebay-default-policies.js';
 export * from './ebay/listing/ebay-condition.enum.js';
 export * from './ebay/listing/ebay-listing-defaults.js';
 export * from './sdk/time/time.constants.js';
