@@ -2,11 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { ChannelSettings } from '@crossmart/connectors';
 import { CONNECTION_NOT_FOUND } from '../channels.constants.js';
 import type { ChannelConnectionView } from '../entities/channel-connection-view.js';
-import { serializeConnectionSettings } from '../entities/connection-settings.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { ChannelConnectionsService } from './channel-connections.service.js';
 
-/** Reads a connection and replaces the account part of its settings, keeping its rules. */
+/**
+ * Reads a connection and replaces the account part of its settings. Only the account key is
+ * written, so the merchant's rules saved meanwhile (pricing, selection) are never reverted.
+ */
 @Injectable()
 export class ConnectionAccountStore {
   constructor(
@@ -24,8 +26,7 @@ export class ConnectionAccountStore {
     connection: ChannelConnectionView,
     account: ChannelSettings,
   ): Promise<ChannelConnectionView> {
-    const settings = serializeConnectionSettings({ ...connection.settings, account });
-    const saved = await this.records.saveSettings(workspaceId, connection.id, settings);
+    const saved = await this.records.saveAccountSettings(workspaceId, connection.id, account);
     if (!saved) {
       throw new NotFoundException(CONNECTION_NOT_FOUND);
     }

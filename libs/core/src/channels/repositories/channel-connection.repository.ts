@@ -8,42 +8,18 @@ import {
   WITHOUT_CREDENTIALS,
   wipedCredentials,
 } from './channel-connection.queries.js';
+import {
+  lockSettingsKey,
+  type SettingsTarget,
+  writeSettingsKey,
+} from './connection-settings.queries.js';
+import type { ConnectionSettings } from '../entities/connection-settings.js';
+import { ConnectionSettingsKey } from '../enums/connection-settings-key.enum.js';
+import { mergeReconnectedAccount } from '../rules/account-settings-merge.js';
 
 export interface AccountRef {
   channel: string;
   externalAccountId: string;
-}
-
-function isJsonObject(value: Prisma.JsonValue | undefined): value is Prisma.JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/** The new account settings over the stored ones, so the merchant's rules survive a re-auth. */
-function keepMerchantRules(
-  stored: Prisma.JsonValue | undefined,
-  incoming: Prisma.InputJsonObject,
-): Prisma.InputJsonObject {
-  return isJsonObject(stored)
-    ? { ...stored, account: keepAccountChoices(stored.account, incoming.account) }
-    : incoming;
-}
-
-/**
- * The account as the connector read it again, plus what the merchant chose that the connector
- * never reads (an eBay connection's listing defaults): fields it read win, others are kept.
- */
-function keepAccountChoices(
-  stored: Prisma.JsonValue | undefined,
-  incoming: Prisma.InputJsonValue | null | undefined,
-): Prisma.InputJsonValue | null {
-  if (!isJsonObject(stored) || !isInputJsonObject(incoming)) return incoming ?? null;
-  return stored.channel === incoming.channel ? { ...stored, ...incoming } : incoming;
-}
-
-function isInputJsonObject(
-  value: Prisma.InputJsonValue | null | undefined,
-): value is Prisma.InputJsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Connections the merchant connects again to repair. */
@@ -66,18 +42,16 @@ export class ChannelConnectionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Connecting an account again (re-auth) updates its row and keeps its listings, and the
-   * merchant's rules (product selection, pricing): only the account part of settings changes.
+   * Connecting an account again (re-auth) updates its row and keeps its listings and the
+   * merchant's rules (product selection, pricing): only the account part of settings changes,
+   * merged with the stored account under a row lock (`mergeReconnectedAccount`).
    */
   upsertConnected(record: ConnectedAccountRecord): Promise<ChannelConnectionRecord> {
     const { workspaceId, channel, externalAccountId, sealedCredentials, settings, ...fields } =
       record;
     const key = { workspaceId, channel, externalAccountId };
     return this.prisma.$transaction(async (client) => {
-      const existing = await client.channelConnection.findUnique({
-        where: { workspaceId_channel_externalAccountId: key },
-        select: { settings: true },
-      });
+      const stored = await this.lockStoredAccount(client, key);
       const data = {
         ...fields,
         credentials: sealedCredentials,
@@ -85,26 +59,71 @@ export class ChannelConnectionRepository {
         statusReason: null,
         disconnectedAt: null,
       };
-      return client.channelConnection.upsert({
+      const connection = await client.channelConnection.upsert({
         where: { workspaceId_channel_externalAccountId: key },
         create: { ...key, ...data, settings },
-        update: { ...data, settings: keepMerchantRules(existing?.settings, settings) },
+        update: data,
+        omit: WITHOUT_CREDENTIALS,
+      });
+      if (!stored) return connection;
+      const account = mergeReconnectedAccount(stored.account, settings.account);
+      const target = { workspaceId, connectionId: connection.id };
+      await writeSettingsKey(client, target, ConnectionSettingsKey.Account, account);
+      return client.channelConnection.findUniqueOrThrow({
+        where: { id: connection.id },
         omit: WITHOUT_CREDENTIALS,
       });
     });
   }
 
-  /** Replaces the connection's settings; the caller has validated them. */
-  async saveSettings(
+  /** Saves the account part of the settings only; the connector has validated it. */
+  saveAccountSettings(
     workspaceId: string,
     connectionId: string,
-    settings: Prisma.InputJsonObject,
+    account: ConnectionSettings[ConnectionSettingsKey.Account],
   ): Promise<ChannelConnectionRecord | null> {
-    const { count } = await this.prisma.channelConnection.updateMany({
-      where: { id: connectionId, workspaceId },
-      data: { settings },
+    return this.saveKey({ workspaceId, connectionId }, ConnectionSettingsKey.Account, account);
+  }
+
+  /** Saves the product selection only; the caller has validated it. */
+  saveProductSelection(
+    workspaceId: string,
+    connectionId: string,
+    selection: ConnectionSettings[ConnectionSettingsKey.ProductSelection],
+  ): Promise<ChannelConnectionRecord | null> {
+    const key = ConnectionSettingsKey.ProductSelection;
+    return this.saveKey({ workspaceId, connectionId }, key, selection);
+  }
+
+  /** Saves the pricing rule only; the caller has validated it. */
+  savePricing(
+    workspaceId: string,
+    connectionId: string,
+    pricing: ConnectionSettings[ConnectionSettingsKey.Pricing],
+  ): Promise<ChannelConnectionRecord | null> {
+    return this.saveKey({ workspaceId, connectionId }, ConnectionSettingsKey.Pricing, pricing);
+  }
+
+  /**
+   * Changes the product selection from its stored value under a row lock, so two concurrent
+   * changes (such as products removed from a store) both apply. `change` may throw to cancel.
+   */
+  updateProductSelection(
+    workspaceId: string,
+    connectionId: string,
+    change: (stored: unknown) => ConnectionSettings[ConnectionSettingsKey.ProductSelection],
+  ): Promise<ChannelConnectionRecord | null> {
+    const target = { workspaceId, connectionId };
+    const key = ConnectionSettingsKey.ProductSelection;
+    return this.prisma.$transaction(async (client) => {
+      const stored = await lockSettingsKey(client, target, key);
+      if (!stored) return null;
+      await writeSettingsKey(client, target, key, change(stored.value));
+      return client.channelConnection.findFirst({
+        where: { id: connectionId, workspaceId },
+        omit: WITHOUT_CREDENTIALS,
+      });
     });
-    return count === 0 ? null : this.findForWorkspace(workspaceId, connectionId);
   }
 
   /** Connections that hold working credentials, for scheduled reconciliation. */
@@ -304,5 +323,28 @@ export class ChannelConnectionRepository {
       }),
     ]);
     return count;
+  }
+
+  private async saveKey(
+    target: SettingsTarget,
+    key: ConnectionSettingsKey,
+    value: unknown,
+  ): Promise<ChannelConnectionRecord | null> {
+    const count = await writeSettingsKey(this.prisma, target, key, value);
+    return count === 0 ? null : this.findForWorkspace(target.workspaceId, target.connectionId);
+  }
+
+  /** Locks an existing connection to the account and returns its stored account settings. */
+  private async lockStoredAccount(
+    client: Prisma.TransactionClient,
+    { workspaceId, channel, externalAccountId }: AccountRef & { workspaceId: string },
+  ): Promise<{ account: unknown } | undefined> {
+    const [row] = await client.$queryRaw<{ account: unknown }[]>`
+      SELECT settings -> ${ConnectionSettingsKey.Account}::text AS account
+      FROM channel_connections
+      WHERE workspace_id = ${workspaceId}::uuid AND channel = ${channel}
+        AND external_account_id = ${externalAccountId}
+      FOR UPDATE`;
+    return row;
   }
 }

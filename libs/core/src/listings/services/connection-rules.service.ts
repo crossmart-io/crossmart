@@ -6,15 +6,12 @@ import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { CONNECTION_NOT_FOUND } from '../../channels/channels.constants.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
-import {
-  type ConnectionSettings,
-  serializeConnectionSettings,
-} from '../../channels/entities/connection-settings.js';
 import { type PricingRule, pricingRuleSchema } from '../../channels/entities/pricing-rule.js';
 import {
   type ProductSelectionRule,
   productSelectionRuleSchema,
 } from '../../channels/entities/product-selection.js';
+import type { ChannelConnectionRecord } from '../../channels/repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../../channels/repositories/channel-connection.repository.js';
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import { describePricingRule } from '../rules/describe-pricing-rule.js';
@@ -45,7 +42,10 @@ export class ConnectionRulesService {
     actor: Actor,
   ): Promise<ChannelConnectionView> {
     const pricing = rule === null ? null : this.validate(() => pricingRuleSchema.parse(rule));
-    const saved = await this.save(workspaceId, connectionId, { pricing });
+    const saved = await this.view(
+      workspaceId,
+      await this.records.savePricing(workspaceId, connectionId, pricing),
+    );
     await this.record(workspaceId, saved, actor, {
       action: ActivityAction.ChannelPricingUpdated,
       detail: describePricingRule(pricing),
@@ -62,7 +62,10 @@ export class ConnectionRulesService {
   ): Promise<ChannelConnectionView> {
     const productSelection =
       rule === null ? null : this.validate(() => productSelectionRuleSchema.parse(rule));
-    const saved = await this.save(workspaceId, connectionId, { productSelection });
+    const saved = await this.view(
+      workspaceId,
+      await this.records.saveProductSelection(workspaceId, connectionId, productSelection),
+    );
     await this.record(workspaceId, saved, actor, {
       action: ActivityAction.ChannelSelectionUpdated,
       detail: productSelection ? undefined : SELECTION_CLEARED,
@@ -72,42 +75,56 @@ export class ConnectionRulesService {
 
   /**
    * Records products removed from the store by hand (`exclude`) or added back (`restore`), so the
-   * automatic rule cannot bring them back. The caller logs the change per product.
+   * automatic rule cannot bring them back. The selection is changed under a row lock, so
+   * concurrent removals all count. The caller logs the change per product.
    */
   async changeExclusions(
     workspaceId: string,
     connectionId: string,
     change: { exclude?: string[]; restore?: string[] },
   ): Promise<void> {
-    const { productSelection } = (await this.connections.get(workspaceId, connectionId)).settings;
+    const saved = await this.records.updateProductSelection(workspaceId, connectionId, (stored) =>
+      this.withExclusions(this.parseStoredSelection(stored), change),
+    );
+    if (!saved) {
+      throw new NotFoundException(CONNECTION_NOT_FOUND);
+    }
+  }
+
+  private withExclusions(
+    productSelection: ProductSelectionRule | null,
+    change: { exclude?: string[]; restore?: string[] },
+  ): ProductSelectionRule {
     const restored = new Set(change.restore ?? []);
     const excluded = [
       ...new Set([...(productSelection?.excludeProductIds ?? []), ...(change.exclude ?? [])]),
     ].filter((productId) => !restored.has(productId));
     const rule = productSelection ?? NO_AUTOMATIC_RULE;
-    await this.save(workspaceId, connectionId, {
-      productSelection: this.validate(() =>
-        productSelectionRuleSchema.parse({
-          ...rule,
-          includeProductIds: rule.includeProductIds.filter((productId) => !restored.has(productId)),
-          excludeProductIds: excluded,
-        }),
-      ),
-    });
+    return this.validate(() =>
+      productSelectionRuleSchema.parse({
+        ...rule,
+        includeProductIds: rule.includeProductIds.filter((productId) => !restored.has(productId)),
+        excludeProductIds: excluded,
+      }),
+    );
   }
 
-  private async save(
+  /** The stored selection, validated like every settings read; absent or null means none. */
+  private parseStoredSelection(stored: unknown): ProductSelectionRule | null {
+    return stored === undefined || stored === null
+      ? null
+      : productSelectionRuleSchema.parse(stored);
+  }
+
+  /** The saved connection as the API shows it; null means it is not in this workspace. */
+  private async view(
     workspaceId: string,
-    connectionId: string,
-    change: Partial<ConnectionSettings>,
+    saved: ChannelConnectionRecord | null,
   ): Promise<ChannelConnectionView> {
-    const current = await this.connections.get(workspaceId, connectionId);
-    const settings = serializeConnectionSettings({ ...current.settings, ...change });
-    const saved = await this.records.saveSettings(workspaceId, connectionId, settings);
     if (!saved) {
       throw new NotFoundException(CONNECTION_NOT_FOUND);
     }
-    return this.connections.get(workspaceId, connectionId);
+    return this.connections.get(workspaceId, saved.id);
   }
 
   private validate<TRule>(parse: () => TRule): TRule {
