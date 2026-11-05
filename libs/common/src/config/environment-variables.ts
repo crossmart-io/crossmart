@@ -1,5 +1,6 @@
-import { plainToInstance } from 'class-transformer';
+import { plainToInstance, Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -18,10 +19,12 @@ import { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import {
   DEFAULT_API_PORT,
+  DEFAULT_ENTITLEMENTS_ENFORCED,
   DEFAULT_MASTER_KEY_VERSION,
   DEFAULT_MEDIA_PUBLIC_URL,
   DEFAULT_WEB_APP_URL,
   DEFAULT_STORAGE_LOCAL_DIR,
+  ENV_TRUE,
   MAX_PORT,
   MIN_AUTH_SECRET_LENGTH,
   MIN_MASTER_KEY_VERSION,
@@ -143,6 +146,17 @@ export class EnvironmentVariables {
   /** The eBay the keyset belongs to: `sandbox` or `production`. */
   @IsEnum(EbayEnvironment)
   EBAY_ENVIRONMENT: EbayEnvironment = EbayEnvironment.Sandbox;
+
+  /**
+   * Whether plan limits block actions (`true`) or are only reported (default). Usage and limits
+   * are computed either way; keep it off until billing lets merchants upgrade.
+   */
+  // Reads the raw value: implicit conversion would turn the string "false" into true.
+  @Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+    [true, ENV_TRUE].includes(obj[key] as boolean | string),
+  )
+  @IsBoolean()
+  ENTITLEMENTS_ENFORCED: boolean = DEFAULT_ENTITLEMENTS_ENFORCED;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {

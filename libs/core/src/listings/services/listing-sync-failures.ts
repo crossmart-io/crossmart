@@ -40,6 +40,11 @@ export class ListingSyncFailures {
       await this.listings.recordFailure(listing.listingId, reason);
       throw error;
     }
+    await this.reject(listing, reason);
+  }
+
+  /** A failure that will not go away by retrying: the listing is in error, logged once. */
+  async reject(listing: FailedListing, reason: string): Promise<void> {
     this.logger.warn(`Sync of listing ${listing.listingId} was rejected: ${reason}`);
     await this.listings.recordFailure(listing.listingId, reason, ListingStatus.ERROR);
     await this.recordFailed(listing, reason);

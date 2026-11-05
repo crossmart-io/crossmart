@@ -30,6 +30,7 @@ import {
   ListChannelListingsQueryDto,
   SyncRequestResultDto,
 } from '../dto/channel-listing.dto.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 /** Publishing a connection's selected products, and the listings it holds. */
 @ApiTags(LISTINGS_TAG)
@@ -48,9 +49,11 @@ export class ChannelSyncController {
     description:
       'Queues every selected product to be published (or updated when the channel has it) ' +
       'and every listing that is no longer selected to be delisted. Jobs run in the background; ' +
-      'follow them in the listings.',
+      'follow them in the listings. Refused (402) before anything is queued when the plan has ' +
+      'no room for the active listings it would add.',
   })
   @ApiAcceptedResponse({ type: SyncRequestResultDto })
+  @ApiPlanLimitResponse()
   async requestSync(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,

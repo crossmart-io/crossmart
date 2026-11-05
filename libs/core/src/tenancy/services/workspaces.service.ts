@@ -1,9 +1,11 @@
-import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type { NewWorkspace } from '../repositories/workspace.repository.js';
 import type { WorkspaceChanges, WorkspaceInput } from '../entities/new-workspace.js';
 import type { WorkspaceAccess } from '../entities/workspace-access.js';
@@ -15,20 +17,19 @@ import {
 } from '../repositories/workspace.repository.js';
 import { uniqueSlug } from '../rules/unique-slug.js';
 import { workspaceDisplayName } from '../rules/workspace-display-name.js';
-import {
-  DEFAULT_WORKSPACE_CURRENCY,
-  MAX_WORKSPACES_PER_ORGANIZATION,
-} from '../tenancy.constants.js';
+import { DEFAULT_WORKSPACE_CURRENCY } from '../tenancy.constants.js';
 
 /**
  * More workspaces for one organization, such as one per client or per brand. Owners of a
- * workspace in the organization create them and own the new one.
+ * workspace in the organization create them and own the new one, within the plan's
+ * `Feature.Workspaces` limit.
  */
 @Injectable()
 export class WorkspacesService {
   constructor(
     private readonly workspaces: WorkspaceRepository,
     private readonly activity: ActivityRecorder,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   async create(
@@ -82,12 +83,7 @@ export class WorkspacesService {
     if (!(await this.workspaces.isOrganizationOwner(organizationId, userId))) {
       throw new ForbiddenException('Only owners of a workspace here can create workspaces');
     }
-    const count = await this.workspaces.countInOrganization(organizationId);
-    if (count >= MAX_WORKSPACES_PER_ORGANIZATION) {
-      throw new ConflictException(
-        `An organization can have ${MAX_WORKSPACES_PER_ORGANIZATION} workspaces`,
-      );
-    }
+    await this.entitlements.assert(organizationId, Feature.Workspaces);
   }
 
   private record(

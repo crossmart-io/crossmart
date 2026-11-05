@@ -97,11 +97,12 @@ enum WorkspaceRole {
 }
 
 model Organization {
-  id         String      @id @default(uuid()) @db.Uuid
-  name       String
-  workspaces Workspace[]
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+  id           String                    @id @default(uuid()) @db.Uuid
+  name         String
+  workspaces   Workspace[]
+  subscription OrganizationSubscription?
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  updatedAt    DateTime                  @updatedAt @map("updated_at")
 
   @@map("organizations")
 }
@@ -221,6 +222,89 @@ model ApiKey {
 
   @@index([workspaceId])
   @@map("api_keys")
+}
+
+// ─── Plans and entitlements ───────────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  /// A payment failed; the plan still applies while the provider retries.
+  PAST_DUE
+  CANCELED
+
+  @@map("subscription_status")
+}
+
+/// A plan organizations can be on, such as Free or Growth. What it includes lives in its versions,
+/// so changing a plan never changes what existing customers have.
+model Plan {
+  id        String        @id @default(uuid()) @db.Uuid
+  /// A stable identifier for links and billing provider metadata, such as "growth".
+  code      String        @unique
+  name      String
+  /// Inactive plans are no longer offered; organizations on them keep them (grandfathering).
+  active    Boolean       @default(true)
+  /// The plan new organizations start on. Keep one; with several, the lowest `sortOrder` wins.
+  isDefault Boolean       @default(false) @map("is_default")
+  sortOrder Int           @map("sort_order")
+  versions  PlanVersion[]
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@map("plans")
+}
+
+/// What a plan includes from one point on. Never edited once organizations are on it: a change
+/// is a new version, which new subscriptions get while existing ones keep theirs.
+model PlanVersion {
+  id            String                     @id @default(uuid()) @db.Uuid
+  planId        String                     @map("plan_id") @db.Uuid
+  plan          Plan                       @relation(fields: [planId], references: [id], onDelete: Restrict)
+  version       Int
+  features      PlanFeature[]
+  subscriptions OrganizationSubscription[]
+  createdAt     DateTime                   @default(now()) @map("created_at")
+
+  @@unique([planId, version])
+  @@map("plan_versions")
+}
+
+/// One feature of a plan version: a limit, or a flag that is on or off. A feature a version does
+/// not list is not included.
+model PlanFeature {
+  id            String      @id @default(uuid()) @db.Uuid
+  planVersionId String      @map("plan_version_id") @db.Uuid
+  planVersion   PlanVersion @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
+  /// A `Feature` value; kept as text so new features need no migration of an enum.
+  feature       String
+  enabled       Boolean     @default(true)
+  /// The most a limit allows; null is unlimited. Unused for flags.
+  limit         Int?        @map("limit_value")
+
+  @@unique([planVersionId, feature])
+  @@map("plan_features")
+}
+
+/// The plan version an organization is on. Every organization has one. The provider fields stay
+/// empty until billing is connected.
+model OrganizationSubscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  organizationId         String             @unique @map("organization_id") @db.Uuid
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planVersionId          String             @map("plan_version_id") @db.Uuid
+  planVersion            PlanVersion        @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd       DateTime?          @map("current_period_end")
+  /// The customer at the billing provider (a Stripe customer id).
+  externalCustomerId     String?            @map("external_customer_id")
+  /// The subscription at the billing provider (a Stripe subscription id).
+  externalSubscriptionId String?            @unique @map("external_subscription_id")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  @@index([planVersionId])
+  @@map("organization_subscriptions")
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
@@ -661,6 +745,8 @@ model Listing {
   @@index([connectionId, source])
   @@index([connectionId, productId])
   @@index([workspaceId, productId])
+  /// Active listings are counted per organization for plan limits.
+  @@index([workspaceId, status])
   @@map("listings")
 }
 

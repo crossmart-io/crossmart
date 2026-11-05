@@ -1,4 +1,5 @@
 import { ChannelError, ChannelErrorCode } from '@crossmart/connectors';
+import { EntitlementExceededException } from '../../entitlements/errors/entitlement-exceeded.exception.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 
 const FAILURE_MESSAGES: Record<ConnectFailure, string> = {
@@ -10,6 +11,7 @@ const FAILURE_MESSAGES: Record<ConnectFailure, string> = {
   [ConnectFailure.MissingScopes]: 'The channel did not grant every permission Crossmart needs',
   [ConnectFailure.NotPermitted]: 'You can no longer manage this workspace',
   [ConnectFailure.ChannelUnavailable]: 'The channel is not responding. Try again in a moment.',
+  [ConnectFailure.PlanLimitReached]: 'The plan has no room for another connected channel',
   [ConnectFailure.Unexpected]: 'The channel could not be connected',
 };
 
@@ -32,6 +34,9 @@ export class ChannelConnectError extends Error {
   static from(error: unknown): ChannelConnectError {
     if (error instanceof ChannelConnectError) {
       return error;
+    }
+    if (error instanceof EntitlementExceededException) {
+      return new ChannelConnectError(ConnectFailure.PlanLimitReached);
     }
     const failure = error instanceof ChannelError ? CHANNEL_ERROR_FAILURES[error.code] : undefined;
     return new ChannelConnectError(failure ?? ConnectFailure.Unexpected);

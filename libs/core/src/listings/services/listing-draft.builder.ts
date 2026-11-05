@@ -7,7 +7,7 @@ import type {
   ListingDraftVariant,
   PriceUpdate,
 } from '@crossmart/connectors';
-import { ListingVisibility, OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import { OutOfStockPolicy } from '@crossmart/database';
 import type { ProductDetail, VariantView } from '../../catalog/entities/product-views.js';
 import type {
   PricingContext,
@@ -18,6 +18,7 @@ import { PriceWarning } from '../enums/price-warning.enum.js';
 import { toPriceOverrides } from '../mappers/listing.mapper.js';
 import type { ListingSyncRecord } from '../repositories/listing-sync.queries.js';
 import { effectiveQuantity } from '../rules/effective-quantity.js';
+import { isShownOnChannel } from '../rules/listing-visibility.js';
 import { mediaDigest } from '../rules/media-digest.js';
 import { ChannelPriceResolver } from './channel-price-resolver.js';
 
@@ -83,7 +84,7 @@ export class ListingDraftBuilder {
       vendor: product.vendor,
       productType: product.productType,
       tags: override?.tagsOverridden ? override.tags : product.tags,
-      active: this.isActive(product, listing),
+      active: isShownOnChannel(product, listing),
       optionNames: product.optionNames,
       images,
     };
@@ -136,14 +137,6 @@ export class ListingDraftBuilder {
       const image = byUrl.get(url);
       return image ? [image] : [];
     });
-  }
-
-  /** Visible on the channel when the merchant says so, else when the product is active. */
-  private isActive(product: ProductDetail, listing: ListingSyncRecord | null): boolean {
-    const visibility = listing?.override?.visibility;
-    if (visibility === ListingVisibility.VISIBLE) return true;
-    if (visibility === ListingVisibility.HIDDEN) return false;
-    return product.status === ProductStatus.ACTIVE;
   }
 
   private variant(

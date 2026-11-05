@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
 import {
   AesGcmEnvelopeEncryption,
   type AppConfigService,
@@ -17,11 +17,15 @@ import { type BuiltInRole, resolveRole } from '../../tenancy/permissions/role-pe
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type { WorkspaceAccessService } from '../../tenancy/services/workspace-access.service.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 import type { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { connectionRecord, USER_ID, WORKSPACE_ID } from '../testing/channel-connection.fixtures.js';
 import { FAKE_ACCOUNT, FakeOAuthConnector } from '../testing/fake-oauth-connector.js';
 import { ChannelAuthorizationService } from './channel-authorization.service.js';
+import { ChannelConnectionQuota } from './channel-connection.quota.js';
 import { ConnectedAccountWriter } from './connected-account.writer.js';
 import { ConnectionCredentialsVault } from './connection-credentials.vault.js';
 import { OAuthConnectorResolver } from './oauth-connector.resolver.js';
@@ -45,7 +49,20 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
     upsertConnected: vi.fn<ChannelConnectionRepository['upsertConnected']>((record) =>
       Promise.resolve(connectionRecord({ displayName: record.displayName })),
     ),
+    holdsSlot: vi.fn<ChannelConnectionRepository['holdsSlot']>().mockResolvedValue(false),
+    hasReconnectCandidate: vi
+      .fn<ChannelConnectionRepository['hasReconnectCandidate']>()
+      .mockResolvedValue(false),
   };
+  const entitlements = {
+    enforced: true,
+    assertInWorkspace: vi.fn<EntitlementService['assertInWorkspace']>().mockResolvedValue(),
+  };
+  const repository = connections as unknown as ChannelConnectionRepository;
+  const quota = new ChannelConnectionQuota(
+    repository,
+    entitlements as unknown as EntitlementService,
+  );
   const workspaceAccess = {
     findRole: vi
       .fn<WorkspaceAccessService['findRole']>()
@@ -55,8 +72,8 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
   const states = new OAuthStateSigner(appConfig);
   const service = new ChannelAuthorizationService(
     new OAuthConnectorResolver(new ChannelConnectorRegistry([connector]), vault, appConfig),
-    new OAuthStateService(states, workspaceAccess as unknown as WorkspaceAccessService),
-    new ConnectedAccountWriter(vault, connections as unknown as ChannelConnectionRepository),
+    new OAuthStateService(states, workspaceAccess as unknown as WorkspaceAccessService, quota),
+    new ConnectedAccountWriter(vault, repository, quota),
     activity,
   );
   const state = () =>
@@ -66,7 +83,7 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
       channel: ChannelType.Shopify,
       accountHandle: FAKE_ACCOUNT,
     });
-  return { service, connector, connections, activity, vault, state };
+  return { service, connector, connections, activity, vault, state, entitlements };
 }
 
 async function failureOf(promise: Promise<unknown>): Promise<ConnectFailure | undefined> {
@@ -76,10 +93,10 @@ async function failureOf(promise: Promise<unknown>): Promise<ConnectFailure | un
 
 describe('ChannelAuthorizationService', () => {
   describe('start', () => {
-    it('returns the authorize URL with a signed state and the API callback', () => {
+    it('returns the authorize URL with a signed state and the API callback', async () => {
       const { service } = setup();
 
-      const started = service.start(WORKSPACE_ID, USER_ID, {
+      const started = await service.start(WORKSPACE_ID, USER_ID, {
         channel: ChannelType.Shopify,
         accountHandle: 'demo-store',
       });
@@ -93,23 +110,94 @@ describe('ChannelAuthorizationService', () => {
       expect(url.searchParams.get('state')).toMatch(/^[\w-]+\.[\w-]+$/);
     });
 
-    it('rejects invalid accounts and unconfigured connectors', () => {
+    it('rejects invalid accounts and unconfigured connectors', async () => {
       const { service, connector } = setup();
 
-      expect(() =>
+      await expect(
         service.start(WORKSPACE_ID, USER_ID, {
           channel: ChannelType.Shopify,
           accountHandle: 'not valid',
         }),
-      ).toThrow(BadRequestException);
+      ).rejects.toThrow(BadRequestException);
       connector.configured = false;
-      expect(() =>
+      await expect(
         service.start(WORKSPACE_ID, USER_ID, { channel: ChannelType.Shopify, accountHandle: 'x' }),
-      ).toThrow(ServiceUnavailableException);
+      ).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('refuses with 402 when the plan has no room for another channel', async () => {
+      const { service, entitlements } = setup();
+      entitlements.assertInWorkspace.mockRejectedValueOnce(
+        planLimitReached(Feature.ChannelConnections),
+      );
+
+      await expect(
+        service.start(WORKSPACE_ID, USER_ID, { channel: ChannelType.Shopify, accountHandle: 'x' }),
+      ).rejects.toMatchObject({ status: HttpStatus.PAYMENT_REQUIRED });
+      expect(entitlements.assertInWorkspace).toHaveBeenCalledWith(
+        WORKSPACE_ID,
+        Feature.ChannelConnections,
+      );
+    });
+
+    it('lets a merchant repair a connection they hold, whatever the plan', async () => {
+      const { service, connections, entitlements } = setup();
+      connections.hasReconnectCandidate.mockResolvedValueOnce(true);
+
+      await service.start(WORKSPACE_ID, USER_ID, {
+        channel: ChannelType.Shopify,
+        accountHandle: 'x',
+      });
+      expect(entitlements.assertInWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('checks nothing while plans are not enforced', async () => {
+      const { service, connections, entitlements } = setup();
+      entitlements.enforced = false;
+
+      await service.start(WORKSPACE_ID, USER_ID, {
+        channel: ChannelType.Shopify,
+        accountHandle: 'x',
+      });
+      expect(connections.hasReconnectCandidate).not.toHaveBeenCalled();
+      expect(entitlements.assertInWorkspace).not.toHaveBeenCalled();
     });
   });
 
   describe('complete', () => {
+    it('stores nothing when the plan filled up meanwhile, and says why', async () => {
+      const { service, connections, activity, entitlements, state } = setup();
+      entitlements.assertInWorkspace.mockRejectedValueOnce(
+        planLimitReached(Feature.ChannelConnections),
+      );
+
+      const failure = await failureOf(
+        service.complete(ChannelType.Shopify, {
+          query: { state: state(), code: 'c' },
+          sessionUserId: USER_ID,
+        }),
+      );
+
+      expect(failure).toBe(ConnectFailure.PlanLimitReached);
+      expect(connections.upsertConnected).not.toHaveBeenCalled();
+      expect(activity.entries[0]).toMatchObject({
+        action: ActivityAction.ChannelConnectFailed,
+        outcome: ActivityOutcome.FAILED,
+      });
+    });
+
+    it('lets an account the workspace holds connect again', async () => {
+      const { service, connections, entitlements, state } = setup();
+      connections.holdsSlot.mockResolvedValueOnce(true);
+
+      await service.complete(ChannelType.Shopify, {
+        query: { state: state(), code: 'c' },
+        sessionUserId: USER_ID,
+      });
+      expect(entitlements.assertInWorkspace).not.toHaveBeenCalled();
+      expect(connections.upsertConnected).toHaveBeenCalled();
+    });
+
     it('stores sealed credentials and records the connection', async () => {
       const { service, connector, connections, activity, vault, state } = setup();
 

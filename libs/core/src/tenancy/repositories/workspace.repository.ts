@@ -27,10 +27,6 @@ export class WorkspaceRepository {
     });
   }
 
-  countInOrganization(organizationId: string): Promise<number> {
-    return this.prisma.workspace.count({ where: { organizationId } });
-  }
-
   /** The slugs in the organization that start with `base`, to pick a free one. */
   async slugsLike(organizationId: string, base: string): Promise<string[]> {
     const workspaces = await this.prisma.workspace.findMany({

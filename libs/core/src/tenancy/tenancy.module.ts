@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ActivityModule } from '../activity/activity.module.js';
+import { EntitlementsModule } from '../entitlements/entitlements.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { ApiKeyRepository } from './repositories/api-key.repository.js';
 import { CustomRoleRepository } from './repositories/custom-role.repository.js';
@@ -11,6 +12,7 @@ import { ApiKeyCleanup } from './services/api-key-cleanup.js';
 import { ApiKeysService } from './services/api-keys.service.js';
 import { CustomRolesService } from './services/custom-roles.service.js';
 import { InvitationMailer } from './services/invitation-mailer.js';
+import { InvitationPolicy } from './services/invitation-policy.js';
 import { InvitationsService } from './services/invitations.service.js';
 import { MembershipService } from './services/membership.service.js';
 import { RoleResolver } from './services/role-resolver.js';
@@ -20,7 +22,7 @@ import { WorkspacesService } from './services/workspaces.service.js';
 
 /** Organizations, workspaces, members, invitations, roles and workspace API keys. */
 @Module({
-  imports: [ActivityModule, NotificationsModule],
+  imports: [ActivityModule, EntitlementsModule, NotificationsModule],
   providers: [
     ApiKeyRepository,
     CustomRoleRepository,
@@ -32,6 +34,7 @@ import { WorkspacesService } from './services/workspaces.service.js';
     ApiKeysService,
     CustomRolesService,
     InvitationMailer,
+    InvitationPolicy,
     InvitationsService,
     MembershipService,
     RoleResolver,

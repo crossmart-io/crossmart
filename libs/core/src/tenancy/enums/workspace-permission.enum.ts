@@ -30,4 +30,9 @@ export enum WorkspacePermission {
   EditListings = 'listings:edit',
   ViewActivity = 'activity:view',
   ApproveSuggestions = 'suggestions:approve',
+  /**
+   * See the organization's plan and usage. Held in any workspace of the organization, it opens
+   * the organization's subscription.
+   */
+  ViewBilling = 'billing:view',
 }

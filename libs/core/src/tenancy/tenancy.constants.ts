@@ -40,8 +40,6 @@ export const MAX_PENDING_INVITATIONS = 50;
 export const INVITATION_ACCEPT_PATH = '/invitations/accept';
 export const INVITATION_TOKEN_QUERY = 'token';
 
-/** A bound on what one organization can create until plans set their own limits. */
-export const MAX_WORKSPACES_PER_ORGANIZATION = 25;
 export const DEFAULT_WORKSPACE_CURRENCY = 'USD';
 /** The slug of a workspace whose name has no letters or digits to make one from. */
 export const FALLBACK_WORKSPACE_SLUG = 'workspace';

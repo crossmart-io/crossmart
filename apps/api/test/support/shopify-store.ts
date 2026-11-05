@@ -58,7 +58,7 @@ function fixture(name: string): string {
   return readFileSync(new URL(name, CATALOG_FIXTURES), FIXTURE_ENCODING);
 }
 
-function signQuery(query: Record<string, string>): Record<string, string> {
+export function signQuery(query: Record<string, string>): Record<string, string> {
   const message = Object.keys(query)
     .sort()
     .map((key) => `${key}=${query[key]}`)
@@ -86,7 +86,7 @@ export const DEFAULT_GRANTED_SCOPES = 'write_products,write_inventory,read_locat
 /** Granted by stores that approved reading orders. */
 export const ORDER_GRANTED_SCOPES = `${DEFAULT_GRANTED_SCOPES},read_orders`;
 
-function expectTokenExchange(http: FakeHttpTransport, shop: string, scope: string): void {
+export function expectTokenExchange(http: FakeHttpTransport, shop: string, scope: string): void {
   http.expect(
     HttpMethod.Post,
     `https://${shop}/admin/oauth/access_token`,

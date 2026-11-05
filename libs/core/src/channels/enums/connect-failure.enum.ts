@@ -11,5 +11,7 @@ export enum ConnectFailure {
   MissingScopes = 'missing_scopes',
   NotPermitted = 'not_permitted',
   ChannelUnavailable = 'channel_unavailable',
+  /** The organization's plan has no room for another connected channel. */
+  PlanLimitReached = 'plan_limit_reached',
   Unexpected = 'unexpected',
 }

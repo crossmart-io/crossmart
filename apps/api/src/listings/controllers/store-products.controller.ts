@@ -12,6 +12,7 @@ import {
   LISTINGS_TAG,
   REMOVE_PRODUCTS_PATH,
 } from '../listings.constants.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 /** Adding many products to a store, or removing them, as the products table does. */
 @ApiTags(LISTINGS_TAG)
@@ -24,9 +25,12 @@ export class StoreProductsController {
   @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
     summary: 'Add products to the store',
-    description: 'They stay until removed and are published at once.',
+    description:
+      'They stay until removed and are published at once. Refused (402) without changes when ' +
+      'the plan has no room for the active listings they would add.',
   })
   @ApiOkResponse({ type: StoreProductsResultDto })
+  @ApiPlanLimitResponse()
   async add(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,

@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { PricingContextFactory } from './services/pricing-context.factory.js';
+import { ActiveListingsGate } from './services/active-listings.gate.js';
+import { StoreSelectionService } from './services/store-selection.service.js';
+import { EntitlementsModule } from '../entitlements/entitlements.module.js';
 import { ActivityModule } from '../activity/activity.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { ChannelsModule } from '../channels/channels.module.js';
@@ -53,11 +56,14 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     CatalogModule,
     ChannelsModule,
     CurrencyModule,
+    EntitlementsModule,
     EventsModule,
     WorkspaceSettingsModule,
   ],
   providers: [
     PricingContextFactory,
+    ActiveListingsGate,
+    StoreSelectionService,
     ListingSyncRepository,
     ListingOverrideRepository,
     ProductSelectionRepository,
@@ -102,6 +108,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ChannelProductsService,
     StoreMembershipService,
     SelectionApplier,
+    StoreSelectionService,
     ConnectionRulesService,
     PricingPreviewService,
     ProductChannelsService,

@@ -89,6 +89,27 @@ function setup(target: ListingTarget) {
 }
 
 describe('ListingContentSync', () => {
+  it('sends nothing for a publish the plan blocks, and shows why on the listing', async () => {
+    const reason = 'The Free plan includes 50 active listings, and 50 are in use.';
+    const { sync, publisher, listings, activity, connections } = setup({
+      action: ListingTargetAction.Blocked,
+      product: productDetail(),
+      listing: listingRecord(),
+      reason,
+    });
+
+    await sync.publish(syncJob());
+
+    expect(publisher.publish).not.toHaveBeenCalled();
+    expect(connections.openSession).not.toHaveBeenCalled();
+    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_ID, reason, ListingStatus.ERROR);
+    expect(activity.entries[0]).toMatchObject({
+      action: ActivityAction.ListingSyncFailed,
+      outcome: ActivityOutcome.FAILED,
+      failureReason: reason,
+    });
+  });
+
   it('publishes a product the channel does not have, and stores its channel ids', async () => {
     const { sync, publisher, listings, activity } = setup({
       action: ListingTargetAction.Publish,

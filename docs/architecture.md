@@ -75,10 +75,55 @@ operation worth reporting fails. Controllers pass the caller down as an `Actor` 
 throws, so a log that cannot be written never fails the operation. A new action is a value in `ActivityAction` plus its
 wording in `activity-summary.ts`; actions are stored as text, so this needs no migration. A product's history is every event whose subject ids include it, whatever the event's subject: an import is about its `ImportJob`, and lists the products it created or changed.
 
+## Plans and entitlements
+
+Plans are data (ADR [0014](decisions/0014-plans-and-entitlements.md)), in `libs/core/src/entitlements`:
+
+```
+Plan (code, name, active, isDefault, sortOrder)
+ └─ PlanVersion (version) ── PlanFeature (feature, enabled, limit: null = unlimited)
+Organization ── OrganizationSubscription (planVersion, status, currentPeriodEnd?,
+                                          externalCustomerId?, externalSubscriptionId?)
+```
+
+- **Grandfathering.** A plan changes by adding a version. New organizations get the latest version
+  of the default plan; existing ones keep the version they are on until moved explicitly.
+- **Features.** `Feature` names every limit and flag; `FEATURE_KINDS` says which is which. A feature
+  a version does not list is not included, so a migration adding a feature gives every version a row.
+- **Seeded plans** (a starting point, to validate with design partners; Enterprise is custom):
+
+  | Feature               | Free | Starter | Growth | Agency |
+  | --------------------- | ---: | ------: | -----: | -----: |
+  | `active_listings`     |   50 |   1,000 | 10,000 | 50,000 |
+  | `channel_connections` |    2 |       ∞ |      ∞ |      ∞ |
+  | `workspaces`          |    1 |       1 |      1 |     25 |
+  | `members`             |    2 |       5 |     15 |      ∞ |
+  | `api_keys`            |    2 |      10 |     25 |    100 |
+  | `ai_credits` / month  |  100 |   1,000 |  5,000 | 20,000 |
+  | `autonomous_agents`   |    — |       — |      ✓ |      ✓ |
+  | `bring_your_own_key`  |    — |       — |      — |      ✓ |
+
+- **Usage** is counted from the data across the organization's workspaces, one aggregate query per
+  feature: listings with status `ACTIVE`, connections not `DISCONNECTED`, workspaces, distinct
+  members, API keys neither revoked nor expired. `ai_credits` reports 0 until AI calls record usage:
+  connect it in `UsageMeter` (sum the period's credits from the AI usage table).
+- **`EntitlementService`** offers `limit`, `usage`, `check` (always truthful) and `assert` (throws
+  `EntitlementExceededException`, HTTP 402 with `code`, `feature`, `limit`, `usage`, `requested`, only
+  while `ENTITLEMENTS_ENFORCED=true`; default false until billing exists).
+- **Where limits apply:** creating a workspace; issuing an API key; inviting someone new to the
+  organization (members); starting a channel connection and storing it on the OAuth callback (a
+  reconnect takes no new slot; a refusal at the callback redirects with `error=plan_limit_reached`);
+  and listings. For listings, the API refuses a publish, a selection rule or products added by hand
+  before writing anything when the products that would go live do not fit (`ActiveListingsGate`),
+  and the worker checks each listing it is about to make live: a blocked one is not sent and is
+  marked `ERROR` with the reason.
+- `GET /api/v1/organizations/{id}/subscription` returns the plan, `enforced`, and every feature
+  with its limit and usage, for members holding `billing:view` (owners and admins).
+
 ## 3. Core domain model (initial)
 
 ```
-Organization ─┬─ Subscription (plan, status, provider ids)
+Organization ─┬─ OrganizationSubscription (plan version, status, provider ids)
               └─ Workspace ─┬─ Member (user, role)
                             ├─ ApiKey
                             ├─ ChannelConnection (channel, credentials[encrypted], status, settings)

@@ -1,8 +1,11 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, HttpStatus } from '@nestjs/common';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import type { ActiveListingsGate } from './active-listings.gate.js';
 import { SyncJobKind } from '../enums/sync-job-kind.enum.js';
 import type { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
 import type { ProductSelectionRepository } from '../repositories/product-selection.repository.js';
@@ -37,10 +40,12 @@ function setup(found = [MUG, CUP]) {
   };
   const queue = { enqueue: vi.fn<SyncJobQueue['enqueue']>().mockResolvedValue() };
   const activity = new InMemoryActivityRecorder();
+  const gate = { assertRoomFor: vi.fn<ActiveListingsGate['assertRoomFor']>().mockResolvedValue() };
   const writer = new StoreMembershipWriter(
     listings as unknown as ListingSyncRepository,
     rules as unknown as ConnectionRulesService,
     queue as unknown as SyncJobQueue,
+    gate as unknown as ActiveListingsGate,
   );
   const service = new StoreMembershipService(
     connections as unknown as ChannelConnectionsService,
@@ -48,7 +53,7 @@ function setup(found = [MUG, CUP]) {
     writer,
     activity,
   );
-  return { service, listings, rules, queue, activity };
+  return { service, listings, rules, queue, activity, gate };
 }
 
 describe('StoreMembershipService', () => {
@@ -96,5 +101,21 @@ describe('StoreMembershipService', () => {
     );
     expect(listings.addToStore).not.toHaveBeenCalled();
     expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('changes nothing when the plan has no room for the listings it would add', async () => {
+    const { service, listings, queue, activity, gate } = setup();
+    gate.assertRoomFor.mockRejectedValueOnce(planLimitReached(Feature.ActiveListings));
+
+    await expect(service.add(change([MUG.id, CUP.id]), ACTOR)).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
+    });
+    expect(gate.assertRoomFor).toHaveBeenCalledWith(change([MUG.id, CUP.id]), {
+      workspaceId: WORKSPACE_ID,
+      id: { in: [MUG.id, CUP.id] },
+    });
+    expect(listings.addToStore).not.toHaveBeenCalled();
+    expect(queue.enqueue).not.toHaveBeenCalled();
+    expect(activity.entries).toHaveLength(0);
   });
 });
