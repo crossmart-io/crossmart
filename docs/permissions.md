@@ -32,6 +32,15 @@ those, not the role name, so they keep working when roles change.
 | `billing:view`        | See the organization's plan and usage (in any of its workspaces)     |   ✓   |   ✓   |        |          |        |
 | `workspace:delete`    | Delete the workspace and everything in it                            |   ✓   |       |        |          |        |
 
+## AI agents
+
+An agent connected with OAuth ([ADR 0019](decisions/0019-agent-access.md)) acts for the user who
+connected it, in the one workspace they picked. Its permissions are those its scopes unlock
+(`catalog:read`, `catalog:write`, `orders:read`, `stores:write`, `reports:read`,
+`suggestions:write`) that the user's role also holds, worked out again on every request. Agents
+never get `members:*`, `api-keys:manage`, `channels:manage`, `workspace:manage`,
+`workspace:delete` or `billing:*`, and they can only call workspace routes.
+
 ## Rules around roles
 
 - A member or API key can only grant, change or remove roles that its own role covers, meaning it

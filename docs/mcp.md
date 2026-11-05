@@ -2,26 +2,65 @@
 
 `apps/mcp` lets AI agents (Claude, ChatGPT, Cursor and others) work with a Crossmart workspace
 through the [Model Context Protocol](https://modelcontextprotocol.io). It never touches the
-database: every tool calls the REST API with a workspace API key, so an agent gets the same
-validation, permissions and activity log as a person in the dashboard.
+database: every tool calls the REST API with the agent's credential (an OAuth access token or a
+workspace API key), so an agent gets the same validation, permissions and activity log as a
+person in the dashboard.
 
 ## Running it
 
-| Mode   | How                                                                  | API key                                                   |
-| ------ | -------------------------------------------------------------------- | --------------------------------------------------------- |
-| Local  | `node dist/apps/mcp/main.js` (stdio), started by the MCP client      | `CROSSMART_API_KEY`                                       |
-| Remote | `MCP_TRANSPORT=http node dist/apps/mcp/main.js`, answering at `/mcp` | Per request: `Authorization: Bearer <key>` or `x-api-key` |
+| Mode   | How                                                                  | Credential                                                    |
+| ------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Local  | `node dist/apps/mcp/main.js` (stdio), started by the MCP client      | `CROSSMART_API_KEY`                                           |
+| Remote | `MCP_TRANSPORT=http node dist/apps/mcp/main.js`, answering at `/mcp` | Per request: an OAuth access token, or an API key (see below) |
 
-| Variable            | Default                 | Meaning                          |
-| ------------------- | ----------------------- | -------------------------------- |
-| `CROSSMART_API_URL` | `http://localhost:3000` | The Crossmart API the tools call |
-| `MCP_TRANSPORT`     | `stdio`                 | `stdio` or `http`                |
-| `PORT`              | `3100`                  | Port of the remote server        |
-| `CROSSMART_API_KEY` |                         | The local server's key           |
+| Variable                | Default                        | Meaning                                                       |
+| ----------------------- | ------------------------------ | ------------------------------------------------------------- |
+| `CROSSMART_API_URL`     | `http://localhost:3000`        | The Crossmart API the tools call                              |
+| `MCP_TRANSPORT`         | `stdio`                        | `stdio` or `http`                                             |
+| `PORT`                  | `3100`                         | Port of the remote server                                     |
+| `CROSSMART_API_KEY`     |                                | The local server's key                                        |
+| `MCP_PUBLIC_URL`        | `http://localhost:{PORT}/mcp`  | This server's public address; the API must use the same value |
+| `CROSSMART_AUTH_ISSUER` | `{CROSSMART_API_URL}/api/auth` | The API's public auth URL, when the API is reached privately  |
 
-The remote server is stateless: each POST builds a server for the request's key and closes it
-when the response ends, so any number of instances can run behind a load balancer. A key works
-in exactly one workspace; the server finds it with `GET /api/v1/api-key`.
+The remote server is stateless: each POST builds a server for the request's credential and closes
+it when the response ends, so any number of instances can run behind a load balancer.
+
+## Connecting an agent
+
+**Sign in with OAuth** ([ADR 0019](decisions/0019-agent-access.md)). Add the server's URL
+(`https://mcp.crossmart.io/mcp`) as a custom connector in Claude, ChatGPT, Gemini, Grok or any MCP
+client. The rest follows the MCP authorization spec:
+
+1. Without a token, `/mcp` answers 401 with a `WWW-Authenticate` header pointing to the Protected
+   Resource Metadata at `/.well-known/oauth-protected-resource/mcp` (RFC 9728).
+2. The metadata names the API (`{API}/api/auth`) as the authorization server. Its discovery
+   document is served at `/.well-known/oauth-authorization-server/api/auth`.
+3. The client identifies itself with a Client ID Metadata Document (Claude, ChatGPT, Codex, VS
+   Code), or registers as a public client (Cursor, Gemini CLI, Le Chat and others).
+4. The user signs in to Crossmart, picks the workspace the agent will work in
+   (`/oauth/workspace` in the web app), and approves its access (`/oauth/consent`), full or
+   read-only.
+5. The client gets an access token (1 hour, a JWT bound to `MCP_PUBLIC_URL`) and a refresh token
+   (30 days, rotated).
+
+An agent acts for the user who connected it, in one workspace. What it may do is its scopes
+narrowed by that user's current role, and it never reaches members, API keys, store connections,
+settings or billing. It only sees the tools its scopes cover. The activity log shows it as an
+agent with the user's name. Members see and disconnect their agents under Settings (`GET/DELETE
+/api/v1/workspaces/{id}/agent-connections`), and disconnecting stops the agent at once.
+
+| Scope               | Tools                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `list_suggestions` |
+| `catalog:write`     | `create_product`, `replace_product`, `adjust_stock`                                 |
+| `orders:read`       | `list_orders`, `get_order`                                                          |
+| `stores:write`      | `add_product_to_store`, `remove_product_from_store`                                 |
+| `reports:read`      | `get_sales_report`, `get_inventory_report`                                          |
+| `suggestions:write` | `generate_content`, `approve_suggestion`                                            |
+
+**Or use an API key**, for scripts and self-hosted setups: send it as `Authorization: Bearer <key>`
+or `x-api-key`. A key works in exactly one workspace, which the server finds with
+`GET /api/v1/api-key`, and every tool is offered; the key's role decides in the API.
 
 ## Tools
 
