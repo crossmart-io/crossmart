@@ -83,6 +83,16 @@ describe('GoogleOAuthClient', () => {
     expect(setup(null).oauth.isConfigured).toBe(false);
   });
 
+  it('names Google’s error code when the exchange is refused', async () => {
+    const { oauth, http } = setup();
+    http.expect(HttpMethod.Post, TOKEN_URL, jsonResponse({ error: 'redirect_uri_mismatch' }, 400));
+
+    await expect(oauth.exchangeCode('4/code', REDIRECT)).rejects.toMatchObject({
+      code: ChannelErrorCode.RequestRejected,
+      message: 'Google did not issue an access token (redirect_uri_mismatch)',
+    });
+  });
+
   it('revokes a token', async () => {
     const { oauth, http } = setup();
     http.expect(HttpMethod.Post, 'https://oauth2.googleapis.com/revoke', jsonResponse({}));
