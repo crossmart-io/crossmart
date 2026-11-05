@@ -85,6 +85,10 @@ describe('EbayListingPublisher', () => {
     });
     const item = requestTo(http.requests, HttpMethod.Put, `${INVENTORY}/inventory_item/${MUG_SKU}`);
     expect(item?.headers?.['content-language']).toBe('en-US');
+    expect(item?.headers?.['accept-language']).toBe('en-US');
+    for (const request of http.requests) {
+      expect(request.headers?.['accept-language']).toBeTruthy();
+    }
     expect(bodyOf(item)).toEqual({
       availability: { shipToLocationAvailability: { quantity: 3 } },
       condition: 'NEW',
