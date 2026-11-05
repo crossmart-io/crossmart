@@ -132,15 +132,24 @@ export class GoogleOAuthClient {
     if (isServerErrorStatus(response.status)) {
       return googleMerchantError(ChannelErrorCode.ChannelUnavailable, EXCHANGE_FAILED);
     }
-    return isRefresh && this.isInvalidGrant(response)
-      ? googleMerchantError(ChannelErrorCode.CredentialsRejected, REFRESH_REJECTED)
-      : googleMerchantError(ChannelErrorCode.RequestRejected, EXCHANGE_FAILED);
+    if (isRefresh && this.isInvalidGrant(response)) {
+      return googleMerchantError(ChannelErrorCode.CredentialsRejected, REFRESH_REJECTED);
+    }
+    const reason = this.errorCodeOf(response);
+    const message = reason ? `${EXCHANGE_FAILED} (${reason})` : EXCHANGE_FAILED;
+    return googleMerchantError(ChannelErrorCode.RequestRejected, message);
+  }
+
+  /** Google's OAuth error code, such as `redirect_uri_mismatch`; never the rest of the body. */
+  private errorCodeOf({ body }: HttpResponse): string | null {
+    const parsed = googleTokenErrorSchema.safeParse(parseJsonBody(body));
+    return parsed.success ? parsed.data.error : null;
   }
 
   /** A 400 or 401 `invalid_grant`: the refresh token expired or the merchant revoked access. */
-  private isInvalidGrant({ status, body }: HttpResponse): boolean {
+  private isInvalidGrant(response: HttpResponse): boolean {
+    const { status } = response;
     const rejected = status === HTTP_STATUS_BAD_REQUEST || status === HTTP_STATUS_UNAUTHORIZED;
-    const parsed = googleTokenErrorSchema.safeParse(parseJsonBody(body));
-    return rejected && parsed.success && parsed.data.error === GOOGLE_INVALID_GRANT_ERROR;
+    return rejected && this.errorCodeOf(response) === GOOGLE_INVALID_GRANT_ERROR;
   }
 }
