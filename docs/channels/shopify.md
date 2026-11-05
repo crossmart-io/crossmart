@@ -171,16 +171,24 @@ Webhook URLs must be public HTTPS, so receiving webhooks locally needs a tunnel 
    Shopify's documentation does not say whether it accepts plain `http://localhost` redirect URLs.
 2. If the Dev Dashboard refuses that URL, start a tunnel to the API, set `API_PUBLIC_URL` to the
    tunnel's HTTPS URL, and register `https://<tunnel>/api/v1/channels/shopify/oauth/callback`.
-   You also need the tunnel to receive webhooks.
+   You also need the tunnel to receive webhooks. The callback needs the session and nonce
+   cookies the API set, so point the web app at the same host (`VITE_API_URL=https://<tunnel>`)
+   while connecting; otherwise the callback answers `session_required` or `invalid_state`.
 3. Install on a development store: open Channels, click **Connect** on Shopify and enter the
    store's domain.
 
 ## Security
 
 - The OAuth `state` is HMAC-signed with a key derived from `BETTER_AUTH_SECRET`. It names the
-  workspace, user and store, and expires after 10 minutes. On the callback, the state must verify
-  and must not belong to a different signed-in user. The user must still manage the workspace,
-  and Shopify must answer for the store named in the state.
+  workspace, user and store, carries a random nonce, and expires after 10 minutes. Starting a
+  connection also sets the nonce in a cookie (`crossmart_oauth_nonce`: HttpOnly, SameSite=Lax,
+  Secure over HTTPS, sent only to the channel's callback path, 10 minutes). On the callback, the
+  state must verify, the browser must be signed in as the user who started the connection
+  (`session_required` otherwise) and must send the same nonce, and the nonce must not have been
+  used before (each state is single use, recorded in Redis until it expires). The cookie is
+  cleared on every callback. So a link to the channel's approval page that someone else started
+  cannot connect your account to their workspace. The user must still manage the workspace, and
+  Shopify must answer for the store named in the state. The same rules apply to every channel.
 - The callback HMAC and webhook HMACs are compared in constant time.
 - Credentials are sealed with AES-256-GCM using a per-workspace data key, which is wrapped by
   `CREDENTIALS_MASTER_KEY`. The ciphertext is bound to the workspace, channel and store.

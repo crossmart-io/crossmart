@@ -28,7 +28,8 @@ const STATE_PART_COUNT = 2;
 /**
  * Signs the OAuth `state`: who started the connection, for which workspace and account, with a
  * random nonce and an expiry. The key is derived from the auth secret, so no extra setting is
- * needed, and the state cannot be forged or replayed after it expires.
+ * needed, and the state cannot be forged or used after it expires. `OAuthStateService` binds it
+ * to the browser and makes it single use.
  */
 @Injectable()
 export class OAuthStateSigner {
@@ -46,10 +47,18 @@ export class OAuthStateSigner {
     );
   }
 
-  sign(claims: OAuthStateClaims, now = new Date()): string {
+  /**
+   * The signed state. `nonce` binds it to the browser that started the connection: the same
+   * value goes into a cookie, and the callback requires both to match.
+   */
+  sign(
+    claims: OAuthStateClaims,
+    now = new Date(),
+    nonce = generateSecureToken(OAUTH_STATE_NONCE_BYTES),
+  ): string {
     const payload: OAuthStatePayload = {
       ...claims,
-      nonce: generateSecureToken(OAUTH_STATE_NONCE_BYTES),
+      nonce,
       expiresAt: now.getTime() + OAUTH_STATE_TTL_MS,
     };
     const encoded = Buffer.from(JSON.stringify(payload)).toString(ENCODING);

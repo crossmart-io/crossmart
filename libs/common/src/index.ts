@@ -37,3 +37,8 @@ export * from './mail/mail-sender.js';
 export * from './mail/mail.constants.js';
 export * from './mail/mail.module.js';
 export * from './mail/resend-mail-sender.js';
+export * from './redis/replay-guard.js';
+export * from './redis/redis-replay.guard.js';
+export * from './redis/in-memory-replay.guard.js';
+export * from './redis/redis.constants.js';
+export * from './redis/redis.module.js';

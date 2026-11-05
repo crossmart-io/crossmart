@@ -52,3 +52,11 @@ export const GOOGLE_LISTING_SETUP_PATH = `:${CONNECTION_ID_PARAM}/google-merchan
 export const GOOGLE_TARGET_COUNTRY_SCHEMA_NAME = 'GoogleTargetCountry';
 /** Longest product page address template accepted. */
 export const PRODUCT_URL_TEMPLATE_MAX_LENGTH = 2_000;
+
+/**
+ * The cookie that binds a channel connection to the browser that started it. It holds the nonce
+ * signed into the OAuth state, is sent only to that channel's callback, and lives as long as
+ * the state.
+ */
+export const OAUTH_NONCE_COOKIE = 'crossmart_oauth_nonce';
+export const HTTPS_PROTOCOL = 'https:';

@@ -10,6 +10,8 @@ export enum ConnectFailure {
   AccessDenied = 'access_denied',
   MissingScopes = 'missing_scopes',
   NotPermitted = 'not_permitted',
+  /** The browser came back from the channel without a Crossmart session: sign in and retry. */
+  SessionRequired = 'session_required',
   ChannelUnavailable = 'channel_unavailable',
   /** The organization's plan has no room for another connected channel. */
   PlanLimitReached = 'plan_limit_reached',

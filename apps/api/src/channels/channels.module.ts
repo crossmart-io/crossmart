@@ -8,6 +8,7 @@ import { ChannelWebhooksController } from './controllers/channel-webhooks.contro
 import { EbayAccountController } from './controllers/ebay-account.controller.js';
 import { EbayAccountDeletionController } from './controllers/ebay-account-deletion.controller.js';
 import { GoogleMerchantAccountController } from './controllers/google-merchant-account.controller.js';
+import { OAuthNonceCookie } from './services/oauth-nonce.cookie.js';
 
 @Module({
   imports: [ChannelsModule, ChannelImportModule, ListingsModule, AuthModule],
@@ -20,5 +21,6 @@ import { GoogleMerchantAccountController } from './controllers/google-merchant-a
     EbayAccountDeletionController,
     GoogleMerchantAccountController,
   ],
+  providers: [OAuthNonceCookie],
 })
 export class ChannelsApiModule {}

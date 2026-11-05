@@ -13,7 +13,7 @@ import {
 } from '@crossmart/connectors';
 import { ActivityAction, ConnectFailure, OAuthStateSigner } from '@crossmart/core';
 import { ChannelConnectionStatus, PrismaService, WorkspaceRole } from '@crossmart/database';
-import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
+import { browserCookies, createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
 const env = vi.hoisted(() => {
@@ -124,7 +124,7 @@ describe('Channels (e2e)', () => {
     expectShopifyCalls(shop);
     const response = await callback(
       signQuery({ code: 'code', shop, state, timestamp: '1762164000' }),
-      user.cookie,
+      browserCookies(user, started),
     );
     expect(response.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=shopify`);
     const list = await request(app.getHttpServer())
@@ -248,7 +248,7 @@ describe('Channels (e2e)', () => {
 
     const response = await callback(
       signQuery({ code: 'code', shop, state, timestamp: '1' }, 'wrong-secret'),
-      owner.cookie,
+      browserCookies(owner, started),
     );
 
     expect(response.status).toBe(HttpStatus.FOUND);
@@ -269,7 +269,7 @@ describe('Channels (e2e)', () => {
 
     const response = await callback(
       signQuery({ code: 'code', shop: newShop(), state, timestamp: '1' }),
-      owner.cookie,
+      browserCookies(owner, started),
     );
 
     expect(response.headers.location).toBe(errorRedirect(ConnectFailure.InvalidAccount));
@@ -304,6 +304,71 @@ describe('Channels (e2e)', () => {
       expect(response.headers.location).toBe(errorRedirect(failure));
     }
     http.assertDone();
+  });
+
+  describe('browser binding', () => {
+    async function started(owner: SignedUpUser, shop: string) {
+      const response = await startAuthorization(owner, shop);
+      const state = new URL(response.body.authorizationUrl).searchParams.get('state') ?? '';
+      return { response, query: signQuery({ code: 'code', shop, state, timestamp: '1' }) };
+    }
+
+    it('sets an HttpOnly, SameSite=Lax nonce cookie for the callback only', async () => {
+      const owner = await signUp(app, 'Cookie Merchant');
+      const { response } = await started(owner, newShop());
+
+      const [cookie] = [response.headers['set-cookie'] ?? []].flat() as string[];
+      expect(cookie).toMatch(/^crossmart_oauth_nonce=[\w-]+;/);
+      expect(cookie).toContain('Path=/api/v1/channels/shopify/oauth/callback');
+      expect(cookie).toContain('HttpOnly');
+      expect(cookie).toContain('SameSite=Lax');
+      expect(cookie).toContain('Max-Age=600');
+      expect(response.body).not.toHaveProperty('browserNonce');
+    });
+
+    it('refuses a callback without a session, even with the nonce cookie', async () => {
+      const owner = await signUp(app, 'Victim Merchant');
+      const shop = newShop();
+      const { response, query } = await started(owner, shop);
+      const nonceOnly = browserCookies({ ...owner, cookie: '' }, response);
+
+      const callbackResponse = await callback(query, nonceOnly);
+
+      expect(callbackResponse.headers.location).toBe(errorRedirect(ConnectFailure.SessionRequired));
+      http.assertDone();
+    });
+
+    it('refuses a callback without the nonce cookie or with another browser’s', async () => {
+      const owner = await signUp(app, 'Attacker');
+      const shop = newShop();
+      const { query } = await started(owner, shop);
+      const other = await started(owner, shop);
+
+      for (const cookie of [owner.cookie, browserCookies(owner, other.response)]) {
+        expect((await callback(query, cookie)).headers.location).toBe(
+          errorRedirect(ConnectFailure.InvalidState),
+        );
+      }
+      http.assertDone();
+    });
+
+    it('connects the same browser once, clears the cookie, and refuses a replay', async () => {
+      const owner = await signUp(app, 'Single Use');
+      const shop = newShop();
+      const { response, query } = await started(owner, shop);
+      const cookies = browserCookies(owner, response);
+      expectShopifyCalls(shop);
+
+      const first = await callback(query, cookies);
+      const replay = await callback(query, cookies);
+
+      expect(first.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=shopify`);
+      expect([first.headers['set-cookie']].flat().join()).toMatch(
+        /^crossmart_oauth_nonce=;.*Expires=Thu, 01 Jan 1970/,
+      );
+      expect(replay.headers.location).toBe(errorRedirect(ConnectFailure.InvalidState));
+      http.assertDone();
+    });
   });
 
   describe('webhooks', () => {

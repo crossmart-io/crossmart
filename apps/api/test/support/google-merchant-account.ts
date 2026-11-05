@@ -7,7 +7,7 @@ import {
   HttpMethod,
   jsonResponse,
 } from '@crossmart/connectors';
-import type { SignedUpUser } from './test-app.js';
+import { browserCookies, type SignedUpUser } from './test-app.js';
 
 export const GOOGLE_API = 'https://merchantapi.googleapis.com';
 export const MERCHANT_ACCOUNT_ID = '123456789';
@@ -64,7 +64,7 @@ export async function connectGoogleMerchant(
   const callback = await request(app.getHttpServer())
     .get('/api/v1/channels/google_merchant/oauth/callback')
     .query({ code: '4/e2e-code', state, scope: 'https://www.googleapis.com/auth/content' })
-    .set('Cookie', user.cookie);
+    .set('Cookie', browserCookies(user, started));
   expect(callback.headers.location).toBe(`${webAppUrl}/channels?connected=google_merchant`);
   http.assertDone();
   const list = await request(app.getHttpServer()).get(base).set('Cookie', user.cookie);

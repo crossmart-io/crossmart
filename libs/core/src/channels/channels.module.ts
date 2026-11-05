@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { RedisModule } from '@crossmart/common';
 import { EventsModule } from '../events/events.module.js';
 import { ConnectorsModule } from '@crossmart/connectors';
 import { ActivityModule } from '../activity/activity.module.js';
@@ -35,6 +36,7 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     CredentialsModule,
     EntitlementsModule,
     EventsModule,
+    RedisModule,
     TenancyModule,
   ],
   providers: [

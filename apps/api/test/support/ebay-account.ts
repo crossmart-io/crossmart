@@ -7,7 +7,7 @@ import {
   HttpMethod,
   jsonResponse,
 } from '@crossmart/connectors';
-import type { SignedUpUser } from './test-app.js';
+import { browserCookies, type SignedUpUser } from './test-app.js';
 
 /** Fake app settings, set before the app module reads its configuration. */
 export const EBAY_TEST_ENV = {
@@ -98,7 +98,7 @@ export async function connectEbayAccount(
   const callback = await request(app.getHttpServer())
     .get('/api/v1/channels/ebay/oauth/callback')
     .query({ code: 'v^1.1#code', state })
-    .set('Cookie', user.cookie);
+    .set('Cookie', browserCookies(user, started));
   expect(callback.headers.location).toBe(`${EBAY_TEST_ENV.WEB_APP_URL}/channels?connected=ebay`);
   http.assertDone();
   const list = await request(app.getHttpServer()).get(base).set('Cookie', user.cookie);

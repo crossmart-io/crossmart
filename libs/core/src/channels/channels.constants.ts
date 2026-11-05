@@ -5,6 +5,8 @@ export const OAUTH_STATE_KEY_INFO = 'crossmart:channel-oauth-state';
 export const OAUTH_STATE_KEY_BYTES = 32;
 export const OAUTH_STATE_NONCE_BYTES = 16;
 export const OAUTH_STATE_SEPARATOR = '.';
+/** Prefix of the replay keys that make each OAuth state single use. */
+export const OAUTH_STATE_REPLAY_KEY_PREFIX = 'channel-oauth-state:';
 
 /** Tokens are refreshed this long before they expire, so a call never starts with a dead token. */
 export const CREDENTIALS_REFRESH_MARGIN_MS = 5 * 60 * 1000;
