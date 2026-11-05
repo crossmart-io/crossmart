@@ -5,8 +5,6 @@ import type {
 import {
   DIGITS_PATTERN,
   EAN_LENGTH,
-  EBAY_BRAND_ASPECT,
-  EBAY_UNBRANDED,
   EBAY_DESCRIPTION_MAX_LENGTH,
   EBAY_MAX_IMAGES,
   EBAY_TITLE_MAX_LENGTH,
@@ -15,6 +13,7 @@ import {
   UPC_LENGTH,
 } from '../ebay.constants.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
+import { listingBrand, productAspects, variantAspects } from './ebay-item-aspects.js';
 import type {
   EbayAspects,
   EbayInventoryItemBody,
@@ -46,22 +45,6 @@ export function listingImageUrls(draft: ListingDraft): string[] {
     .slice(0, EBAY_MAX_IMAGES);
 }
 
-/** Aspects of the whole product: the vendor as its brand, or unbranded without one. */
-function productAspects(draft: ListingDraft): EbayAspects {
-  const brand = draft.product.vendor?.trim();
-  return { [EBAY_BRAND_ASPECT]: [brand || EBAY_UNBRANDED] };
-}
-
-/** The product's aspects plus the variant's option values, such as `Size: ["M"]`. */
-function variantAspects(draft: ListingDraft, variant: ListingDraftVariant): EbayAspects {
-  const aspects = productAspects(draft);
-  draft.product.optionNames.forEach((name, index) => {
-    const value = variant.optionValues[index];
-    if (value) aspects[name] = [value];
-  });
-  return aspects;
-}
-
 /** A 12-digit barcode is a UPC and a 13-digit one an EAN; others are not sent. */
 function barcodeFields(barcode: string | null): Pick<EbayProductDetails, 'upc' | 'ean'> {
   if (!barcode || !DIGITS_PATTERN.test(barcode)) return {};
@@ -77,7 +60,7 @@ export function listedQuantity(variant: ListingDraftVariant): number {
 }
 
 function productDetails(draft: ListingDraft, aspects: EbayAspects): EbayProductDetails {
-  const brand = draft.product.vendor?.trim();
+  const brand = listingBrand(draft);
   return {
     title: listingTitle(draft.product.title),
     description: listingDescription(draft),

@@ -122,6 +122,8 @@ export * from './listings/services/connection-rules.service.js';
 export * from './listings/services/inventory-reconciliation.service.js';
 export * from './listings/services/listing-overrides.service.js';
 export * from './listings/services/listing-category.service.js';
+export * from './listings/services/listing-item-specifics.service.js';
+export * from './listings/entities/listing-item-specifics.js';
 export * from './listings/services/listing-sync.runner.js';
 export * from './listings/services/pricing-preview.service.js';
 export * from './listings/services/product-channels.service.js';

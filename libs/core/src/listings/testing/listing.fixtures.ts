@@ -81,6 +81,7 @@ export function listingRecord(overrides: Partial<ListingSyncRecord> = {}): Listi
     variants: [],
     override: null,
     variantOverrides: [],
+    itemSpecifics: [],
     createdAt: AT,
     updatedAt: AT,
     ...overrides,

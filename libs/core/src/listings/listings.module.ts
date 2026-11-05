@@ -31,6 +31,9 @@ import { ListingOverridesService } from './services/listing-overrides.service.js
 import { ListingContentReader } from './services/listing-content.reader.js';
 import { ListingCategoryService } from './services/listing-category.service.js';
 import { ListingCategoryWriter } from './services/listing-category.writer.js';
+import { ListingItemSpecificsRepository } from './repositories/listing-item-specifics.repository.js';
+import { ListingItemSpecificsService } from './services/listing-item-specifics.service.js';
+import { ListingItemSpecificsWriter } from './services/listing-item-specifics.writer.js';
 import { ListingPriceSync } from './services/listing-price.sync.js';
 import { ListingSyncFailures } from './services/listing-sync-failures.js';
 import { ListingSyncOutcomes } from './services/listing-sync-outcomes.js';
@@ -98,6 +101,9 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingOverridesService,
     ListingContentReader,
     ListingCategoryWriter,
+    ListingItemSpecificsRepository,
+    ListingItemSpecificsWriter,
+    ListingItemSpecificsService,
     ListingCategoryService,
     InventoryReconciliationService,
     { provide: SyncJobQueue, useClass: BullSyncJobQueue },
@@ -117,6 +123,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingOverridesService,
     ListingContentReader,
     ListingCategoryService,
+    ListingItemSpecificsService,
     ListingSyncRunner,
     InventoryReconciliationService,
     SyncJobQueue,
