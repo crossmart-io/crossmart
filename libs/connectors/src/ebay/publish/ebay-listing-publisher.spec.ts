@@ -96,7 +96,7 @@ describe('EbayListingPublisher', () => {
         title: 'Stoneware mug',
         description: 'Stoneware mug',
         imageUrls: ['https://cdn.example.com/mug.jpg'],
-        aspects: {},
+        aspects: { Brand: ['Unbranded'] },
         upc: ['012345678905'],
       },
     });

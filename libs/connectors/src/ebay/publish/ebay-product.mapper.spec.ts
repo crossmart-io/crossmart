@@ -13,6 +13,19 @@ describe('listingTitle', () => {
 });
 
 describe('toInventoryItem', () => {
+  it('sends the vendor as the brand, and Unbranded without one', () => {
+    const draft = mugDraft();
+    const [variant] = draft.variants;
+
+    expect(toInventoryItem(draft, variant, EbayCondition.New).product.aspects).toEqual({
+      Brand: ['Unbranded'],
+    });
+    draft.product.vendor = '  Acme ';
+    expect(toInventoryItem(draft, variant, EbayCondition.New).product.aspects).toEqual({
+      Brand: ['Acme'],
+    });
+  });
+
   it('sends a fixed quantity for untracked variants and never a negative one', () => {
     const draft = mugDraft();
     const [variant] = draft.variants;
