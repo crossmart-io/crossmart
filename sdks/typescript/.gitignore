@@ -1,0 +1,5 @@
+node_modules/
+dist/
+*.tsbuildinfo
+# Copied from the repository root by `prepack`
+LICENSE

@@ -1,0 +1,72 @@
+{
+  "name": "@crossmart/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript SDK for the Crossmart API, the open-source multichannel platform for sellers and their AI agents.",
+  "keywords": [
+    "crossmart",
+    "multichannel",
+    "ecommerce",
+    "listings",
+    "inventory",
+    "sdk",
+    "openapi"
+  ],
+  "author": "Crossmart <hello@crossmart.io>",
+  "homepage": "https://github.com/crossmart-io/crossmart/tree/main/sdks/typescript#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crossmart-io/crossmart.git",
+    "directory": "sdks/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/crossmart-io/crossmart/issues"
+  },
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "packageManager": "pnpm@10.18.3",
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint -c ../../.oxlintrc.json --ignore-pattern 'src/generated/**' src scripts",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.mjs\" \"*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.mjs\" \"*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate": "node scripts/generate-schema.mjs",
+    "check:drift": "node scripts/generate-schema.mjs --check",
+    "prepack": "cp ../../LICENSE LICENSE",
+    "prepublishOnly": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "oxlint": "1.90.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}
