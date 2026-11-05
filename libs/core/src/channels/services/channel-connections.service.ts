@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { requireEnumValue } from '@crossmart/common';
+import { describeError, requireEnumValue } from '@crossmart/common';
 import {
   type ChannelConnector,
   ChannelConnectorRegistry,
@@ -79,7 +79,7 @@ export class ChannelConnectionsService {
     try {
       await connector.revokeAccess(await this.sessions.open(connection.workspaceId, connection.id));
     } catch (error) {
-      const reason = error instanceof Error ? error.name : typeof error;
+      const reason = describeError(error);
       this.logger.warn(`Could not revoke access of connection ${connection.id}: ${reason}`);
     }
   }
