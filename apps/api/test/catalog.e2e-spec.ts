@@ -1,16 +1,25 @@
 import { readFileSync } from 'node:fs';
+import { mkdir, rm, truncate, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { API_KEY_HEADER } from '@crossmart/common';
+import { API_KEY_HEADER, FileStorage, type LocalFileStorage } from '@crossmart/common';
 import {
   BulkProductAction,
   CatalogGap,
   CatalogImportFormat,
   ImportIssueCode,
+  WORKSPACE_STORAGE_FULL_MESSAGE,
+  WORKSPACE_STORAGE_MAX_BYTES,
 } from '@crossmart/core';
 import { ProductStatus, WorkspaceRole } from '@crossmart/database';
 import { createTestApp, signUp } from './support/test-app.js';
+
+async function touch(path: string): Promise<string> {
+  await writeFile(path, '');
+  return path;
+}
 
 const SHOPIFY_EXPORT = readFileSync(
   new URL(
@@ -241,6 +250,31 @@ describe('Catalog (e2e)', () => {
       .set('Cookie', cookie)
       .attach('file', Buffer.from('<svg onload="alert(1)"/>'), 'evil.png');
     expect(svg.status).toBe(HttpStatus.BAD_REQUEST);
+  });
+
+  it('refuses uploads with 413 once the workspace’s storage is full', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Hoarder');
+    const storage = app.get(FileStorage) as LocalFileStorage;
+    const folder = join(storage.directory, 'workspaces', workspaceId, 'products');
+    await mkdir(folder, { recursive: true });
+    // A sparse file: it reports the full size without taking the disk space.
+    await truncate(await touch(join(folder, 'filler.bin')), WORKSPACE_STORAGE_MAX_BYTES);
+    const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
+
+    const upload = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${workspaceId}/media/product-images`)
+      .set('Cookie', cookie)
+      .attach('file', png, 'photo.png');
+    const other = await signUp(app, 'Neighbour');
+    const neighbour = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${other.workspaceId}/media/product-images`)
+      .set('Cookie', other.cookie)
+      .attach('file', png, 'photo.png');
+    await rm(join(storage.directory, 'workspaces', workspaceId), { recursive: true });
+
+    expect(upload.status).toBe(HttpStatus.PAYLOAD_TOO_LARGE);
+    expect(upload.body.message).toBe(WORKSPACE_STORAGE_FULL_MESSAGE);
+    expect(neighbour.status).toBe(HttpStatus.CREATED);
   });
 
   it('counts the catalog for the overview', async () => {

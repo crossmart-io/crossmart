@@ -13,4 +13,7 @@ export abstract class FileStorage {
   abstract put(key: string, content: Buffer, contentType: string): Promise<StoredFile>;
 
   abstract delete(key: string): Promise<void>;
+
+  /** The total size in bytes of the files under the folder `prefix`; 0 when it is empty. */
+  abstract usedBytes(prefix: string): Promise<number>;
 }
