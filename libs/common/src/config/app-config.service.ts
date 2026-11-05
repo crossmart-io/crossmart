@@ -131,6 +131,13 @@ export class AppConfigService {
     return { clientId, clientSecret, ruName, environment };
   }
 
+  /** The Google Cloud OAuth app for Google Merchant Center, or null without one. */
+  get googleApp(): OAuthAppCredentials | null {
+    const clientId = this.configService.get('GOOGLE_CLIENT_ID', { infer: true });
+    const clientSecret = this.configService.get('GOOGLE_CLIENT_SECRET', { infer: true });
+    return clientId && clientSecret ? { clientId, clientSecret } : null;
+  }
+
   /** Whether plan limits block actions; when false they are only reported. */
   get entitlementsEnforced(): boolean {
     return this.configService.get('ENTITLEMENTS_ENFORCED', { infer: true });

@@ -1,0 +1,7 @@
+{
+  "name": "accounts/123456789/dataSources/10462800",
+  "dataSourceId": "10462800",
+  "displayName": "Crossmart (DE)",
+  "primaryProductDataSource": { "contentLanguage": "de", "feedLabel": "DE", "countries": ["DE"] },
+  "input": "API"
+}

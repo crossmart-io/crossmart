@@ -41,6 +41,19 @@ const EBAY_RULES: ChannelContentRules = {
   ],
 };
 
+const GOOGLE_MERCHANT_RULES: ChannelContentRules = {
+  channelName: 'Google Shopping (Google Merchant Center)',
+  titleMaxLength: 150,
+  descriptionMaxLength: 5_000,
+  descriptionFormat: DescriptionFormat.BasicHtml,
+  allowsLinks: false,
+  guidance: [
+    'Titles lead with what shoppers search for: brand, product type, then key attributes (material, colour, size, model). No promotional text, ALL CAPS or prices.',
+    'Google shows the description as plain text: write short paragraphs and simple lists; formatting is removed. No promotional text, links, shipping or store details.',
+    'Describe the product accurately and specifically; Google disapproves misleading or vague listings.',
+  ],
+};
+
 /**
  * The catalog: the merchant's own product content, which every store starts from. It is
  * written channel-neutral, for the merchant's site and as the base the stores adapt.
@@ -64,6 +77,7 @@ export const CATALOG_CONTENT_RULES: ChannelContentRules = {
 export const CHANNEL_CONTENT_RULES: Readonly<Partial<Record<ChannelType, ChannelContentRules>>> = {
   [ChannelType.Shopify]: SHOPIFY_RULES,
   [ChannelType.Ebay]: EBAY_RULES,
+  [ChannelType.GoogleMerchant]: GOOGLE_MERCHANT_RULES,
 };
 
 export function contentRulesFor(channel: ChannelType): ChannelContentRules | null {

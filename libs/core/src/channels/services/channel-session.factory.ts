@@ -12,6 +12,7 @@ import {
 import { requireEnumValue } from '@crossmart/common';
 import type { Prisma } from '@crossmart/database';
 import { CONNECTION_NOT_FOUND, CREDENTIALS_REFRESH_MARGIN_MS } from '../channels.constants.js';
+import { parseConnectionSettings } from '../entities/connection-settings.js';
 import type { SealedCredentialsRecord } from '../repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { credentialsExpiry } from '../rules/credentials-expiry.js';
@@ -40,10 +41,12 @@ export class ChannelSessionFactory {
     if (!connection) {
       throw new NotFoundException(CONNECTION_NOT_FOUND);
     }
+    const connector = this.registry.require(requireEnumValue(ChannelType, connection.channel));
     return {
       connectionId,
       externalAccountId: connection.externalAccountId,
       grantedScopes: connection.grantedScopes,
+      settings: parseConnectionSettings(connector, connection.settings).account,
       accessToken: async () => (await this.currentCredentials(connectionId)).accessToken,
     };
   }

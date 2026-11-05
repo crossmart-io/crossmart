@@ -6,6 +6,7 @@ import { ChannelConnectionsController } from './controllers/channel-connections.
 import { ChannelOAuthController } from './controllers/channel-oauth.controller.js';
 import { ChannelWebhooksController } from './controllers/channel-webhooks.controller.js';
 import { EbayAccountController } from './controllers/ebay-account.controller.js';
+import { GoogleMerchantAccountController } from './controllers/google-merchant-account.controller.js';
 
 @Module({
   imports: [ChannelsModule, ChannelImportModule, ListingsModule, AuthModule],
@@ -15,6 +16,7 @@ import { EbayAccountController } from './controllers/ebay-account.controller.js'
     ChannelOAuthController,
     ChannelWebhooksController,
     EbayAccountController,
+    GoogleMerchantAccountController,
   ],
 })
 export class ChannelsApiModule {}

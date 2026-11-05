@@ -147,6 +147,16 @@ export class EnvironmentVariables {
   @IsEnum(EbayEnvironment)
   EBAY_ENVIRONMENT: EbayEnvironment = EbayEnvironment.Sandbox;
 
+  /** OAuth client ID of the Crossmart Google Cloud app, for Google Merchant Center. */
+  @IsOptional()
+  @IsString()
+  GOOGLE_CLIENT_ID?: string;
+
+  /** OAuth client secret of the Google Cloud app. */
+  @IsOptional()
+  @IsString()
+  GOOGLE_CLIENT_SECRET?: string;
+
   /**
    * Whether plan limits block actions (`true`) or are only reported (default). Usage and limits
    * are computed either way; keep it off until billing lets merchants upgrade.

@@ -1,0 +1,9 @@
+{
+  "name": "accounts/123456789",
+  "accountId": "123456789",
+  "accountName": "Acme Goods",
+  "adultContent": false,
+  "testAccount": false,
+  "timeZone": { "id": "Europe/Berlin" },
+  "languageCode": "de"
+}

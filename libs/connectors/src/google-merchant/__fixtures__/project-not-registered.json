@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 401,
+    "status": "UNAUTHENTICATED",
+    "message": "GCP project with id crossmart-test and number 1234 is not registered with the merchant account."
+  }
+}
