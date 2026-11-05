@@ -74,6 +74,7 @@ export class ChannelOAuthController {
    * never holds tokens or response bodies; anything else is named by its type only.
    */
   private describe(error: unknown): string {
+    if (error instanceof ChannelConnectError) return error.message;
     if (error instanceof ChannelError) return `${error.code}: ${error.message}`;
     return error instanceof Error ? error.name : typeof error;
   }
