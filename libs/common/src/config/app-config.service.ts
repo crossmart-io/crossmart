@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
-import { CORS_ORIGINS_SEPARATOR } from './config.constants.js';
+import { CORS_ORIGINS_SEPARATOR, DEFAULT_AI_MODEL } from './config.constants.js';
 import type { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
@@ -19,6 +19,12 @@ export interface EbayAppSettings extends OAuthAppCredentials {
   /** The redirect URL name eBay issued for the callback; sent as `redirect_uri`. */
   ruName: string;
   environment: EbayEnvironment;
+}
+
+/** The AI provider's key and model. The key is null when AI is not configured. */
+export interface AiSettings {
+  anthropicApiKey: string | null;
+  model: string;
 }
 
 export interface MailSettings {
@@ -128,5 +134,13 @@ export class AppConfigService {
   /** Whether plan limits block actions; when false they are only reported. */
   get entitlementsEnforced(): boolean {
     return this.configService.get('ENTITLEMENTS_ENFORCED', { infer: true });
+  }
+
+  /** The AI agents' settings; AI features are off while the key is missing. */
+  get aiSettings(): AiSettings {
+    return {
+      anthropicApiKey: this.configService.get('ANTHROPIC_API_KEY', { infer: true }) || null,
+      model: this.configService.get('AI_MODEL', { infer: true }) ?? DEFAULT_AI_MODEL,
+    };
   }
 }

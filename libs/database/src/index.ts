@@ -14,11 +14,14 @@ export {
   OutOfStockPolicy,
   ProductStatus,
   SubscriptionStatus,
+  SuggestionCreatorType,
+  SuggestionStatus,
   WorkspaceRole,
 } from './generated/prisma/enums.js';
 export { Prisma } from './generated/prisma/client.js';
 export type {
   ActivityEvent,
+  AiUsage,
   ApiKey,
   ChannelConnection,
   CustomRole,
@@ -37,6 +40,7 @@ export type {
   Product,
   ProductMedia,
   ProductView,
+  Suggestion,
   User,
   Variant,
   Workspace,

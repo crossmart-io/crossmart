@@ -1,0 +1,8 @@
+/**
+ * What an AI call was for. Every metered call names one, so usage can be reported and later
+ * priced per feature. Stored as text, so a new feature needs no migration.
+ */
+export enum AiFeature {
+  /** The Content Generator: channel titles and descriptions. */
+  ContentGeneration = 'content_generation',
+}

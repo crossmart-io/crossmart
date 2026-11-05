@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import { AppConfigService } from './app-config.service.js';
+import { DEFAULT_AI_MODEL } from './config.constants.js';
 import { EbayEnvironment } from './ebay-environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
 
@@ -34,5 +35,21 @@ describe('AppConfigService', () => {
         expect(appConfig({ ...EBAY_VARIABLES, [missing]: undefined }).ebayApp).toBeNull();
       },
     );
+  });
+
+  describe('aiSettings', () => {
+    it('has no key and the default model when nothing is set', () => {
+      expect(appConfig({}).aiSettings).toEqual({ anthropicApiKey: null, model: DEFAULT_AI_MODEL });
+    });
+
+    it('treats an empty key as missing', () => {
+      expect(appConfig({ ANTHROPIC_API_KEY: '' }).aiSettings.anthropicApiKey).toBeNull();
+    });
+
+    it('returns the key and the model override', () => {
+      expect(
+        appConfig({ ANTHROPIC_API_KEY: 'sk-test', AI_MODEL: 'claude-opus-5-5' }).aiSettings,
+      ).toEqual({ anthropicApiKey: 'sk-test', model: 'claude-opus-5-5' });
+    });
   });
 });

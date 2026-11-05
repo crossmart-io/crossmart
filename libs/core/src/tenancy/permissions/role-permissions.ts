@@ -16,13 +16,18 @@ const READ_ONLY: readonly WorkspacePermission[] = [
   WorkspacePermission.ViewReports,
   WorkspacePermission.ViewChannels,
   WorkspacePermission.ViewActivity,
+  WorkspacePermission.ViewSuggestions,
 ];
 
-/** Day-to-day catalog work: products, stock and what each store lists. */
+/**
+ * Day-to-day catalog work: products, stock, what each store lists, and asking the AI agents
+ * for content. Their suggestions still need someone who may approve them.
+ */
 const CATALOG_WORK: readonly WorkspacePermission[] = [
   WorkspacePermission.EditProducts,
   WorkspacePermission.EditInventory,
   WorkspacePermission.EditListings,
+  WorkspacePermission.GenerateContent,
 ];
 
 const ADMINISTRATION: readonly WorkspacePermission[] = [

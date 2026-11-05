@@ -8,4 +8,6 @@ export enum QueueName {
   Price = 'price',
   Content = 'content',
   Import = 'import',
+  /** AI agent jobs, such as content generation. Slow and metered, so they come last. */
+  Ai = 'ai',
 }

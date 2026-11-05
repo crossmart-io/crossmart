@@ -29,10 +29,16 @@ export enum WorkspacePermission {
   /** Add products to stores, remove them, and override what one store shows. */
   EditListings = 'listings:edit',
   ViewActivity = 'activity:view',
+  /** The AI suggestions inbox: what agents propose, and what was approved or rejected. */
+  ViewSuggestions = 'suggestions:view',
+  /** Approve or reject AI suggestions. Approving applies the change. */
   ApproveSuggestions = 'suggestions:approve',
   /**
    * See the organization's plan and usage. Held in any workspace of the organization, it opens
    * the organization's subscription.
    */
   ViewBilling = 'billing:view',
+
+  /** Ask the AI agents for content, such as channel titles and descriptions. Metered. */
+  GenerateContent = 'ai:generate',
 }

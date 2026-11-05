@@ -4,6 +4,7 @@ import { INVENTORY_TOOLS } from './inventory.tools.js';
 import { ORDER_TOOLS } from './orders.tools.js';
 import { REPORT_TOOLS } from './reports.tools.js';
 import { STORE_TOOLS } from './stores.tools.js';
+import { SUGGESTION_TOOLS } from './suggestions.tools.js';
 
 /** Every tool the server offers, grouped by area. */
 export const ALL_TOOLS: readonly ApiToolSpec[] = [
@@ -12,4 +13,5 @@ export const ALL_TOOLS: readonly ApiToolSpec[] = [
   ...ORDER_TOOLS,
   ...STORE_TOOLS,
   ...REPORT_TOOLS,
+  ...SUGGESTION_TOOLS,
 ];

@@ -15,6 +15,7 @@ interface Noun {
 
 const PRODUCT_NOUN: Noun = { one: 'product', other: 'products' };
 const VARIANT_NOUN: Noun = { one: 'variant', other: 'variants' };
+const SUGGESTION_NOUN: Noun = { one: 'suggestion', other: 'suggestions' };
 const pluralRules = new Intl.PluralRules('en');
 
 function countOf(noun: Noun, entry: ActivityEntry): string {
@@ -236,6 +237,26 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.ChannelSyncRequested]: {
     operation: 'Starting a sync',
     describe: (entry) => withDetail(`Started a sync of${named(entry)}`, entry),
+  },
+  [ActivityAction.ContentGenerationRequested]: {
+    operation: 'Requesting AI content',
+    describe: (entry) => `Asked AI to write content for ${countOfProducts(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.ContentGenerated]: {
+    operation: 'Generating AI content',
+    describe: (entry) => `AI suggested new content for${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.SuggestionApproved]: {
+    operation: 'Approving a suggestion',
+    describe: (entry) => withDetail(`Approved a suggestion for${named(entry)}`, entry),
+  },
+  [ActivityAction.SuggestionRejected]: {
+    operation: 'Rejecting a suggestion',
+    describe: (entry) => withDetail(`Rejected a suggestion for${named(entry)}`, entry),
+  },
+  [ActivityAction.SuggestionsBulkApproved]: {
+    operation: 'Approving suggestions',
+    describe: (entry) => `Approved ${countOf(SUGGESTION_NOUN, entry)}`,
   },
 };
 

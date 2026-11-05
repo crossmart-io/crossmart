@@ -1,5 +1,6 @@
 import { toAmount } from '../../catalog/mappers/decimal-amount.mapper.js';
 import type {
+  ListingOverrideInput,
   ListingOverrideView,
   VariantPriceOverrideInput,
 } from '../entities/listing-override.js';
@@ -79,6 +80,22 @@ export function toListingOverrideView(record: ListingSyncRecord): ListingOverrid
       }
     : { ...NO_CONTENT_OVERRIDES, updatedAt: record.updatedAt };
   return { ...content, variantPrices: toVariantPrices(record) };
+}
+
+/** The listing's overrides as an input to save again, all following the product when none. */
+export function toListingOverrideInput(record: ListingSyncRecord | null): ListingOverrideInput {
+  const view = record ? toListingOverrideView(record) : null;
+  if (!view) return { ...NO_CONTENT_OVERRIDES, variantPrices: [] };
+  return {
+    title: view.title,
+    descriptionHtml: view.descriptionHtml,
+    tags: view.tags,
+    mediaUrls: view.mediaUrls,
+    visibility: view.visibility,
+    inventoryBuffer: view.inventoryBuffer,
+    maxQuantity: view.maxQuantity,
+    variantPrices: view.variantPrices,
+  };
 }
 
 /** Each variant's fixed prices on the listing, by variant id. */

@@ -40,6 +40,11 @@ function setup() {
   const writer = {
     save: vi.fn<ListingOverrideWriter['save']>().mockResolvedValue(),
     clear: vi.fn<ListingOverrideWriter['clear']>().mockResolvedValue(),
+    current: vi.fn<ListingOverrideWriter['current']>().mockResolvedValue({
+      ...EMPTY,
+      inventoryBuffer: 2,
+      descriptionHtml: '<p>Channel copy.</p>',
+    }),
   };
   const activity = new InMemoryActivityRecorder();
   const service = new ListingOverridesService(
@@ -99,5 +104,19 @@ describe('ListingOverridesService', () => {
     products.find.mockResolvedValue(null);
 
     await expect(service.clear(TARGET, ACTOR)).rejects.toThrow(NotFoundException);
+  });
+
+  it('changes only the given content fields and keeps every other override', async () => {
+    const { service, writer, activity } = setup();
+
+    await service.saveContent(TARGET, { title: 'Stoneware Mug' }, ACTOR);
+
+    expect(writer.save).toHaveBeenCalledWith(TARGET, {
+      ...EMPTY,
+      title: 'Stoneware Mug',
+      descriptionHtml: '<p>Channel copy.</p>',
+      inventoryBuffer: 2,
+    });
+    expect(activity.entries[0].action).toBe(ActivityAction.ListingOverrideUpdated);
   });
 });

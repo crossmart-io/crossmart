@@ -15,22 +15,24 @@ datasource db {
 // ─── Identity (owned by Better Auth; field names follow its schema) ───────────
 
 model User {
-  id            String                @id @default(uuid()) @db.Uuid
-  name          String
-  email         String                @unique
-  emailVerified Boolean               @default(false) @map("email_verified")
-  image         String?
-  sessions      Session[]
-  accounts      Account[]
-  memberships   WorkspaceMember[]
-  apiKeys       ApiKey[]
-  activity      ActivityEvent[]
-  stockMoves    InventoryMovement[]
-  importJobs    ImportJob[]
-  connections   ChannelConnection[]
-  invitations   WorkspaceInvitation[]
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
+  id                   String                @id @default(uuid()) @db.Uuid
+  name                 String
+  email                String                @unique
+  emailVerified        Boolean               @default(false) @map("email_verified")
+  image                String?
+  sessions             Session[]
+  accounts             Account[]
+  memberships          WorkspaceMember[]
+  apiKeys              ApiKey[]
+  activity             ActivityEvent[]
+  stockMoves           InventoryMovement[]
+  importJobs           ImportJob[]
+  connections          ChannelConnection[]
+  invitations          WorkspaceInvitation[]
+  suggestionsRequested Suggestion[]          @relation("SuggestionRequestedBy")
+  suggestionsReviewed  Suggestion[]          @relation("SuggestionReviewedBy")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -128,6 +130,8 @@ model Workspace {
   orders         Order[]
   dataKey        WorkspaceDataKey?
   connections    ChannelConnection[]
+  suggestions    Suggestion[]
+  aiUsage        AiUsage[]
   createdAt      DateTime              @default(now()) @map("created_at")
   updatedAt      DateTime              @updatedAt @map("updated_at")
 
@@ -200,25 +204,27 @@ model WorkspaceInvitation {
 
 /// A workspace-scoped key for the API and MCP. Only a SHA-256 hash of the secret is stored.
 model ApiKey {
-  id           String              @id @default(uuid()) @db.Uuid
-  workspaceId  String              @map("workspace_id") @db.Uuid
-  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdById  String              @map("created_by_id") @db.Uuid
-  createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  name         String
-  role         WorkspaceRole
+  id                   String              @id @default(uuid()) @db.Uuid
+  workspaceId          String              @map("workspace_id") @db.Uuid
+  workspace            Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById          String              @map("created_by_id") @db.Uuid
+  createdBy            User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  name                 String
+  role                 WorkspaceRole
   /// The custom role for a CUSTOM key; null once that role is deleted, which grants nothing.
-  customRoleId String?             @map("custom_role_id") @db.Uuid
-  customRole   CustomRole?         @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
-  prefix       String
-  hash         String              @unique
-  lastUsedAt   DateTime?           @map("last_used_at")
-  expiresAt    DateTime?           @map("expires_at")
-  revokedAt    DateTime?           @map("revoked_at")
-  activity     ActivityEvent[]
-  stockMoves   InventoryMovement[]
-  createdAt    DateTime            @default(now()) @map("created_at")
-  importJobs   ImportJob[]
+  customRoleId         String?             @map("custom_role_id") @db.Uuid
+  customRole           CustomRole?         @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
+  prefix               String
+  hash                 String              @unique
+  lastUsedAt           DateTime?           @map("last_used_at")
+  expiresAt            DateTime?           @map("expires_at")
+  revokedAt            DateTime?           @map("revoked_at")
+  activity             ActivityEvent[]
+  stockMoves           InventoryMovement[]
+  createdAt            DateTime            @default(now()) @map("created_at")
+  importJobs           ImportJob[]
+  suggestionsRequested Suggestion[]        @relation("SuggestionRequestedByKey")
+  suggestionsReviewed  Suggestion[]        @relation("SuggestionReviewedByKey")
 
   @@index([workspaceId])
   @@map("api_keys")
@@ -357,6 +363,7 @@ model Product {
   variants        Variant[]
   media           ProductMedia[]
   listings        Listing[]
+  suggestions     Suggestion[]
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
@@ -673,6 +680,7 @@ model ChannelConnection {
   listings             Listing[]
   importJobs           ImportJob[]
   orders               Order[]
+  suggestions          Suggestion[]
   createdAt            DateTime                @default(now()) @map("created_at")
   updatedAt            DateTime                @updatedAt @map("updated_at")
 
@@ -897,4 +905,87 @@ model ExchangeRate {
   @@unique([currency, publishedOn])
   @@index([publishedOn])
   @@map("exchange_rates")
+}
+
+// ─── AI ───────────────────────────────────────────────────────────────────────
+
+/// Where a suggestion stands. Only PENDING suggestions can be approved or rejected.
+enum SuggestionStatus {
+  PENDING
+  /// Approved and written through the same service a user edit goes through.
+  APPLIED
+  REJECTED
+  /// The value it would replace changed after it was made (or a newer suggestion replaced it).
+  STALE
+
+  @@map("suggestion_status")
+}
+
+/// Who made a suggestion: an internal agent, a user, or an API key (an external agent).
+enum SuggestionCreatorType {
+  AGENT
+  USER
+  API_KEY
+
+  @@map("suggestion_creator_type")
+}
+
+/// A proposed change to a product, optionally on one channel connection, waiting for review.
+/// Approving it applies the change through the domain service a user would call.
+model Suggestion {
+  id                  String                @id @default(uuid(7)) @db.Uuid
+  workspaceId         String                @map("workspace_id") @db.Uuid
+  workspace           Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  productId           String                @map("product_id") @db.Uuid
+  product             Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The connection the change is for; null for a change to the product's base content.
+  connectionId        String?               @map("connection_id") @db.Uuid
+  connection          ChannelConnection?    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// A `SuggestionKind` value; kept as text so new kinds need no migration.
+  kind                String
+  status              SuggestionStatus      @default(PENDING)
+  /// The value the change replaces, as it was when the suggestion was made.
+  currentValue        String                @map("current_value")
+  proposedValue       String                @map("proposed_value")
+  rationale           String
+  createdByType       SuggestionCreatorType @map("created_by_type")
+  /// A `SuggestionAgent` value for suggestions agents made.
+  agent               String?
+  /// The user or API key that asked for it (and made it, unless an agent did).
+  requestedByUserId   String?               @map("requested_by_user_id") @db.Uuid
+  requestedByUser     User?                 @relation("SuggestionRequestedBy", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  requestedByApiKeyId String?               @map("requested_by_api_key_id") @db.Uuid
+  requestedByApiKey   ApiKey?               @relation("SuggestionRequestedByKey", fields: [requestedByApiKeyId], references: [id], onDelete: SetNull)
+  reviewedByUserId    String?               @map("reviewed_by_user_id") @db.Uuid
+  reviewedByUser      User?                 @relation("SuggestionReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  reviewedByApiKeyId  String?               @map("reviewed_by_api_key_id") @db.Uuid
+  reviewedByApiKey    ApiKey?               @relation("SuggestionReviewedByKey", fields: [reviewedByApiKeyId], references: [id], onDelete: SetNull)
+  reviewedAt          DateTime?             @map("reviewed_at")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  @@index([workspaceId, status, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([productId, connectionId, kind, status])
+  @@index([connectionId])
+  @@map("suggestions")
+}
+
+/// One metered AI call: who it was for, what it did and how many tokens it used.
+/// Append-only; credits and plan limits are computed from it.
+model AiUsage {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  workspaceId  String    @map("workspace_id") @db.Uuid
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// An `AiFeature` value; kept as text so new features need no migration.
+  feature      String
+  /// An `AiProviderName` value.
+  provider     String
+  model        String
+  inputTokens  Int       @map("input_tokens")
+  outputTokens Int       @map("output_tokens")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([workspaceId, createdAt])
+  @@map("ai_usage")
 }

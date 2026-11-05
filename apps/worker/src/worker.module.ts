@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule, MailModule, QueuesModule } from '@crossmart/common';
 import { DatabaseModule } from '@crossmart/database';
+import { AiWorkerModule } from './ai/ai-worker.module.js';
 import { ChannelImportWorkerModule } from './channel-import/channel-import-worker.module.js';
 import { OrdersWorkerModule } from './orders/orders-worker.module.js';
 import { SyncModule } from './sync/sync.module.js';
@@ -16,6 +17,7 @@ import { SyncModule } from './sync/sync.module.js';
     ChannelImportWorkerModule,
     OrdersWorkerModule,
     SyncModule,
+    AiWorkerModule,
   ],
 })
 export class WorkerModule {}

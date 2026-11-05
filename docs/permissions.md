@@ -19,10 +19,12 @@ those, not the role name, so they keep working when roles change.
 | `reports:view`        | Sales and stock value reports                                        |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
 | `channels:view`       | Connected stores, their rules and listings                           |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
 | `activity:view`       | The activity log                                                     |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
+| `suggestions:view`    | The AI suggestions inbox                                             |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
 | `products:edit`       | Create, change, import and delete products, prices and images        |   ✓   |   ✓   |   ✓    |          |        |
 | `inventory:edit`      | Adjust stock and import stock files                                  |   ✓   |   ✓   |   ✓    |          |        |
 | `listings:edit`       | Add products to stores, remove them, override what one store shows   |   ✓   |   ✓   |   ✓    |          |        |
-| `suggestions:approve` | Approve AI suggestions                                               |   ✓   |   ✓   |        |    ✓     |        |
+| `ai:generate`         | Ask the AI agents for content (metered); results need approval       |   ✓   |   ✓   |   ✓    |          |        |
+| `suggestions:approve` | Approve (apply) or reject AI suggestions                             |   ✓   |   ✓   |        |    ✓     |        |
 | `channels:manage`     | Connect and disconnect stores, set pricing and selection rules, sync |   ✓   |   ✓   |        |          |        |
 | `members:manage`      | Invite, change roles and remove members                              |   ✓   |   ✓   |        |          |        |
 | `api-keys:manage`     | Create and revoke API keys                                           |   ✓   |   ✓   |        |          |        |
