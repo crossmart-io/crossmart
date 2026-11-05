@@ -225,6 +225,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Opting in to business policies',
     describe: (entry) => `Opted${named(entry)} in to eBay business policies`,
   },
+  [ActivityAction.ChannelDefaultPoliciesCreated]: {
+    operation: 'Creating default business policies',
+    describe: (entry) => `Created default eBay business policies for${named(entry)}`,
+  },
   [ActivityAction.ListingCategoryChanged]: {
     operation: 'Choosing a channel category',
     describe: (entry) => `Changed the channel category of${named(entry)}${onStore(entry)}`,

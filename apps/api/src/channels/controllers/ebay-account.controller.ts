@@ -18,6 +18,7 @@ import {
   CHANNELS_TAG,
   CONNECTION_ID_PARAM,
   EBAY_LISTING_DEFAULTS_PATH,
+  EBAY_POLICIES_DEFAULTS_PATH,
   EBAY_POLICIES_OPT_IN_PATH,
   EBAY_POLICIES_REFRESH_PATH,
 } from '../channels.constants.js';
@@ -70,6 +71,29 @@ export class EbayAccountController {
   ): Promise<ChannelConnectionDto> {
     return ChannelConnectionDto.from(
       await this.setup.optInToBusinessPolicies(workspaceId, connectionId, actor),
+    );
+  }
+
+  @Post(EBAY_POLICIES_DEFAULTS_PATH)
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(WorkspacePermission.ManageChannels)
+  @ApiOperation({
+    summary: 'Create default business policies on an eBay account',
+    description:
+      'Creates free standard shipping, immediate payment and 30-day return policies on the ' +
+      'eBay account (opting it in to business policies first when needed), reads the policies ' +
+      'again and chooses the new ones as the listing defaults. Policies that already exist are ' +
+      'used as they are, so calling this twice is harmless. Marketplaces without a default ' +
+      'shipping service answer 422.',
+  })
+  @ApiOkResponse({ type: ChannelConnectionDto })
+  async createDefaultPolicies(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,
+    @CurrentActor() actor: Actor,
+  ): Promise<ChannelConnectionDto> {
+    return ChannelConnectionDto.from(
+      await this.setup.createDefaultPolicies(workspaceId, connectionId, actor),
     );
   }
 

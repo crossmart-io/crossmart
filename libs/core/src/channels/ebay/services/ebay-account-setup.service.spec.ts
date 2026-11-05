@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   type ChannelSession,
   ChannelError,
@@ -37,6 +41,19 @@ const INPUT: EbayListingDefaultsInput = {
   location: { postalCode: '95125', country: 'US', city: null },
 };
 
+const CREATED = { fulfillment: 'f2', payment: 'p2', return: 'r2' };
+const REFRESHED: EbaySettings = {
+  ...SETTINGS,
+  policies: {
+    fulfillment: [
+      ...SETTINGS.policies.fulfillment,
+      { id: 'f2', name: 'Crossmart standard shipping' },
+    ],
+    payment: [{ id: 'p2', name: 'Crossmart payment' }],
+    return: [{ id: 'r2', name: 'Crossmart 30-day returns' }],
+  },
+};
+
 function connection(
   account: ChannelConnectionView['settings']['account'] = SETTINGS,
 ): ChannelConnectionView {
@@ -60,6 +77,7 @@ function setup(view = connection()) {
   const ebay = {
     saveShipFromLocation: vi.fn().mockResolvedValue('crossmart-default'),
     optInToBusinessPolicies: vi.fn().mockResolvedValue(undefined),
+    createDefaultBusinessPolicies: vi.fn().mockResolvedValue(CREATED),
     describeAccount: vi.fn().mockResolvedValue({
       displayName: 'demo_seller · eBay US',
       settings: { ...SETTINGS, businessPoliciesEnabled: false },
@@ -128,5 +146,64 @@ describe('EbayAccountSetupService', () => {
       listingDefaults: defaults,
     });
     expect(activity.entries[0]?.action).toBe(ActivityAction.ChannelPoliciesOptedIn);
+  });
+
+  describe('createDefaultPolicies', () => {
+    it('creates the policies in the marketplace currency and chooses them, keeping the rest', async () => {
+      const defaults = { ...INPUT, merchantLocationKey: 'crossmart-default' };
+      const account: EbaySettings = { ...SETTINGS, listingDefaults: defaults };
+      const { service, store, ebay, activity } = setup(connection(account));
+      ebay.describeAccount.mockResolvedValue({ displayName: 'x', settings: REFRESHED });
+
+      await service.createDefaultPolicies('w1', 'c1', ACTOR);
+
+      expect(ebay.createDefaultBusinessPolicies).toHaveBeenCalledWith(
+        {},
+        { currencyCode: 'USD', businessPoliciesEnabled: true },
+      );
+      expect(store.saveAccount).toHaveBeenCalledWith('w1', expect.anything(), {
+        ...REFRESHED,
+        listingDefaults: {
+          ...defaults,
+          fulfillmentPolicyId: 'f2',
+          paymentPolicyId: 'p2',
+          returnPolicyId: 'r2',
+        },
+      });
+      expect(activity.entries[0]?.action).toBe(ActivityAction.ChannelDefaultPoliciesCreated);
+    });
+
+    it('asks to opt in an account whose policies are off, and starts its defaults', async () => {
+      const policiesOff: EbaySettings = { ...SETTINGS, businessPoliciesEnabled: false };
+      const { service, store, ebay } = setup(connection(policiesOff));
+      ebay.describeAccount.mockResolvedValue({ displayName: 'x', settings: REFRESHED });
+
+      await service.createDefaultPolicies('w1', 'c1', ACTOR);
+
+      expect(ebay.createDefaultBusinessPolicies).toHaveBeenCalledWith(
+        {},
+        { currencyCode: 'USD', businessPoliciesEnabled: false },
+      );
+      expect(store.saveAccount.mock.calls[0]?.[2]).toMatchObject({
+        listingDefaults: {
+          fulfillmentPolicyId: 'f2',
+          condition: EbayCondition.New,
+          location: null,
+        },
+      });
+    });
+
+    it('answers 422 with eBay’s reason and records nothing when eBay refuses', async () => {
+      const { service, ebay, store, activity } = setup();
+      ebay.createDefaultBusinessPolicies.mockRejectedValue(
+        new ChannelError(ChannelType.Ebay, ChannelErrorCode.RequestRejected, 'No service'),
+      );
+
+      await expect(service.createDefaultPolicies('w1', 'c1', ACTOR)).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+      expect(store.saveAccount).not.toHaveBeenCalled();
+      expect(activity.entries).toHaveLength(0);
+    });
   });
 });

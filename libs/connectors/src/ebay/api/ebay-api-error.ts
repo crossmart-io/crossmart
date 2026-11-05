@@ -25,14 +25,15 @@ export type EbayErrorDetail = z.infer<typeof ebayErrorDetailSchema>;
 
 const ebayErrorBodySchema = z.object({ errors: z.array(ebayErrorDetailSchema) });
 
-function errorsOf(response: HttpResponse): EbayErrorDetail[] {
+/** The errors of an eBay error response; empty when the body is not one. */
+export function ebayErrorDetails(response: HttpResponse): EbayErrorDetail[] {
   const parsed = ebayErrorBodySchema.safeParse(parseJsonBody(response.body));
   return parsed.success ? parsed.data.errors : [];
 }
 
 /** The `errorId`s of an eBay error response; empty when the body is not one. */
 export function ebayErrorIds(response: HttpResponse): number[] {
-  return errorsOf(response).map(({ errorId }) => errorId);
+  return ebayErrorDetails(response).map(({ errorId }) => errorId);
 }
 
 /**
@@ -51,7 +52,7 @@ function describeError(error: EbayErrorDetail): string {
  * or null when the body holds none. Only the messages are kept, never the rest of the body.
  */
 export function ebayRejectionMessage(response: HttpResponse): string | null {
-  return describeEbayErrors(errorsOf(response));
+  return describeEbayErrors(ebayErrorDetails(response));
 }
 
 /** What a list of eBay errors says, each message once; null when they say nothing. */

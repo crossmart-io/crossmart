@@ -4,6 +4,7 @@ import { fixtureResponse } from '../sdk/testing/fixtures.js';
 import { HttpMethod } from '../sdk/http/http-method.enum.js';
 import { EbayBusinessPoliciesOptIn } from './account/ebay-business-policies.opt-in.js';
 import { EbayBusinessPoliciesReader } from './account/ebay-business-policies.reader.js';
+import { EbayBusinessPoliciesWriter } from './account/ebay-business-policies.writer.js';
 import { EbayIdentityReader } from './account/ebay-identity.reader.js';
 import { EbayLocationWriter } from './account/ebay-location.writer.js';
 import { EbayApiClient } from './api/ebay-api.client.js';
@@ -51,10 +52,11 @@ export function createEbayTestKit(app = new EbayApp(TEST_EBAY_APP)): EbayTestKit
   const http = new FakeHttpTransport();
   const oauth = new EbayOAuthClient(app, http);
   const api = new EbayApiClient(http);
+  const policies = new EbayBusinessPoliciesReader(app, api);
   const account = new EbayAccountServices(
     new EbayIdentityReader(app, api),
-    new EbayBusinessPoliciesReader(app, api),
-    new EbayBusinessPoliciesOptIn(app, api),
+    policies,
+    new EbayBusinessPoliciesWriter(app, api, policies, new EbayBusinessPoliciesOptIn(app, api)),
     new EbayLocationWriter(app, api),
   );
   const offers = new EbayOfferClient(app, api);

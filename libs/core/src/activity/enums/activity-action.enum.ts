@@ -65,6 +65,8 @@ export enum ActivityAction {
   ChannelListingDefaultsUpdated = 'channel_listing_defaults_updated',
   /** The merchant opted an eBay account in to business policies. */
   ChannelPoliciesOptedIn = 'channel_policies_opted_in',
+  /** The merchant had Crossmart create default business policies on an eBay account. */
+  ChannelDefaultPoliciesCreated = 'channel_default_policies_created',
   /** The merchant chose the channel category one listing goes in; the detail names the store. */
   ListingCategoryChanged = 'listing_category_changed',
   /** The merchant asked to publish the selected products and sync the rest. */

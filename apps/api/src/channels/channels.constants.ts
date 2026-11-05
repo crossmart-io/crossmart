@@ -34,6 +34,7 @@ export const CHANNEL_IMPORTS_PATH = `:${CONNECTION_ID_PARAM}/imports`;
 export const EBAY_LISTING_DEFAULTS_PATH = `:${CONNECTION_ID_PARAM}/ebay/listing-defaults`;
 export const EBAY_POLICIES_OPT_IN_PATH = `:${CONNECTION_ID_PARAM}/ebay/business-policies/opt-in`;
 export const EBAY_POLICIES_REFRESH_PATH = `:${CONNECTION_ID_PARAM}/ebay/business-policies/refresh`;
+export const EBAY_POLICIES_DEFAULTS_PATH = `:${CONNECTION_ID_PARAM}/ebay/business-policies/defaults`;
 export const EBAY_CONDITION_SCHEMA_NAME = 'EbayCondition';
 export const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 export const POSTAL_CODE_MAX_LENGTH = 32;

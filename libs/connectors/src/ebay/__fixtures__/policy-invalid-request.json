@@ -1,0 +1,10 @@
+{
+  "errors": [
+    {
+      "errorId": 20400,
+      "domain": "API_ACCOUNT",
+      "category": "REQUEST",
+      "message": "Invalid request. The shipping service is not valid for this marketplace."
+    }
+  ]
+}
