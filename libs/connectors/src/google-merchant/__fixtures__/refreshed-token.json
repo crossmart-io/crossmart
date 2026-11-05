@@ -1,0 +1,6 @@
+{
+  "access_token": "ya29.fixture_refreshed_token",
+  "expires_in": 3599,
+  "scope": "https://www.googleapis.com/auth/content",
+  "token_type": "Bearer"
+}

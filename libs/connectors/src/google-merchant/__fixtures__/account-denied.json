@@ -1,0 +1,15 @@
+{
+  "error": {
+    "code": 401,
+    "status": "UNAUTHENTICATED",
+    "message": "The caller does not have access to the accounts: [123456789]",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "invalid",
+        "domain": "merchantapi.googleapis.com",
+        "metadata": { "REASON": "PERMISSION_DENIED_ACCOUNTS", "ACCOUNT_IDS": "[123456789]" }
+      }
+    ]
+  }
+}

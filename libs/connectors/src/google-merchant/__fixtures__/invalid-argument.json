@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 400,
+    "status": "INVALID_ARGUMENT",
+    "message": "[product_attributes.link] The link must be a valid URL."
+  }
+}

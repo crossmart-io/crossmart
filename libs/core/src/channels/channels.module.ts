@@ -19,6 +19,7 @@ import { ConnectionCredentialsVault } from './services/connection-credentials.va
 import { OAuthStateSigner } from './services/oauth-state.signer.js';
 import { ConnectionAccountStore } from './services/connection-account.store.js';
 import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.service.js';
+import { GoogleMerchantSetupService } from './google-merchant/services/google-merchant-setup.service.js';
 
 /**
  * Channel connections: OAuth install, sealed credentials, sessions with token refresh,
@@ -48,12 +49,14 @@ import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.serv
     ChannelWebhooksService,
     ConnectionAccountStore,
     EbayAccountSetupService,
+    GoogleMerchantSetupService,
   ],
   exports: [
     ChannelAuthorizationService,
     ChannelConnectionsService,
     ChannelWebhooksService,
     EbayAccountSetupService,
+    GoogleMerchantSetupService,
     ChannelSessionFactory,
     ChannelConnectionRepository,
     ListingRepository,

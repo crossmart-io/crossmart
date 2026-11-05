@@ -4,6 +4,8 @@ import { ChannelConnectorRegistry } from './sdk/registry/channel-connector.regis
 import { CHANNEL_CONNECTORS } from './sdk/registry/connectors.constants.js';
 import { EbayConnector } from './ebay/ebay.connector.js';
 import { EbayConnectorModule } from './ebay/ebay-connector.module.js';
+import { GoogleMerchantConnector } from './google-merchant/google-merchant.connector.js';
+import { GoogleMerchantConnectorModule } from './google-merchant/google-merchant-connector.module.js';
 import { ShopifyConnector } from './shopify/shopify.connector.js';
 import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
 
@@ -12,18 +14,24 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
  * its module in `imports` and its connector in the factory below.
  */
 @Module({
-  imports: [ShopifyConnectorModule, EbayConnectorModule],
+  imports: [ShopifyConnectorModule, EbayConnectorModule, GoogleMerchantConnectorModule],
   providers: [
     {
       provide: CHANNEL_CONNECTORS,
-      inject: [ShopifyConnector, EbayConnector],
-      useFactory: (shopify: ShopifyConnector, ebay: EbayConnector): ChannelConnector[] => [
-        shopify,
-        ebay,
-      ],
+      inject: [ShopifyConnector, EbayConnector, GoogleMerchantConnector],
+      useFactory: (
+        shopify: ShopifyConnector,
+        ebay: EbayConnector,
+        google: GoogleMerchantConnector,
+      ): ChannelConnector[] => [shopify, ebay, google],
     },
     ChannelConnectorRegistry,
   ],
-  exports: [ChannelConnectorRegistry, ShopifyConnectorModule, EbayConnectorModule],
+  exports: [
+    ChannelConnectorRegistry,
+    ShopifyConnectorModule,
+    EbayConnectorModule,
+    GoogleMerchantConnectorModule,
+  ],
 })
 export class ConnectorsModule {}

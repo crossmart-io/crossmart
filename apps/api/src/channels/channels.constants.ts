@@ -40,3 +40,8 @@ export const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 export const POSTAL_CODE_MAX_LENGTH = 32;
 export const CITY_MAX_LENGTH = 128;
 export const POLICY_ID_MAX_LENGTH = 64;
+/** Google Merchant Center setup of a connection, under the connection. */
+export const GOOGLE_LISTING_SETUP_PATH = `:${CONNECTION_ID_PARAM}/google-merchant/listing-setup`;
+export const GOOGLE_TARGET_COUNTRY_SCHEMA_NAME = 'GoogleTargetCountry';
+/** Longest product page address template accepted. */
+export const PRODUCT_URL_TEMPLATE_MAX_LENGTH = 2_000;
