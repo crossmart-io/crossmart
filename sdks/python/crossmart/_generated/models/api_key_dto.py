@@ -1,0 +1,180 @@
+from __future__ import annotations
+
+import datetime
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
+from uuid import UUID
+
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
+
+from ..models.workspace_role import WorkspaceRole
+
+if TYPE_CHECKING:
+    from ..models.custom_role_ref_dto import CustomRoleRefDto
+
+
+T = TypeVar("T", bound="ApiKeyDto")
+
+
+@_attrs_define
+class ApiKeyDto:
+    """
+    Attributes:
+        id (UUID):
+        name (str):
+        role (WorkspaceRole): Your role here
+        custom_role (CustomRoleRefDto | None): The workspace’s own role, when `role` is CUSTOM
+        prefix (str): The first characters of the key, to tell keys apart
+        last_used_at (datetime.datetime | None):
+        expires_at (datetime.datetime | None):
+        created_at (datetime.datetime):
+    """
+
+    id: UUID
+    name: str
+    role: WorkspaceRole
+    custom_role: CustomRoleRefDto | None
+    prefix: str
+    last_used_at: datetime.datetime | None
+    expires_at: datetime.datetime | None
+    created_at: datetime.datetime
+    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        from ..models.custom_role_ref_dto import CustomRoleRefDto
+
+        id = str(self.id)
+
+        name = self.name
+
+        role = self.role.value
+
+        custom_role: dict[str, Any] | None
+        if isinstance(self.custom_role, CustomRoleRefDto):
+            custom_role = self.custom_role.to_dict()
+        else:
+            custom_role = self.custom_role
+
+        prefix = self.prefix
+
+        last_used_at: None | str
+        if isinstance(self.last_used_at, datetime.datetime):
+            last_used_at = self.last_used_at.isoformat()
+        else:
+            last_used_at = self.last_used_at
+
+        expires_at: None | str
+        if isinstance(self.expires_at, datetime.datetime):
+            expires_at = self.expires_at.isoformat()
+        else:
+            expires_at = self.expires_at
+
+        created_at = self.created_at.isoformat()
+
+        field_dict: dict[str, Any] = {}
+        field_dict.update(self.additional_properties)
+        field_dict.update(
+            {
+                "id": id,
+                "name": name,
+                "role": role,
+                "customRole": custom_role,
+                "prefix": prefix,
+                "lastUsedAt": last_used_at,
+                "expiresAt": expires_at,
+                "createdAt": created_at,
+            }
+        )
+
+        return field_dict
+
+    @classmethod
+    def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
+        from ..models.custom_role_ref_dto import CustomRoleRefDto
+
+        d = dict(src_dict)
+        id = UUID(d.pop("id"))
+
+        name = d.pop("name")
+
+        role = WorkspaceRole(d.pop("role"))
+
+        def _parse_custom_role(data: object) -> CustomRoleRefDto | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                custom_role_type_0 = CustomRoleRefDto.from_dict(data)
+
+                return custom_role_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(CustomRoleRefDto | None, data)
+
+        custom_role = _parse_custom_role(d.pop("customRole"))
+
+        prefix = d.pop("prefix")
+
+        def _parse_last_used_at(data: object) -> datetime.datetime | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                last_used_at_type_0 = datetime.datetime.fromisoformat(data)
+
+                return last_used_at_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(datetime.datetime | None, data)
+
+        last_used_at = _parse_last_used_at(d.pop("lastUsedAt"))
+
+        def _parse_expires_at(data: object) -> datetime.datetime | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                expires_at_type_0 = datetime.datetime.fromisoformat(data)
+
+                return expires_at_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(datetime.datetime | None, data)
+
+        expires_at = _parse_expires_at(d.pop("expiresAt"))
+
+        created_at = datetime.datetime.fromisoformat(d.pop("createdAt"))
+
+        api_key_dto = cls(
+            id=id,
+            name=name,
+            role=role,
+            custom_role=custom_role,
+            prefix=prefix,
+            last_used_at=last_used_at,
+            expires_at=expires_at,
+            created_at=created_at,
+        )
+
+        api_key_dto.additional_properties = d
+        return api_key_dto
+
+    @property
+    def additional_keys(self) -> list[str]:
+        return list(self.additional_properties.keys())
+
+    def __getitem__(self, key: str) -> Any:
+        return self.additional_properties[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.additional_properties[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.additional_properties[key]
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.additional_properties
