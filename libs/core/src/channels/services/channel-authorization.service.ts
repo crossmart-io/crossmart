@@ -16,6 +16,7 @@ import { ChannelConnectError } from '../errors/channel-connect.error.js';
 import { ConnectedAccountWriter } from './connected-account.writer.js';
 import { OAuthConnectorResolver } from './oauth-connector.resolver.js';
 import { OAuthStateService } from './oauth-state.service.js';
+import { connectionSubject } from '../rules/connection-subject.js';
 
 const STATE_PARAM = 'state';
 const ERROR_PARAM = 'error';
@@ -103,11 +104,7 @@ export class ChannelAuthorizationService {
   ): Promise<void> {
     return this.activity.record(state.workspaceId, Actor.user(state.userId), {
       action: ActivityAction.ChannelConnected,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: view.id,
-        label: view.displayName,
-      },
+      subject: connectionSubject(view),
       detail: connector.displayName,
     });
   }

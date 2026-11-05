@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { AiGateway } from '../../ai/services/ai-gateway.service.js';
 import type {
@@ -10,6 +9,7 @@ import type {
 } from '../entities/content-generation.js';
 import { ContentGenerationQueue } from '../queue/content-generation.queue.js';
 import { ContentRequestValidator } from './content-request.validator.js';
+import { connectionSubject } from '../../channels/rules/connection-subject.js';
 
 /**
  * Asks the Content Generator for channel content. The work runs in the worker, one job per
@@ -41,11 +41,7 @@ export class ContentGenerationService {
     );
     await this.activity.record(workspaceId, actor, {
       action: ActivityAction.ContentGenerationRequested,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: store.id,
-        label: store.displayName,
-      },
+      subject: connectionSubject(store),
       relatedSubjectIds: products.map((product) => product.id),
       itemCount: products.length,
       detail: store.displayName,
