@@ -1,3 +1,4 @@
+import { truncate } from '@crossmart/common';
 import type {
   ListingDraft,
   ListingDraftVariant,
@@ -25,7 +26,7 @@ import type {
 
 /** At most 80 characters, cut on whole characters (never inside an emoji or accent). */
 export function listingTitle(title: string): string {
-  return Array.from(title.trim()).slice(0, EBAY_TITLE_MAX_LENGTH).join('').trim();
+  return truncate(title.trim(), EBAY_TITLE_MAX_LENGTH).trim();
 }
 
 /** The description eBay shows, or the title when the product has none (eBay needs one). */
