@@ -203,5 +203,3 @@ export const EBAY_SIGNATURE_HEADER = 'x-ebay-signature';
 /** The PEM armor eBay sends the key in, on one line without line breaks. */
 export const PEM_PUBLIC_KEY_ARMOR = /-----(BEGIN|END) PUBLIC KEY-----/g;
 export const WHITESPACE_PATTERN = /\s+/g;
-
-export const BEARER_AUTH_SCHEME = 'Bearer';

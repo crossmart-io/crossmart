@@ -90,5 +90,3 @@ export enum GoogleErrorReason {
 export const NOT_REGISTERED_MESSAGE_FRAGMENT = 'is not registered';
 /** Offer ids Crossmart uses as they are; others are derived from the variant id. */
 export const GOOGLE_OFFER_ID_PATTERN = /^[A-Za-z0-9_.-]{1,50}$/;
-
-export const BEARER_AUTH_SCHEME = 'Bearer';
