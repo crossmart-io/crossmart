@@ -120,6 +120,15 @@ export const EBAY_DEFAULT_CATEGORY_TREE_PATH = '/commerce/taxonomy/v1/get_defaul
 export const EBAY_CATEGORY_TREE_PATH = '/commerce/taxonomy/v1/category_tree/';
 export const EBAY_CATEGORY_SUGGESTIONS_SUFFIX = '/get_category_suggestions';
 export const EBAY_QUERY_PARAM = 'q';
+export const EBAY_ITEM_ASPECTS_SUFFIX = '/get_item_aspects_for_category';
+export const EBAY_CATEGORY_ID_PARAM = 'category_id';
+/**
+ * Values kept per aspect. Some (Brand, Model) list thousands; the editor offers the first
+ * ones as suggestions, and free-text aspects take any value.
+ */
+export const EBAY_ASPECT_VALUES_MAX = 200;
+/** eBay changes a category's aspects rarely; a process reads each one at most this often. */
+export const EBAY_ASPECTS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 /** Joins a category's ancestors and its name, as eBay's site shows the path. */
 export const EBAY_CATEGORY_PATH_SEPARATOR = ' > ';
 

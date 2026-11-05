@@ -15,6 +15,8 @@ import { EbayInventoryClient } from './publish/ebay-inventory.client.js';
 import { EbayListingPublisher } from './publish/ebay-listing-publisher.js';
 import { EbayOfferClient } from './publish/ebay-offer.client.js';
 import { EbayPriceUpdater } from './publish/ebay-price-updater.js';
+import { EbayListingCategory } from './publish/ebay-listing-category.js';
+import { EbayCategoryAspectsReader } from './taxonomy/ebay-category-aspects.reader.js';
 import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
 
 /** The eBay connector and its clients: account, listings and taxonomy. */
@@ -38,6 +40,8 @@ import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
     EbayOfferClient,
     EbayPriceUpdater,
     EbayTaxonomyReader,
+    EbayCategoryAspectsReader,
+    EbayListingCategory,
     EbayListingPublisher,
     EbaySellingServices,
     EbayConnector,

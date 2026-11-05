@@ -16,6 +16,8 @@ import { EbayInventoryClient } from './publish/ebay-inventory.client.js';
 import { EbayListingPublisher } from './publish/ebay-listing-publisher.js';
 import { EbayOfferClient } from './publish/ebay-offer.client.js';
 import { EbayPriceUpdater } from './publish/ebay-price-updater.js';
+import { EbayListingCategory } from './publish/ebay-listing-category.js';
+import { EbayCategoryAspectsReader } from './taxonomy/ebay-category-aspects.reader.js';
 import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
 
 /** Fabricated responses in the shape of eBay's REST APIs; no real account, token or buyer data. */
@@ -61,16 +63,18 @@ export function createEbayTestKit(app = new EbayApp(TEST_EBAY_APP)): EbayTestKit
   );
   const offers = new EbayOfferClient(app, api);
   const taxonomy = new EbayTaxonomyReader(app, api);
+  const aspects = new EbayCategoryAspectsReader(taxonomy, api);
   const publisher = new EbayListingPublisher(
     app,
     new EbayInventoryClient(app, api),
     offers,
-    taxonomy,
+    new EbayListingCategory(taxonomy, aspects),
   );
   const selling = new EbaySellingServices(
     publisher,
     new EbayPriceUpdater(app, api, offers),
     taxonomy,
+    aspects,
   );
   const connector = new EbayConnector(oauth, account, selling);
   return { http, oauth, connector };

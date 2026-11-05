@@ -11,18 +11,19 @@ listings through eBay's Sell Inventory API. The connector declares `publish_list
 
 ## What Crossmart uses
 
-|            |                                                                                                                 |
-| ---------- | --------------------------------------------------------------------------------------------------------------- |
-| Sign-in    | `{auth}/oauth2/authorize` with `client_id`, `response_type=code`, `redirect_uri` (the RuName), `scope`, `state` |
-| Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                          |
-| Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                              |
-| Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                  |
-| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                    |
-| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")       |
-| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)        |
-| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)             |
-| Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL         |
-| Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only. |
+|            |                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| Sign-in    | `{auth}/oauth2/authorize` with `client_id`, `response_type=code`, `redirect_uri` (the RuName), `scope`, `state`  |
+| Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                           |
+| Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                               |
+| Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                   |
+| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                     |
+| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")        |
+| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)         |
+| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)              |
+| Aspects    | `GET {api}/commerce/taxonomy/v1/category_tree/{tree}/get_item_aspects_for_category?category_id=…` (Taxonomy API) |
+| Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL          |
+| Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only.  |
 
 ### Environments
 
@@ -80,7 +81,9 @@ the connection use the marketplace's currency.
   replaces what the connector reads and keeps `listingDefaults`.
 - **Per listing:** `Listing.externalId` is the eBay listing id, each `ListingVariant.externalId`
   is the variant's eBay SKU (`externalInventoryId` is null), and `Listing.channelCategoryId` /
-  `channelCategoryName` hold the eBay category the listing is in.
+  `channelCategoryName` hold the eBay category the listing is in. The item specifics the
+  merchant sets are rows of `ListingItemSpecific` (`listing_item_specifics`): one per aspect
+  name, with its values in order.
 
 ## Token refresh
 
@@ -171,16 +174,22 @@ with "Set where items ship from in this eBay connection's listing defaults." Nei
    stay in it and the merchant sees it in the listing override sheet, where they can search
    for another (`GET /products/:id/channels/:connectionId/category-suggestions?search=…`) and
    choose it (`PUT …/category`, which queues an update). Category names are stored with their
-   ancestors: `Home & Garden > Kitchen > Mugs`.
+   ancestors: `Home & Garden > Kitchen > Mugs`. Before any write, the connector reads the
+   category's aspects (below) and fails the listing, without retrying, when a required one has
+   no value, naming every missing one: "eBay requires these item specifics in this category:
+   Department. Add them in the listing’s item specifics." When the aspects cannot be read, the
+   listing is sent anyway, and eBay's own message names a missing aspect.
 2. **Inventory items.** `PUT /inventory_item/{sku}` per variant: title (cut to 80 characters
    on whole characters), description (HTML, the title when empty, at most 500,000), up to 24
    https image URLs, `condition`, `availability.shipToLocationAvailability.quantity` (the shown
    stock, never below 0; untracked variants list 1 unit), and `aspects`: `Brand` from the
-   vendor, plus the variant's option values (`Size: ["M"]`). A 12-digit barcode is sent as a
-   UPC, a 13-digit one as an EAN.
+   vendor (`Unbranded` without one), then the merchant's item specifics, which replace it, then
+   the variant's option values (`Size: ["M"]`). The `brand` field follows the Brand item
+   specific when there is one. A 12-digit barcode is sent as a UPC, a 13-digit one as an EAN.
 3. **Groups.** A product with more than one variant is listed as one multi-variant listing
    through `PUT /inventory_item_group/{groupKey}`, with `variantSKUs` and
-   `variesBy.specifications` built from the product's option names and values. The group key
+   `variesBy.specifications` built from the product's option names and values, and the
+   product's aspects (Brand and the merchant's item specifics). The group key
    is `CM` followed by the product id's 32 hex digits.
 4. **Offers.** One per SKU: `GET /offer?sku=…&marketplace_id=…` finds an existing offer, which
    is replaced with `PUT /offer/{offerId}`; otherwise `POST /offer` creates one (`FIXED_PRICE`,
@@ -193,6 +202,37 @@ with "Set where items ship from in this eBay connection's listing defaults." Nei
 
 eBay has no hidden listings: publishing a product that is not active (or is hidden on the
 store) is refused, and updating one ends its listing (it can be published again later).
+
+### Item specifics
+
+eBay calls them aspects: `Color`, `Material`, `Department`… Each leaf category has its own, and
+some are required. The listing override sheet shows them once the listing has a category
+(`GET /products/:id/channels/:connectionId/item-specifics`, permission `listings:edit`), and
+the merchant saves values with `PUT …/item-specifics`, which replaces every value set before.
+
+The API reads them with `get_item_aspects_for_category` on the marketplace's default tree and
+keeps, per aspect, its localized name, `aspectConstraint.aspectRequired`, `aspectUsage`
+(`RECOMMENDED` or `OPTIONAL`), `aspectMode` (`FREE_TEXT` or `SELECTION_ONLY`),
+`itemToAspectCardinality` (`SINGLE` or `MULTI`), and the first 200 `aspectValues`. Values eBay
+adds to those enumerations later read as optional, free text and single. Required aspects come
+first, then recommended, then optional. Each process caches a category's aspects for six hours.
+
+| Rule                | Value                                                               |
+| ------------------- | ------------------------------------------------------------------- |
+| Aspects per listing | At most 60                                                          |
+| Name                | At most 40 characters (the Inventory API's limit)                   |
+| Values per aspect   | At most 30 (eBay's limit for multi-value aspects)                   |
+| Value               | At most 50 characters (the Inventory API's limit)                   |
+| Normalization       | Names and values are trimmed; blank and repeated values are dropped |
+| Removing a specific | Save it with no values                                              |
+| Names given twice   | Refused (400), whatever their case                                  |
+
+Precedence when publishing: the merchant's item specifics replace the ones Crossmart derives
+(`Brand` from the vendor, or `Unbranded`). A specific named like one of the product's options
+(`Size`) is ignored, because each variant's option value is its own aspect and a group varies
+by it. Saving item specifics queues an update when eBay holds the listing, and retries the
+publish when the last one failed. Crossmart does not check `SELECTION_ONLY` values against
+eBay's list; eBay refuses a value it does not accept.
 
 ### SKUs
 
@@ -267,8 +307,8 @@ added before eBay is offered in production.
 
 - Stock sync (`update_inventory`) through `bulk_update_price_quantity`; today stock is sent
   only when a listing is published or updated.
-- An item-specifics editor: today aspects come from the vendor and options, and eBay's message
-  names any required aspect that is missing.
+- Item specifics per variant (beyond the option values), and value dependencies between
+  aspects (`valueConstraints`, such as a model that depends on the brand).
 - Variant-specific images (`aspectsImageVariesBy`), compare-at (strikethrough) prices, and
   moving a listing between single-variant and multi-variant shapes when variants are added or
   removed after publishing.

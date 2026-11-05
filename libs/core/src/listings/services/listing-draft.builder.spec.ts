@@ -44,6 +44,18 @@ describe('ListingDraftBuilder', () => {
     });
   });
 
+  it('carries the item specifics the merchant set on the listing', () => {
+    const itemSpecifics = [{ name: 'Material', values: ['Stoneware'] }];
+    const listing = listingRecord({ itemSpecifics });
+
+    const { draft } = builder.build({ product: productDetail(), listing, pricing: USD });
+
+    expect(draft.itemSpecifics).toEqual(itemSpecifics);
+    expect(
+      builder.build({ product: productDetail(), listing: null, pricing: USD }).draft.itemSpecifics,
+    ).toEqual([]);
+  });
+
   it('sends the product as it is in the catalog when the listing has no overrides', () => {
     const { draft, mediaDigest: digest } = builder.build({
       product: productDetail(),
