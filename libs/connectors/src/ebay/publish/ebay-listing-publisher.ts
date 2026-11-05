@@ -19,7 +19,7 @@ import { ebayListingUrl } from './ebay-listing-url.js';
 import { EbayOfferClient } from './ebay-offer.client.js';
 import { toOfferDetails } from './ebay-offer.mapper.js';
 import type { EbayOfferTerms } from './ebay-offer.types.js';
-import { toInventoryItem, toInventoryItemGroup } from './ebay-product.mapper.js';
+import { listingImageUrls, toInventoryItem, toInventoryItemGroup } from './ebay-product.mapper.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
 
 export const NO_CATEGORY =
@@ -27,6 +27,8 @@ export const NO_CATEGORY =
 export const NOT_ACTIVE =
   'eBay listings cannot be hidden. Make the product active, or set it visible on this store.';
 export const NO_REFERENCE = 'Crossmart cannot find this listing’s items on eBay. End it on eBay.';
+export const NO_IMAGES =
+  'eBay needs at least one photo. Add an image to this product (eBay takes only https links).';
 export const NO_OPTIONS =
   'Give this product’s options names (such as Size) to list its variants on eBay.';
 
@@ -125,6 +127,9 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
   /** Checks the connection's defaults first: a listing without them never reaches eBay. */
   private async plan(session: ChannelSession, draft: ListingDraft): Promise<ListingPlan> {
     const terms = listingTermsOf(draft);
+    if (listingImageUrls(draft).length === 0) {
+      throw ebayError(ChannelErrorCode.RequestRejected, NO_IMAGES);
+    }
     const account = await ebayAccountContext(session);
     const category = draft.category ?? (await this.suggestedCategory(account, draft));
     return {

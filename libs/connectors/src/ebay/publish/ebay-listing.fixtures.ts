@@ -119,7 +119,7 @@ export function mugDraft(overrides: Partial<ListingDraft> = {}): ListingDraft {
       tags: [],
       active: true,
       optionNames: [],
-      images: [],
+      images: [{ url: 'https://cdn.example.com/mug.jpg', altText: null }],
     },
     variants: [
       {
