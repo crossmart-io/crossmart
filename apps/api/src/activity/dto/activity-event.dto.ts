@@ -28,12 +28,31 @@ export class ActivityActorDto implements ActivityActorView {
   @ApiProperty({
     type: String,
     nullable: true,
-    description: 'User or API key name; null for system actions and deleted users or keys',
+    description: 'The OAuth client id of the connected agent, for agent actions',
+  })
+  agentClientId: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'User or API key name; for an agent, the user it acted for. Null for system actions and deleted users or keys',
   })
   name: string | null;
 
-  @ApiProperty({ type: String, nullable: true, description: 'Set for users only' })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Set for users, and for the user an agent acted for',
+  })
   email: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'The agent\'s name, such as "Claude", for agent actions',
+  })
+  agentName: string | null;
 }
 
 export class ActivitySubjectDto implements ActivitySubjectView {
