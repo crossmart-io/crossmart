@@ -24,10 +24,24 @@ const CHANNEL_ERROR_FAILURES: Partial<Record<ChannelErrorCode, ConnectFailure>> 
   [ChannelErrorCode.RateLimited]: ConnectFailure.ChannelUnavailable,
 };
 
-/** A failed OAuth callback. Its message is safe to store in the activity log. */
+const DETAIL_SEPARATOR = ': ';
+
+/**
+ * A failed OAuth callback. Its message is safe to store in the activity log: the failure, and
+ * the channel's own explanation when there is one (channel error messages never hold tokens or
+ * response bodies).
+ */
 export class ChannelConnectError extends Error {
-  constructor(readonly failure: ConnectFailure) {
-    super(FAILURE_MESSAGES[failure]);
+  constructor(
+    readonly failure: ConnectFailure,
+    /** What the channel said, such as Google's reason; null when it said nothing usable. */
+    readonly detail: string | null = null,
+  ) {
+    super(
+      detail
+        ? `${FAILURE_MESSAGES[failure]}${DETAIL_SEPARATOR}${detail}`
+        : FAILURE_MESSAGES[failure],
+    );
     this.name = 'ChannelConnectError';
   }
 
@@ -38,7 +52,10 @@ export class ChannelConnectError extends Error {
     if (error instanceof EntitlementExceededException) {
       return new ChannelConnectError(ConnectFailure.PlanLimitReached);
     }
-    const failure = error instanceof ChannelError ? CHANNEL_ERROR_FAILURES[error.code] : undefined;
-    return new ChannelConnectError(failure ?? ConnectFailure.Unexpected);
+    if (!(error instanceof ChannelError)) {
+      return new ChannelConnectError(ConnectFailure.Unexpected);
+    }
+    const failure = CHANNEL_ERROR_FAILURES[error.code] ?? ConnectFailure.Unexpected;
+    return new ChannelConnectError(failure, `${error.code}${DETAIL_SEPARATOR}${error.message}`);
   }
 }
