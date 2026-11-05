@@ -9,6 +9,8 @@ export const DEFAULT_STORAGE_LOCAL_DIR = 'storage';
 export const DEFAULT_MEDIA_PUBLIC_URL = 'http://localhost:3000/media';
 
 export const DEFAULT_WEB_APP_URL = 'http://localhost:5173';
+/** The local MCP server's address, which agent access tokens are issued for. */
+export const DEFAULT_MCP_PUBLIC_URL = 'http://localhost:3100/mcp';
 export const DEFAULT_MASTER_KEY_VERSION = 1;
 export const MIN_MASTER_KEY_VERSION = 1;
 

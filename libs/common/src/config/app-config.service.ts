@@ -96,6 +96,11 @@ export class AppConfigService {
     return this.configService.get('WEB_APP_URL', { infer: true });
   }
 
+  /** The remote MCP server's address: the audience of agent access tokens. */
+  get mcpPublicUrl(): string {
+    return this.configService.get('MCP_PUBLIC_URL', { infer: true });
+  }
+
   get masterKeySettings(): MasterKeySettings {
     return {
       currentKey: this.configService.get('CREDENTIALS_MASTER_KEY', { infer: true }),

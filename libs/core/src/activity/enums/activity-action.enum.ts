@@ -20,6 +20,8 @@ export enum ActivityAction {
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',
   ApiKeyRevoked = 'api_key_revoked',
+  /** An AI agent's OAuth connection to the workspace was revoked. */
+  AgentDisconnected = 'agent_disconnected',
   /** Someone was invited by email; the subject is the invitation, labelled with the address. */
   MemberInvited = 'member_invited',
   InvitationRevoked = 'invitation_revoked',

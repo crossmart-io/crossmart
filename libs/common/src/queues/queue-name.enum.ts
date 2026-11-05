@@ -10,4 +10,6 @@ export enum QueueName {
   Import = 'import',
   /** AI agent jobs, such as content generation. Slow and metered, so they come last. */
   Ai = 'ai',
+  /** Housekeeping on a schedule, such as deleting unused agent registrations. */
+  Maintenance = 'maintenance',
 }

@@ -31,6 +31,10 @@ model User {
   invitations          WorkspaceInvitation[]
   suggestionsRequested Suggestion[]          @relation("SuggestionRequestedBy")
   suggestionsReviewed  Suggestion[]          @relation("SuggestionReviewedBy")
+  oauthClients         OauthClient[]
+  oauthRefreshTokens   OauthRefreshToken[]
+  oauthAccessTokens    OauthAccessToken[]
+  oauthConsents        OauthConsent[]
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
@@ -38,15 +42,19 @@ model User {
 }
 
 model Session {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
-  ipAddress String?  @map("ip_address")
-  userAgent String?  @map("user_agent")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String              @id @default(uuid()) @db.Uuid
+  userId             String              @map("user_id") @db.Uuid
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token              String              @unique
+  expiresAt          DateTime            @map("expires_at")
+  ipAddress          String?             @map("ip_address")
+  userAgent          String?             @map("user_agent")
+  /// The workspace picked for an agent during an OAuth authorization, before consent.
+  oauthWorkspaceId   String?             @map("oauth_workspace_id") @db.Uuid
+  oauthRefreshTokens OauthRefreshToken[]
+  oauthAccessTokens  OauthAccessToken[]
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
 
   @@index([userId])
   @@map("sessions")
@@ -82,6 +90,194 @@ model Verification {
 
   @@index([identifier])
   @@map("verifications")
+}
+
+// ─── Agent OAuth (owned by Better Auth's OAuth provider; see ADR 0019) ────────
+// A consent's and a token's `referenceId` is the workspace the agent was given.
+
+model Jwks {
+  id         String    @id @default(uuid()) @db.Uuid
+  publicKey  String    @map("public_key")
+  privateKey String    @map("private_key")
+  alg        String?
+  crv        String?
+  createdAt  DateTime  @map("created_at")
+  expiresAt  DateTime? @map("expires_at")
+
+  @@map("jwks")
+}
+
+model OauthClient {
+  id                               String                @id @default(uuid()) @db.Uuid
+  /// A Client ID Metadata Document URL, or a generated id for a dynamically registered client.
+  clientId                         String                @unique @map("client_id")
+  clientSecret                     String?               @map("client_secret")
+  clientDiscoveryId                String?               @map("client_discovery_id")
+  disabled                         Boolean?              @default(false)
+  skipConsent                      Boolean?              @map("skip_consent")
+  enableEndSession                 Boolean?              @map("enable_end_session")
+  subjectType                      String?               @map("subject_type")
+  scopes                           String[]
+  clientCredentialsScopes          String[]              @default([]) @map("client_credentials_scopes")
+  userId                           String?               @map("user_id") @db.Uuid
+  user                             User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                             String?
+  uri                              String?
+  icon                             String?
+  contacts                         String[]
+  tos                              String?
+  policy                           String?
+  softwareId                       String?               @map("software_id")
+  softwareVersion                  String?               @map("software_version")
+  softwareStatement                String?               @map("software_statement")
+  redirectUris                     String[]              @map("redirect_uris")
+  postLogoutRedirectUris           String[]              @map("post_logout_redirect_uris")
+  backchannelLogoutUri             String?               @map("backchannel_logout_uri")
+  backchannelLogoutSessionRequired Boolean?              @map("backchannel_logout_session_required")
+  tokenEndpointAuthMethod          String?               @map("token_endpoint_auth_method")
+  applicationType                  String?               @map("application_type")
+  jwks                             String?
+  jwksUri                          String?               @map("jwks_uri")
+  grantTypes                       String[]              @map("grant_types")
+  responseTypes                    String[]              @map("response_types")
+  requirePKCE                      Boolean?              @map("require_pkce")
+  dpopBoundAccessTokens            Boolean?              @default(false) @map("dpop_bound_access_tokens")
+  referenceId                      String?               @map("reference_id")
+  metadata                         Json?
+  resources                        OauthClientResource[]
+  refreshTokens                    OauthRefreshToken[]
+  accessTokens                     OauthAccessToken[]
+  consents                         OauthConsent[]
+  activity                         ActivityEvent[]
+  createdAt                        DateTime?             @map("created_at")
+  updatedAt                        DateTime?             @map("updated_at")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("oauth_clients")
+}
+
+model OauthResource {
+  id                            String                @id @default(uuid()) @db.Uuid
+  identifier                    String                @unique
+  name                          String
+  accessTokenTtl                Int?                  @map("access_token_ttl")
+  refreshTokenTtl               Int?                  @map("refresh_token_ttl")
+  signingAlgorithm              String?               @map("signing_algorithm")
+  signingKeyId                  String?               @map("signing_key_id")
+  allowedScopes                 String[]              @map("allowed_scopes")
+  customClaims                  Json?                 @map("custom_claims")
+  dpopBoundAccessTokensRequired Boolean?              @default(false) @map("dpop_bound_access_tokens_required")
+  disabled                      Boolean?              @default(false)
+  policyVersion                 Int?                  @default(1) @map("policy_version")
+  metadata                      Json?
+  clients                       OauthClientResource[]
+  createdAt                     DateTime?             @map("created_at")
+  updatedAt                     DateTime?             @map("updated_at")
+
+  @@map("oauth_resources")
+}
+
+model OauthClientResource {
+  id         String        @id @default(uuid()) @db.Uuid
+  clientId   String        @map("client_id")
+  client     OauthClient   @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  resourceId String        @map("resource_id")
+  resource   OauthResource @relation(fields: [resourceId], references: [identifier], onDelete: Cascade)
+  metadata   Json?
+  createdAt  DateTime?     @map("created_at")
+
+  @@unique([clientId, resourceId])
+  @@index([resourceId])
+  @@map("oauth_client_resources")
+}
+
+model OauthRefreshToken {
+  id                      String             @id @default(uuid()) @db.Uuid
+  token                   String             @unique
+  clientId                String             @map("client_id")
+  client                  OauthClient        @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  sessionId               String?            @map("session_id") @db.Uuid
+  session                 Session?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  userId                  String             @map("user_id") @db.Uuid
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referenceId             String?            @map("reference_id")
+  authorizationCodeId     String?            @map("authorization_code_id")
+  resources               String[]
+  requestedUserInfoClaims String[]           @map("requested_user_info_claims")
+  scopes                  String[]
+  expiresAt               DateTime           @map("expires_at")
+  revoked                 DateTime?
+  rotatedAt               DateTime?          @map("rotated_at")
+  rotationReplayResponse  String?            @map("rotation_replay_response")
+  rotationReplayExpiresAt DateTime?          @map("rotation_replay_expires_at")
+  authTime                DateTime?          @map("auth_time")
+  confirmation            Json?
+  accessTokens            OauthAccessToken[]
+  createdAt               DateTime           @map("created_at")
+
+  @@index([clientId])
+  @@index([sessionId])
+  @@index([userId, clientId, referenceId])
+  @@index([authorizationCodeId])
+  @@map("oauth_refresh_tokens")
+}
+
+model OauthAccessToken {
+  id                      String             @id @default(uuid()) @db.Uuid
+  token                   String             @unique
+  clientId                String             @map("client_id")
+  client                  OauthClient        @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  sessionId               String?            @map("session_id") @db.Uuid
+  session                 Session?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  userId                  String?            @map("user_id") @db.Uuid
+  user                    User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referenceId             String?            @map("reference_id")
+  authorizationCodeId     String?            @map("authorization_code_id")
+  resources               String[]
+  requestedUserInfoClaims String[]           @map("requested_user_info_claims")
+  refreshId               String?            @map("refresh_id") @db.Uuid
+  refreshToken            OauthRefreshToken? @relation(fields: [refreshId], references: [id], onDelete: Cascade)
+  scopes                  String[]
+  expiresAt               DateTime           @map("expires_at")
+  revoked                 DateTime?
+  confirmation            Json?
+  createdAt               DateTime           @map("created_at")
+
+  @@index([clientId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([authorizationCodeId])
+  @@index([refreshId])
+  @@map("oauth_access_tokens")
+}
+
+/// A user's consent for an agent in one workspace (`referenceId`): one connected agent.
+model OauthConsent {
+  id                      String      @id @default(uuid()) @db.Uuid
+  clientId                String      @map("client_id")
+  client                  OauthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId                  String?     @map("user_id") @db.Uuid
+  user                    User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referenceId             String?     @map("reference_id")
+  resources               String[]
+  requestedUserInfoClaims String[]    @map("requested_user_info_claims")
+  scopes                  String[]
+  createdAt               DateTime    @map("created_at")
+  updatedAt               DateTime    @map("updated_at")
+
+  @@index([clientId])
+  @@index([userId, clientId, referenceId])
+  @@index([referenceId])
+  @@map("oauth_consents")
+}
+
+/// Client assertion ids (`jti`) already used, so a `private_key_jwt` assertion is never replayed.
+model OauthClientAssertion {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+
+  @@map("oauth_client_assertions")
 }
 
 // ─── Tenancy ──────────────────────────────────────────────────────────────────
@@ -488,6 +684,8 @@ model InventoryMovement {
 enum ActivityActorType {
   USER
   API_KEY
+  /// An AI agent connected with OAuth, acting for the user in `actorUserId`.
+  AGENT
   SYSTEM
 
   @@map("activity_actor_type")
@@ -503,31 +701,34 @@ enum ActivityOutcome {
 /// Append-only record of who changed what in a workspace, including operations that failed.
 /// UUIDv7 ids sort by time, so they break ties between events of the same millisecond.
 model ActivityEvent {
-  id            String            @id @default(uuid(7)) @db.Uuid
-  workspaceId   String            @map("workspace_id") @db.Uuid
-  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  actorType     ActivityActorType @map("actor_type")
+  id                 String            @id @default(uuid(7)) @db.Uuid
+  workspaceId        String            @map("workspace_id") @db.Uuid
+  workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actorType          ActivityActorType @map("actor_type")
   /// Kept as null when the user is deleted, so the history survives them.
-  actorUserId   String?           @map("actor_user_id") @db.Uuid
-  actorUser     User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
-  actorApiKeyId String?           @map("actor_api_key_id") @db.Uuid
-  actorApiKey   ApiKey?           @relation(fields: [actorApiKeyId], references: [id], onDelete: SetNull)
+  actorUserId        String?           @map("actor_user_id") @db.Uuid
+  actorUser          User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorApiKeyId      String?           @map("actor_api_key_id") @db.Uuid
+  actorApiKey        ApiKey?           @relation(fields: [actorApiKeyId], references: [id], onDelete: SetNull)
+  /// The connected agent (an OAuth client id) for an `AGENT` actor.
+  actorOAuthClientId String?           @map("actor_oauth_client_id")
+  actorOAuthClient   OauthClient?      @relation(fields: [actorOAuthClientId], references: [clientId], onDelete: SetNull)
   /// An `ActivityAction` value; kept as text so features can add actions without a migration.
-  action        String
-  outcome       ActivityOutcome
+  action             String
+  outcome            ActivityOutcome
   /// An `ActivitySubjectType` value, kept as text for the same reason.
-  subjectType   String?           @map("subject_type")
-  subjectId     String?           @map("subject_id") @db.Uuid
+  subjectType        String?           @map("subject_type")
+  subjectId          String?           @map("subject_id") @db.Uuid
   /// The subject's name when the event happened, so deleted subjects still read well.
-  subjectLabel  String?           @map("subject_label")
+  subjectLabel       String?           @map("subject_label")
   /// Every subject a bulk event touched, so each one's history includes it.
-  subjectIds    String[]          @map("subject_ids") @db.Uuid
+  subjectIds         String[]          @map("subject_ids") @db.Uuid
   /// How many items the event covered (products changed, products imported).
-  itemCount     Int?              @map("item_count")
+  itemCount          Int?              @map("item_count")
   /// A short, user-facing reason for a failed outcome. Never holds secrets.
-  failureReason String?           @map("failure_reason")
-  summary       String
-  createdAt     DateTime          @default(now()) @map("created_at")
+  failureReason      String?           @map("failure_reason")
+  summary            String
+  createdAt          DateTime          @default(now()) @map("created_at")
 
   @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([workspaceId, subjectType, subjectId])

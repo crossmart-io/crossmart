@@ -111,6 +111,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'API key revocation',
     describe: (entry) => `Revoked API key${named(entry)}`,
   },
+  [ActivityAction.AgentDisconnected]: {
+    operation: 'Disconnecting an agent',
+    describe: (entry) => `Disconnected agent${named(entry)}`,
+  },
   [ActivityAction.MemberInvited]: {
     operation: 'Invitation',
     describe: (entry) => withDetail(`Invited${named(entry)}`, entry),

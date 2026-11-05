@@ -23,6 +23,7 @@ import {
   DEFAULT_MASTER_KEY_VERSION,
   DEFAULT_MEDIA_PUBLIC_URL,
   DEFAULT_WEB_APP_URL,
+  DEFAULT_MCP_PUBLIC_URL,
   DEFAULT_STORAGE_LOCAL_DIR,
   ENV_TRUE,
   MAX_PORT,
@@ -85,6 +86,13 @@ export class EnvironmentVariables {
   /** Base URL of the web app, where channel connections send the merchant back to. */
   @IsUrl({ require_tld: false })
   WEB_APP_URL: string = DEFAULT_WEB_APP_URL;
+
+  /**
+   * The remote MCP server's public address, including its `/mcp` path. Agent access tokens are
+   * issued for it (their audience), and the API accepts no others (ADR 0019).
+   */
+  @IsUrl({ require_tld: false, require_protocol: true })
+  MCP_PUBLIC_URL: string = DEFAULT_MCP_PUBLIC_URL;
 
   /**
    * Wraps the per-workspace keys that encrypt channel credentials. Generate with

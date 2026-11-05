@@ -5,6 +5,8 @@ export enum ActivitySubjectType {
   /** An entry of the import history; the event links to it. */
   ImportJob = 'import_job',
   ApiKey = 'api_key',
+  /** An AI agent connected with OAuth; the id is the connection (consent) id. */
+  AgentConnection = 'agent_connection',
   /** A workspace member; the id is their user id. */
   Member = 'member',
   Invitation = 'invitation',
