@@ -11,9 +11,9 @@ import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
 import { type EbayAccountContext, ebayAccountContext } from '../api/ebay-account-context.js';
 import { EbayApp } from '../ebay-app.js';
 import { ebayError } from '../ebay-errors.js';
-import { EbayTaxonomyReader } from '../taxonomy/ebay-taxonomy.reader.js';
 import { assignSkus, inventoryGroupKey } from './ebay-keys.js';
 import { EbayInventoryClient } from './ebay-inventory.client.js';
+import { EbayListingCategory } from './ebay-listing-category.js';
 import { listingTermsOf } from './ebay-listing-terms.js';
 import { ebayListingUrl } from './ebay-listing-url.js';
 import { EbayOfferClient } from './ebay-offer.client.js';
@@ -22,8 +22,6 @@ import type { EbayOfferTerms } from './ebay-offer.types.js';
 import { listingImageUrls, toInventoryItem, toInventoryItemGroup } from './ebay-product.mapper.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
 
-export const NO_CATEGORY =
-  'eBay suggested no category for this product. Choose an eBay category for it.';
 export const NOT_ACTIVE =
   'eBay listings cannot be hidden. Make the product active, or set it visible on this store.';
 export const NO_REFERENCE = 'Crossmart cannot find this listing’s items on eBay. End it on eBay.';
@@ -62,7 +60,7 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
     private readonly app: EbayApp,
     private readonly inventory: EbayInventoryClient,
     private readonly offers: EbayOfferClient,
-    private readonly taxonomy: EbayTaxonomyReader,
+    private readonly categories: EbayListingCategory,
   ) {}
 
   async publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
@@ -131,7 +129,8 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
       throw ebayError(ChannelErrorCode.RequestRejected, NO_IMAGES);
     }
     const account = await ebayAccountContext(session);
-    const category = draft.category ?? (await this.suggestedCategory(account, draft));
+    const category = await this.categories.resolve(account, draft);
+    await this.categories.assertRequiredAspects(account, draft, category);
     return {
       account,
       draft,
@@ -145,18 +144,6 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
         currency: account.marketplace.currencyCode,
       },
     };
-  }
-
-  /** eBay's best category for the title; stored by Crossmart so updates stay in it. */
-  private async suggestedCategory(
-    account: EbayAccountContext,
-    draft: ListingDraft,
-  ): Promise<ChannelCategory> {
-    const [best] = await this.taxonomy.suggest(account, draft.product.title);
-    if (!best) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_CATEGORY);
-    }
-    return best;
   }
 
   private async listSingle(plan: ListingPlan): Promise<string> {

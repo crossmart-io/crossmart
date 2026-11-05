@@ -7,7 +7,7 @@
 Manage listings, inventory and orders across Amazon, eBay, Shopify, Etsy and more,
 from one dashboard or straight from Claude & ChatGPT.
 
-[Website](https://crossmart.io) · [Docs](https://docs.crossmart.io) · [Architecture](docs/architecture.md)
+[Website](https://crossmart.io) · [Docs](https://docs.crossmart.io) · [Developers](docs/developers/README.md) · [Architecture](docs/architecture.md)
 
 </div>
 
@@ -33,6 +33,7 @@ from one dashboard or straight from Claude & ChatGPT.
 | `libs/common`     | Configuration, constants and shared utilities             |
 | `libs/database`   | Prisma schema, migrations and client                      |
 | `libs/connectors` | Marketplace connector SDK and connectors                  |
+| `sdks/typescript` | `@crossmart/sdk`, the TypeScript client of the REST API   |
 
 The web app lives in [crossmart-io/crossmart-web](https://github.com/crossmart-io/crossmart-web).
 
@@ -66,6 +67,12 @@ docker compose --profile app up -d --build
 ```
 
 This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
+
+## Build on Crossmart
+
+The [developer guide](docs/developers/README.md) covers the REST API (authentication, errors,
+pagination), a [quickstart](docs/developers/quickstart.md) from product to store to order, the
+[TypeScript SDK](sdks/typescript/README.md) and the [MCP server](docs/developers/mcp.md) for AI agents.
 
 ## Authentication
 

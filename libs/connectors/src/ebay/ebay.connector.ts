@@ -14,7 +14,11 @@ import type {
   PriceUpdate,
   PublishedListing,
 } from '../sdk/capabilities/listing-publisher.js';
-import type { ChannelCategory, TaxonomyProvider } from '../sdk/capabilities/taxonomy-provider.js';
+import type {
+  CategoryAspect,
+  ChannelCategory,
+  TaxonomyProvider,
+} from '../sdk/capabilities/taxonomy-provider.js';
 import { ChannelCapability } from '../sdk/channel-capability.enum.js';
 import type { OAuthAppConnector } from '../sdk/channel-connector.interface.js';
 import type { ChannelAccountProfile } from '../sdk/channel-settings.js';
@@ -177,6 +181,10 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
 
   async suggestCategories(session: ChannelSession, query: string): Promise<ChannelCategory[]> {
     return this.selling.taxonomy.suggest(await ebayAccountContext(session), query);
+  }
+
+  async categoryAspects(session: ChannelSession, categoryId: string): Promise<CategoryAspect[]> {
+    return this.selling.aspects.read(await ebayAccountContext(session), categoryId);
   }
 
   /** Creates or updates the account's ship-from location; answers its `merchantLocationKey`. */

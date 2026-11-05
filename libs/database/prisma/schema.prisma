@@ -745,6 +745,7 @@ model Listing {
   variants            ListingVariant[]
   override            ListingOverride?
   variantOverrides    ListingVariantOverride[]
+  itemSpecifics       ListingItemSpecific[]
   createdAt           DateTime                 @default(now()) @map("created_at")
   updatedAt           DateTime                 @updatedAt @map("updated_at")
 
@@ -777,6 +778,24 @@ model ListingVariant {
   @@unique([listingId, externalId])
   @@index([variantId])
   @@map("listing_variants")
+}
+
+/// An item specific the merchant set on one listing (an eBay aspect such as `Color`), sent on
+/// publish ahead of the defaults Crossmart derives. Values are kept in the merchant's order.
+model ListingItemSpecific {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  listingId   String   @map("listing_id") @db.Uuid
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  /// The aspect's name as the channel names it, such as `Color` or `Material`.
+  name        String
+  values      String[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([listingId, name])
+  @@index([workspaceId])
+  @@map("listing_item_specifics")
 }
 
 /// Whether a listing is for sale on its channel, when the merchant decides it per channel.

@@ -320,6 +320,9 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 - `openapi.json` is published per release, and `crossmart-web` generates its typed client from it. The web CI fails on breaking changes.
 - Auth uses Better Auth sessions (web) or workspace API keys (API/MCP). Rate limited per key.
 - Errors use one consistent shape (RFC 9457 problem+json) with typed error codes from an enum.
+- `sdks/typescript` is the official TypeScript SDK (`@crossmart/sdk`). Its types are generated from `openapi.json`
+  and CI fails when they drift from the API. The public, developer-facing documentation lives in
+  [developers/](developers/README.md).
 
 ## 8. Security
 

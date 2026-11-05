@@ -1,0 +1,72 @@
+name: TypeScript SDK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sdks/typescript/**'
+      - 'apps/api/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/sdk-typescript.yml'
+  pull_request:
+    paths:
+      - 'sdks/typescript/**'
+      - 'apps/api/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/sdk-typescript.yml'
+
+concurrency:
+  group: sdk-typescript-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, test, build, drift check
+    runs-on: ubuntu-latest
+    # Exporting the spec boots the API without connecting to these; the values only satisfy
+    # the configuration validation.
+    env:
+      DATABASE_URL: postgresql://crossmart:crossmart@localhost:5432/crossmart
+      REDIS_URL: redis://localhost:6379
+      BETTER_AUTH_SECRET: ci-only-secret-that-is-at-least-32-characters
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            sdks/typescript/pnpm-lock.yaml
+
+      - name: Build the API and export its OpenAPI spec
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm db:generate
+          pnpm build:api
+          pnpm openapi:generate
+
+      - name: Install the SDK
+        working-directory: sdks/typescript
+        run: pnpm install --frozen-lockfile
+      - name: Format and lint
+        working-directory: sdks/typescript
+        run: pnpm format:check && pnpm lint
+      - name: Typecheck
+        working-directory: sdks/typescript
+        run: pnpm typecheck
+      - name: Test
+        working-directory: sdks/typescript
+        run: pnpm test
+      - name: Build
+        working-directory: sdks/typescript
+        run: pnpm build
+      - name: Check the generated schema matches the API
+        working-directory: sdks/typescript
+        run: pnpm check:drift

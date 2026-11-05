@@ -14,6 +14,12 @@ export type ListingDraftVariant = Omit<ExternalVariant, 'externalId' | 'external
   externalVariantId?: string | null;
 };
 
+/** An item specific a merchant set on a listing, such as `Material: ["Stoneware"]`. */
+export interface ItemSpecific {
+  name: string;
+  values: string[];
+}
+
 /** What to publish: a product in Crossmart's terms, keyed by Crossmart variant ids. */
 export interface ListingDraft {
   productId: string;
@@ -31,6 +37,11 @@ export interface ListingDraft {
   accountSettings?: ChannelSettings | null;
   /** The category the listing was put in on the channel, chosen by the merchant or earlier. */
   category?: ChannelCategory | null;
+  /**
+   * Item specifics the merchant set on the listing, for channels that have them (eBay). They
+   * take precedence over the ones the connector derives, except the variants' own options.
+   */
+  itemSpecifics?: ItemSpecific[];
 }
 
 /** The ids the channel gave a published listing, to store as `Listing` / `ListingVariant`. */
