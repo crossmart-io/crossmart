@@ -28,6 +28,9 @@ from .catalog_import_format import CatalogImportFormat
 from .catalog_import_mode import CatalogImportMode
 from .catalog_import_result_dto import CatalogImportResultDto
 from .catalog_stats_dto import CatalogStatsDto
+from .category_aspect_dto import CategoryAspectDto
+from .category_aspect_mode import CategoryAspectMode
+from .category_aspect_usage import CategoryAspectUsage
 from .channel_category_dto import ChannelCategoryDto
 from .channel_connect_redirect_dto import ChannelConnectRedirectDto
 from .channel_connection_dto import ChannelConnectionDto
@@ -164,6 +167,8 @@ from .invitation_preview_dto import InvitationPreviewDto
 from .invitation_token_dto import InvitationTokenDto
 from .invite_member_dto import InviteMemberDto
 from .issued_api_key_dto import IssuedApiKeyDto
+from .item_specific_dto import ItemSpecificDto
+from .listing_item_specifics_dto import ListingItemSpecificsDto
 from .listing_override_dto import ListingOverrideDto
 from .listing_override_view_dto import ListingOverrideViewDto
 from .listing_source import ListingSource
@@ -218,6 +223,7 @@ from .sales_range import SalesRange
 from .sales_report_dto import SalesReportDto
 from .sales_store_dto import SalesStoreDto
 from .sales_totals_dto import SalesTotalsDto
+from .save_item_specifics_dto import SaveItemSpecificsDto
 from .selection_preview_dto import SelectionPreviewDto
 from .shopify_location_dto import ShopifyLocationDto
 from .shopify_settings_dto import ShopifySettingsDto
@@ -288,6 +294,9 @@ __all__ = (
     "CatalogImportMode",
     "CatalogImportResultDto",
     "CatalogStatsDto",
+    "CategoryAspectDto",
+    "CategoryAspectMode",
+    "CategoryAspectUsage",
     "ChannelCategoryDto",
     "ChannelConnectRedirectDto",
     "ChannelConnectionDto",
@@ -384,6 +393,8 @@ __all__ = (
     "InvitationTokenDto",
     "InviteMemberDto",
     "IssuedApiKeyDto",
+    "ItemSpecificDto",
+    "ListingItemSpecificsDto",
     "ListingOverrideDto",
     "ListingOverrideViewDto",
     "ListingSource",
@@ -434,6 +445,7 @@ __all__ = (
     "SalesReportDto",
     "SalesStoreDto",
     "SalesTotalsDto",
+    "SaveItemSpecificsDto",
     "SelectionPreviewDto",
     "ShopifyLocationDto",
     "ShopifySettingsDto",
