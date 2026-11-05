@@ -19,6 +19,7 @@ import { parseJsonBody } from '../../sdk/http/parse-json.js';
 import {
   BASIC_AUTH_SCHEME,
   BASIC_CREDENTIALS_SEPARATOR,
+  EBAY_APPLICATION_TOKEN_SCOPES,
   EBAY_AUTHORIZE_PATH,
   EBAY_CODE_RESPONSE_TYPE,
   EBAY_INVALID_GRANT_ERROR,
@@ -31,9 +32,11 @@ import {
 import { EbayApp } from '../ebay-app.js';
 import { ebayError } from '../ebay-errors.js';
 import {
+  type EbayApplicationToken,
   type EbayTokenResponse,
   ebayTokenErrorSchema,
   ebayTokenResponseSchema,
+  toEbayApplicationToken,
   toEbayCredentials,
 } from './ebay-token-response.js';
 
@@ -91,6 +94,15 @@ export class EbayOAuthClient {
     });
     const refreshed = toEbayCredentials(this.parseTokenResponse(response, true), now);
     return { ...refreshed, refreshToken, refreshTokenExpiresAt };
+  }
+
+  /** An application token (client credentials grant): the app acting for itself, not a user. */
+  async requestApplicationToken(now = new Date()): Promise<EbayApplicationToken> {
+    const response = await this.requestToken({
+      [EbayOAuthParam.GrantType]: EbayGrantType.ClientCredentials,
+      [EbayOAuthParam.Scope]: EBAY_APPLICATION_TOKEN_SCOPES.join(EBAY_SCOPE_SEPARATOR),
+    });
+    return toEbayApplicationToken(this.parseTokenResponse(response, false), now);
   }
 
   private async requestToken(grant: Record<string, string>): Promise<HttpResponse> {

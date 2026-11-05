@@ -23,6 +23,7 @@ listings through eBay's Sell Inventory API. The connector declares `publish_list
 | Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)             |
 | Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL         |
 | Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only. |
+| Deletion   | `{API_PUBLIC_URL}/api/v1/webhooks/ebay/account-deletion`, see Marketplace account deletion                      |
 
 ### Environments
 
@@ -258,10 +259,79 @@ second, as a conservative default.
 
 eBay is available on an instance only when the client id, secret and RuName are all set.
 
-**Production keys** also require a marketplace account deletion notification endpoint: eBay
-sends a notice when an eBay user asks for their data to be deleted, and the keyset is not
-activated without one (or an exemption). Crossmart does not have this endpoint yet. It will be
-added before eBay is offered in production.
+**Production keys** also require the marketplace account deletion endpoint below: eBay does
+not activate a production keyset until the endpoint answers its challenge (or the app is
+exempted).
+
+## Marketplace account deletion
+
+eBay notifies every app when an eBay user asks eBay to delete their account, and requires apps
+that keep eBay data to delete what they hold about that user. Crossmart's endpoint is:
+
+```
+{API_PUBLIC_URL}/api/v1/webhooks/ebay/account-deletion
+```
+
+for example `https://api.example.com/api/v1/webhooks/ebay/account-deletion`. It is public (eBay
+calls it) and left out of the OpenAPI spec, like the other channel callbacks. eBay requires
+`https` and refuses `localhost` and internal addresses, so it can only be registered for a
+deployed instance.
+
+| Variable                  | Meaning                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EBAY_VERIFICATION_TOKEN` | The verification token entered with the endpoint in the developer portal: 32 to 80 letters, digits, `_` or `-` (`openssl rand -hex 32`). Optional; the challenge answers 503 without it. |
+
+### Challenge
+
+When the endpoint is saved in the developer portal, eBay calls
+`GET …/account-deletion?challenge_code=…`. Crossmart answers `200` with
+`{ "challengeResponse": "<hex>" }` (`application/json`), where the hex is the SHA-256 of the
+challenge code, the verification token and the endpoint URL, concatenated in that order. The
+URL is built from `API_PUBLIC_URL` and must match the registered one exactly.
+
+### Notifications
+
+eBay then `POST`s each notice with topic `MARKETPLACE_ACCOUNT_DELETION`, whose `data` holds the
+user's immutable `userId` (and a `username` and legacy `eiasToken`, which Crossmart never reads).
+
+1. **Verify.** The `X-EBAY-SIGNATURE` header is base64 JSON with a key id (`kid`) and a
+   signature. Crossmart reads the key from the Notification API
+   (`GET {api}/commerce/notification/v1/public_key/{kid}`) with an application token (client
+   credentials grant, scope `https://api.ebay.com/oauth/api_scope`), and caches each key for an
+   hour, as eBay asks. The key is an ECDSA key in PEM (without line breaks), and the signature an
+   ECDSA signature (DER, base64) over the SHA-1 digest of the message. The message is the body
+   as received, or the body parsed and serialized again (`JSON.stringify`), which is what eBay's
+   own SDKs verify. A notice without a valid signature answers **412 Precondition Failed**, as
+   eBay's SDKs do, and changes nothing. When eBay cannot serve the key, the endpoint answers 502
+   and eBay delivers again. There is no way to skip verification.
+2. **Purge.** Every eBay connection of that user, on any marketplace and in any workspace
+   (`externalAccountId` `{userId}:{marketplaceId}`), is disconnected the way Shopify's
+   `shop/redact` erases a store: its credentials, scopes, settings (with the username) and orders
+   are deleted, its listings' eBay ids are dropped, stock its open orders held goes back on sale,
+   and its name becomes `Deleted eBay account · {site}`. Products stay; they belong to the
+   merchant. Each workspace whose connection was active gets a `channel_disconnected` activity
+   credited to the system.
+3. **Acknowledge.** A verified notice answers **204**, also when Crossmart never knew the user.
+   eBay resends unacknowledged notices and, after a day of failures, marks the endpoint down.
+
+Logs name the notification id and how many connections were purged, never the user, the token
+or the signature. Activity recorded before the deletion (such as `channel_connected`) still
+shows the connection's old name.
+
+### Operator steps (production keys)
+
+1. Generate a token (`openssl rand -hex 32`) and set `EBAY_VERIFICATION_TOKEN` on the API.
+   Check that `API_PUBLIC_URL` is the public `https` address of the API, and deploy.
+2. In the [eBay developer portal](https://developer.ebay.com/my/keys), open **Alerts &
+   Notifications** for the keyset (from Application Keys), choose **Marketplace Account
+   Deletion**, enter an alert email, the endpoint URL above and the same verification token, and
+   save. eBay sends the challenge at this point; the save fails if it is not answered.
+3. Click **Send test notification**. eBay signs the test notice like a real one, so Crossmart
+   verifies it and answers 204. It purges nothing unless the test notice names a user who is
+   connected.
+
+This unblocks the production keyset: eBay keeps it disabled until the endpoint is saved and
+verified (or the app is exempted).
 
 ## Next phases
 
@@ -273,4 +343,3 @@ added before eBay is offered in production.
   moving a listing between single-variant and multi-variant shapes when variants are added or
   removed after publishing.
 - Orders through the Fulfillment API, and notifications.
-- The marketplace account deletion notification endpoint.
