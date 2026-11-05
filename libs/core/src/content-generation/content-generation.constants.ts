@@ -24,3 +24,11 @@ export const CONTENT_GENERATION_UNSUPPORTED_CHANNEL =
   'AI content is not available for this channel yet';
 export const CONTENT_GENERATION_PRODUCTS_NOT_FOUND =
   'Some of these products do not exist in this workspace';
+
+/** Why an answer was rejected when cleaning its markup left nothing. Never the content. */
+export const EMPTY_AFTER_CLEANING = 'the answer was empty once its markup was cleaned';
+
+/** Longest merchant instruction for a rewrite ("shorter", "mention it is dishwasher-safe"). */
+export const CONTENT_DRAFT_INSTRUCTION_MAX_LENGTH = 500;
+/** Longest text sent in as the field being edited; the prompt keeps less of it. */
+export const CONTENT_DRAFT_TEXT_MAX_LENGTH = 100_000;

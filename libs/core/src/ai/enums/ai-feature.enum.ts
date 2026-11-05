@@ -5,4 +5,6 @@
 export enum AiFeature {
   /** The Content Generator: channel titles and descriptions. */
   ContentGeneration = 'content_generation',
+  /** Rewriting a field the merchant is editing, returned as a draft and never stored. */
+  ContentDraft = 'content_draft',
 }
