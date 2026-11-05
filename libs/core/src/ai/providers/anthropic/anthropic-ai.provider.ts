@@ -3,12 +3,17 @@ import type {
   MessageCreateParamsNonStreaming,
 } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { Injectable } from '@nestjs/common';
+import { APIError, AuthenticationError, PermissionDeniedError } from '@anthropic-ai/sdk';
+import { Injectable, Logger } from '@nestjs/common';
 import { AppConfigService } from '@crossmart/common';
 import type { AiCompletion, AiStructuredRequest } from '../../entities/ai-completion.js';
 import { AiProviderName } from '../../enums/ai-provider-name.enum.js';
 import { AiStopReason } from '../../enums/ai-stop-reason.enum.js';
-import { AiNotConfiguredError } from '../../errors/ai.errors.js';
+import {
+  AiKeyRejectedError,
+  AiNotConfiguredError,
+  AiProviderUnavailableError,
+} from '../../errors/ai.errors.js';
 import { AiProvider } from '../ai-provider.js';
 import { type AnthropicMessages, AnthropicClientFactory } from './anthropic-client.factory.js';
 import {
@@ -29,6 +34,7 @@ import {
 export class AnthropicAiProvider extends AiProvider {
   readonly name = AiProviderName.Anthropic;
   readonly model: string;
+  private readonly logger = new Logger(AnthropicAiProvider.name);
   private readonly messages: AnthropicMessages | null;
 
   constructor(config: AppConfigService, clients: AnthropicClientFactory) {
@@ -46,8 +52,21 @@ export class AnthropicAiProvider extends AiProvider {
     if (!this.messages) {
       throw new AiNotConfiguredError();
     }
-    const message = await this.messages.create(this.toParams(request));
-    return this.toCompletion(message);
+    try {
+      return this.toCompletion(await this.messages.create(this.toParams(request)));
+    } catch (error) {
+      throw this.toError(error);
+    }
+  }
+
+  /** The SDK's failures as errors callers understand. Never logs the request or the key. */
+  private toError(error: unknown): unknown {
+    if (!(error instanceof APIError)) return error;
+    this.logger.warn(`Anthropic request failed with status ${error.status ?? 'none'}`);
+    if (error instanceof AuthenticationError || error instanceof PermissionDeniedError) {
+      return new AiKeyRejectedError();
+    }
+    return new AiProviderUnavailableError(error.status);
   }
 
   private toParams<Output>(request: AiStructuredRequest<Output>): MessageCreateParamsNonStreaming {

@@ -2,10 +2,15 @@ import type {
   BetaMessage,
   MessageCreateParamsNonStreaming,
 } from '@anthropic-ai/sdk/resources/beta/messages/messages';
+import { APIConnectionError, APIError } from '@anthropic-ai/sdk';
 import type { AppConfigService } from '@crossmart/common';
 import { z } from 'zod';
 import { AiStopReason } from '../../enums/ai-stop-reason.enum.js';
-import { AiNotConfiguredError } from '../../errors/ai.errors.js';
+import {
+  AiKeyRejectedError,
+  AiNotConfiguredError,
+  AiProviderUnavailableError,
+} from '../../errors/ai.errors.js';
 import { AnthropicAiProvider } from './anthropic-ai.provider.js';
 import type { AnthropicClientFactory, AnthropicMessages } from './anthropic-client.factory.js';
 import { REFUSAL_FALLBACK_BETA } from './anthropic.constants.js';
@@ -97,5 +102,42 @@ describe('AnthropicAiProvider', () => {
     create.mockResolvedValue(message({ stop_reason: stopReason }));
 
     expect((await provider.complete(REQUEST)).stopReason).toBe(expected);
+  });
+
+  describe('failures', () => {
+    const apiError = (status: number) =>
+      APIError.generate(status, { type: 'error' }, 'failed', new Headers());
+
+    it.each([401, 403])(
+      'turns a rejected key (%i) into a message for the operator',
+      async (status) => {
+        const { provider, create } = setup('sk-test');
+        create.mockRejectedValue(apiError(status));
+
+        await expect(provider.complete(REQUEST)).rejects.toThrow(AiKeyRejectedError);
+      },
+    );
+
+    it.each([429, 500, 529])('turns status %i into a retryable outage', async (status) => {
+      const { provider, create } = setup('sk-test');
+      create.mockRejectedValue(apiError(status));
+
+      await expect(provider.complete(REQUEST)).rejects.toThrow(AiProviderUnavailableError);
+    });
+
+    it('turns an unreachable API into a retryable outage', async () => {
+      const { provider, create } = setup('sk-test');
+      create.mockRejectedValue(new APIConnectionError({ message: 'offline' }));
+
+      await expect(provider.complete(REQUEST)).rejects.toThrow(AiProviderUnavailableError);
+    });
+
+    it('lets other errors through unchanged', async () => {
+      const { provider, create } = setup('sk-test');
+      const bug = new TypeError('bug');
+      create.mockRejectedValue(bug);
+
+      await expect(provider.complete(REQUEST)).rejects.toBe(bug);
+    });
   });
 });

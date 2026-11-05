@@ -1,7 +1,11 @@
 import { ActivityOutcome, SuggestionCreatorType } from '@crossmart/database';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
-import { AiNotConfiguredError, AiOutputRejectedError } from '../../ai/errors/ai.errors.js';
+import {
+  AiKeyRejectedError,
+  AiNotConfiguredError,
+  AiOutputRejectedError,
+} from '../../ai/errors/ai.errors.js';
 import { SuggestionAgent } from '../../suggestions/enums/suggestion-agent.enum.js';
 import { SuggestionKind } from '../../suggestions/enums/suggestion-kind.enum.js';
 import type { SuggestionWriter } from '../../suggestions/services/suggestion.writer.js';
@@ -66,17 +70,18 @@ describe('ContentGenerationRunner', () => {
     expect(generator.generate).not.toHaveBeenCalled();
   });
 
-  it.each([new AiOutputRejectedError('not JSON'), new AiNotConfiguredError()])(
-    'logs %s as a failure and does not retry',
-    async (error) => {
-      const { runner, generator, suggestions, activity } = setup();
-      generator.generate.mockRejectedValue(error);
+  it.each([
+    new AiOutputRejectedError('not JSON'),
+    new AiNotConfiguredError(),
+    new AiKeyRejectedError(),
+  ])('logs %s as a failure and does not retry', async (error) => {
+    const { runner, generator, suggestions, activity } = setup();
+    generator.generate.mockRejectedValue(error);
 
-      await expect(runner.run(CONTENT_JOB, NOT_FINAL)).resolves.toBeUndefined();
-      expect(suggestions.propose).not.toHaveBeenCalled();
-      expect(activity.entries[0].outcome).toBe(ActivityOutcome.FAILED);
-    },
-  );
+    await expect(runner.run(CONTENT_JOB, NOT_FINAL)).resolves.toBeUndefined();
+    expect(suggestions.propose).not.toHaveBeenCalled();
+    expect(activity.entries[0].outcome).toBe(ActivityOutcome.FAILED);
+  });
 
   it('retries outages, logging them only on the last attempt', async () => {
     const { runner, generator, activity } = setup();
