@@ -12,7 +12,12 @@ import { HttpMethod } from '../../sdk/http/http-method.enum.js';
 import { isSuccessStatus } from '../../sdk/http/http-status.js';
 import { HttpTransport, type HttpResponse } from '../../sdk/http/http-transport.js';
 import { parseJsonBody } from '../../sdk/http/parse-json.js';
-import { BEARER_AUTH_SCHEME, CONTENT_LANGUAGE_HEADER } from '../ebay.constants.js';
+import {
+  ACCEPT_LANGUAGE_HEADER,
+  BEARER_AUTH_SCHEME,
+  CONTENT_LANGUAGE_HEADER,
+  EBAY_DEFAULT_LANGUAGE,
+} from '../ebay.constants.js';
 import { ebayError } from '../ebay-errors.js';
 import { ebayErrorCode, ebayRejectionMessage } from './ebay-api-error.js';
 
@@ -107,6 +112,7 @@ export class EbayApiClient {
     return {
       [AUTHORIZATION_HEADER]: `${BEARER_AUTH_SCHEME} ${request.accessToken}`,
       [ACCEPT_HEADER]: JSON_CONTENT_TYPE,
+      [ACCEPT_LANGUAGE_HEADER]: request.contentLanguage ?? EBAY_DEFAULT_LANGUAGE,
       ...(request.body === undefined ? {} : { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE }),
       ...(request.contentLanguage ? { [CONTENT_LANGUAGE_HEADER]: request.contentLanguage } : {}),
     };

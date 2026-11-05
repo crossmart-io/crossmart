@@ -124,6 +124,12 @@ export const EBAY_QUERY_PARAM = 'q';
 export const EBAY_CATEGORY_PATH_SEPARATOR = ' > ';
 
 export const CONTENT_LANGUAGE_HEADER = 'content-language';
+export const ACCEPT_LANGUAGE_HEADER = 'accept-language';
+/**
+ * Sent when a request names no listing language. Node's fetch otherwise sends
+ * `Accept-Language: *`, which the Inventory API rejects (error 25709).
+ */
+export const EBAY_DEFAULT_LANGUAGE = 'en-US';
 
 /** Inventory API limits, from eBay's reference. */
 export const EBAY_TITLE_MAX_LENGTH = 80;
