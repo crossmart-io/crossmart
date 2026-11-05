@@ -1,0 +1,7 @@
+# Configuration of openapi-python-client for crossmart/_generated.
+# The formatting hooks run in isolation so the output does not depend on this project's ruff rules.
+project_name_override: crossmart
+package_name_override: _generated
+post_hooks:
+  - ruff check --isolated --fix-only --quiet --no-cache .
+  - ruff format --isolated --quiet --no-cache .
