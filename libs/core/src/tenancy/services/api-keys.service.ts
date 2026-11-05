@@ -25,6 +25,10 @@ import {
 } from '../tenancy.constants.js';
 import { RoleResolver } from './role-resolver.js';
 
+const API_KEY_NOT_FOUND = 'API key not found';
+const API_KEY_REVOKE_FORBIDDEN =
+  'You cannot revoke an API key with more access than you have, unless you created it';
+
 /**
  * Workspace API keys for the REST API and the MCP server. Only hashes are stored. Active keys
  * count toward the plan's `Feature.ApiKeys` limit, across the organization.
@@ -67,10 +71,24 @@ export class ApiKeysService {
     return apiKeys.map((apiKey) => this.toSummary(apiKey));
   }
 
-  async revoke(workspaceId: string, apiKeyId: string, actor: Actor): Promise<void> {
+  /**
+   * Like issuing, revoking needs the revoker's permissions to cover the key's, so a manager
+   * cannot cut off a more privileged member's integration. Anyone may revoke keys they created.
+   */
+  async revoke(
+    workspaceId: string,
+    apiKeyId: string,
+    revoker: MembershipManager,
+    actor: Actor,
+  ): Promise<void> {
+    const apiKey = await this.apiKeys.findActive(workspaceId, apiKeyId);
+    if (!apiKey) {
+      throw new NotFoundException(API_KEY_NOT_FOUND);
+    }
+    this.assertRevocable(revoker, apiKey);
     const revoked = await this.apiKeys.revoke(workspaceId, apiKeyId, new Date());
     if (!revoked) {
-      throw new NotFoundException('API key not found');
+      throw new NotFoundException(API_KEY_NOT_FOUND);
     }
     await this.recordChange(workspaceId, actor, ActivityAction.ApiKeyRevoked, revoked);
   }
@@ -104,6 +122,14 @@ export class ApiKeysService {
     const { permissions } = await this.roles.resolve(workspaceId, request);
     if (!permissionsCover(issuer.permissions, permissions)) {
       throw new ForbiddenException('An API key cannot have more access than its creator');
+    }
+  }
+
+  private assertRevocable(revoker: MembershipManager, apiKey: ApiKeyWithRole): void {
+    if (apiKey.createdById === revoker.userId) return;
+    const { permissions } = resolveRole(apiKey.role, apiKey.customRole);
+    if (!permissionsCover(revoker.permissions, permissions)) {
+      throw new ForbiddenException(API_KEY_REVOKE_FORBIDDEN);
     }
   }
 
