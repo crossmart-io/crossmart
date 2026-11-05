@@ -19,7 +19,7 @@ import {
   VARIANT_S,
 } from './ebay-listing.fixtures.js';
 import { MISSING_LOCATION, MISSING_POLICIES } from './ebay-listing-terms.js';
-import { NOT_ACTIVE, NO_REFERENCE } from './ebay-listing-publisher.js';
+import { NO_IMAGES, NOT_ACTIVE, NO_REFERENCE } from './ebay-listing-publisher.js';
 
 const SHIRT_M_SKU = 'CM22222222222242228222222222222222';
 const NO_CONTENT = { status: 204, headers: {}, body: '' };
@@ -95,7 +95,7 @@ describe('EbayListingPublisher', () => {
       product: {
         title: 'Stoneware mug',
         description: 'Stoneware mug',
-        imageUrls: [],
+        imageUrls: ['https://cdn.example.com/mug.jpg'],
         aspects: {},
         upc: ['012345678905'],
       },
@@ -348,6 +348,18 @@ describe('EbayListingPublisher', () => {
       const publishing = connector.publish(session, shirtDraft({ accountSettings: settings }));
 
       await expect(publishing).rejects.toThrow(MISSING_POLICIES);
+      expect(http.requests).toEqual([]);
+    });
+
+    it.each([
+      ['no images', []],
+      ['only http images', [{ url: 'http://insecure.example.com/mug.jpg', altText: null }]],
+    ])('fails with %s, before calling eBay', async (_case, images) => {
+      const { connector, http } = createEbayTestKit();
+      const draft = mugDraft();
+      draft.product.images = images;
+
+      await expect(connector.publish(session, draft)).rejects.toThrow(NO_IMAGES);
       expect(http.requests).toEqual([]);
     });
 

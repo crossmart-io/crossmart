@@ -38,7 +38,7 @@ function isHttps(url: string): boolean {
 }
 
 /** eBay downloads images itself: only public https URLs, at most 24. */
-function imageUrls(draft: ListingDraft): string[] {
+export function listingImageUrls(draft: ListingDraft): string[] {
   return draft.product.images
     .map((image) => image.url)
     .filter(isHttps)
@@ -80,7 +80,7 @@ function productDetails(draft: ListingDraft, aspects: EbayAspects): EbayProductD
   return {
     title: listingTitle(draft.product.title),
     description: listingDescription(draft),
-    imageUrls: imageUrls(draft),
+    imageUrls: listingImageUrls(draft),
     aspects,
     ...(brand ? { brand } : {}),
   };
