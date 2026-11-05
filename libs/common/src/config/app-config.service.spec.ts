@@ -37,6 +37,16 @@ describe('AppConfigService', () => {
     );
   });
 
+  describe('ebayVerificationToken', () => {
+    it('returns the token, and null when it is unset or empty', () => {
+      const token = 'Crossmart_verification-token_0123456789abcdef';
+
+      expect(appConfig({ EBAY_VERIFICATION_TOKEN: token }).ebayVerificationToken).toBe(token);
+      expect(appConfig({ EBAY_VERIFICATION_TOKEN: '' }).ebayVerificationToken).toBeNull();
+      expect(appConfig({}).ebayVerificationToken).toBeNull();
+    });
+  });
+
   describe('aiSettings', () => {
     it('has no key and the default model when nothing is set', () => {
       expect(appConfig({}).aiSettings).toEqual({ anthropicApiKey: null, model: DEFAULT_AI_MODEL });

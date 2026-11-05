@@ -11,18 +11,20 @@ listings through eBay's Sell Inventory API. The connector declares `publish_list
 
 ## What Crossmart uses
 
-|            |                                                                                                                 |
-| ---------- | --------------------------------------------------------------------------------------------------------------- |
-| Sign-in    | `{auth}/oauth2/authorize` with `client_id`, `response_type=code`, `redirect_uri` (the RuName), `scope`, `state` |
-| Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                          |
-| Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                              |
-| Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                  |
-| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                    |
-| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")       |
-| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)        |
-| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)             |
-| Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL         |
-| Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only. |
+|            |                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| Sign-in    | `{auth}/oauth2/authorize` with `client_id`, `response_type=code`, `redirect_uri` (the RuName), `scope`, `state`  |
+| Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                           |
+| Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                               |
+| Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                   |
+| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                     |
+| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")        |
+| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)         |
+| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)              |
+| Aspects    | `GET {api}/commerce/taxonomy/v1/category_tree/{tree}/get_item_aspects_for_category?category_id=…` (Taxonomy API) |
+| Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL          |
+| Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only.  |
+| Deletion   | `{API_PUBLIC_URL}/api/v1/webhooks/ebay/account-deletion`, see Marketplace account deletion                       |
 
 ### Environments
 
@@ -80,7 +82,9 @@ the connection use the marketplace's currency.
   replaces what the connector reads and keeps `listingDefaults`.
 - **Per listing:** `Listing.externalId` is the eBay listing id, each `ListingVariant.externalId`
   is the variant's eBay SKU (`externalInventoryId` is null), and `Listing.channelCategoryId` /
-  `channelCategoryName` hold the eBay category the listing is in.
+  `channelCategoryName` hold the eBay category the listing is in. The item specifics the
+  merchant sets are rows of `ListingItemSpecific` (`listing_item_specifics`): one per aspect
+  name, with its values in order.
 
 ## Token refresh
 
@@ -171,16 +175,22 @@ with "Set where items ship from in this eBay connection's listing defaults." Nei
    stay in it and the merchant sees it in the listing override sheet, where they can search
    for another (`GET /products/:id/channels/:connectionId/category-suggestions?search=…`) and
    choose it (`PUT …/category`, which queues an update). Category names are stored with their
-   ancestors: `Home & Garden > Kitchen > Mugs`.
+   ancestors: `Home & Garden > Kitchen > Mugs`. Before any write, the connector reads the
+   category's aspects (below) and fails the listing, without retrying, when a required one has
+   no value, naming every missing one: "eBay requires these item specifics in this category:
+   Department. Add them in the listing’s item specifics." When the aspects cannot be read, the
+   listing is sent anyway, and eBay's own message names a missing aspect.
 2. **Inventory items.** `PUT /inventory_item/{sku}` per variant: title (cut to 80 characters
    on whole characters), description (HTML, the title when empty, at most 500,000), up to 24
    https image URLs, `condition`, `availability.shipToLocationAvailability.quantity` (the shown
    stock, never below 0; untracked variants list 1 unit), and `aspects`: `Brand` from the
-   vendor, plus the variant's option values (`Size: ["M"]`). A 12-digit barcode is sent as a
-   UPC, a 13-digit one as an EAN.
+   vendor (`Unbranded` without one), then the merchant's item specifics, which replace it, then
+   the variant's option values (`Size: ["M"]`). The `brand` field follows the Brand item
+   specific when there is one. A 12-digit barcode is sent as a UPC, a 13-digit one as an EAN.
 3. **Groups.** A product with more than one variant is listed as one multi-variant listing
    through `PUT /inventory_item_group/{groupKey}`, with `variantSKUs` and
-   `variesBy.specifications` built from the product's option names and values. The group key
+   `variesBy.specifications` built from the product's option names and values, and the
+   product's aspects (Brand and the merchant's item specifics). The group key
    is `CM` followed by the product id's 32 hex digits.
 4. **Offers.** One per SKU: `GET /offer?sku=…&marketplace_id=…` finds an existing offer, which
    is replaced with `PUT /offer/{offerId}`; otherwise `POST /offer` creates one (`FIXED_PRICE`,
@@ -193,6 +203,37 @@ with "Set where items ship from in this eBay connection's listing defaults." Nei
 
 eBay has no hidden listings: publishing a product that is not active (or is hidden on the
 store) is refused, and updating one ends its listing (it can be published again later).
+
+### Item specifics
+
+eBay calls them aspects: `Color`, `Material`, `Department`… Each leaf category has its own, and
+some are required. The listing override sheet shows them once the listing has a category
+(`GET /products/:id/channels/:connectionId/item-specifics`, permission `listings:edit`), and
+the merchant saves values with `PUT …/item-specifics`, which replaces every value set before.
+
+The API reads them with `get_item_aspects_for_category` on the marketplace's default tree and
+keeps, per aspect, its localized name, `aspectConstraint.aspectRequired`, `aspectUsage`
+(`RECOMMENDED` or `OPTIONAL`), `aspectMode` (`FREE_TEXT` or `SELECTION_ONLY`),
+`itemToAspectCardinality` (`SINGLE` or `MULTI`), and the first 200 `aspectValues`. Values eBay
+adds to those enumerations later read as optional, free text and single. Required aspects come
+first, then recommended, then optional. Each process caches a category's aspects for six hours.
+
+| Rule                | Value                                                               |
+| ------------------- | ------------------------------------------------------------------- |
+| Aspects per listing | At most 60                                                          |
+| Name                | At most 40 characters (the Inventory API's limit)                   |
+| Values per aspect   | At most 30 (eBay's limit for multi-value aspects)                   |
+| Value               | At most 50 characters (the Inventory API's limit)                   |
+| Normalization       | Names and values are trimmed; blank and repeated values are dropped |
+| Removing a specific | Save it with no values                                              |
+| Names given twice   | Refused (400), whatever their case                                  |
+
+Precedence when publishing: the merchant's item specifics replace the ones Crossmart derives
+(`Brand` from the vendor, or `Unbranded`). A specific named like one of the product's options
+(`Size`) is ignored, because each variant's option value is its own aspect and a group varies
+by it. Saving item specifics queues an update when eBay holds the listing, and retries the
+publish when the last one failed. Crossmart does not check `SELECTION_ONLY` values against
+eBay's list; eBay refuses a value it does not accept.
 
 ### SKUs
 
@@ -258,19 +299,87 @@ second, as a conservative default.
 
 eBay is available on an instance only when the client id, secret and RuName are all set.
 
-**Production keys** also require a marketplace account deletion notification endpoint: eBay
-sends a notice when an eBay user asks for their data to be deleted, and the keyset is not
-activated without one (or an exemption). Crossmart does not have this endpoint yet. It will be
-added before eBay is offered in production.
+**Production keys** also require the marketplace account deletion endpoint below: eBay does
+not activate a production keyset until the endpoint answers its challenge (or the app is
+exempted).
+
+## Marketplace account deletion
+
+eBay notifies every app when an eBay user asks eBay to delete their account, and requires apps
+that keep eBay data to delete what they hold about that user. Crossmart's endpoint is:
+
+```
+{API_PUBLIC_URL}/api/v1/webhooks/ebay/account-deletion
+```
+
+for example `https://api.example.com/api/v1/webhooks/ebay/account-deletion`. It is public (eBay
+calls it) and left out of the OpenAPI spec, like the other channel callbacks. eBay requires
+`https` and refuses `localhost` and internal addresses, so it can only be registered for a
+deployed instance.
+
+| Variable                  | Meaning                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EBAY_VERIFICATION_TOKEN` | The verification token entered with the endpoint in the developer portal: 32 to 80 letters, digits, `_` or `-` (`openssl rand -hex 32`). Optional; the challenge answers 503 without it. |
+
+### Challenge
+
+When the endpoint is saved in the developer portal, eBay calls
+`GET …/account-deletion?challenge_code=…`. Crossmart answers `200` with
+`{ "challengeResponse": "<hex>" }` (`application/json`), where the hex is the SHA-256 of the
+challenge code, the verification token and the endpoint URL, concatenated in that order. The
+URL is built from `API_PUBLIC_URL` and must match the registered one exactly.
+
+### Notifications
+
+eBay then `POST`s each notice with topic `MARKETPLACE_ACCOUNT_DELETION`, whose `data` holds the
+user's immutable `userId` (and a `username` and legacy `eiasToken`, which Crossmart never reads).
+
+1. **Verify.** The `X-EBAY-SIGNATURE` header is base64 JSON with a key id (`kid`) and a
+   signature. Crossmart reads the key from the Notification API
+   (`GET {api}/commerce/notification/v1/public_key/{kid}`) with an application token (client
+   credentials grant, scope `https://api.ebay.com/oauth/api_scope`), and caches each key for an
+   hour, as eBay asks. The key is an ECDSA key in PEM (without line breaks), and the signature an
+   ECDSA signature (DER, base64) over the SHA-1 digest of the message. The message is the body
+   as received, or the body parsed and serialized again (`JSON.stringify`), which is what eBay's
+   own SDKs verify. A notice without a valid signature answers **412 Precondition Failed**, as
+   eBay's SDKs do, and changes nothing. When eBay cannot serve the key, the endpoint answers 502
+   and eBay delivers again. There is no way to skip verification.
+2. **Purge.** Every eBay connection of that user, on any marketplace and in any workspace
+   (`externalAccountId` `{userId}:{marketplaceId}`), is disconnected the way Shopify's
+   `shop/redact` erases a store: its credentials, scopes, settings (with the username) and orders
+   are deleted, its listings' eBay ids are dropped, stock its open orders held goes back on sale,
+   and its name becomes `Deleted eBay account · {site}`. Products stay; they belong to the
+   merchant. Each workspace whose connection was active gets a `channel_disconnected` activity
+   credited to the system.
+3. **Acknowledge.** A verified notice answers **204**, also when Crossmart never knew the user.
+   eBay resends unacknowledged notices and, after a day of failures, marks the endpoint down.
+
+Logs name the notification id and how many connections were purged, never the user, the token
+or the signature. Activity recorded before the deletion (such as `channel_connected`) still
+shows the connection's old name.
+
+### Operator steps (production keys)
+
+1. Generate a token (`openssl rand -hex 32`) and set `EBAY_VERIFICATION_TOKEN` on the API.
+   Check that `API_PUBLIC_URL` is the public `https` address of the API, and deploy.
+2. In the [eBay developer portal](https://developer.ebay.com/my/keys), open **Alerts &
+   Notifications** for the keyset (from Application Keys), choose **Marketplace Account
+   Deletion**, enter an alert email, the endpoint URL above and the same verification token, and
+   save. eBay sends the challenge at this point; the save fails if it is not answered.
+3. Click **Send test notification**. eBay signs the test notice like a real one, so Crossmart
+   verifies it and answers 204. It purges nothing unless the test notice names a user who is
+   connected.
+
+This unblocks the production keyset: eBay keeps it disabled until the endpoint is saved and
+verified (or the app is exempted).
 
 ## Next phases
 
 - Stock sync (`update_inventory`) through `bulk_update_price_quantity`; today stock is sent
   only when a listing is published or updated.
-- An item-specifics editor: today aspects come from the vendor and options, and eBay's message
-  names any required aspect that is missing.
+- Item specifics per variant (beyond the option values), and value dependencies between
+  aspects (`valueConstraints`, such as a model that depends on the brand).
 - Variant-specific images (`aspectsImageVariesBy`), compare-at (strikethrough) prices, and
   moving a listing between single-variant and multi-variant shapes when variants are added or
   removed after publishing.
 - Orders through the Fulfillment API, and notifications.
-- The marketplace account deletion notification endpoint.

@@ -82,4 +82,18 @@ describe('validateEnvironment', () => {
       /EBAY_ENVIRONMENT/,
     );
   });
+
+  it('accepts an eBay verification token only in the shape eBay allows', () => {
+    const withToken = (token: string) =>
+      validateEnvironment({ ...VALID_ENVIRONMENT, EBAY_VERIFICATION_TOKEN: token })
+        .EBAY_VERIFICATION_TOKEN;
+
+    expect(withToken('Crossmart_verification-token_0123456789abcdef')).toBe(
+      'Crossmart_verification-token_0123456789abcdef',
+    );
+    expect(withToken('')).toBe('');
+    for (const invalid of ['too-short', 'a'.repeat(81), `${'a'.repeat(32)}!`]) {
+      expect(() => withToken(invalid)).toThrow(/EBAY_VERIFICATION_TOKEN/);
+    }
+  });
 });

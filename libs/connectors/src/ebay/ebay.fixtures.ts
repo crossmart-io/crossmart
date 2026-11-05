@@ -11,11 +11,16 @@ import { EbayApiClient } from './api/ebay-api.client.js';
 import { EbayConnector } from './ebay.connector.js';
 import { EbayApp } from './ebay-app.js';
 import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
+import { EbayNotificationVerifier } from './notifications/ebay-notification.verifier.js';
+import { EbayPublicKeyClient } from './notifications/ebay-public-key.client.js';
+import { EbayApplicationTokens } from './oauth/ebay-application-tokens.js';
 import { EbayOAuthClient } from './oauth/ebay-oauth.client.js';
 import { EbayInventoryClient } from './publish/ebay-inventory.client.js';
 import { EbayListingPublisher } from './publish/ebay-listing-publisher.js';
 import { EbayOfferClient } from './publish/ebay-offer.client.js';
 import { EbayPriceUpdater } from './publish/ebay-price-updater.js';
+import { EbayListingCategory } from './publish/ebay-listing-category.js';
+import { EbayCategoryAspectsReader } from './taxonomy/ebay-category-aspects.reader.js';
 import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
 
 /** Fabricated responses in the shape of eBay's REST APIs; no real account, token or buyer data. */
@@ -27,6 +32,7 @@ export const USER_ID = 'nY4uWx2bQ1e';
 export const ACCOUNT_ID = `${USER_ID}:EBAY_US`;
 export const TOKEN_URL = 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
 export const USER_URL = 'https://apiz.sandbox.ebay.com/commerce/identity/v1/user/';
+export const PUBLIC_KEY_URL = 'https://api.sandbox.ebay.com/commerce/notification/v1/public_key/';
 const POLICY_BASE = 'https://api.sandbox.ebay.com/sell/account/v1';
 export const POLICY_URLS = {
   fulfillment: `${POLICY_BASE}/fulfillment_policy?marketplace_id=EBAY_US`,
@@ -45,6 +51,8 @@ export interface EbayTestKit {
   http: FakeHttpTransport;
   oauth: EbayOAuthClient;
   connector: EbayConnector;
+  publicKeys: EbayPublicKeyClient;
+  notifications: EbayNotificationVerifier;
 }
 
 /** A connector wired to fakes, as the Nest module wires the real one. */
@@ -61,19 +69,23 @@ export function createEbayTestKit(app = new EbayApp(TEST_EBAY_APP)): EbayTestKit
   );
   const offers = new EbayOfferClient(app, api);
   const taxonomy = new EbayTaxonomyReader(app, api);
+  const aspects = new EbayCategoryAspectsReader(taxonomy, api);
   const publisher = new EbayListingPublisher(
     app,
     new EbayInventoryClient(app, api),
     offers,
-    taxonomy,
+    new EbayListingCategory(taxonomy, aspects),
   );
   const selling = new EbaySellingServices(
     publisher,
     new EbayPriceUpdater(app, api, offers),
     taxonomy,
+    aspects,
   );
   const connector = new EbayConnector(oauth, account, selling);
-  return { http, oauth, connector };
+  const publicKeys = new EbayPublicKeyClient(app, api, new EbayApplicationTokens(oauth));
+  const notifications = new EbayNotificationVerifier(publicKeys);
+  return { http, oauth, connector, publicKeys, notifications };
 }
 
 /** Answers the three policy reads with the recorded lists. */

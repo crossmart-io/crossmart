@@ -36,6 +36,9 @@ export const LISTING_VISIBILITY_SCHEMA_NAME = 'ListingVisibility';
 
 export const CATEGORY_PATH = ':connectionId/category';
 export const CATEGORY_SUGGESTIONS_PATH = ':connectionId/category-suggestions';
+export const ITEM_SPECIFICS_PATH = ':connectionId/item-specifics';
+export const CATEGORY_ASPECT_USAGE_SCHEMA_NAME = 'CategoryAspectUsage';
+export const CATEGORY_ASPECT_MODE_SCHEMA_NAME = 'CategoryAspectMode';
 export const CATEGORY_ID_MAX_LENGTH = 64;
 export const CATEGORY_NAME_MAX_LENGTH = 500;
 export const CATEGORY_QUERY_MAX_LENGTH = 255;
