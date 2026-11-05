@@ -9,7 +9,6 @@ import {
 import { ChannelConnectionStatus } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { CONNECTION_NOT_FOUND } from '../channels.constants.js';
 import type { ChannelConnectionView } from '../entities/channel-connection-view.js';
@@ -17,6 +16,7 @@ import { toChannelConnectionView } from '../mappers/channel-connection.mapper.js
 import type { ChannelConnectionRecord } from '../repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { ChannelSessionFactory } from './channel-session.factory.js';
+import { connectionSubject } from '../rules/connection-subject.js';
 
 /** A workspace's channel connections: listing them, and disconnecting them. */
 @Injectable()
@@ -60,11 +60,7 @@ export class ChannelConnectionsService {
     );
     await this.activity.record(workspaceId, actor, {
       action: ActivityAction.ChannelDisconnected,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connectionId,
-        label: connection.displayName,
-      },
+      subject: connectionSubject(connection),
       detail: this.connectorOf(connection).displayName,
     });
     return this.toView(disconnected);

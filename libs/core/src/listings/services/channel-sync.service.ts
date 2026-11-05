@@ -3,13 +3,13 @@ import { chunk } from '@crossmart/common';
 import { ChannelConnectionStatus } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type { SyncRequestResult } from '../entities/listing-sync-job.js';
 import { CONNECTION_NOT_SYNCABLE, SELECTION_BATCH_SIZE } from '../listings.constants.js';
 import { SyncConnectionLoader } from './sync-connection.loader.js';
 import { SyncJobQueue } from './sync-job.queue.js';
 import { SyncPlanner } from './sync-planner.js';
+import { connectionSubject } from '../../channels/rules/connection-subject.js';
 
 const pluralRules = new Intl.PluralRules('en');
 
@@ -43,11 +43,7 @@ export class ChannelSyncService {
     }
     await this.activity.record(workspaceId, actor, {
       action: ActivityAction.ChannelSyncRequested,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connectionId,
-        label: connection.view.displayName,
-      },
+      subject: connectionSubject(connection.view),
       itemCount: plan.publish.length,
       detail: productsQueued(plan.publish.length),
     });

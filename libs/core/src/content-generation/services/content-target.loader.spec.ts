@@ -4,8 +4,12 @@ import type { ChannelConnectionView } from '../../channels/entities/channel-conn
 import type { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import type { ListingContentReader } from '../../listings/services/listing-content.reader.js';
 import { productDetail } from '../../listings/testing/listing.fixtures.js';
-import { CHANNEL_CONTENT_RULES } from '../rules/channel-content-rules.js';
-import { CONNECTION_ID, CONTENT_JOB } from '../testing/content-target.fixtures.js';
+import {
+  CONNECTION_ID,
+  CONTENT_JOB,
+  contentRulesOf,
+  contentRulesResolver,
+} from '../testing/content-target.fixtures.js';
 import { ContentTargetLoader } from './content-target.loader.js';
 
 function setup(channel = ChannelType.Ebay) {
@@ -25,6 +29,7 @@ function setup(channel = ChannelType.Ebay) {
   const loader = new ContentTargetLoader(
     connections as unknown as ChannelConnectionsService,
     content as unknown as ListingContentReader,
+    contentRulesResolver(),
   );
   return { loader, connections, content };
 }
@@ -35,7 +40,7 @@ describe('ContentTargetLoader', () => {
 
     expect(await loader.load(CONTENT_JOB)).toMatchObject({
       store: { id: CONNECTION_ID, displayName: 'eBay US' },
-      rules: CHANNEL_CONTENT_RULES[ChannelType.Ebay],
+      rules: contentRulesOf(ChannelType.Ebay),
       current: { title: 'Mug (eBay)' },
     });
   });

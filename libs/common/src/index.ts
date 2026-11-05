@@ -16,6 +16,7 @@ export * from './crypto/envelope/envelope-encryption.js';
 export * from './crypto/envelope/in-memory-data-key-store.js';
 export * from './crypto/envelope/master-key-ring.js';
 export * from './text/slugify.js';
+export * from './text/truncate.js';
 export * from './money/decimal-amount.js';
 export * from './html/sanitize-description.js';
 export * from './storage/file-storage.js';

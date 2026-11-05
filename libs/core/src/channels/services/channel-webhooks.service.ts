@@ -12,11 +12,11 @@ import {
 import { ChannelConnectionStatus } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { ChannelEventBus } from '../../events/services/channel-event-bus.js';
 import type { ChannelConnectionRecord } from '../repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
+import { connectionSubject } from '../rules/connection-subject.js';
 
 const INVALID_SIGNATURE = 'Invalid webhook signature';
 
@@ -104,11 +104,7 @@ export class ChannelWebhooksService {
   ): Promise<void> {
     return this.activity.record(connection.workspaceId, Actor.system(), {
       action: ActivityAction.ChannelDisconnected,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connection.id,
-        label: connection.displayName,
-      },
+      subject: connectionSubject(connection),
       detail: connector.displayName,
     });
   }

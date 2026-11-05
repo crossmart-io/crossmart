@@ -1,5 +1,5 @@
+import { DescriptionFormat } from '@crossmart/connectors';
 import type { ChannelContentRules } from '../../content-generation/rules/channel-content-rules.js';
-import { DescriptionFormat } from '../../content-generation/enums/description-format.enum.js';
 
 /**
  * The Content Generator's prompt, version 1. Prompts are versioned files: change the wording

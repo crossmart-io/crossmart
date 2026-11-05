@@ -21,7 +21,6 @@ export const EBAY_REQUIRED_SCOPES: readonly EbayScope[] = [
   EbayScope.SellFulfillment,
   EbayScope.IdentityReadonly,
 ];
-export const EBAY_SCOPE_SEPARATOR = ' ';
 
 /** Where each eBay environment lives: sign-in, the REST APIs, and the identity API. */
 export interface EbayHosts {
@@ -51,37 +50,10 @@ export const EBAY_PAYMENT_POLICY_PATH = '/sell/account/v1/payment_policy';
 export const EBAY_RETURN_POLICY_PATH = '/sell/account/v1/return_policy';
 export const EBAY_MARKETPLACE_ID_PARAM = 'marketplace_id';
 
-/** OAuth request, callback and token parameters. */
-export enum EbayOAuthParam {
-  ClientId = 'client_id',
-  ResponseType = 'response_type',
-  RedirectUri = 'redirect_uri',
-  Scope = 'scope',
-  State = 'state',
-  Code = 'code',
-  GrantType = 'grant_type',
-  RefreshToken = 'refresh_token',
-}
-
-export enum EbayGrantType {
-  AuthorizationCode = 'authorization_code',
-  RefreshToken = 'refresh_token',
-  /** An application token: calls on behalf of the app itself, such as reading public keys. */
-  ClientCredentials = 'client_credentials',
-}
-
 /** The only scope an application token needs to read the Notification API's public keys. */
 export const EBAY_APPLICATION_TOKEN_SCOPES: readonly EbayScope[] = [EbayScope.Api];
 /** An application token is requested again this long before it expires. */
 export const EBAY_APPLICATION_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
-
-export const EBAY_CODE_RESPONSE_TYPE = 'code';
-/** The OAuth error eBay answers when a refresh token expired or was revoked. */
-export const EBAY_INVALID_GRANT_ERROR = 'invalid_grant';
-
-export const BASIC_AUTH_SCHEME = 'Basic';
-export const BEARER_AUTH_SCHEME = 'Bearer';
-export const BASIC_CREDENTIALS_SEPARATOR = ':';
 
 /**
  * Error ids the Account API answers when the seller has not opted in to business policies
@@ -150,6 +122,11 @@ export const EBAY_DEFAULT_LANGUAGE = 'en-US';
 /** Inventory API limits, from eBay's reference. */
 export const EBAY_TITLE_MAX_LENGTH = 80;
 export const EBAY_DESCRIPTION_MAX_LENGTH = 500_000;
+/**
+ * The longest description worth writing: eBay's 500,000 is a hard limit for templated HTML,
+ * far beyond what buyers read on a phone, so generated descriptions aim for this.
+ */
+export const EBAY_DESCRIPTION_TARGET_LENGTH = 4_000;
 export const EBAY_MAX_IMAGES = 24;
 export const EBAY_SKU_MAX_LENGTH = 50;
 export const EBAY_BULK_PRICE_MAX_SKUS = 25;

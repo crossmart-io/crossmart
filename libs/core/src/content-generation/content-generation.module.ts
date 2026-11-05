@@ -7,8 +7,10 @@ import { ListingsModule } from '../listings/listings.module.js';
 import { SuggestionsModule } from '../suggestions/suggestions.module.js';
 import { BullContentGenerationQueue } from './queue/bull-content-generation.queue.js';
 import { ContentGenerationQueue } from './queue/content-generation.queue.js';
+import { ChannelContentRulesResolver } from './services/channel-content-rules.resolver.js';
 import { ContentProductRepository } from './repositories/content-product.repository.js';
 import { ContentDraftService } from './services/content-draft.service.js';
+import { ContentDraftTargetLoader } from './services/content-draft-target.loader.js';
 import { ContentGenerationRunner } from './services/content-generation.runner.js';
 import { ContentGenerationService } from './services/content-generation.service.js';
 import { ContentRequestValidator } from './services/content-request.validator.js';
@@ -31,10 +33,12 @@ import { ContentGenerator } from './services/content.generator.js';
     SuggestionsModule,
   ],
   providers: [
+    ChannelContentRulesResolver,
     ContentProductRepository,
     ContentRequestValidator,
     ContentTargetLoader,
     ContentGenerator,
+    ContentDraftTargetLoader,
     ContentDraftService,
     ContentGenerationRunner,
     ContentGenerationService,

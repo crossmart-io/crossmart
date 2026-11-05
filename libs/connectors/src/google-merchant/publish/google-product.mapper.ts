@@ -1,4 +1,4 @@
-import { descriptionToPlainText } from '@crossmart/common';
+import { descriptionToPlainText, truncate } from '@crossmart/common';
 import type {
   ListingDraft,
   ListingDraftVariant,
@@ -35,7 +35,7 @@ export interface GoogleOfferTarget {
 
 /** Cuts text to Google's limit by characters, never splitting an emoji. */
 function cut(text: string, maxLength: number): string {
-  return Array.from(text.trim()).slice(0, maxLength).join('').trim();
+  return truncate(text.trim(), maxLength).trim();
 }
 
 /** The product page: the merchant's template with the product's handle. */

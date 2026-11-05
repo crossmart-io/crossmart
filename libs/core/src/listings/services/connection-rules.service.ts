@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { ActivityEntry } from '../../activity/entities/activity-entry.js';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { CONNECTION_NOT_FOUND } from '../../channels/channels.constants.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
@@ -15,6 +14,7 @@ import type { ChannelConnectionRecord } from '../../channels/repositories/channe
 import { ChannelConnectionRepository } from '../../channels/repositories/channel-connection.repository.js';
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import { describePricingRule } from '../rules/describe-pricing-rule.js';
+import { connectionSubject } from '../../channels/rules/connection-subject.js';
 
 const SELECTION_CLEARED = 'automatic rule removed';
 
@@ -143,11 +143,7 @@ export class ConnectionRulesService {
   ): Promise<void> {
     return this.activity.record(workspaceId, actor, {
       action,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connection.id,
-        label: connection.displayName,
-      },
+      subject: connectionSubject(connection),
       detail,
     });
   }

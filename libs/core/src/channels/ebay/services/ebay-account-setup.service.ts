@@ -12,15 +12,23 @@ import {
 } from '@crossmart/connectors';
 import type { Actor } from '../../../activity/entities/actor.js';
 import { ActivityAction } from '../../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../../activity/services/activity-recorder.js';
 import type { ChannelConnectionView } from '../../entities/channel-connection-view.js';
 import { callChannel } from '../../rules/channel-http-error.js';
+import {
+  type ConnectionAccount,
+  type ConnectionAccountKind,
+  loadConnectionAccount,
+  recordConnectionChange,
+} from '../../rules/connection-account.js';
 import { ChannelSessionFactory } from '../../services/channel-session.factory.js';
 import { ConnectionAccountStore } from '../../services/connection-account.store.js';
 import type { EbayListingDefaultsInput } from '../entities/ebay-listing-defaults-input.js';
 
-const NOT_EBAY = 'This is not an eBay connection, or its account has not been read yet';
+const EBAY_ACCOUNT: ConnectionAccountKind<EbaySettings> = {
+  isAccount: isEbaySettings,
+  notThisChannel: 'This is not an eBay connection, or its account has not been read yet',
+};
 const UNKNOWN_POLICY = 'Choose one of the account’s own business policies';
 
 /** The policy lists of the account, by the defaults field that picks from each. */
@@ -116,16 +124,11 @@ export class EbayAccountSetupService {
     return this.store.saveAccount(workspaceId, connection, account);
   }
 
-  private async load(
+  private load(
     workspaceId: string,
     connectionId: string,
-  ): Promise<{ connection: ChannelConnectionView; settings: EbaySettings }> {
-    const connection = await this.store.get(workspaceId, connectionId);
-    const { account } = connection.settings;
-    if (!account || !isEbaySettings(account)) {
-      throw new BadRequestException(NOT_EBAY);
-    }
-    return { connection, settings: account };
+  ): Promise<ConnectionAccount<EbaySettings>> {
+    return loadConnectionAccount(this.store, workspaceId, connectionId, EBAY_ACCOUNT);
   }
 
   private async saveLocation(
@@ -164,13 +167,6 @@ export class EbayAccountSetupService {
     actor: Actor,
     action: ActivityAction,
   ): Promise<void> {
-    return this.activity.record(workspaceId, actor, {
-      action,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connection.id,
-        label: connection.displayName,
-      },
-    });
+    return recordConnectionChange(this.activity, workspaceId, actor, { action, connection });
   }
 }

@@ -164,6 +164,7 @@ interface ChannelConnector {
   readonly channel: ChannelType;
   readonly capabilities: ReadonlySet<ChannelCapability>;
   readonly auth: ChannelAuthStrategy;          // OAuth app | seller-provided credentials
+  readonly contentLimits?: ChannelContentLimits; // title/description limits, for generated content
 }
 interface ListingPublisher   { publish(...); update(...); delist(...); updatePrices(...); }
 interface TaxonomyProvider   { suggestCategories(...); }
@@ -175,6 +176,23 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 ```
 
 - **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`, `TaxonomyProvider`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md), eBay in [channels/ebay.md](channels/ebay.md) and Google Merchant Center in [channels/google-merchant.md](channels/google-merchant.md) ([ADR 0017](decisions/0017-google-merchant-connector.md)). Sessions also carry the connection's stored account settings (`ChannelSession.settings`) for channels that address listings through them (Google's data source). A `ListingDraft` carries the connection's account settings and the listing's channel category for channels that need them (eBay), and `delist` receives a `ListingReference` (product id and variant ids on the channel).
+- **Shared building blocks:** connectors build on the SDK instead of copying each other.
+  - `OAuthTokenEndpoint` (`sdk/oauth`) is an RFC 6749 token endpoint: the code exchange, the refresh and other grants
+    (eBay's client credentials), with client authentication as HTTP Basic (eBay) or in the form body (Google). A 5xx
+    is `ChannelUnavailable`, an `invalid_grant` on a refresh is `CredentialsRejected`, and any other refusal is
+    `RequestRejected` naming only the OAuth `error` code. A code exchange answers an `OAuthTokenGrant`
+    (`ChannelCredentials` plus the scopes the response lists, or null when it lists none); a refresh answers
+    `ChannelCredentials` and keeps the stored refresh token, since eBay and Google do not rotate them. `OAuthParam`,
+    `OAuthGrantType` and the OAuth constants live there too. Shopify's OAuth is shop-scoped, HMAC-verified and rotates
+    refresh tokens, so it keeps its own client.
+  - `JsonApiClient` (`sdk/http`) calls a JSON API with a user's bearer token and validates each response with a zod
+    schema. A connector extends it with where a request goes (`url`), how its error body reads (`describeFailure`:
+    the `ChannelErrorCode` and a safe detail, or an exact message) and a merchant-readable message per code;
+    transport failures and unexpected bodies are `ChannelUnavailable`. eBay adds its language headers, and Google
+    reads `google.rpc.Status`.
+  - `contentLimits` (`ChannelContentLimits`, optional on `ChannelConnector`) declares the title limit, the hard
+    description limit, the description length worth writing (eBay: 500,000 hard, 4,000 written), the
+    `DescriptionFormat` and whether links are allowed. Core's AI content rules take their numbers from here.
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
 - **Priority queues:** `inventory` > `orders` > `price` > `content` > `import` > `ai`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish, and AI agents never hold up a sync.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
@@ -290,8 +308,9 @@ See [ADR 0016](decisions/0016-ai-layer.md).
   one store) validates the store and products, queues one job per product on the `ai` queue in one `addBulk`
   (deduplicated per product and store while waiting), and logs the request. The worker's `ContentGenerationRunner`
   reads the product and what its listing shows, asks for a title and description within the channel's rules
-  (`CHANNEL_CONTENT_RULES`: eBay titles ≤ 80 characters, plain text, basic HTML without links; Shopify titles ≤ 255,
-  rich HTML), strips markup the channel does not take, and stores the changed fields as pending suggestions. Unusable
+  (`ChannelContentRulesResolver`: core's writing guidance per channel in `CHANNEL_CONTENT_GUIDANCE`, and the limits
+  the connector declares in `contentLimits`, such as eBay titles ≤ 80 characters and basic HTML without links, and
+  Shopify titles ≤ 255 in rich HTML; descriptions aim for the channel's target length), strips markup the channel does not take, and stores the changed fields as pending suggestions. Unusable
   answers and a missing key are final; outages are retried and logged after the last attempt.
 - **Credentials:** a platform key in the cloud today; BYOK per workspace later (encrypted like channel credentials).
 

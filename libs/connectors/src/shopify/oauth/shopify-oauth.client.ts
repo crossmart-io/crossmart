@@ -6,14 +6,13 @@ import {
   ACCEPT_HEADER,
   CONTENT_TYPE_HEADER,
   FORM_CONTENT_TYPE,
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_UNAUTHORIZED,
   JSON_CONTENT_TYPE,
 } from '../../sdk/http/http.constants.js';
 import { HttpMethod } from '../../sdk/http/http-method.enum.js';
 import { isServerErrorStatus, isSuccessStatus } from '../../sdk/http/http-status.js';
 import { HttpTransport, type HttpResponse } from '../../sdk/http/http-transport.js';
 import { parseJsonBody } from '../../sdk/http/parse-json.js';
+import { isRejectedGrantStatus } from '../../sdk/oauth/oauth-status.js';
 import { shopOrigin } from '../shop-domain.js';
 import {
   SHOPIFY_ACCESS_TOKEN_PATH,
@@ -136,8 +135,7 @@ export class ShopifyOAuthClient {
         EXCHANGE_FAILED,
       );
     }
-    const rejected = status === HTTP_STATUS_UNAUTHORIZED || status === HTTP_STATUS_BAD_REQUEST;
-    return isRefresh && rejected
+    return isRefresh && isRejectedGrantStatus(status)
       ? new ChannelError(
           ChannelType.Shopify,
           ChannelErrorCode.CredentialsRejected,

@@ -12,8 +12,14 @@ import type { ListingContentReader } from '../../listings/services/listing-conte
 import { productDetail } from '../../listings/testing/listing.fixtures.js';
 import type { ContentDraftRequest } from '../entities/content-draft.js';
 import { ContentField } from '../enums/content-field.enum.js';
-import { CONNECTION_ID, PRODUCT_ID, WORKSPACE_ID } from '../testing/content-target.fixtures.js';
+import {
+  CONNECTION_ID,
+  contentRulesResolver,
+  PRODUCT_ID,
+  WORKSPACE_ID,
+} from '../testing/content-target.fixtures.js';
 import { ContentDraftService } from './content-draft.service.js';
+import { ContentDraftTargetLoader } from './content-draft-target.loader.js';
 
 const STORE_CONTENT = { title: 'Mug on eBay', descriptionHtml: '<p>eBay text.</p>' };
 
@@ -44,11 +50,15 @@ function setup(channel = ChannelType.Ebay) {
       .fn<ListingContentReader['read']>()
       .mockResolvedValue({ product, content: STORE_CONTENT }),
   };
-  const service = new ContentDraftService(
-    new AiGateway(provider, usage as unknown as AiUsageService),
+  const targets = new ContentDraftTargetLoader(
     products as unknown as ProductsService,
     connections as unknown as ChannelConnectionsService,
     listings as unknown as ListingContentReader,
+    contentRulesResolver(),
+  );
+  const service = new ContentDraftService(
+    new AiGateway(provider, usage as unknown as AiUsageService),
+    targets,
   );
   return { service, provider, usage, products, listings };
 }

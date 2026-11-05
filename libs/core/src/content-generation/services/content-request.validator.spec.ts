@@ -3,7 +3,12 @@ import { ChannelType } from '@crossmart/connectors';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import type { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import type { ContentProductRepository } from '../repositories/content-product.repository.js';
-import { CONNECTION_ID, PRODUCT_ID, WORKSPACE_ID } from '../testing/content-target.fixtures.js';
+import {
+  CONNECTION_ID,
+  contentRulesResolver,
+  PRODUCT_ID,
+  WORKSPACE_ID,
+} from '../testing/content-target.fixtures.js';
 import { ContentRequestValidator } from './content-request.validator.js';
 
 const REQUEST = {
@@ -26,6 +31,7 @@ function setup(channel = ChannelType.Ebay) {
   const validator = new ContentRequestValidator(
     connections as unknown as ChannelConnectionsService,
     products as unknown as ContentProductRepository,
+    contentRulesResolver(),
   );
   return { validator, connections, products };
 }

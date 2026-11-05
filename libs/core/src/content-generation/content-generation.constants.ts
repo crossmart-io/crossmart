@@ -10,6 +10,10 @@ export const CONTENT_GENERATION_KEEP_FAILED = 5_000;
 /** Separates the parts of a job's deduplication key: `content-generation:<connection>:<product>`. */
 export const CONTENT_GENERATION_KEY_SEPARATOR = ':';
 
+/** Limits of catalog content, which every channel's content starts from. */
+export const CATALOG_TITLE_MAX_LENGTH = 255;
+export const CATALOG_DESCRIPTION_MAX_LENGTH = 5_000;
+
 /** Longest rationale kept with a suggestion. */
 export const RATIONALE_MAX_LENGTH = 500;
 /**

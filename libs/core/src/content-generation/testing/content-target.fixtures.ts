@@ -1,8 +1,16 @@
-import { ChannelType } from '@crossmart/connectors';
+import {
+  type ChannelConnector,
+  ChannelConnectorRegistry,
+  ChannelType,
+  EBAY_CONTENT_LIMITS,
+  GOOGLE_MERCHANT_CONTENT_LIMITS,
+  SHOPIFY_CONTENT_LIMITS,
+} from '@crossmart/connectors';
 import { ActivityActorType } from '@crossmart/database';
 import { productDetail } from '../../listings/testing/listing.fixtures.js';
 import type { ContentGenerationJob } from '../entities/content-generation.js';
-import { CHANNEL_CONTENT_RULES } from '../rules/channel-content-rules.js';
+import { type ChannelContentRules } from '../rules/channel-content-rules.js';
+import { ChannelContentRulesResolver } from '../services/channel-content-rules.resolver.js';
 import type { GeneratedContent } from '../rules/generated-content.schema.js';
 import type { ContentTarget } from '../services/content-target.loader.js';
 
@@ -17,10 +25,28 @@ export const CONTENT_JOB: ContentGenerationJob = {
   requestedBy: { type: ActivityActorType.USER, userId: 'user-1', apiKeyId: null },
 };
 
+/** The connectors' own limits, on stand-ins that declare nothing else. */
+const CONNECTORS_WITH_LIMITS = [
+  { channel: ChannelType.Shopify, contentLimits: SHOPIFY_CONTENT_LIMITS },
+  { channel: ChannelType.Ebay, contentLimits: EBAY_CONTENT_LIMITS },
+  { channel: ChannelType.GoogleMerchant, contentLimits: GOOGLE_MERCHANT_CONTENT_LIMITS },
+] as ChannelConnector[];
+
+/** Resolves rules from the shipped connectors' limits. */
+export function contentRulesResolver(): ChannelContentRulesResolver {
+  return new ChannelContentRulesResolver(new ChannelConnectorRegistry(CONNECTORS_WITH_LIMITS));
+}
+
+/** The rules of a channel that has them. */
+export function contentRulesOf(channel: ChannelType): ChannelContentRules {
+  const rules = contentRulesResolver().rulesFor(channel);
+  if (!rules) throw new Error(`No content rules for ${channel}`);
+  return rules;
+}
+
 /** The product of the listing fixtures on an eBay store. */
 export function contentTarget(channel = ChannelType.Ebay): ContentTarget {
-  const rules = CHANNEL_CONTENT_RULES[channel];
-  if (!rules) throw new Error(`No content rules for ${channel}`);
+  const rules = contentRulesOf(channel);
   return {
     workspaceId: WORKSPACE_ID,
     store: { id: CONNECTION_ID, displayName: 'eBay US' },
