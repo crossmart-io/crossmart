@@ -19,13 +19,13 @@ import type { OAuthAppConnector } from '../sdk/channel-connector.interface.js';
 import type { ChannelAccountProfile } from '../sdk/channel-settings.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
+import { OAuthParam } from '../sdk/oauth/oauth.constants.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
 import { GoogleAccountReader } from './account/google-account.reader.js';
 import { GoogleDataSourceWriter } from './account/google-data-source.writer.js';
 import {
   GOOGLE_MERCHANT_DISPLAY_NAME,
   GOOGLE_REQUIRED_SCOPES,
-  GoogleOAuthParam,
   MERCHANT_ACCOUNT_ID_PATTERN,
   MERCHANT_API_BUCKET_CAPACITY,
   MERCHANT_API_BUCKET_NAME,
@@ -42,7 +42,6 @@ import {
   parseGoogleMerchantSettings,
 } from './google-merchant-settings.js';
 import { GoogleOAuthClient } from './oauth/google-oauth.client.js';
-import { grantedScopes, toGoogleCredentials } from './oauth/google-token-response.js';
 import { GoogleListingPublisher } from './publish/google-listing-publisher.js';
 
 /** Characters merchants type around the id, as Merchant Center shows it: `123-456-789`. */
@@ -96,26 +95,27 @@ export class GoogleMerchantConnector implements OAuthAppConnector, ListingPublis
 
   /** Exchanges the code, then checks the signed-in user can manage the account typed. */
   async completeAuthorization(callback: OAuthCallback): Promise<ChannelAuthorization> {
-    const code = callback.query[GoogleOAuthParam.Code];
-    if (!code || callback.query[GoogleOAuthParam.Error]) {
+    const code = callback.query[OAuthParam.Code];
+    if (!code || callback.query[OAuthParam.Error]) {
       throw googleMerchantError(ChannelErrorCode.AccessDenied, NOT_APPROVED);
     }
-    const token = await this.oauth.exchangeCode(code, callback.redirectUri);
-    await this.accounts.read(token.access_token, callback.accountHandle);
+    const { credentials, grantedScopes } = await this.oauth.exchangeCode(
+      code,
+      callback.redirectUri,
+    );
+    await this.accounts.read(credentials.accessToken, callback.accountHandle);
     return {
       externalAccountId: callback.accountHandle,
-      credentials: toGoogleCredentials(token, new Date()),
-      grantedScopes: grantedScopes(token),
+      credentials,
+      grantedScopes: grantedScopes ?? [],
     };
   }
 
-  async refreshCredentials(
+  refreshCredentials(
     _externalAccountId: string,
     credentials: ChannelCredentials,
   ): Promise<ChannelCredentials> {
-    const token = await this.oauth.refresh(credentials);
-    const { refreshToken, refreshTokenExpiresAt } = credentials;
-    return { ...toGoogleCredentials(token, new Date()), refreshToken, refreshTokenExpiresAt };
+    return this.oauth.refresh(credentials);
   }
 
   /** Revoking the access token revokes the whole grant, refresh token included. */

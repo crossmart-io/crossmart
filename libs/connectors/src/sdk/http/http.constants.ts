@@ -18,3 +18,10 @@ export const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
 export const HTTP_STATUS_SERVER_ERROR_MIN = 500;
 export const HTTP_STATUS_SUCCESS_MIN = 200;
 export const HTTP_STATUS_SUCCESS_MAX = 299;
+
+/** HTTP authentication schemes (RFC 7617 Basic, RFC 6750 Bearer). */
+export const BASIC_AUTH_SCHEME = 'Basic';
+export const BEARER_AUTH_SCHEME = 'Bearer';
+/** Joins the user id and the password in Basic credentials. */
+export const BASIC_CREDENTIALS_SEPARATOR = ':';
+export const BASIC_CREDENTIALS_ENCODING = 'base64';

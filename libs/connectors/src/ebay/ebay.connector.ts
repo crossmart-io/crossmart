@@ -20,6 +20,7 @@ import type { OAuthAppConnector } from '../sdk/channel-connector.interface.js';
 import type { ChannelAccountProfile } from '../sdk/channel-settings.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
+import { OAuthParam } from '../sdk/oauth/oauth.constants.js';
 import { RateLimitScope, type RateLimitBucket } from '../sdk/rate-limit-bucket.js';
 import { NO_BUSINESS_POLICIES } from './account/ebay-business-policies.js';
 import type {
@@ -35,7 +36,6 @@ import {
   EBAY_DISPLAY_NAME,
   EBAY_DISPLAY_NAME_SEPARATOR,
   EBAY_REQUIRED_SCOPES,
-  EbayOAuthParam,
 } from './ebay.constants.js';
 import { type EbayAccountId, formatEbayAccountId, parseEbayAccountId } from './ebay-account-id.js';
 import { ebayError } from './ebay-errors.js';
@@ -48,6 +48,8 @@ import {
 import { type EbaySettings, parseEbaySettings } from './ebay-settings.js';
 import type { EbayShipFrom } from './listing/ebay-listing-defaults.js';
 import { EbayOAuthClient } from './oauth/ebay-oauth.client.js';
+
+const NOT_APPROVED = 'The app was not approved on eBay';
 
 /**
  * The eBay connector: the merchant picks a marketplace and signs in with eBay; Crossmart
@@ -96,17 +98,17 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
 
   async completeAuthorization(callback: OAuthCallback): Promise<ChannelAuthorization> {
     const marketplaceId = this.requireMarketplace(callback.accountHandle);
-    const code = callback.query[EbayOAuthParam.Code];
+    const code = callback.query[OAuthParam.Code];
     if (!code) {
-      throw ebayError(ChannelErrorCode.AccessDenied, 'The app was not approved on eBay');
+      throw ebayError(ChannelErrorCode.AccessDenied, NOT_APPROVED);
     }
-    const credentials = await this.oauth.exchangeCode(code);
+    const { credentials, grantedScopes } = await this.oauth.exchangeCode(code);
     const { userId } = await this.account.identity.readUser(credentials.accessToken);
     return {
       externalAccountId: formatEbayAccountId({ userId, marketplaceId }),
       credentials,
       // eBay's code grant does not list scopes; it grants all requested ones or none.
-      grantedScopes: [...EBAY_REQUIRED_SCOPES],
+      grantedScopes: grantedScopes ?? [...EBAY_REQUIRED_SCOPES],
     };
   }
 

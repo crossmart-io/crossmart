@@ -6,44 +6,24 @@ export enum GoogleScope {
 }
 
 export const GOOGLE_REQUIRED_SCOPES: readonly GoogleScope[] = [GoogleScope.Content];
-export const GOOGLE_SCOPE_SEPARATOR = ' ';
 
 /** Google's OAuth 2.0 endpoints for web server apps. */
 export const GOOGLE_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 export const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 
-/** OAuth request, callback and token parameters. */
+/** Google's own consent URL parameters; the standard ones are `OAuthParam`. */
 export enum GoogleOAuthParam {
-  ClientId = 'client_id',
-  ClientSecret = 'client_secret',
-  ResponseType = 'response_type',
-  RedirectUri = 'redirect_uri',
-  Scope = 'scope',
-  State = 'state',
   AccessType = 'access_type',
   Prompt = 'prompt',
   IncludeGrantedScopes = 'include_granted_scopes',
-  Code = 'code',
-  Error = 'error',
-  GrantType = 'grant_type',
-  RefreshToken = 'refresh_token',
-  Token = 'token',
 }
 
-export enum GoogleGrantType {
-  AuthorizationCode = 'authorization_code',
-  RefreshToken = 'refresh_token',
-}
-
-export const GOOGLE_CODE_RESPONSE_TYPE = 'code';
 /** A refresh token is issued only for offline access. */
 export const GOOGLE_OFFLINE_ACCESS = 'offline';
 /** Asks for consent every time, so Google issues a refresh token on every connect. */
 export const GOOGLE_CONSENT_PROMPT = 'consent';
 export const GOOGLE_INCLUDE_GRANTED_SCOPES = 'true';
-/** The token error when a refresh token expired or the merchant revoked access. */
-export const GOOGLE_INVALID_GRANT_ERROR = 'invalid_grant';
 
 /** A Merchant Center account id: digits only. */
 export const MERCHANT_ACCOUNT_ID_PATTERN = /^\d{1,20}$/;
@@ -68,7 +48,6 @@ export const ACCOUNTS_RESOURCE_PREFIX = 'accounts/';
 export const DATA_SOURCES_RESOURCE_SEGMENT = '/dataSources/';
 /** Joins content language, feed label and offer id in a product input's name. */
 export const PRODUCT_NAME_SEPARATOR = '~';
-export const BEARER_AUTH_SCHEME = 'Bearer';
 
 /** The data source Crossmart creates, as the merchant sees it in Merchant Center. */
 export const DATA_SOURCE_DISPLAY_NAME_PREFIX = 'Crossmart';
@@ -111,3 +90,5 @@ export enum GoogleErrorReason {
 export const NOT_REGISTERED_MESSAGE_FRAGMENT = 'is not registered';
 /** Offer ids Crossmart uses as they are; others are derived from the variant id. */
 export const GOOGLE_OFFER_ID_PATTERN = /^[A-Za-z0-9_.-]{1,50}$/;
+
+export const BEARER_AUTH_SCHEME = 'Bearer';
