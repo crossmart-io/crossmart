@@ -1,20 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { type Prisma, PrismaService } from '@crossmart/database';
+import { PrismaService } from '@crossmart/database';
+import type { LockedStock, StockMovement } from '../entities/inventory-ledger.js';
 import type { StockLevelsChange, StockTarget } from '../entities/stock-levels.js';
-import { toMovementActor } from '../mappers/movement-actor.mapper.js';
-
-type Transaction = Prisma.TransactionClient;
-
-interface LockedStock {
-  id: string;
-  available: number;
-  reserved: number;
-}
-
-interface ResolvedTarget extends StockTarget {
-  delta: number;
-  quantityAfter: number;
-}
+import { InventoryLedger } from './inventory-ledger.js';
 
 /**
  * Sets the available stock of many items in one transaction and a fixed number of statements,
@@ -23,7 +11,10 @@ interface ResolvedTarget extends StockTarget {
  */
 @Injectable()
 export class StockLevelsWriter {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ledger: InventoryLedger,
+  ) {}
 
   /** Items outside the workspace, and items already at their target, are left alone. */
   async setAvailable(
@@ -33,56 +24,27 @@ export class StockLevelsWriter {
   ): Promise<void> {
     if (targets.length === 0) return;
     await this.prisma.$transaction(async (tx) => {
-      const resolved = this.resolve(await this.lock(tx, workspaceId, targets), targets);
-      if (resolved.length === 0) return;
-      await this.writeAvailable(tx, workspaceId, resolved);
-      await tx.inventoryMovement.createMany({
-        data: resolved.map(({ inventoryItemId, delta, quantityAfter }) => ({
-          workspaceId,
-          inventoryItemId,
-          delta,
-          quantityAfter,
-          reason: change.reason,
-          ...toMovementActor(change.actor),
-        })),
-      });
+      const ids = targets.map((target) => target.inventoryItemId);
+      const locked = await this.ledger.lockItems(tx, workspaceId, ids);
+      await this.ledger.applyMovements(tx, workspaceId, this.toMovements(locked, targets, change));
     });
   }
 
-  /** Locks the rows so a concurrent change cannot slip between the read and the write. */
-  private lock(
-    tx: Transaction,
-    workspaceId: string,
+  /** One movement per item; when an item appears twice, its last target wins. */
+  private toMovements(
+    locked: LockedStock[],
     targets: StockTarget[],
-  ): Promise<LockedStock[]> {
-    const ids = targets.map((target) => target.inventoryItemId);
-    return tx.$queryRaw<LockedStock[]>`
-      SELECT id, available, reserved FROM inventory_items
-      WHERE workspace_id = ${workspaceId}::uuid AND id = ANY (${ids}::uuid[])
-      FOR UPDATE`;
-  }
-
-  private resolve(current: LockedStock[], targets: StockTarget[]): ResolvedTarget[] {
-    const stockById = new Map(current.map((item) => [item.id, item]));
-    return targets.flatMap((target) => {
-      const stock = stockById.get(target.inventoryItemId);
-      if (!stock || stock.available === target.available) return [];
-      const delta = target.available - stock.available;
-      return [{ ...target, delta, quantityAfter: target.available + stock.reserved }];
+    change: StockLevelsChange,
+  ): StockMovement[] {
+    const availableById = new Map(
+      targets.map((target) => [target.inventoryItemId, target.available]),
+    );
+    return locked.flatMap((stock) => {
+      const available = availableById.get(stock.id);
+      if (available === undefined) return [];
+      return [
+        { stock, availableDelta: available - stock.available, reservedDelta: 0, entry: change },
+      ];
     });
-  }
-
-  private async writeAvailable(
-    tx: Transaction,
-    workspaceId: string,
-    targets: ResolvedTarget[],
-  ): Promise<void> {
-    const ids = targets.map((target) => target.inventoryItemId);
-    const quantities = targets.map((target) => target.available);
-    await tx.$executeRaw`
-      UPDATE inventory_items AS item
-      SET available = target.available, updated_at = now()
-      FROM unnest(${ids}::uuid[], ${quantities}::int[]) AS target(id, available)
-      WHERE item.id = target.id AND item.workspace_id = ${workspaceId}::uuid`;
   }
 }
