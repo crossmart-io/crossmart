@@ -45,7 +45,9 @@ function createService() {
     create: vi.fn((_workspaceId: string, record: CustomRoleRecord) =>
       Promise.resolve(stored(record)),
     ),
-    update: vi.fn((id: string, record: CustomRoleRecord) => Promise.resolve(stored(record, id))),
+    update: vi.fn((_workspaceId: string, id: string, record: CustomRoleRecord) =>
+      Promise.resolve(stored(record, id)),
+    ),
     delete: vi.fn(),
     usage: vi.fn().mockResolvedValue({ members: 0, pendingInvitations: 0, activeApiKeys: 0 }),
     memberUserIds: vi.fn().mockResolvedValue(['user-7']),
@@ -170,7 +172,7 @@ describe('CustomRolesService.delete', () => {
   it('deletes an unused role', async () => {
     const { service, customRoles, activity } = createService();
     await service.delete('ws-1', 'role-1', ACTOR);
-    expect(customRoles.delete).toHaveBeenCalledWith('role-1');
+    expect(customRoles.delete).toHaveBeenCalledWith('ws-1', 'role-1');
     expect(activity.entries[0]?.action).toBe(ActivityAction.CustomRoleDeleted);
   });
 });

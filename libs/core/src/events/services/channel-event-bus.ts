@@ -1,3 +1,4 @@
+import { describeError } from '@crossmart/common';
 import { Injectable, Logger } from '@nestjs/common';
 import type { ChannelEventListener, OrderChangedEvent } from '../entities/channel-events.js';
 
@@ -19,7 +20,7 @@ export class ChannelEventBus {
       try {
         await listener.onOrderChanged(event);
       } catch (error) {
-        const reason = error instanceof Error ? error.name : typeof error;
+        const reason = describeError(error);
         this.logger.error(`A channel listener failed in workspace ${event.workspaceId}: ${reason}`);
       }
     }

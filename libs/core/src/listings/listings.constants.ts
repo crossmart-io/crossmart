@@ -73,6 +73,8 @@ export const STORE_MEMBERSHIP_MAX_PRODUCTS = 250;
 export const PRODUCT_NOT_FOUND_IN_WORKSPACE =
   'Some of these products do not exist in this workspace';
 
+export const LISTING_NOT_FOUND = 'Listing not found';
+
 /**
  * Item specifics a merchant may set on one listing, and their sizes. eBay takes aspect names of
  * up to 40 characters, values of up to 50 (Inventory API) and up to 30 values per aspect.

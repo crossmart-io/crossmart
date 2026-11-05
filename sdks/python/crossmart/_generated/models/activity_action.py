@@ -24,6 +24,7 @@ class ActivityAction(StrEnum):
     LISTING_ADDED = "listing_added"
     LISTING_CATEGORY_CHANGED = "listing_category_changed"
     LISTING_DELISTED = "listing_delisted"
+    LISTING_ITEM_SPECIFICS_CHANGED = "listing_item_specifics_changed"
     LISTING_OVERRIDE_UPDATED = "listing_override_updated"
     LISTING_PUBLISHED = "listing_published"
     LISTING_REMOVED = "listing_removed"

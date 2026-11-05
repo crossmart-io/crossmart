@@ -82,7 +82,12 @@ describe('ChannelWebhooksService', () => {
       channel: ChannelType.Shopify,
       externalAccountId: FAKE_ACCOUNT,
     });
-    expect(connections.markDisconnected.mock.calls.map(([id]) => id)).toEqual(['c-1', 'c-2']);
+    expect(
+      connections.markDisconnected.mock.calls.map(([workspaceId, id]) => [workspaceId, id]),
+    ).toEqual([
+      ['ws-1', 'c-1'],
+      ['ws-2', 'c-2'],
+    ]);
     expect(activity.recorded.map(({ workspaceId }) => workspaceId)).toEqual(['ws-1', 'ws-2']);
     expect(activity.recorded[0].actor.type).toBe(ActivityActorType.SYSTEM);
     expect(activity.entries[0].action).toBe(ActivityAction.ChannelDisconnected);

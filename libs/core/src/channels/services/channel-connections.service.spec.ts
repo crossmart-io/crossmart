@@ -72,7 +72,11 @@ describe('ChannelConnectionsService', () => {
 
     expect(view.status).toBe(ChannelConnectionStatus.DISCONNECTED);
     expect(connector.revokeAccess).toHaveBeenCalledWith(session);
-    expect(connections.markDisconnected).toHaveBeenCalledWith(CONNECTION_ID, expect.any(Date));
+    expect(connections.markDisconnected).toHaveBeenCalledWith(
+      WORKSPACE_ID,
+      CONNECTION_ID,
+      expect.any(Date),
+    );
     expect(activity.recorded).toEqual([
       expect.objectContaining({
         actor,

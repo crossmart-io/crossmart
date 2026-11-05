@@ -20,12 +20,16 @@ describe('ApiKeyCleanup.revokeBeyond', () => {
   it('revokes only the keys that allow more than the creator now has', async () => {
     const { cleanup, apiKeys } = createCleanup();
     await cleanup.revokeBeyond('ws-1', 'user-1', builtInPermissions(WorkspaceRole.EDITOR));
-    expect(apiKeys.revokeMany).toHaveBeenCalledWith(['admin-key'], expect.any(Date));
+    expect(apiKeys.revokeMany).toHaveBeenCalledWith('ws-1', ['admin-key'], expect.any(Date));
   });
 
   it('revokes every key when the creator has no access left', async () => {
     const { cleanup, apiKeys } = createCleanup();
     await cleanup.revokeBeyond('ws-1', 'user-1', null);
-    expect(apiKeys.revokeMany).toHaveBeenCalledWith(['admin-key', 'viewer-key'], expect.any(Date));
+    expect(apiKeys.revokeMany).toHaveBeenCalledWith(
+      'ws-1',
+      ['admin-key', 'viewer-key'],
+      expect.any(Date),
+    );
   });
 });

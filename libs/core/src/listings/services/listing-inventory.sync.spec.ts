@@ -8,12 +8,16 @@ import {
   LISTING_ID,
   syncConnection,
   syncJob,
+  WORKSPACE_ID,
 } from '../testing/listing.fixtures.js';
 import { SyncJobKind } from '../enums/sync-job-kind.enum.js';
 import { ListingInventorySync } from './listing-inventory.sync.js';
 import { ListingSyncFailures } from './listing-sync-failures.js';
 import { ListingSyncOutcomes } from './listing-sync-outcomes.js';
 import type { SyncConnectionLoader } from './sync-connection.loader.js';
+
+/** The listing the repository is asked to write to, always with its workspace. */
+const LISTING_REF = expect.objectContaining({ workspaceId: WORKSPACE_ID, listingId: LISTING_ID });
 
 function stockRecord(
   count: number,
@@ -85,7 +89,7 @@ describe('ListingInventorySync', () => {
       ['item-3', 'item-4'],
     ]);
     expect(setQuantities.mock.calls[0]?.[1][0]?.available).toBe(6);
-    expect(listings.recordSynced).toHaveBeenCalledWith(LISTING_ID, expect.any(Date));
+    expect(listings.recordSynced).toHaveBeenCalledWith(LISTING_REF, expect.any(Date));
   });
 
   it('records the first rejected item on the listing and keeps the rest', async () => {
@@ -96,7 +100,7 @@ describe('ListingInventorySync', () => {
 
     await sync.run(syncJob(SyncJobKind.Inventory));
 
-    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_ID, 'Not stocked here');
+    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_REF, 'Not stocked here');
     expect(listings.recordSynced).not.toHaveBeenCalled();
   });
 

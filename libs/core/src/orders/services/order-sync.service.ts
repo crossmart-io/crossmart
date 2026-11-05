@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { requireEnumValue } from '@crossmart/common';
+import { describeError, requireEnumValue } from '@crossmart/common';
 import {
   ChannelCapability,
   type ChannelConnector,
@@ -54,7 +54,7 @@ export class OrderSyncService {
       try {
         read += await this.poll(record, now);
       } catch (error) {
-        const reason = error instanceof Error ? error.message : typeof error;
+        const reason = describeError(error);
         this.logger.warn(`Polling orders of connection ${record.id} failed: ${reason}`);
       }
     }
