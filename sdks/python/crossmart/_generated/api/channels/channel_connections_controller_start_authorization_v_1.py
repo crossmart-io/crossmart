@@ -74,7 +74,9 @@ def sync_detailed(
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
     API, which stores the connection and sends them back to the web app’s Channels page with the
-    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.
+    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user, and the browser must store the
+    cookie this response sets (send it with credentials): the callback only accepts the same browser and
+    session that started the connection.
 
     Args:
         workspace_id (str):
@@ -110,7 +112,9 @@ def sync(
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
     API, which stores the connection and sends them back to the web app’s Channels page with the
-    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.
+    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user, and the browser must store the
+    cookie this response sets (send it with credentials): the callback only accepts the same browser and
+    session that started the connection.
 
     Args:
         workspace_id (str):
@@ -141,7 +145,9 @@ async def asyncio_detailed(
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
     API, which stores the connection and sends them back to the web app’s Channels page with the
-    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.
+    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user, and the browser must store the
+    cookie this response sets (send it with credentials): the callback only accepts the same browser and
+    session that started the connection.
 
     Args:
         workspace_id (str):
@@ -175,7 +181,9 @@ async def asyncio(
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
     API, which stores the connection and sends them back to the web app’s Channels page with the
-    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.
+    parameters of `ChannelConnectRedirectDto`. Needs a signed-in user, and the browser must store the
+    cookie this response sets (send it with credentials): the callback only accepts the same browser and
+    session that started the connection.
 
     Args:
         workspace_id (str):
