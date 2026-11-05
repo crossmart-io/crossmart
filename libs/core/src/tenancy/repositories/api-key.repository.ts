@@ -57,15 +57,22 @@ export class ApiKeyRepository {
     return count > 0 ? apiKey : null;
   }
 
-  async revokeMany(apiKeyIds: readonly string[], revokedAt: Date): Promise<void> {
+  async revokeMany(
+    workspaceId: string,
+    apiKeyIds: readonly string[],
+    revokedAt: Date,
+  ): Promise<void> {
     if (apiKeyIds.length === 0) return;
     await this.prisma.apiKey.updateMany({
-      where: { id: { in: [...apiKeyIds] }, revokedAt: null },
+      where: { id: { in: [...apiKeyIds] }, workspaceId, revokedAt: null },
       data: { revokedAt },
     });
   }
 
-  async markUsed(apiKeyId: string, usedAt: Date): Promise<void> {
-    await this.prisma.apiKey.update({ where: { id: apiKeyId }, data: { lastUsedAt: usedAt } });
+  async markUsed(workspaceId: string, apiKeyId: string, usedAt: Date): Promise<void> {
+    await this.prisma.apiKey.updateMany({
+      where: { id: apiKeyId, workspaceId },
+      data: { lastUsedAt: usedAt },
+    });
   }
 }

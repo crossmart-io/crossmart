@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { CatalogChangeKind } from '../enums/catalog-change-kind.enum.js';
 import type { CatalogChangeListener } from '../entities/catalog-events.js';
 import { CatalogEventBus } from './catalog-event-bus.js';
@@ -42,6 +43,22 @@ describe('CatalogEventBus', () => {
       bus.stockChanged({ workspaceId: 'w', inventoryItemIds: ['i'] }),
     ).resolves.toBeUndefined();
     expect(healthy.onStockChanged).toHaveBeenCalled();
+  });
+
+  it('logs which event a listener dropped and why, without the message of an unknown error', async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const bus = new CatalogEventBus();
+    const queueDown = Object.assign(new Error('Connection is closed'), { code: 'ECONNREFUSED' });
+    bus.subscribe({ ...listener(), onStockChanged: () => Promise.reject(queueDown) });
+    bus.subscribe({ ...listener(), onStockChanged: () => Promise.reject(new Error('token=abc')) });
+
+    await bus.stockChanged({ workspaceId: 'w', inventoryItemIds: ['i', 'j'] });
+
+    expect(logged.mock.calls.map(([message]) => message)).toEqual([
+      'A catalog listener failed on stock changed (2) in workspace w: Error ECONNREFUSED: Connection is closed',
+      'A catalog listener failed on stock changed (2) in workspace w: Error',
+    ]);
+    logged.mockRestore();
   });
 
   it('tells listeners about products before they are deleted, skipping an empty list', async () => {

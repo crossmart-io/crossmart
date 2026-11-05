@@ -30,6 +30,7 @@ export * from './enums/enum-value.js';
 export * from './money/fixed-decimal.js';
 export * from './money/currency.js';
 export * from './collections/chunk.js';
+export * from './errors/describe-error.js';
 export * from './mail/html-escape.js';
 export * from './mail/log-mail-sender.js';
 export * from './mail/mail-driver.enum.js';

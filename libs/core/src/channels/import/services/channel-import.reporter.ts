@@ -1,3 +1,4 @@
+import { describeError } from '@crossmart/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ActivityOutcome } from '@crossmart/database';
 import { ActivityRecorder } from '../../../activity/services/activity-recorder.js';
@@ -41,10 +42,10 @@ export class ChannelImportReporter {
     );
   }
 
-  /** Marks the import failed with a reason that is safe to show, and logs only the error's kind. */
+  /** Marks the import failed with a reason that is safe to show, and logs only a safe description of the error. */
   async failed(job: ChannelImportRunRecord, error: unknown): Promise<void> {
     const reason = toImportFailureReason(error);
-    const kind = error instanceof Error ? error.name : typeof error;
+    const kind = describeError(error);
     this.logger.warn(`Import ${job.id} failed (${kind}): ${reason}`);
     await this.jobs.fail(job.workspaceId, job.id, reason);
     await this.activity.record(job.workspaceId, toImportActor(job), {

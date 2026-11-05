@@ -56,7 +56,7 @@ export class ListingSyncRunner {
       job.productId,
     );
     if (listing) {
-      await this.failures.exhausted(listing.id, error);
+      await this.failures.exhausted({ workspaceId: job.workspaceId, listingId: listing.id }, error);
     }
   }
 }

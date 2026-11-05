@@ -115,7 +115,7 @@ export class ApiKeysService {
   private async recordUse(apiKey: ApiKey, now: Date): Promise<void> {
     const lastUsedAt = apiKey.lastUsedAt?.getTime() ?? 0;
     if (now.getTime() - lastUsedAt >= API_KEY_LAST_USED_THROTTLE_MS) {
-      await this.apiKeys.markUsed(apiKey.id, now);
+      await this.apiKeys.markUsed(apiKey.workspaceId, apiKey.id, now);
     }
   }
 
