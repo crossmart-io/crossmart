@@ -8,6 +8,8 @@ import { ProductSelectionService } from './product-selection.service.js';
 import type { SyncConnection } from './sync-connection.loader.js';
 import { SyncProductLoader } from './sync-product.loader.js';
 import { ListingTargetAction } from '../enums/listing-target-action.enum.js';
+import { wouldGoLive } from '../rules/listing-visibility.js';
+import { ActiveListingsGate } from './active-listings.gate.js';
 
 /** What a content job should do with its product on the channel. */
 export type ListingTarget =
@@ -17,7 +19,14 @@ export type ListingTarget =
       product: ProductDetail | null;
       listing: ListingSyncRecord & { externalId: string };
     }
-  | { action: ListingTargetAction.Skip };
+  | { action: ListingTargetAction.Skip }
+  | {
+      action: ListingTargetAction.Blocked;
+      product: ProductDetail;
+      listing: ListingSyncRecord;
+      /** Why, for the listing and the activity log. */
+      reason: string;
+    };
 
 const SKIP: ListingTarget = { action: ListingTargetAction.Skip };
 
@@ -29,7 +38,8 @@ function isOnChannel(
 
 /**
  * Decides whether a product is published (it exists and the connection's selection includes
- * it) or delisted (the channel holds it but it is no longer selected).
+ * it) or delisted (the channel holds it but it is no longer selected). A publish that would add
+ * an active listing past the plan's limit is blocked instead.
  */
 @Injectable()
 export class ListingTargetResolver {
@@ -37,6 +47,7 @@ export class ListingTargetResolver {
     private readonly products: SyncProductLoader,
     private readonly selection: ProductSelectionService,
     private readonly listings: ListingSyncRepository,
+    private readonly gate: ActiveListingsGate,
   ) {}
 
   async forPublish(job: ListingSyncJob, connection: SyncConnection): Promise<ListingTarget> {
@@ -59,7 +70,7 @@ export class ListingTargetResolver {
       job.connectionId,
       job.productId,
     );
-    return { action: ListingTargetAction.Publish, product, listing };
+    return this.publishOrBlock(job, product, listing);
   }
 
   async forDelist(job: ListingSyncJob, known?: ProductDetail | null): Promise<ListingTarget> {
@@ -72,6 +83,19 @@ export class ListingTargetResolver {
     const product =
       known === undefined ? await this.products.find(job.workspaceId, job.productId) : known;
     return { action: ListingTargetAction.Delist, product, listing };
+  }
+
+  private async publishOrBlock(
+    job: ListingSyncJob,
+    product: ProductDetail,
+    listing: ListingSyncRecord,
+  ): Promise<ListingTarget> {
+    const refusal = wouldGoLive(product, listing)
+      ? await this.gate.refusalForOneMore(job.workspaceId)
+      : null;
+    return refusal
+      ? { action: ListingTargetAction.Blocked, product, listing, reason: refusal.message }
+      : { action: ListingTargetAction.Publish, product, listing };
   }
 
   /** The product and its listing, when the channel holds the listing; for price syncs. */

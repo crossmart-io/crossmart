@@ -77,6 +77,11 @@ export class ListingSyncOutcomes {
     await this.listings.recordFailure(listingId, reason);
   }
 
+  /** Crossmart itself refused the sync (the plan's limit); nothing was sent to the channel. */
+  refused(listing: FailedListing, reason: string): Promise<void> {
+    return this.failures.reject(listing, reason);
+  }
+
   failed(listing: FailedListing, error: unknown): Promise<void> {
     return this.failures.handle(listing, error);
   }

@@ -39,13 +39,18 @@ export class ChannelAuthorizationService {
     private readonly activity: ActivityRecorder,
   ) {}
 
-  start(workspaceId: string, userId: string, request: AuthorizationRequest): StartedAuthorization {
+  /** Throws `EntitlementExceededException` (HTTP 402) when the plan has no room for it. */
+  async start(
+    workspaceId: string,
+    userId: string,
+    request: AuthorizationRequest,
+  ): Promise<StartedAuthorization> {
     const connector = this.connectors.requireReady(request.channel);
     const accountHandle = connector.normalizeAccountHandle(request.accountHandle);
     if (!accountHandle) {
       throw new BadRequestException(`That is not a valid ${connector.displayName} account`);
     }
-    const state = this.states.issue({
+    const state = await this.states.issue({
       workspaceId,
       userId,
       channel: request.channel,

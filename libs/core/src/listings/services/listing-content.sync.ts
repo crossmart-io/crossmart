@@ -14,6 +14,7 @@ import { ListingTargetAction } from '../enums/listing-target-action.enum.js';
 
 type PublishTarget = Extract<ListingTarget, { action: ListingTargetAction.Publish }>;
 type DelistTarget = Extract<ListingTarget, { action: ListingTargetAction.Delist }>;
+type BlockedTarget = Extract<ListingTarget, { action: ListingTargetAction.Blocked }>;
 type PublishingConnection = SyncConnection & { connector: ChannelConnector & ListingPublisher };
 
 function canPublish(connection: SyncConnection | null): connection is PublishingConnection {
@@ -63,6 +64,8 @@ export class ListingContentSync {
         return this.send(job, connection, target);
       case ListingTargetAction.Delist:
         return this.takeDown(job, connection, target);
+      case ListingTargetAction.Blocked:
+        return this.block(job, connection, target);
       case ListingTargetAction.Skip:
         return Promise.resolve();
     }
@@ -89,6 +92,15 @@ export class ListingContentSync {
     } catch (error) {
       await this.outcomes.failed(synced, error);
     }
+  }
+
+  /** Nothing is sent: the listing shows why, and stays off the channel until there is room. */
+  private block(
+    job: ListingSyncJob,
+    connection: PublishingConnection,
+    { product, listing, reason }: BlockedTarget,
+  ): Promise<void> {
+    return this.outcomes.refused(this.describe(job, connection, listing, product.title), reason);
   }
 
   private async takeDown(

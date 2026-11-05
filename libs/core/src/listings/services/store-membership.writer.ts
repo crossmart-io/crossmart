@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { ListingSyncJob } from '../entities/listing-sync-job.js';
 import { SyncJobKind } from '../enums/sync-job-kind.enum.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
+import { ActiveListingsGate } from './active-listings.gate.js';
 import { ConnectionRulesService } from './connection-rules.service.js';
 import { SyncJobQueue } from './sync-job.queue.js';
 
@@ -26,11 +27,16 @@ export class StoreMembershipWriter {
     private readonly listings: ListingSyncRepository,
     private readonly rules: ConnectionRulesService,
     private readonly queue: SyncJobQueue,
+    private readonly gate: ActiveListingsGate,
   ) {}
 
-  /** Keeps the products in the store and publishes them with their stock. */
+  /**
+   * Keeps the products in the store and publishes them with their stock. Refused whole, before
+   * any write, when the plan has no room for the active listings they would add.
+   */
   async add(change: StoreMembershipChange): Promise<void> {
     const { workspaceId, connectionId, productIds } = change;
+    await this.gate.assertRoomFor(change, { workspaceId, id: { in: productIds } });
     await this.listings.addToStore(workspaceId, connectionId, productIds);
     await this.rules.changeExclusions(workspaceId, connectionId, { restore: productIds });
     await this.queue.enqueue(jobs(change, [SyncJobKind.Content, SyncJobKind.Inventory]));

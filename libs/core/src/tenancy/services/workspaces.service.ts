@@ -4,6 +4,8 @@ import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type { NewWorkspace } from '../repositories/workspace.repository.js';
 import type { WorkspaceChanges, WorkspaceInput } from '../entities/new-workspace.js';
 import type { WorkspaceAccess } from '../entities/workspace-access.js';
@@ -22,13 +24,15 @@ import {
 
 /**
  * More workspaces for one organization, such as one per client or per brand. Owners of a
- * workspace in the organization create them and own the new one.
+ * workspace in the organization create them and own the new one, within the plan's
+ * `Feature.Workspaces` limit.
  */
 @Injectable()
 export class WorkspacesService {
   constructor(
     private readonly workspaces: WorkspaceRepository,
     private readonly activity: ActivityRecorder,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   async create(
@@ -88,6 +92,7 @@ export class WorkspacesService {
         `An organization can have ${MAX_WORKSPACES_PER_ORGANIZATION} workspaces`,
       );
     }
+    await this.entitlements.assert(organizationId, Feature.Workspaces);
   }
 
   private record(

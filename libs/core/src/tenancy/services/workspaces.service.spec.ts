@@ -1,8 +1,11 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpStatus } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import { resolveRole } from '../permissions/role-permissions.js';
 import type { NewWorkspace, WorkspaceRepository } from '../repositories/workspace.repository.js';
 import { MAX_WORKSPACES_PER_ORGANIZATION } from '../tenancy.constants.js';
@@ -34,8 +37,13 @@ function createService() {
     ),
   };
   const activity = new InMemoryActivityRecorder();
-  const service = new WorkspacesService(workspaces as unknown as WorkspaceRepository, activity);
-  return { service, workspaces, activity };
+  const entitlements = { assert: vi.fn().mockResolvedValue(undefined) };
+  const service = new WorkspacesService(
+    workspaces as unknown as WorkspaceRepository,
+    activity,
+    entitlements as unknown as EntitlementService,
+  );
+  return { service, workspaces, activity, entitlements };
 }
 
 describe('WorkspacesService.create', () => {
@@ -57,16 +65,31 @@ describe('WorkspacesService.create', () => {
     expect(activity.entries[0]?.action).toBe(ActivityAction.WorkspaceCreated);
   });
 
-  it('refuses non-owners and organizations at the limit', async () => {
+  it('refuses non-owners', async () => {
     const { service, workspaces } = createService();
     workspaces.isOrganizationOwner.mockResolvedValueOnce(false);
     await expect(service.create('org-1', 'user-9', { name: 'X' })).rejects.toBeInstanceOf(
       ForbiddenException,
     );
+  });
+
+  it('never goes past the hard ceiling, whatever the plan allows', async () => {
+    const { service, workspaces } = createService();
     workspaces.countInOrganization.mockResolvedValueOnce(MAX_WORKSPACES_PER_ORGANIZATION);
     await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toBeInstanceOf(
       ConflictException,
     );
+    expect(workspaces.create).not.toHaveBeenCalled();
+  });
+
+  it('asks the plan for room, and creates nothing when it has none', async () => {
+    const { service, workspaces, entitlements } = createService();
+    entitlements.assert.mockRejectedValueOnce(planLimitReached(Feature.Workspaces));
+    await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
+    });
+    expect(entitlements.assert).toHaveBeenCalledWith('org-1', Feature.Workspaces);
+    expect(workspaces.create).not.toHaveBeenCalled();
   });
 });
 

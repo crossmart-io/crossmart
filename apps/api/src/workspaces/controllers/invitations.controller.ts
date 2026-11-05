@@ -31,6 +31,7 @@ import {
   MEMBERS_TAG,
   WORKSPACE_INVITATIONS_ROUTE,
 } from '../workspaces.constants.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 @ApiTags(MEMBERS_TAG)
 @Controller(WORKSPACE_INVITATIONS_ROUTE)
@@ -53,9 +54,11 @@ export class InvitationsController {
     summary: 'Invite someone by email',
     description:
       'Emails a link that works for 7 days. A new invitation to the same address replaces the ' +
-      'pending one. Refused (409) for members and past 50 pending invitations.',
+      'pending one. Refused (409) for members and past 50 pending invitations, and (402) when ' +
+      'the plan has no seat for someone new to the organization.',
   })
   @ApiCreatedResponse({ type: InvitationDto })
+  @ApiPlanLimitResponse()
   async invite(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: InviteMemberDto,

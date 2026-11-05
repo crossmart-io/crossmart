@@ -1,9 +1,17 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { hashSecret } from '@crossmart/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import type {
   CreatedInvitation,
   PendingInvitation,
@@ -12,6 +20,7 @@ import type {
 import { fakeRoleResolver, managerWith } from '../testing/role-fixtures.js';
 import { MAX_PENDING_INVITATIONS } from '../tenancy.constants.js';
 import type { InvitationMailer } from './invitation-mailer.js';
+import { InvitationPolicy } from './invitation-policy.js';
 import { InvitationsService } from './invitations.service.js';
 
 const ADMIN = managerWith(WorkspaceRole.ADMIN);
@@ -48,16 +57,24 @@ function createService() {
     findPendingByTokenHash: vi.fn().mockResolvedValue(PENDING),
     accept: vi.fn().mockResolvedValue(true),
     hasMember: vi.fn().mockResolvedValue(false),
+    hasOrganizationMember: vi.fn().mockResolvedValue(false),
   };
+  const entitlements = { assertInWorkspace: vi.fn().mockResolvedValue(undefined) };
   const mailer = { send: vi.fn() };
   const activity = new InMemoryActivityRecorder();
-  const service = new InvitationsService(
-    invitations as unknown as WorkspaceInvitationRepository,
+  const repository = invitations as unknown as WorkspaceInvitationRepository;
+  const policy = new InvitationPolicy(
+    repository,
     fakeRoleResolver(),
+    entitlements as unknown as EntitlementService,
+  );
+  const service = new InvitationsService(
+    repository,
+    policy,
     mailer as unknown as InvitationMailer,
     activity,
   );
-  return { service, invitations, mailer, activity };
+  return { service, invitations, mailer, activity, entitlements };
 }
 
 describe('InvitationsService.invite', () => {
@@ -100,6 +117,28 @@ describe('InvitationsService.invite', () => {
     await expect(service.invite('ws-1', ADMIN, request, ACTOR)).rejects.toBeInstanceOf(
       ConflictException,
     );
+  });
+});
+
+describe('InvitationsService.invite and the plan', () => {
+  const request = { email: 'bo@example.com', role: WorkspaceRole.VIEWER };
+
+  it('asks the plan for a seat for a newcomer, and sends nothing without one', async () => {
+    const { service, invitations, entitlements, mailer } = createService();
+    entitlements.assertInWorkspace.mockRejectedValueOnce(planLimitReached(Feature.Members));
+    await expect(service.invite('ws-1', ADMIN, request, ACTOR)).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
+    });
+    expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.Members);
+    expect(invitations.replacePending).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
+  });
+
+  it('needs no new seat for someone already in the organization', async () => {
+    const { service, invitations, entitlements } = createService();
+    invitations.hasOrganizationMember.mockResolvedValueOnce(true);
+    await service.invite('ws-1', ADMIN, request, ACTOR);
+    expect(entitlements.assertInWorkspace).not.toHaveBeenCalled();
   });
 });
 

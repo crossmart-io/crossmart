@@ -5,6 +5,8 @@ import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type {
   ApiKeyIdentity,
   ApiKeySummary,
@@ -23,13 +25,17 @@ import {
 } from '../tenancy.constants.js';
 import { RoleResolver } from './role-resolver.js';
 
-/** Workspace API keys for the REST API and the MCP server. Only hashes are stored. */
+/**
+ * Workspace API keys for the REST API and the MCP server. Only hashes are stored. Active keys
+ * count toward the plan's `Feature.ApiKeys` limit, across the organization.
+ */
 @Injectable()
 export class ApiKeysService {
   constructor(
     private readonly apiKeys: ApiKeyRepository,
     private readonly roles: RoleResolver,
     private readonly activity: ActivityRecorder,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   /** The issuer's permissions cap the key's; `actor` is who the activity log credits. */
@@ -40,6 +46,7 @@ export class ApiKeysService {
     actor: Actor,
   ): Promise<IssuedApiKey> {
     await this.assertAssignable(workspaceId, issuer, request);
+    await this.entitlements.assertInWorkspace(workspaceId, Feature.ApiKeys);
     const secret = `${API_KEY_TOKEN_PREFIX}${generateSecureToken(API_KEY_SECRET_BYTES)}`;
     const apiKey = await this.apiKeys.create({
       workspaceId,

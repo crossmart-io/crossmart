@@ -40,6 +40,15 @@ export class WorkspaceMemberRepository {
     return membership ? resolveRole(membership.role, membership.customRole) : null;
   }
 
+  /** The user's roles in every workspace of the organization they belong to. */
+  async findRolesInOrganization(organizationId: string, userId: string): Promise<ResolvedRole[]> {
+    const memberships = await this.prisma.workspaceMember.findMany({
+      where: { userId, workspace: { organizationId } },
+      select: { role: true, ...CUSTOM_ROLE_SELECT },
+    });
+    return memberships.map(({ role, customRole }) => resolveRole(role, customRole));
+  }
+
   async userHasAnyMembership(userId: string): Promise<boolean> {
     return (await this.countMemberships(userId)) > 0;
   }

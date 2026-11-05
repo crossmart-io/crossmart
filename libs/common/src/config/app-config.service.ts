@@ -124,4 +124,9 @@ export class AppConfigService {
     const environment = this.configService.get('EBAY_ENVIRONMENT', { infer: true });
     return { clientId, clientSecret, ruName, environment };
   }
+
+  /** Whether plan limits block actions; when false they are only reported. */
+  get entitlementsEnforced(): boolean {
+    return this.configService.get('ENTITLEMENTS_ENFORCED', { infer: true });
+  }
 }

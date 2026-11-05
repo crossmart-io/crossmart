@@ -31,6 +31,16 @@ describe('validateEnvironment', () => {
     expect(environment.STORAGE_DRIVER).toBe(StorageDriver.Local);
   });
 
+  it('reports plan limits without enforcing them unless enabled', () => {
+    expect(validateEnvironment(VALID_ENVIRONMENT).ENTITLEMENTS_ENFORCED).toBe(false);
+    const enforcing = (value: string) =>
+      validateEnvironment({ ...VALID_ENVIRONMENT, ENTITLEMENTS_ENFORCED: value })
+        .ENTITLEMENTS_ENFORCED;
+    expect(enforcing('true')).toBe(true);
+    expect(enforcing('false')).toBe(false);
+    expect(enforcing('')).toBe(false);
+  });
+
   it('rejects an unknown storage driver', () => {
     expect(() => validateEnvironment({ ...VALID_ENVIRONMENT, STORAGE_DRIVER: 'ftp' })).toThrow(
       /STORAGE_DRIVER/,

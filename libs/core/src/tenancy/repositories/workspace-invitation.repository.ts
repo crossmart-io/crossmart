@@ -85,6 +85,17 @@ export class WorkspaceInvitationRepository {
     return count > 0;
   }
 
+  /** True when the address belongs to a member of any workspace of this one's organization. */
+  async hasOrganizationMember(workspaceId: string, email: string): Promise<boolean> {
+    const count = await this.prisma.workspaceMember.count({
+      where: {
+        user: { email: { equals: email, mode: 'insensitive' } },
+        workspace: { organization: { workspaces: { some: { id: workspaceId } } } },
+      },
+    });
+    return count > 0;
+  }
+
   async listPending(workspaceId: string, now: Date): Promise<InvitationSummary[]> {
     const invitations = await this.prisma.workspaceInvitation.findMany({
       where: this.pendingWhere(workspaceId, now),

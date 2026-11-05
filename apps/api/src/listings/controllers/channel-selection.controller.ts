@@ -13,9 +13,9 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type Actor,
   ChannelConnectionsService,
-  ConnectionRulesService,
   ProductSelectionService,
   SelectionApplier,
+  StoreSelectionService,
   WorkspacePermission,
 } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
@@ -34,13 +34,14 @@ import {
   SelectionPreviewQueryDto,
   UpdateProductSelectionDto,
 } from '../dto/product-selection.dto.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 /** A store's automatic rule, applied at once, with a preview of what it changes. */
 @ApiTags(LISTINGS_TAG)
 @Controller(CONNECTION_ROUTE)
 export class ChannelSelectionController {
   constructor(
-    private readonly rules: ConnectionRulesService,
+    private readonly stores: StoreSelectionService,
     private readonly selection: ProductSelectionService,
     private readonly connections: ChannelConnectionsService,
     private readonly applier: SelectionApplier,
@@ -52,9 +53,11 @@ export class ChannelSelectionController {
     summary: 'Set the store’s automatic rule',
     description:
       'Applies at once: products the rule now adds are published, and products it now drops ' +
-      'are delisted. Products added by hand stay; those removed by hand stay out.',
+      'are delisted. Products added by hand stay; those removed by hand stay out. Refused ' +
+      '(402) without saving when the plan has no room for the active listings it would add.',
   })
   @ApiOkResponse({ type: ChannelConnectionDto })
+  @ApiPlanLimitResponse()
   async updateSelection(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,
@@ -62,9 +65,9 @@ export class ChannelSelectionController {
     @CurrentActor() actor: Actor,
   ): Promise<ChannelConnectionDto> {
     const rule = body.rule ? body.rule.toRule() : null;
-    const saved = await this.rules.updateSelection(workspaceId, connectionId, rule, actor);
-    await this.applier.applySelection(workspaceId, connectionId);
-    return ChannelConnectionDto.from(saved);
+    return ChannelConnectionDto.from(
+      await this.stores.update({ workspaceId, connectionId }, rule, actor),
+    );
   }
 
   @Post(SELECTION_PREVIEW_PATH)

@@ -13,6 +13,7 @@ export {
   ListingVisibility,
   OutOfStockPolicy,
   ProductStatus,
+  SubscriptionStatus,
   WorkspaceRole,
 } from './generated/prisma/enums.js';
 export { Prisma } from './generated/prisma/client.js';
@@ -29,6 +30,10 @@ export type {
   ListingVariant,
   ListingVariantOverride,
   Organization,
+  OrganizationSubscription,
+  Plan,
+  PlanFeature,
+  PlanVersion,
   Product,
   ProductMedia,
   ProductView,

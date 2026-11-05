@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { generateSecureToken, hashSecret } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -17,19 +12,15 @@ import type {
   MembershipManager,
   NewInvitation,
 } from '../entities/workspace-invitation.js';
-import { permissionsCover, resolveRole } from '../permissions/role-permissions.js';
+import { resolveRole } from '../permissions/role-permissions.js';
 import {
   type PendingInvitation,
   WorkspaceInvitationRepository,
 } from '../repositories/workspace-invitation.repository.js';
 import { roleName } from '../rules/role-name.js';
-import {
-  INVITATION_TOKEN_BYTES,
-  INVITATION_TTL_MS,
-  MAX_PENDING_INVITATIONS,
-} from '../tenancy.constants.js';
+import { INVITATION_TOKEN_BYTES, INVITATION_TTL_MS } from '../tenancy.constants.js';
 import { InvitationMailer } from './invitation-mailer.js';
-import { RoleResolver } from './role-resolver.js';
+import { InvitationPolicy, normalizeEmail } from './invitation-policy.js';
 
 const INVALID_INVITATION = 'This invitation is invalid, used or expired';
 
@@ -41,7 +32,7 @@ const INVALID_INVITATION = 'This invitation is invalid, used or expired';
 export class InvitationsService {
   constructor(
     private readonly invitations: WorkspaceInvitationRepository,
-    private readonly roles: RoleResolver,
+    private readonly policy: InvitationPolicy,
     private readonly mailer: InvitationMailer,
     private readonly activity: ActivityRecorder,
   ) {}
@@ -53,13 +44,9 @@ export class InvitationsService {
     request: NewInvitation,
     actor: Actor,
   ): Promise<InvitationSummary> {
-    const granted = await this.roles.resolve(workspaceId, request);
-    if (!permissionsCover(manager.permissions, granted.permissions)) {
-      throw new ForbiddenException('You cannot invite someone with more access than you have');
-    }
     const email = normalizeEmail(request.email);
     const now = new Date();
-    await this.assertInvitable(workspaceId, email, now);
+    const granted = await this.policy.admit(workspaceId, manager, { ...request, email }, now);
     const token = generateSecureToken(INVITATION_TOKEN_BYTES);
     const invitation = await this.invitations.replacePending(
       {
@@ -119,17 +106,6 @@ export class InvitationsService {
     return { workspaceId: invitation.workspaceId, role: invitation.role };
   }
 
-  private async assertInvitable(workspaceId: string, email: string, now: Date): Promise<void> {
-    if (await this.invitations.hasMember(workspaceId, email)) {
-      throw new ConflictException(`${email} is already a member of this workspace`);
-    }
-    if ((await this.invitations.countPending(workspaceId, now)) >= MAX_PENDING_INVITATIONS) {
-      throw new ConflictException(
-        `A workspace can have ${MAX_PENDING_INVITATIONS} pending invitations. Revoke some first.`,
-      );
-    }
-  }
-
   /** A pending invitation whose role still exists; one whose custom role was deleted is void. */
   private async findPending(token: string): Promise<PendingInvitation> {
     const invitation = await this.invitations.findPendingByTokenHash(hashSecret(token), new Date());
@@ -158,8 +134,4 @@ export class InvitationsService {
       ...(role ? { detail: `as ${roleName({ role, customRole: customRole ?? null })}` } : {}),
     });
   }
-}
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
 }

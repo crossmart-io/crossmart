@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { ListingSyncJob } from '../entities/listing-sync-job.js';
 import { SyncJobKind } from '../enums/sync-job-kind.enum.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
+import { selectionWhere } from '../rules/selection-where.js';
+import { ActiveListingsGate } from './active-listings.gate.js';
 import { ProductSelectionService } from './product-selection.service.js';
 import type { SyncConnection } from './sync-connection.loader.js';
 
@@ -14,17 +16,24 @@ export interface SyncPlan {
 /**
  * Plans a full sync of a connection: every selected product is published or updated, and
  * every listing the channel holds for a product no longer selected is delisted. Selected
- * products get a pending listing right away, so the listings table shows them queued.
+ * products get a pending listing right away, so the listings table shows them queued. A plan
+ * without room for the listings it would make live refuses it first, so nothing is queued.
  */
 @Injectable()
 export class SyncPlanner {
   constructor(
     private readonly selection: ProductSelectionService,
     private readonly listings: ListingSyncRepository,
+    private readonly gate: ActiveListingsGate,
   ) {}
 
   async plan(workspaceId: string, connection: SyncConnection): Promise<SyncPlan> {
     const connectionId = connection.view.id;
+    const rule = connection.view.settings.productSelection;
+    await this.gate.assertRoomFor(
+      { workspaceId, connectionId },
+      selectionWhere({ workspaceId, connectionId, rule }),
+    );
     const job = (kind: ListingSyncJob['kind'], productId: string): ListingSyncJob => ({
       kind,
       workspaceId,
@@ -35,7 +44,7 @@ export class SyncPlanner {
     for await (const batch of this.selection.selectedIds({
       workspaceId,
       connectionId,
-      rule: connection.view.settings.productSelection,
+      rule,
     })) {
       await this.listings.createPending(workspaceId, connectionId, batch);
       batch.forEach((productId) => selected.add(productId));

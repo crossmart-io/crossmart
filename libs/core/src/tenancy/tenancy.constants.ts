@@ -40,8 +40,6 @@ export const MAX_PENDING_INVITATIONS = 50;
 export const INVITATION_ACCEPT_PATH = '/invitations/accept';
 export const INVITATION_TOKEN_QUERY = 'token';
 
-/** A bound on what one organization can create until plans set their own limits. */
-export const MAX_WORKSPACES_PER_ORGANIZATION = 25;
 export const DEFAULT_WORKSPACE_CURRENCY = 'USD';
 /** The slug of a workspace whose name has no letters or digits to make one from. */
 export const FALLBACK_WORKSPACE_SLUG = 'workspace';
@@ -54,3 +52,6 @@ export const CUSTOM_ROLE_NAME_MAX_LENGTH = 60;
 export const CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH = 200;
 /** Enough for real teams, and a bound on what one workspace stores. */
 export const MAX_CUSTOM_ROLES = 30;
+
+/** A hard ceiling against abuse, whatever the plan allows. Plan limits sit below it. */
+export const MAX_WORKSPACES_PER_ORGANIZATION = 25;

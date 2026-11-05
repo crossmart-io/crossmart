@@ -32,6 +32,7 @@ const ADMINISTRATION: readonly WorkspacePermission[] = [
   WorkspacePermission.ManageApiKeys,
   WorkspacePermission.ManageChannels,
   WorkspacePermission.ApproveSuggestions,
+  WorkspacePermission.ViewBilling,
 ];
 
 const BUILT_IN_PERMISSIONS: Readonly<Record<BuiltInRole, ReadonlySet<WorkspacePermission>>> = {

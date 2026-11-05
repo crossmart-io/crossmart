@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { EventsModule } from '../events/events.module.js';
 import { ConnectorsModule } from '@crossmart/connectors';
 import { ActivityModule } from '../activity/activity.module.js';
+import { EntitlementsModule } from '../entitlements/entitlements.module.js';
 import { CredentialsModule } from '../credentials/credentials.module.js';
 import { TenancyModule } from '../tenancy/tenancy.module.js';
 import { ChannelConnectionRepository } from './repositories/channel-connection.repository.js';
@@ -10,6 +11,7 @@ import { ChannelAuthorizationService } from './services/channel-authorization.se
 import { ChannelConnectionsService } from './services/channel-connections.service.js';
 import { ChannelSessionFactory } from './services/channel-session.factory.js';
 import { ChannelWebhooksService } from './services/channel-webhooks.service.js';
+import { ChannelConnectionQuota } from './services/channel-connection.quota.js';
 import { ConnectedAccountWriter } from './services/connected-account.writer.js';
 import { OAuthConnectorResolver } from './services/oauth-connector.resolver.js';
 import { OAuthStateService } from './services/oauth-state.service.js';
@@ -23,7 +25,14 @@ import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.serv
  * webhooks, and the listing id mappings import and publish build on.
  */
 @Module({
-  imports: [ActivityModule, ConnectorsModule, CredentialsModule, EventsModule, TenancyModule],
+  imports: [
+    ActivityModule,
+    ConnectorsModule,
+    CredentialsModule,
+    EntitlementsModule,
+    EventsModule,
+    TenancyModule,
+  ],
   providers: [
     ChannelConnectionRepository,
     ListingRepository,
@@ -31,6 +40,7 @@ import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.serv
     OAuthStateSigner,
     OAuthStateService,
     OAuthConnectorResolver,
+    ChannelConnectionQuota,
     ConnectedAccountWriter,
     ChannelSessionFactory,
     ChannelAuthorizationService,

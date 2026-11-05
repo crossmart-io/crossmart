@@ -27,6 +27,7 @@ import { RequirePermission } from '../../auth/decorators/require-permission.deco
 import { ApiKeyDto, IssuedApiKeyDto } from '../dto/api-key.dto.js';
 import { CreateApiKeyDto } from '../dto/create-api-key.dto.js';
 import { API_KEY_ID_PARAM, API_KEYS_ROUTE, API_KEYS_TAG } from '../workspaces.constants.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 @ApiTags(API_KEYS_TAG)
 @Controller(API_KEYS_ROUTE)
@@ -45,6 +46,7 @@ export class ApiKeysController {
   @Post()
   @ApiOperation({ summary: 'Create an API key. The secret is returned once.' })
   @ApiCreatedResponse({ type: IssuedApiKeyDto })
+  @ApiPlanLimitResponse()
   async create(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: CreateApiKeyDto,

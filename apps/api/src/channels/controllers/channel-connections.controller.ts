@@ -38,6 +38,7 @@ import {
 import { ChannelConnectRedirectDto } from '../dto/channel-connect-redirect.dto.js';
 import { ChannelConnectionDto } from '../dto/channel-connection.dto.js';
 import { StartAuthorizationDto, StartedAuthorizationDto } from '../dto/start-authorization.dto.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 @ApiTags(CHANNELS_TAG)
 @ApiExtraModels(ChannelConnectRedirectDto)
@@ -71,13 +72,14 @@ export class ChannelConnectionsController {
       'Channels page with the parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.',
   })
   @ApiCreatedResponse({ type: StartedAuthorizationDto })
-  startAuthorization(
+  @ApiPlanLimitResponse()
+  async startAuthorization(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @CurrentPrincipal() principal: Principal,
     @Body() body: StartAuthorizationDto,
-  ): StartedAuthorizationDto {
+  ): Promise<StartedAuthorizationDto> {
     const { userId } = requireUser(principal);
-    return StartedAuthorizationDto.from(this.authorizations.start(workspaceId, userId, body));
+    return StartedAuthorizationDto.from(await this.authorizations.start(workspaceId, userId, body));
   }
 
   @Get(`:${CONNECTION_ID_PARAM}`)

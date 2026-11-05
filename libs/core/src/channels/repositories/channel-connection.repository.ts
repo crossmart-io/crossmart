@@ -46,6 +46,12 @@ function isInputJsonObject(
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Connections the merchant connects again to repair. */
+const REPAIRABLE_STATUSES: readonly ChannelConnectionStatus[] = [
+  ChannelConnectionStatus.NEEDS_REAUTH,
+  ChannelConnectionStatus.ERROR,
+];
+
 /** Only the account's identity, so passing a whole record never widens the filter. */
 function accountFilter({ channel, externalAccountId }: AccountRef): AccountRef {
   return { channel, externalAccountId };
@@ -133,6 +139,40 @@ export class ChannelConnectionRepository {
       where: accountFilter(account),
       omit: WITHOUT_CREDENTIALS,
     });
+  }
+
+  /** True when the workspace has this account and has not disconnected it: it holds a plan slot. */
+  async holdsSlot(workspaceId: string, account: AccountRef): Promise<boolean> {
+    const count = await this.prisma.channelConnection.count({
+      where: {
+        workspaceId,
+        ...accountFilter(account),
+        status: { not: ChannelConnectionStatus.DISCONNECTED },
+      },
+    });
+    return count > 0;
+  }
+
+  /**
+   * True when connecting `handle` on `channel` may repair a connection the workspace holds:
+   * the same account, or one that needs signing in again.
+   */
+  async hasReconnectCandidate(
+    workspaceId: string,
+    channel: string,
+    handle: string,
+  ): Promise<boolean> {
+    const count = await this.prisma.channelConnection.count({
+      where: {
+        workspaceId,
+        channel,
+        OR: [
+          { externalAccountId: handle, status: { not: ChannelConnectionStatus.DISCONNECTED } },
+          { status: { in: [...REPAIRABLE_STATUSES] } },
+        ],
+      },
+    });
+    return count > 0;
   }
 
   /** Other connections that still hold working credentials for the same account. */

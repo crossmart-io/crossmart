@@ -11,6 +11,7 @@ import {
   ORGANIZATION_WORKSPACES_ROUTE,
   WORKSPACES_TAG,
 } from '../workspaces.constants.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 
 @ApiTags(WORKSPACES_TAG)
 @ApiCookieAuth()
@@ -23,9 +24,10 @@ export class OrganizationWorkspacesController {
     summary: 'Create a workspace',
     description:
       'For owners of a workspace in the organization, such as one per client or brand. You own ' +
-      'the new workspace. Refused (409) past 25 workspaces per organization.',
+      'the new workspace. Refused (402) past the plan’s workspace limit.',
   })
   @ApiCreatedResponse({ type: WorkspaceDto })
+  @ApiPlanLimitResponse()
   async create(
     @Param(ORGANIZATION_ID_PARAM, ParseUUIDPipe) organizationId: string,
     @Body() body: CreateWorkspaceDto,

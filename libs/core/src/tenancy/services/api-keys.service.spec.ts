@@ -1,9 +1,12 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { hashSecret } from '@crossmart/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import type { ApiKeyRepository, ApiKeyWithRole } from '../repositories/api-key.repository.js';
 import { builtInPermissions } from '../permissions/role-permissions.js';
 import { fakeRoleResolver, managerWith } from '../testing/role-fixtures.js';
@@ -42,12 +45,14 @@ function createService() {
     markUsed: vi.fn(),
   };
   const activity = new InMemoryActivityRecorder();
+  const entitlements = { assertInWorkspace: vi.fn().mockResolvedValue(undefined) };
   const service = new ApiKeysService(
     repository as unknown as ApiKeyRepository,
     fakeRoleResolver(),
     activity,
+    entitlements as unknown as EntitlementService,
   );
-  return { service, repository, activity };
+  return { service, repository, activity, entitlements };
 }
 
 describe('ApiKeysService.issue', () => {
@@ -157,5 +162,17 @@ describe('ApiKeysService.revoke', () => {
       action: ActivityAction.ApiKeyRevoked,
       subject: { id: 'key-1', label: 'MCP' },
     });
+  });
+});
+
+describe('ApiKeysService.issue and the plan', () => {
+  it('asks the plan for room, and creates no key without it', async () => {
+    const { service, repository, entitlements } = createService();
+    entitlements.assertInWorkspace.mockRejectedValueOnce(planLimitReached(Feature.ApiKeys));
+    await expect(
+      service.issue('ws-1', ADMIN, { name: 'MCP', role: WorkspaceRole.EDITOR }, ACTOR),
+    ).rejects.toMatchObject({ status: HttpStatus.PAYMENT_REQUIRED });
+    expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.ApiKeys);
+    expect(repository.create).not.toHaveBeenCalled();
   });
 });

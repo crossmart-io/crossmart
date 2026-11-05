@@ -13,14 +13,19 @@ import type { OAuthStatePayload } from '../entities/oauth-state.js';
 import { toChannelConnectionView } from '../mappers/channel-connection.mapper.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { credentialsExpiry } from '../rules/credentials-expiry.js';
+import { ChannelConnectionQuota } from './channel-connection.quota.js';
 import { ConnectionCredentialsVault } from './connection-credentials.vault.js';
 
-/** Stores an authorized account: reads its profile, seals its credentials, upserts the row. */
+/**
+ * Stores an authorized account, while the plan has room for it: reads its profile, seals its
+ * credentials, upserts the row.
+ */
 @Injectable()
 export class ConnectedAccountWriter {
   constructor(
     private readonly vault: ConnectionCredentialsVault,
     private readonly connections: ChannelConnectionRepository,
+    private readonly quota: ChannelConnectionQuota,
   ) {}
 
   async save(
@@ -33,6 +38,7 @@ export class ConnectedAccountWriter {
       channel: state.channel,
       externalAccountId: authorization.externalAccountId,
     };
+    await this.quota.assertCanConnect(state.workspaceId, owner);
     const profile = await connector.describeAccount(issuedSession(authorization));
     const record = await this.connections.upsertConnected({
       ...owner,
