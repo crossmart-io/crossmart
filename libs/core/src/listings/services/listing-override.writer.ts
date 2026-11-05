@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { ListingOverrideInput } from '../entities/listing-override.js';
+import { toListingOverrideInput } from '../mappers/listing.mapper.js';
 import { SyncJobKind } from '../enums/sync-job-kind.enum.js';
 import { ListingOverrideRepository } from '../repositories/listing-override.repository.js';
 import type { ListingSyncRecord } from '../repositories/listing-sync.queries.js';
@@ -33,6 +34,16 @@ export class ListingOverrideWriter {
     );
     await this.overrides.replace(target.workspaceId, listing.id, input);
     await this.resync(target, listing);
+  }
+
+  /** The listing's overrides as they are saved now, to change some fields and save again. */
+  async current(target: OverrideTarget): Promise<ListingOverrideInput> {
+    const listing = await this.listings.findPrimary(
+      target.workspaceId,
+      target.connectionId,
+      target.productId,
+    );
+    return toListingOverrideInput(listing);
   }
 
   async clear(target: OverrideTarget): Promise<void> {

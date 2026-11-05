@@ -157,6 +157,20 @@ export class EnvironmentVariables {
   )
   @IsBoolean()
   ENTITLEMENTS_ENFORCED: boolean = DEFAULT_ENTITLEMENTS_ENFORCED;
+
+  /**
+   * Anthropic API key for the AI agents (content generation). Without it the AI features report
+   * that AI is not configured and the rest of the platform works as usual. Never logged.
+   */
+  @IsOptional()
+  @IsString()
+  ANTHROPIC_API_KEY?: string;
+
+  /** The model the AI agents use. Defaults to `DEFAULT_AI_MODEL`. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  AI_MODEL?: string;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {

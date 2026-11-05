@@ -1,4 +1,4 @@
-import { sanitizeDescriptionHtml } from './sanitize-description.js';
+import { sanitizeDescriptionHtml, toPlainText } from './sanitize-description.js';
 
 describe('sanitizeDescriptionHtml', () => {
   it('keeps product formatting', () => {
@@ -18,5 +18,21 @@ describe('sanitizeDescriptionHtml', () => {
     expect(sanitizeDescriptionHtml('<a href="https://example.com">site</a>')).toContain(
       'rel="noopener noreferrer nofollow"',
     );
+  });
+});
+
+describe('sanitizeDescriptionHtml without links', () => {
+  it('keeps the link text and drops the link', () => {
+    expect(
+      sanitizeDescriptionHtml('<p>See <a href="https://example.com">our shop</a></p>', {
+        allowLinks: false,
+      }),
+    ).toBe('<p>See our shop</p>');
+  });
+});
+
+describe('toPlainText', () => {
+  it('drops markup, collapses whitespace and keeps ampersands as typed', () => {
+    expect(toPlainText(' <b>Tom & Jerry</b>\n  Mug ')).toBe('Tom & Jerry Mug');
   });
 });

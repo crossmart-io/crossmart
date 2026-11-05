@@ -29,3 +29,15 @@ export interface ListingOverrideInput {
 export interface ListingOverrideView extends ListingOverrideInput {
   updatedAt: Date;
 }
+
+/** Content fields to change on one listing; absent fields keep their current override. */
+export interface ListingContentPatch {
+  title?: string;
+  descriptionHtml?: string;
+}
+
+/** What a listing shows: its override where it has one, else the product's own content. */
+export interface ListingContent {
+  title: string;
+  descriptionHtml: string;
+}

@@ -32,3 +32,5 @@ export const JSON_INDENTATION = 2;
 export const MAX_PAGE_SIZE = 100;
 export const SEARCH_MAX_LENGTH = 200;
 export const NOTE_MAX_LENGTH = 500;
+/** Products one generate_content call may name; the API's own limit. */
+export const CONTENT_GENERATION_MAX_PRODUCTS = 100;

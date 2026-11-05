@@ -40,11 +40,18 @@ in exactly one workspace; the server finds it with `GET /api/v1/api-key`.
 | `get_sales_report`          | Sales, orders, average order value and units against the period before |        |
 | `get_inventory_report`      | Stock value, stock levels and listings per store                       |        |
 | `get_platform_health`       | Whether the API and database are up                                    |        |
+| `generate_content`          | Queues AI titles and descriptions for products on a store              | Yes    |
+| `list_suggestions`          | Proposed changes with current and proposed value and rationale         |        |
+| `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
 
 Tools that only read carry `readOnlyHint`; `replace_product` and `remove_product_from_store`
 carry `destructiveHint`, so clients can ask before running them. When the API refuses a call, the
 tool returns an error with the API's message (for example `Crossmart refused (404): Product not
 found`) instead of failing the session.
+
+AI content goes through review: `generate_content` only creates pending suggestions, and
+`approve_suggestion` needs a key whose role holds `suggestions:approve` (Owner, Admin or
+Approver), so an agent with an Editor key can propose but never apply.
 
 Connecting a store always needs the merchant: channel OAuth (Shopify and others) runs in the
 dashboard, never through an agent.

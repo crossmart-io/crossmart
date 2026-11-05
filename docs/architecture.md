@@ -49,8 +49,9 @@ crossmart/
 │   │   ├── inventory/       # ledger, reservations, policies
 │   │   ├── orders/
 │   │   ├── channels/        # channel connections, sync orchestration
-│   │   ├── suggestions/     # suggestion engine, autonomy policies
-│   │   ├── ai/              # AiProvider abstraction, prompts, metering
+│   │   ├── suggestions/     # suggestion engine (review, apply, stale check); autonomy policies later
+│   │   ├── ai/              # AiProvider abstraction, AiGateway, prompts, metering
+│   │   ├── content-generation/ # the Content Generator agent and its channel rules
 │   │   ├── tenancy/         # organizations, workspaces, members, roles
 │   │   ├── entitlements/    # plans, limits, feature flags
 │   │   └── billing/         # BillingProvider abstraction (Stripe impl)
@@ -137,7 +138,8 @@ Organization ─┬─ OrganizationSubscription (plan version, status, provider 
                             │                                        ├─ external id, status, last error
                             │                                        └─ last synced, media digest
                             ├─ Order ── OrderLine (variant, qty, channel order id)
-                            ├─ Suggestion (agent, target, diff, rationale, status)
+                            ├─ Suggestion (target product + connection, kind, current/proposed value, rationale, status)
+                            ├─ AiUsage (feature, provider, model, input/output tokens)
                             ├─ AutonomyPolicy (action type → auto | ask)
                             ├─ InventoryPolicy (buffer, low-stock threshold, primary channel, allocation)
                             ├─ ImportJob / SyncJob
@@ -174,7 +176,7 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
 
 - **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`, `TaxonomyProvider`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md) and eBay in [channels/ebay.md](channels/ebay.md). A `ListingDraft` carries the connection's account settings and the listing's channel category for channels that need them (eBay), and `delist` receives a `ListingReference` (product id and variant ids on the channel).
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
-- **Priority queues:** `inventory` > `orders` > `price` > `content` > `import`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish.
+- **Priority queues:** `inventory` > `orders` > `price` > `content` > `import` > `ai`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish, and AI agents never hold up a sync.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
 - **Feed channels:** a generic template-based feed exporter (XML/CSV/TSV), so most simple channels are configuration only.
 - A **test kit** of recorded fixtures and contract tests is required for every connector PR.
@@ -261,11 +263,37 @@ Triggers:
 
 ## 6. AI layer
 
-- An `AiProvider` interface with adapters for Anthropic, OpenAI, Gemini and Ollama. The model is chosen per task.
-- Prompts are versioned files in `libs/core/ai/prompts`, one per agent and channel. They are never inline strings.
-- Output goes through structured schemas (zod/class-validator), so free-text JSON is never trusted.
-- Every call writes a `UsageRecord` (tokens, cost, credits) for credits and entitlements.
-- Credentials: platform keys in the cloud, or a BYOK key per workspace (encrypted like channel credentials).
+See [ADR 0015](decisions/0015-ai-layer.md).
+
+- **Provider.** `AiProvider` (`libs/core/src/ai/providers`) is the one seam to a model. The Anthropic implementation
+  uses `@anthropic-ai/sdk` with `AI_MODEL` (default `claude-sonnet-5-5`) and `ANTHROPIC_API_KEY`. Without the key
+  the app boots, `GET …/ai/status` reports `configured: false`, and AI endpoints answer `503 AI is not configured`.
+  OpenAI, Gemini, Ollama and per-workspace BYOK keys are later adapters behind the same interface.
+- **Gateway.** Agents call the model only through `AiGateway.generate(context, request)`. It meters the call, then
+  validates the answer against the request's zod schema (also sent as the structured-output format). A refused,
+  truncated, non-JSON or off-schema answer throws `AiOutputRejectedError` and nothing from it is stored. Prompts and
+  answers are never logged; rejections log only which fields failed.
+- **Metering.** Every call writes an `ai_usage` row: workspace, `AiFeature`, provider, model, input and output tokens.
+  Rejected answers are metered too. `AiUsageService.report(workspaceId, period?)` sums calls and tokens per feature and
+  model (`GET …/ai/usage`, the current UTC month by default). Nothing is enforced here: plans and credits read it.
+- **Prompts** are versioned files in `libs/core/src/ai/prompts` (`content-generator.v1.prompt.ts`), never inline
+  strings. Product data goes in a fenced data block and the model is told to ignore instructions inside it.
+- **Suggestions** (`libs/core/src/suggestions`). A `Suggestion` targets a product and optionally a connection, has a
+  `SuggestionKind` (`listing_title`, `listing_description`), the value it replaces as it was when made, the proposed
+  value, a rationale, its creator (`AGENT` with the `SuggestionAgent`, `USER` or `API_KEY`) and the requester, and a
+  status: `PENDING`, `APPLIED`, `REJECTED` or `STALE`. Approving re-reads what the listing shows; if that changed, the
+  suggestion becomes `STALE` and nothing is applied. Otherwise `SuggestionApplier` writes it through
+  `ListingOverridesService.saveContent`, which merges the field into the listing's overrides and queues a sync, exactly
+  like an edit. The review is claimed with a conditional update before applying, so concurrent approvals apply once. A
+  newer proposal for the same product, connection and kind marks the older pending one `STALE`.
+- **Content Generator** (`libs/core/src/content-generation`). `POST …/ai/content-generations` (up to 100 products for
+  one store) validates the store and products, queues one job per product on the `ai` queue in one `addBulk`
+  (deduplicated per product and store while waiting), and logs the request. The worker's `ContentGenerationRunner`
+  reads the product and what its listing shows, asks for a title and description within the channel's rules
+  (`CHANNEL_CONTENT_RULES`: eBay titles ≤ 80 characters, plain text, basic HTML without links; Shopify titles ≤ 255,
+  rich HTML), strips markup the channel does not take, and stores the changed fields as pending suggestions. Unusable
+  answers and a missing key are final; outages are retried and logged after the last attempt.
+- **Credentials:** a platform key in the cloud today; BYOK per workspace later (encrypted like channel credentials).
 
 ## 7. API & clients
 

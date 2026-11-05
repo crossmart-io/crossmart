@@ -52,4 +52,24 @@ describe('MCP tools', () => {
     expect(tool('replace_product').destructive).toBe(true);
     expect(tool('create_product').destructive).toBeFalsy();
   });
+
+  it('asks for content generation without approving anything', () => {
+    const call = tool('generate_content').toCall({
+      connectionId: 'c-1',
+      productIds: ['p-1'],
+    } as never);
+    expect(call).toEqual({
+      method: HttpMethod.Post,
+      path: `${WORKSPACE_PATH}/ai/content-generations`,
+      body: { connectionId: 'c-1', productIds: ['p-1'] },
+    });
+  });
+
+  it('lists suggestions and approves one by its id', () => {
+    expect(tool('list_suggestions').readOnly).toBe(true);
+    expect(tool('approve_suggestion').toCall({ suggestionId: 's-1' } as never)).toEqual({
+      method: HttpMethod.Post,
+      path: `${WORKSPACE_PATH}/suggestions/s-1/approve`,
+    });
+  });
 });

@@ -19,6 +19,7 @@ const VIEW_PERMISSIONS = [
   WorkspacePermission.ViewReports,
   WorkspacePermission.ViewChannels,
   WorkspacePermission.ViewActivity,
+  WorkspacePermission.ViewSuggestions,
 ];
 const BUILT_IN_ROLES: BuiltInRole[] = [
   WorkspaceRole.OWNER,
@@ -51,11 +52,18 @@ describe('built-in roles', () => {
         WorkspacePermission.EditProducts,
         WorkspacePermission.EditInventory,
         WorkspacePermission.EditListings,
+        WorkspacePermission.GenerateContent,
       ]),
     ).toBe(true);
     expect(editor.has(WorkspacePermission.ManageChannels)).toBe(false);
     expect(editor.has(WorkspacePermission.ManageMembers)).toBe(false);
     expect(editor.has(WorkspacePermission.ApproveSuggestions)).toBe(false);
+  });
+
+  it('let an approver review suggestions but not ask the agents for more', () => {
+    const approver = builtInPermissions(WorkspaceRole.APPROVER);
+    expect(approver.has(WorkspacePermission.ViewSuggestions)).toBe(true);
+    expect(approver.has(WorkspacePermission.GenerateContent)).toBe(false);
   });
 
   it('let an approver approve and change nothing else', () => {

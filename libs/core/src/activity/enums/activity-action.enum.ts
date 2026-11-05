@@ -73,4 +73,14 @@ export enum ActivityAction {
   ChannelSyncRequested = 'channel_sync_requested',
   /** An order took more units than were left: they were sold twice and need resolving. */
   StockOversold = 'stock_oversold',
+  /** Someone asked the Content Generator for channel content; the detail names the store. */
+  ContentGenerationRequested = 'content_generation_requested',
+  /** The Content Generator suggested content for one product; the detail names the store. */
+  ContentGenerated = 'content_generated',
+  /** A suggestion was approved and applied; the detail names the field and the store. */
+  SuggestionApproved = 'suggestion_approved',
+  /** A suggestion was rejected; the detail names the field and the store. */
+  SuggestionRejected = 'suggestion_rejected',
+  /** Several suggestions were approved at once; each applied change is logged on its own too. */
+  SuggestionsBulkApproved = 'suggestions_bulk_approved',
 }
