@@ -141,6 +141,17 @@ export class ChannelConnectionRepository {
     });
   }
 
+  /**
+   * Every workspace's connections on `channel` whose account id starts with `prefix`, for
+   * channels that store one account under several ids (an eBay user on each marketplace).
+   */
+  findByAccountPrefix(channel: string, prefix: string): Promise<ChannelConnectionRecord[]> {
+    return this.prisma.channelConnection.findMany({
+      where: { channel, externalAccountId: { startsWith: prefix } },
+      omit: WITHOUT_CREDENTIALS,
+    });
+  }
+
   /** True when the workspace has this account and has not disconnected it: it holds a plan slot. */
   async holdsSlot(workspaceId: string, account: AccountRef): Promise<boolean> {
     const count = await this.prisma.channelConnection.count({
@@ -270,9 +281,10 @@ export class ChannelConnectionRepository {
   /**
    * Erases what Crossmart stored about an account: credentials, settings, scopes, its orders
    * and the listing ids mapped to it, releasing the stock open orders held. Products stay;
-   * they belong to the merchant.
+   * they belong to the merchant. `displayName` replaces the connection's name when the name
+   * itself identifies the person whose data is erased.
    */
-  async redactAccount(account: AccountRef, now: Date): Promise<number> {
+  async redactAccount(account: AccountRef, now: Date, displayName?: string): Promise<number> {
     const connection = accountFilter(account);
     const [, , , { count }] = await this.prisma.$transaction([
       // Units the account's open orders still hold go back on sale: Crossmart can no longer
@@ -300,6 +312,7 @@ export class ChannelConnectionRepository {
           statusReason: null,
           grantedScopes: [],
           settings: {},
+          ...(displayName === undefined ? {} : { displayName }),
         },
       }),
     ]);

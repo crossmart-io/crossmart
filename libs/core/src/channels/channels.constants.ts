@@ -17,6 +17,14 @@ export const CREDENTIALS_CONTEXT_SEPARATOR = ':';
 export const CHANNEL_OAUTH_CALLBACK_PATH = '/api/v1/channels/:channel/oauth/callback';
 export const CHANNEL_PATH_PARAM = ':channel';
 
+/**
+ * eBay's marketplace account deletion endpoint, under the API's public URL. eBay hashes this
+ * exact URL into its challenge, so it must match the one registered in the developer portal.
+ */
+export const EBAY_ACCOUNT_DELETION_PATH = '/api/v1/webhooks/ebay/account-deletion';
+/** Names a connection whose eBay user deleted their account; the username is erased. */
+export const EBAY_DELETED_ACCOUNT_NAME = 'Deleted eBay account';
+
 export const CONNECTION_NOT_FOUND = 'Channel connection not found';
 export const STATUS_REASON_MAX_LENGTH = 500;
 export const PRODUCT_SELECTION_MAX_IDS = 10_000;

@@ -6,6 +6,7 @@ import { ChannelConnectionsController } from './controllers/channel-connections.
 import { ChannelOAuthController } from './controllers/channel-oauth.controller.js';
 import { ChannelWebhooksController } from './controllers/channel-webhooks.controller.js';
 import { EbayAccountController } from './controllers/ebay-account.controller.js';
+import { EbayAccountDeletionController } from './controllers/ebay-account-deletion.controller.js';
 import { GoogleMerchantAccountController } from './controllers/google-merchant-account.controller.js';
 
 @Module({
@@ -16,6 +17,7 @@ import { GoogleMerchantAccountController } from './controllers/google-merchant-a
     ChannelOAuthController,
     ChannelWebhooksController,
     EbayAccountController,
+    EbayAccountDeletionController,
     GoogleMerchantAccountController,
   ],
 })

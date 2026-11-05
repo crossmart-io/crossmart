@@ -66,7 +66,14 @@ export enum EbayOAuthParam {
 export enum EbayGrantType {
   AuthorizationCode = 'authorization_code',
   RefreshToken = 'refresh_token',
+  /** An application token: calls on behalf of the app itself, such as reading public keys. */
+  ClientCredentials = 'client_credentials',
 }
+
+/** The only scope an application token needs to read the Notification API's public keys. */
+export const EBAY_APPLICATION_TOKEN_SCOPES: readonly EbayScope[] = [EbayScope.Api];
+/** An application token is requested again this long before it expires. */
+export const EBAY_APPLICATION_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 export const EBAY_CODE_RESPONSE_TYPE = 'code';
 /** The OAuth error eBay answers when a refresh token expired or was revoked. */
@@ -207,3 +214,20 @@ export const EBAY_FIRST_SORT_ORDER = 1;
 export const EBAY_DUPLICATE_POLICY_ERROR_IDS: ReadonlySet<number> = new Set([20400]);
 export const EBAY_DUPLICATE_POLICY_ID_PARAM = 'DuplicateProfileId';
 export const EBAY_DUPLICATE_POLICY_NAME_PARAM = 'DuplicateProfileName';
+
+/**
+ * Notification API: the public keys eBay signs push notifications with, such as the marketplace
+ * account deletion notice. Read with an application token.
+ */
+export const EBAY_PUBLIC_KEY_PATH = '/commerce/notification/v1/public_key/';
+/** eBay asks for each public key to be cached for about an hour rather than read per notice. */
+export const EBAY_PUBLIC_KEY_CACHE_TTL_MS = 60 * 60 * 1000;
+/** Bounds the key ids kept in memory, so random ids cannot grow the cache without limit. */
+export const EBAY_PUBLIC_KEY_CACHE_MAX_ENTRIES = 100;
+/** A key id eBay can have issued: it goes into a URL path, so anything else is refused. */
+export const EBAY_PUBLIC_KEY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+/** The header of a push notification: base64 JSON with the key id and the signature. */
+export const EBAY_SIGNATURE_HEADER = 'x-ebay-signature';
+/** The PEM armor eBay sends the key in, on one line without line breaks. */
+export const PEM_PUBLIC_KEY_ARMOR = /-----(BEGIN|END) PUBLIC KEY-----/g;
+export const WHITESPACE_PATTERN = /\s+/g;

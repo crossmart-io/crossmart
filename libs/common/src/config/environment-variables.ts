@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -24,6 +25,7 @@ import {
   DEFAULT_MEDIA_PUBLIC_URL,
   DEFAULT_WEB_APP_URL,
   DEFAULT_STORAGE_LOCAL_DIR,
+  EBAY_VERIFICATION_TOKEN_PATTERN,
   ENV_TRUE,
   MAX_PORT,
   MIN_AUTH_SECRET_LENGTH,
@@ -146,6 +148,14 @@ export class EnvironmentVariables {
   /** The eBay the keyset belongs to: `sandbox` or `production`. */
   @IsEnum(EbayEnvironment)
   EBAY_ENVIRONMENT: EbayEnvironment = EbayEnvironment.Sandbox;
+
+  /**
+   * The verification token entered with the marketplace account deletion endpoint in the eBay
+   * developer portal: 32 to 80 letters, digits, `_` or `-`. Answers eBay's endpoint challenge.
+   */
+  @ValidateIf((environment: EnvironmentVariables) => Boolean(environment.EBAY_VERIFICATION_TOKEN))
+  @Matches(EBAY_VERIFICATION_TOKEN_PATTERN)
+  EBAY_VERIFICATION_TOKEN?: string;
 
   /** OAuth client ID of the Crossmart Google Cloud app, for Google Merchant Center. */
   @IsOptional()

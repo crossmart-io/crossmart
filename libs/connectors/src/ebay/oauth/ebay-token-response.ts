@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ChannelCredentials } from '../../sdk/auth/channel-credentials.js';
 import { expiresAt } from '../../sdk/time/expires-at.js';
+import { MILLISECONDS_PER_SECOND } from '../../sdk/time/time.constants.js';
 
 /**
  * eBay's user token response. The code grant returns a 2 hour access token and an 18 month
@@ -25,5 +26,21 @@ export function toEbayCredentials(response: EbayTokenResponse, now: Date): Chann
     refreshToken: response.refresh_token,
     accessTokenExpiresAt: expiresAt(now, response.expires_in),
     refreshTokenExpiresAt: expiresAt(now, response.refresh_token_expires_in),
+  };
+}
+
+/** An application token and when it expires; never stored, only kept in memory. */
+export interface EbayApplicationToken {
+  accessToken: string;
+  expiresAt: Date;
+}
+
+export function toEbayApplicationToken(
+  response: EbayTokenResponse,
+  now: Date,
+): EbayApplicationToken {
+  return {
+    accessToken: response.access_token,
+    expiresAt: new Date(now.getTime() + response.expires_in * MILLISECONDS_PER_SECOND),
   };
 }
