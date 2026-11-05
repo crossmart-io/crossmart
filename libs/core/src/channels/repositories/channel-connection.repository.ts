@@ -211,21 +211,22 @@ export class ChannelConnectionRepository {
     });
   }
 
+  /** Throws when the connection is not in the workspace. */
   async saveCredentials(
-    connectionId: string,
+    { workspaceId, connectionId }: SettingsTarget,
     sealedCredentials: string,
     expiresAt: Date | null,
     client: Prisma.TransactionClient = this.prisma,
   ): Promise<void> {
     await client.channelConnection.update({
-      where: { id: connectionId },
+      where: { id: connectionId, workspaceId },
       data: { credentials: sealedCredentials, credentialsExpiresAt: expiresAt },
     });
   }
 
-  async markNeedsReauth(connectionId: string, reason: string): Promise<void> {
-    await this.prisma.channelConnection.update({
-      where: { id: connectionId },
+  async markNeedsReauth(workspaceId: string, connectionId: string, reason: string): Promise<void> {
+    await this.prisma.channelConnection.updateMany({
+      where: { id: connectionId, workspaceId },
       data: { status: ChannelConnectionStatus.NEEDS_REAUTH, statusReason: reason },
     });
   }
@@ -259,10 +260,14 @@ export class ChannelConnectionRepository {
     });
   }
 
-  /** Disconnects one connection and wipes its credentials. */
-  async markDisconnected(connectionId: string, now: Date): Promise<ChannelConnectionRecord> {
+  /** Disconnects one connection and wipes its credentials. Throws when it is not in the workspace. */
+  async markDisconnected(
+    workspaceId: string,
+    connectionId: string,
+    now: Date,
+  ): Promise<ChannelConnectionRecord> {
     return this.prisma.channelConnection.update({
-      where: { id: connectionId },
+      where: { id: connectionId, workspaceId },
       data: {
         ...wipedCredentials(now),
         status: ChannelConnectionStatus.DISCONNECTED,

@@ -53,7 +53,11 @@ export class ChannelConnectionsService {
       return this.toView(connection);
     }
     await this.revokeIfLastConnection(connection);
-    const disconnected = await this.connections.markDisconnected(connectionId, new Date());
+    const disconnected = await this.connections.markDisconnected(
+      workspaceId,
+      connectionId,
+      new Date(),
+    );
     await this.activity.record(workspaceId, actor, {
       action: ActivityAction.ChannelDisconnected,
       subject: {

@@ -43,7 +43,7 @@ async function setup(credentials?: ChannelCredentials) {
       .fn<ChannelConnectionRepository['findForWorkspace']>()
       .mockResolvedValue(connectionRecord()),
     findSealedCredentials: vi.fn(() => Promise.resolve({ ...stored })),
-    saveCredentials: vi.fn((_id: string, sealed: string) => {
+    saveCredentials: vi.fn((_owner: unknown, sealed: string) => {
       stored.credentials = sealed;
       return Promise.resolve();
     }),
@@ -92,7 +92,7 @@ describe('ChannelSessionFactory', () => {
       expect.objectContaining({ refreshToken: 'refresh-1' }),
     );
     expect(connections.saveCredentials).toHaveBeenCalledWith(
-      CONNECTION_ID,
+      { workspaceId: WORKSPACE_ID, connectionId: CONNECTION_ID },
       expect.any(String),
       new Date('2026-11-03T12:00:00.000Z'),
       {},
@@ -116,7 +116,11 @@ describe('ChannelSessionFactory', () => {
     ).rejects.toMatchObject({
       code: ChannelErrorCode.CredentialsRejected,
     });
-    expect(connections.markNeedsReauth).toHaveBeenCalledWith(CONNECTION_ID, 'Connect again');
+    expect(connections.markNeedsReauth).toHaveBeenCalledWith(
+      WORKSPACE_ID,
+      CONNECTION_ID,
+      'Connect again',
+    );
   });
 
   it('refuses wiped credentials and connections of other workspaces', async () => {

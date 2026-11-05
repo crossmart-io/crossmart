@@ -72,3 +72,5 @@ export const LISTING_FAILURE_MAX_LENGTH = 500;
 export const STORE_MEMBERSHIP_MAX_PRODUCTS = 250;
 export const PRODUCT_NOT_FOUND_IN_WORKSPACE =
   'Some of these products do not exist in this workspace';
+
+export const LISTING_NOT_FOUND = 'Listing not found';

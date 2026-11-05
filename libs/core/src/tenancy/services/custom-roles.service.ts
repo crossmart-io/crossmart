@@ -79,7 +79,11 @@ export class CustomRolesService {
     this.grantable(manager, toPermissionList(customRolePermissions(existing.permissions)));
     const permissions = this.grantable(manager, update.permissions);
     await this.assertNameFree(workspaceId, update.name, update.id);
-    const role = await this.customRoles.update(update.id, this.toRecord(update, permissions));
+    const role = await this.customRoles.update(
+      workspaceId,
+      update.id,
+      this.toRecord(update, permissions),
+    );
     await this.revokeKeysBeyond(workspaceId, update.id, new Set(permissions));
     await this.record(workspaceId, actor, ActivityAction.CustomRoleUpdated, role);
     return this.toSummary(role);
@@ -91,7 +95,7 @@ export class CustomRolesService {
     if (usage.members + usage.pendingInvitations + usage.activeApiKeys > 0) {
       throw new ConflictException(describeUsage(role.name, usage));
     }
-    await this.customRoles.delete(customRoleId);
+    await this.customRoles.delete(workspaceId, customRoleId);
     await this.record(workspaceId, actor, ActivityAction.CustomRoleDeleted, role);
   }
 

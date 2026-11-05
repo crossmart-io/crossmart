@@ -93,7 +93,7 @@ export class ChannelWebhooksService {
       (connection) => connection.status !== ChannelConnectionStatus.DISCONNECTED,
     );
     for (const connection of connected) {
-      await this.connections.markDisconnected(connection.id, new Date());
+      await this.connections.markDisconnected(connection.workspaceId, connection.id, new Date());
       await this.recordUninstall(connector, connection);
     }
   }
