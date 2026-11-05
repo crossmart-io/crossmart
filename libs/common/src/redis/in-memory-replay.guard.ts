@@ -17,4 +17,9 @@ export class InMemoryReplayGuard extends ReplayGuard {
     this.expiries.set(key, current + ttlMs);
     return Promise.resolve(true);
   }
+
+  release(key: string): Promise<void> {
+    this.expiries.delete(key);
+    return Promise.resolve();
+  }
 }

@@ -1,4 +1,5 @@
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { InMemoryReplayGuard } from '@crossmart/common';
 import { ChannelConnectorRegistry, ChannelType, ChannelWebhookKind } from '@crossmart/connectors';
 import { ActivityActorType, ChannelConnectionStatus } from '@crossmart/database';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -7,6 +8,7 @@ import type { ChannelConnectionRepository } from '../repositories/channel-connec
 import { connectionRecord } from '../testing/channel-connection.fixtures.js';
 import { FAKE_ACCOUNT, FakeOAuthConnector } from '../testing/fake-oauth-connector.js';
 import { ChannelEventBus } from '../../events/services/channel-event-bus.js';
+import { ChannelWebhookDispatcher } from './channel-webhook.dispatcher.js';
 import { ChannelWebhooksService } from './channel-webhooks.service.js';
 
 const WEBHOOK = { rawBody: Buffer.from('{}'), headers: {} };
@@ -33,16 +35,24 @@ function setup() {
   const orderChanged = vi.spyOn(events, 'orderChanged');
   const service = new ChannelWebhooksService(
     new ChannelConnectorRegistry([connector]),
-    connections as unknown as ChannelConnectionRepository,
-    activity,
-    events,
+    new ChannelWebhookDispatcher(
+      connections as unknown as ChannelConnectionRepository,
+      activity,
+      events,
+    ),
+    new InMemoryReplayGuard(),
   );
-  const deliver = (kind: ChannelWebhookKind, resourceId?: string) => {
+  let deliveries = 0;
+  const deliver = (
+    kind: ChannelWebhookKind,
+    resourceId?: string,
+    deliveryId: string | null = `d-${(deliveries += 1)}`,
+  ) => {
     connector.webhookEvent = {
       kind,
       topic: 'topic',
       externalAccountId: FAKE_ACCOUNT,
-      deliveryId: 'd-1',
+      deliveryId,
       payload: {},
       resourceId,
     };
@@ -65,9 +75,8 @@ describe('ChannelWebhooksService', () => {
     connector.capabilities = new Set();
     const service = new ChannelWebhooksService(
       new ChannelConnectorRegistry([connector]),
-      {} as ChannelConnectionRepository,
-      new InMemoryActivityRecorder(),
-      new ChannelEventBus(),
+      {} as ChannelWebhookDispatcher,
+      new InMemoryReplayGuard(),
     );
 
     await expect(service.handle(ChannelType.Shopify, WEBHOOK)).rejects.toThrow(NotFoundException);
@@ -110,5 +119,35 @@ describe('ChannelWebhooksService', () => {
       { workspaceId: 'ws-1', connectionId: 'c-1', externalOrderId: 'gid://shopify/Order/1' },
       { workspaceId: 'ws-2', connectionId: 'c-2', externalOrderId: 'gid://shopify/Order/1' },
     ]);
+  });
+
+  it('handles a delivery id once, and acknowledges repeats', async () => {
+    const { deliver, connections } = setup();
+
+    await deliver(ChannelWebhookKind.AccountRedactionRequested, undefined, 'same');
+    await deliver(ChannelWebhookKind.AccountRedactionRequested, undefined, 'same');
+
+    expect(connections.redactAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles a delivery again after it failed, so the channel’s retry works', async () => {
+    const { deliver, connections } = setup();
+    connections.redactAccount.mockRejectedValueOnce(new Error('database down'));
+
+    await expect(
+      deliver(ChannelWebhookKind.AccountRedactionRequested, undefined, 'retried'),
+    ).rejects.toThrow('database down');
+    await deliver(ChannelWebhookKind.AccountRedactionRequested, undefined, 'retried');
+
+    expect(connections.redactAccount).toHaveBeenCalledTimes(2);
+  });
+
+  it('handles every delivery without an id', async () => {
+    const { deliver, connections } = setup();
+
+    await deliver(ChannelWebhookKind.AccountRedactionRequested, undefined, null);
+    await deliver(ChannelWebhookKind.AccountRedactionRequested, undefined, null);
+
+    expect(connections.redactAccount).toHaveBeenCalledTimes(2);
   });
 });

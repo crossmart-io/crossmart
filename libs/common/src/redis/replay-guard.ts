@@ -8,4 +8,7 @@ export abstract class ReplayGuard {
    * was already claimed: the caller then refuses it as a replay.
    */
   abstract claim(key: string, ttlMs: number): Promise<boolean>;
+
+  /** Forgets a claim, so the value is accepted again, such as when handling it failed. */
+  abstract release(key: string): Promise<void>;
 }

@@ -26,4 +26,8 @@ export class RedisReplayGuard extends ReplayGuard {
     );
     return result === SET_SUCCEEDED;
   }
+
+  async release(key: string): Promise<void> {
+    await this.redis.del(`${REPLAY_KEY_PREFIX}${key}`);
+  }
 }

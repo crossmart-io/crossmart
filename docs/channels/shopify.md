@@ -190,6 +190,12 @@ Webhook URLs must be public HTTPS, so receiving webhooks locally needs a tunnel 
   cannot connect your account to their workspace. The user must still manage the workspace, and
   Shopify must answer for the store named in the state. The same rules apply to every channel.
 - The callback HMAC and webhook HMACs are compared in constant time.
+- Shopify signs only the webhook body, not its headers. So `app/uninstalled` and the privacy
+  topics are refused (401) unless the body names the same store as `X-Shopify-Shop-Domain`
+  (`myshopify_domain` or `shop_domain`), deliveries whose `X-Shopify-Triggered-At` is missing or
+  older than 6 hours (Shopify's retries span 4) are refused, and each `X-Shopify-Webhook-Id` is
+  handled once: a repeat within 24 hours is acknowledged without being handled again (kept in
+  Redis; a delivery that fails is released so Shopify's retry is handled).
 - Credentials are sealed with AES-256-GCM using a per-workspace data key, which is wrapped by
   `CREDENTIALS_MASTER_KEY`. The ciphertext is bound to the workspace, channel and store.
   Credentials are never logged and never returned by the API.

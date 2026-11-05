@@ -11,4 +11,13 @@ describe('InMemoryReplayGuard', () => {
     now += 500;
     expect(await guard.claim('nonce', 500)).toBe(true);
   });
+
+  it('accepts a released key again', async () => {
+    const guard = new InMemoryReplayGuard();
+    await guard.claim('delivery', 1000);
+
+    await guard.release('delivery');
+
+    expect(await guard.claim('delivery', 1000)).toBe(true);
+  });
 });

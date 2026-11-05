@@ -18,6 +18,15 @@ describe('RedisReplayGuard', () => {
     expect(await guardAnswering(null).guard.claim('oauth:abc', 1000)).toBe(false);
   });
 
+  it('releases a claim by deleting its key', async () => {
+    const del = vi.fn().mockResolvedValue(1);
+    const guard = new RedisReplayGuard({ del } as unknown as Redis);
+
+    await guard.release('webhook:d-1');
+
+    expect(del).toHaveBeenCalledWith('crossmart:replay:webhook:d-1');
+  });
+
   it('never sends an expiry below one millisecond', async () => {
     const { guard, set } = guardAnswering('OK');
 

@@ -372,25 +372,43 @@ describe('Channels (e2e)', () => {
   });
 
   describe('webhooks', () => {
-    function deliver(
-      topic: string,
-      shop: string,
-      body: object,
-      secret = env.SHOPIFY_CLIENT_SECRET,
-    ) {
+    interface Delivery {
+      secret?: string;
+      webhookId?: string;
+      triggeredAt?: Date;
+    }
+
+    function deliver(topic: string, shop: string, body: object, delivery: Delivery = {}) {
+      const {
+        secret = env.SHOPIFY_CLIENT_SECRET,
+        webhookId = randomUUID(),
+        triggeredAt = new Date(),
+      } = delivery;
       const raw = JSON.stringify(body);
       return request(app.getHttpServer())
         .post('/api/v1/webhooks/shopify')
         .set('Content-Type', 'application/json')
         .set('X-Shopify-Topic', topic)
         .set('X-Shopify-Shop-Domain', shop)
-        .set('X-Shopify-Webhook-Id', randomUUID())
+        .set('X-Shopify-Webhook-Id', webhookId)
+        .set('X-Shopify-Triggered-At', triggeredAt.toISOString())
         .set('X-Shopify-Hmac-Sha256', createHmac('sha256', secret).update(raw).digest('base64'))
         .send(raw);
     }
 
+    async function stored(connectionId: string) {
+      return app
+        .get(PrismaService)
+        .channelConnection.findUniqueOrThrow({ where: { id: connectionId } });
+    }
+
     it('401s a delivery with a bad HMAC', async () => {
-      const response = await deliver('app/uninstalled', newShop(), { id: 1 }, 'wrong-secret');
+      const response = await deliver(
+        'app/uninstalled',
+        newShop(),
+        { id: 1 },
+        { secret: 'wrong-secret' },
+      );
 
       expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
     });
@@ -399,7 +417,10 @@ describe('Channels (e2e)', () => {
       const owner = await signUp(app, 'Uninstaller');
       const connection = await connect(owner);
 
-      const response = await deliver('app/uninstalled', connection.externalAccountId, { id: 1 });
+      const response = await deliver('app/uninstalled', connection.externalAccountId, {
+        id: 1,
+        myshopify_domain: connection.externalAccountId,
+      });
 
       expect(response.status).toBe(HttpStatus.OK);
       const stored = await app
@@ -426,6 +447,57 @@ describe('Channels (e2e)', () => {
         .get(PrismaService)
         .channelConnection.findUniqueOrThrow({ where: { id: connection.id } });
       expect(stored).toMatchObject({ credentials: null, settings: {}, grantedScopes: [] });
+    });
+
+    it('401s a store-wide topic whose signed body names another store', async () => {
+      const owner = await signUp(app, 'Header Spoofed');
+      const victim = await connect(owner);
+      const attackerShop = newShop();
+
+      const uninstall = await deliver('app/uninstalled', victim.externalAccountId, {
+        id: 1,
+        myshopify_domain: attackerShop,
+      });
+      const redact = await deliver('shop/redact', victim.externalAccountId, {
+        shop_domain: attackerShop,
+      });
+
+      expect(uninstall.status).toBe(HttpStatus.UNAUTHORIZED);
+      expect(redact.status).toBe(HttpStatus.UNAUTHORIZED);
+      expect((await stored(victim.id)).status).toBe(ChannelConnectionStatus.CONNECTED);
+    });
+
+    it('401s a delivery triggered more than the replay window ago', async () => {
+      const owner = await signUp(app, 'Stale Delivery');
+      const connection = await connect(owner);
+      const shop = connection.externalAccountId;
+
+      const response = await deliver(
+        'app/uninstalled',
+        shop,
+        { id: 1, myshopify_domain: shop },
+        { triggeredAt: new Date(Date.now() - 7 * 60 * 60 * 1000) },
+      );
+
+      expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
+      expect((await stored(connection.id)).status).toBe(ChannelConnectionStatus.CONNECTED);
+    });
+
+    it('acknowledges a repeated delivery id without handling it again', async () => {
+      const owner = await signUp(app, 'Replayed');
+      const connection = await connect(owner);
+      const shop = connection.externalAccountId;
+      const webhookId = randomUUID();
+      const uninstall = { id: 1, myshopify_domain: shop };
+
+      expect((await deliver('app/uninstalled', shop, uninstall, { webhookId })).status).toBe(
+        HttpStatus.OK,
+      );
+      await connect(owner, shop);
+      const replay = await deliver('app/uninstalled', shop, uninstall, { webhookId });
+
+      expect(replay.status).toBe(HttpStatus.OK);
+      expect((await stored(connection.id)).status).toBe(ChannelConnectionStatus.CONNECTED);
     });
   });
 
