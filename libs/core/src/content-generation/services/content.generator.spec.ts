@@ -4,6 +4,7 @@ import { AiOutputRejectedError } from '../../ai/errors/ai.errors.js';
 import { AiGateway } from '../../ai/services/ai-gateway.service.js';
 import type { AiUsageService } from '../../ai/services/ai-usage.service.js';
 import { FakeAiProvider } from '../../ai/testing/fake-ai.provider.js';
+import { unlimitedEntitlements } from '../../ai/testing/unlimited-entitlements.js';
 import { contentTarget, GENERATED } from '../testing/content-target.fixtures.js';
 import { ContentGenerator } from './content.generator.js';
 
@@ -11,7 +12,7 @@ function setup() {
   const provider = new FakeAiProvider();
   const usage = { record: vi.fn<AiUsageService['record']>().mockResolvedValue() };
   const generator = new ContentGenerator(
-    new AiGateway(provider, usage as unknown as AiUsageService),
+    new AiGateway(provider, usage as unknown as AiUsageService, unlimitedEntitlements()),
   );
   return { generator, provider, usage };
 }

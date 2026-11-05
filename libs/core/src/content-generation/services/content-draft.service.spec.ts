@@ -5,6 +5,7 @@ import { AiNotConfiguredError, AiOutputRejectedError } from '../../ai/errors/ai.
 import { AiGateway } from '../../ai/services/ai-gateway.service.js';
 import type { AiUsageService } from '../../ai/services/ai-usage.service.js';
 import { FakeAiProvider } from '../../ai/testing/fake-ai.provider.js';
+import { unlimitedEntitlements } from '../../ai/testing/unlimited-entitlements.js';
 import type { ProductsService } from '../../catalog/services/products.service.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import type { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
@@ -45,7 +46,7 @@ function setup(channel = ChannelType.Ebay) {
       .mockResolvedValue({ product, content: STORE_CONTENT }),
   };
   const service = new ContentDraftService(
-    new AiGateway(provider, usage as unknown as AiUsageService),
+    new AiGateway(provider, usage as unknown as AiUsageService, unlimitedEntitlements()),
     products as unknown as ProductsService,
     connections as unknown as ChannelConnectionsService,
     listings as unknown as ListingContentReader,

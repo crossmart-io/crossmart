@@ -7,6 +7,9 @@ import { AiNotConfiguredError, AiOutputRejectedError } from '../errors/ai.errors
 import { FAKE_AI_MODEL, FAKE_AI_USAGE, FakeAiProvider } from '../testing/fake-ai.provider.js';
 import { AiGateway } from './ai-gateway.service.js';
 import type { AiUsageService } from './ai-usage.service.js';
+import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 
 const CONTEXT = { workspaceId: 'ws-1', feature: AiFeature.ContentGeneration };
 const REQUEST = {
@@ -24,8 +27,15 @@ function setup(provider = new FakeAiProvider()) {
       return Promise.resolve();
     }),
   };
-  const gateway = new AiGateway(provider, usage as unknown as AiUsageService);
-  return { gateway, provider, recorded };
+  const entitlements = {
+    assertInWorkspace: vi.fn<EntitlementService['assertInWorkspace']>().mockResolvedValue(),
+  };
+  const gateway = new AiGateway(
+    provider,
+    usage as unknown as AiUsageService,
+    entitlements as unknown as EntitlementService,
+  );
+  return { gateway, provider, recorded, entitlements };
 }
 
 describe('AiGateway', () => {
@@ -71,5 +81,32 @@ describe('AiGateway', () => {
       model: FAKE_AI_MODEL,
     });
     expect(setup(new FakeAiProvider(false)).gateway.status().configured).toBe(false);
+  });
+
+  it('checks one AI credit is left before calling the provider', async () => {
+    const { gateway, provider, entitlements } = setup();
+    provider.answerWith({ title: 'Stoneware Mug' });
+
+    await gateway.generate(CONTEXT, REQUEST);
+
+    expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.AiCredits, 1);
+  });
+
+  it('calls no provider and meters nothing once the plan’s AI credits run out', async () => {
+    const { gateway, provider, recorded, entitlements } = setup();
+    entitlements.assertInWorkspace.mockRejectedValueOnce(planLimitReached(Feature.AiCredits));
+
+    await expect(gateway.generate(CONTEXT, REQUEST)).rejects.toMatchObject({ status: 402 });
+
+    expect(provider.requests).toEqual([]);
+    expect(recorded).toEqual([]);
+  });
+
+  it('checks credits for a batch of calls at once', async () => {
+    const { gateway, entitlements } = setup();
+
+    await gateway.assertCredits('ws-1', 5);
+
+    expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.AiCredits, 5);
   });
 });

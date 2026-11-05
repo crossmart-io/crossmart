@@ -42,3 +42,4 @@ export * from './redis/redis-replay.guard.js';
 export * from './redis/in-memory-replay.guard.js';
 export * from './redis/redis.constants.js';
 export * from './redis/redis.module.js';
+export * from './time/utc-month.js';

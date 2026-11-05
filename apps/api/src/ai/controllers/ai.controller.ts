@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiAcceptedResponse,
@@ -16,7 +17,9 @@ import {
   ApiOperation,
   ApiParam,
   ApiTags,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   type Actor,
   AiGateway,
@@ -30,13 +33,19 @@ import {
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { WorkspacePrincipalThrottlerGuard } from '../../common/throttling/workspace-principal-throttler.guard.js';
 import {
+  AI_RATE_LIMITED_MESSAGE,
   AI_ROUTE,
   AI_STATUS_PATH,
   AI_TAG,
+  AI_THROTTLE_WINDOW_MS,
   AI_USAGE_PATH,
   CONTENT_DRAFTS_PATH,
+  CONTENT_DRAFTS_PER_WINDOW,
   CONTENT_GENERATIONS_PATH,
+  CONTENT_GENERATIONS_PER_WINDOW,
 } from '../ai.constants.js';
 import { AiStatusDto } from '../dto/ai-status.dto.js';
 import { AiUsageQueryDto, AiUsageReportDto } from '../dto/ai-usage.dto.js';
@@ -83,19 +92,26 @@ export class AiController {
   @Post(CONTENT_GENERATIONS_PATH)
   @HttpCode(HttpStatus.ACCEPTED)
   @RequirePermission(WorkspacePermission.GenerateContent)
+  @UseGuards(WorkspacePrincipalThrottlerGuard)
+  @Throttle({ default: { limit: CONTENT_GENERATIONS_PER_WINDOW, ttl: AI_THROTTLE_WINDOW_MS } })
   @ApiOperation({
     summary: 'Generate channel content with AI',
     description:
       'Queues the Content Generator for each product: it writes a title and description ' +
       'fitted to the store’s channel. The results arrive as pending suggestions to review; ' +
-      'nothing changes until one is approved. Answers 503 while AI is not configured.',
+      'nothing changes until one is approved. Each product uses one AI credit: answers 402 ' +
+      'when the plan’s credits this month do not cover them (while plans are enforced), 429 ' +
+      'past the rate limit, and 503 while AI is not configured.',
   })
   @ApiAcceptedResponse({ type: ContentGenerationReceiptDto })
+  @ApiPlanLimitResponse()
+  @ApiTooManyRequestsResponse({ description: AI_RATE_LIMITED_MESSAGE })
   async generateContent(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: GenerateContentDto,
     @CurrentActor() actor: Actor,
   ): Promise<ContentGenerationReceiptDto> {
+    await this.ai.assertCredits(workspaceId, body.productIds.length);
     const receipt = await this.contentGeneration.request(
       { workspaceId, connectionId: body.connectionId, productIds: body.productIds },
       actor,
@@ -106,14 +122,20 @@ export class AiController {
   @Post(CONTENT_DRAFTS_PATH)
   @HttpCode(HttpStatus.OK)
   @RequirePermission(WorkspacePermission.GenerateContent)
+  @UseGuards(WorkspacePrincipalThrottlerGuard)
+  @Throttle({ default: { limit: CONTENT_DRAFTS_PER_WINDOW, ttl: AI_THROTTLE_WINDOW_MS } })
   @ApiOperation({
     summary: 'Rewrite a product’s title or description with AI, right away',
     description:
       'Rewrites the fields asked for, for the catalog or for one store, optionally following ' +
       'an instruction. The answer is a draft for the editor: nothing is stored until the ' +
-      'merchant saves it. Answers 503 while AI is not configured.',
+      'merchant saves it. Uses one AI credit: answers 402 when the plan has none left this ' +
+      'month (while plans are enforced), 429 past the rate limit, and 503 while AI is not ' +
+      'configured.',
   })
   @ApiOkResponse({ type: ContentDraftDto })
+  @ApiPlanLimitResponse()
+  @ApiTooManyRequestsResponse({ description: AI_RATE_LIMITED_MESSAGE })
   async draftContent(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: CreateContentDraftDto,
