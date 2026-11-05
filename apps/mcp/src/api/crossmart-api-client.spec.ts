@@ -1,4 +1,6 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { HttpMethod } from './api-call.js';
+import { accessTokenCredential, type ApiCredential, apiKeyCredential } from './api-credential.js';
 import { CrossmartApiClient } from './crossmart-api-client.js';
 import { CrossmartApiError } from './crossmart-api.error.js';
 
@@ -12,11 +14,15 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function setup(...responses: Response[]) {
+function setupWith(credential: ApiCredential, ...responses: Response[]) {
   const fetchMock = vi.fn<typeof fetch>();
   for (const response of responses) fetchMock.mockResolvedValueOnce(response);
   vi.stubGlobal('fetch', fetchMock);
-  return { fetchMock, client: new CrossmartApiClient(API_URL, 'cm_key') };
+  return { fetchMock, client: new CrossmartApiClient(API_URL, credential) };
+}
+
+function setup(...responses: Response[]) {
+  return setupWith(apiKeyCredential('cm_key'), ...responses);
 }
 
 afterEach(() => {
@@ -45,6 +51,21 @@ describe('CrossmartApiClient', () => {
       `${API_URL}/api/v1/workspaces/${WORKSPACE_ID}/products?search=mug&page=2`,
     ]);
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ 'x-api-key': 'cm_key' });
+  });
+
+  it('uses the workspace an agent token names, and sends the token as a bearer', async () => {
+    const credential = accessTokenCredential('a.b.c', WORKSPACE_ID, [AgentScope.CatalogRead]);
+    const { fetchMock, client } = setupWith(credential, jsonResponse({ items: [] }));
+
+    await client.call({
+      method: HttpMethod.Get,
+      path: '/api/v1/workspaces/{workspaceId}/products',
+    });
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      `${API_URL}/api/v1/workspaces/${WORKSPACE_ID}/products`,
+    );
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ authorization: 'Bearer a.b.c' });
   });
 
   it('sends bodies as JSON and reads an empty answer as done', async () => {

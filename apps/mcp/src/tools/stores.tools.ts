@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { WORKSPACE_PATH } from '../mcp.constants.js';
 import { defineTool } from './api-tool.js';
@@ -16,6 +17,7 @@ export const STORE_TOOLS = [
       'store needs the merchant’s own approval in the Crossmart app.',
     input: {},
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: () => ({ method: HttpMethod.Get, path: `${WORKSPACE_PATH}/channel-connections` }),
   }),
   defineTool({
@@ -25,6 +27,7 @@ export const STORE_TOOLS = [
       'List a product on a connected store. Crossmart publishes it and keeps it in sync.',
     input: { productId: ID_INPUT, connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Post,
       path: productStorePath(productId, connectionId),
@@ -36,6 +39,7 @@ export const STORE_TOOLS = [
     description: 'Take a product off a store. It is archived there and keeps its order history.',
     input: { productId: ID_INPUT, connectionId: ID_INPUT },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     destructive: true,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Delete,

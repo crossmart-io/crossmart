@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import type { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import type { ApiCall } from '../api/api-call.js';
 import type { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { CrossmartApiError } from '../api/crossmart-api.error.js';
@@ -19,6 +20,8 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   readOnly: boolean;
   /** True for tools that delete or take things off sale. */
   destructive?: boolean;
+  /** The scope an agent needs to see the tool; absent for tools every connection may use. */
+  scope?: AgentScope;
   toCall: (input: z.infer<z.ZodObject<Shape>>) => ApiCall;
 }
 

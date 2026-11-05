@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { SalesRange } from '@crossmart/core/analytics/enums/sales-range.enum.js';
 import { HttpMethod } from '../api/api-call.js';
@@ -16,6 +17,7 @@ export const REPORT_TOOLS = [
       timeZone: z.string().optional().describe('IANA zone the days follow, such as Europe/Paris'),
     },
     readOnly: true,
+    scope: AgentScope.ReportsRead,
     toCall: (input) => ({
       method: HttpMethod.Get,
       path: `${WORKSPACE_PATH}/analytics/sales`,
@@ -30,6 +32,7 @@ export const REPORT_TOOLS = [
       'listings by status, as of now.',
     input: {},
     readOnly: true,
+    scope: AgentScope.ReportsRead,
     toCall: () => ({ method: HttpMethod.Get, path: `${WORKSPACE_PATH}/analytics/inventory` }),
   }),
   defineTool({

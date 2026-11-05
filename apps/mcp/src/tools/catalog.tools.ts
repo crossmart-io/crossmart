@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { OutOfStockPolicy, ProductStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
@@ -47,6 +48,7 @@ export const CATALOG_TOOLS = [
     description: 'Products in the catalog, by title, with their price range, stock and status.',
     input: { search: SEARCH_INPUT, status: z.enum(ProductStatus).optional(), ...PAGE_INPUT },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: (input) => ({ method: HttpMethod.Get, path: PRODUCTS_PATH, query: input }),
   }),
   defineTool({
@@ -55,6 +57,7 @@ export const CATALOG_TOOLS = [
     description: 'One product with every variant, its stock, prices, options and images.',
     input: { productId: ID_INPUT },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: ({ productId }) => ({ method: HttpMethod.Get, path: `${PRODUCTS_PATH}/${productId}` }),
   }),
   defineTool({
@@ -65,6 +68,7 @@ export const CATALOG_TOOLS = [
       'are several variants. New products are drafts unless status is ACTIVE.',
     input: { ...PRODUCT_INPUT, handle: z.string().optional() },
     readOnly: false,
+    scope: AgentScope.CatalogWrite,
     toCall: (input) => ({ method: HttpMethod.Post, path: PRODUCTS_PATH, body: input }),
   }),
   defineTool({
@@ -77,6 +81,7 @@ export const CATALOG_TOOLS = [
       'such as a delivery, use adjust_stock instead.',
     input: { productId: ID_INPUT, ...PRODUCT_INPUT, variants: z.array(SAVED_VARIANT_INPUT).min(1) },
     readOnly: false,
+    scope: AgentScope.CatalogWrite,
     destructive: true,
     toCall: ({ productId, ...product }) => ({
       method: HttpMethod.Put,
