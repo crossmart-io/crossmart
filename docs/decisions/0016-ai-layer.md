@@ -1,4 +1,4 @@
-# ADR 0015: AI provider abstraction, metering and the suggestions engine
+# ADR 0016: AI provider abstraction, metering and the suggestions engine
 
 - Status: Accepted
 - Date: 2026-11-05

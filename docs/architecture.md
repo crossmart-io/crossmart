@@ -263,7 +263,7 @@ Triggers:
 
 ## 6. AI layer
 
-See [ADR 0015](decisions/0015-ai-layer.md).
+See [ADR 0016](decisions/0016-ai-layer.md).
 
 - **Provider.** `AiProvider` (`libs/core/src/ai/providers`) is the one seam to a model. The Anthropic implementation
   uses `@anthropic-ai/sdk` with `AI_MODEL` (default `claude-sonnet-5-5`) and `ANTHROPIC_API_KEY`. Without the key
