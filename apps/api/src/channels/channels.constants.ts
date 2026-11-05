@@ -8,6 +8,13 @@ export const DISCONNECT_PATH = `:${CONNECTION_ID_PARAM}/disconnect`;
 export const CHANNEL_PARAM = 'channel';
 export const OAUTH_CALLBACK_ROUTE = `channels/:${CHANNEL_PARAM}/oauth/callback`;
 export const WEBHOOKS_ROUTE = `webhooks/:${CHANNEL_PARAM}`;
+/**
+ * eBay's marketplace account deletion endpoint. It must stay in step with core's
+ * `EBAY_ACCOUNT_DELETION_PATH`, the URL eBay hashes into its challenge.
+ */
+export const EBAY_ACCOUNT_DELETION_ROUTE = 'webhooks/ebay/account-deletion';
+/** Longer challenge codes than this are refused; eBay's are short random strings. */
+export const EBAY_CHALLENGE_CODE_MAX_LENGTH = 512;
 
 /** Where the OAuth callback sends the merchant: the web app's Channels page. */
 export const WEB_CHANNELS_PATH = '/channels';

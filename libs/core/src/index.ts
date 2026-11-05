@@ -75,6 +75,8 @@ export * from './channels/services/channel-authorization.service.js';
 export * from './channels/services/channel-connections.service.js';
 export * from './channels/ebay/entities/ebay-listing-defaults-input.js';
 export * from './channels/ebay/services/ebay-account-setup.service.js';
+export * from './channels/ebay/services/ebay-account-deletion.service.js';
+export * from './channels/ebay/services/ebay-deletion-challenge.service.js';
 export * from './channels/google-merchant/entities/google-listing-setup-input.js';
 export * from './channels/google-merchant/services/google-merchant-setup.service.js';
 export * from './channels/services/channel-session.factory.js';

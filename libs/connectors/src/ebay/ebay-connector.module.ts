@@ -10,6 +10,9 @@ import { EbayApiClient } from './api/ebay-api.client.js';
 import { EbayConnector } from './ebay.connector.js';
 import { EbayApp } from './ebay-app.js';
 import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
+import { EbayNotificationVerifier } from './notifications/ebay-notification.verifier.js';
+import { EbayPublicKeyClient } from './notifications/ebay-public-key.client.js';
+import { EbayApplicationTokens } from './oauth/ebay-application-tokens.js';
 import { EbayOAuthClient } from './oauth/ebay-oauth.client.js';
 import { EbayInventoryClient } from './publish/ebay-inventory.client.js';
 import { EbayListingPublisher } from './publish/ebay-listing-publisher.js';
@@ -19,7 +22,10 @@ import { EbayListingCategory } from './publish/ebay-listing-category.js';
 import { EbayCategoryAspectsReader } from './taxonomy/ebay-category-aspects.reader.js';
 import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
 
-/** The eBay connector and its clients: account, listings and taxonomy. */
+/**
+ * The eBay connector and its clients (account, listings and taxonomy), and the verifier of the
+ * notifications eBay pushes.
+ */
 @Module({
   imports: [ConnectorRuntimeModule],
   providers: [
@@ -45,7 +51,10 @@ import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
     EbayListingPublisher,
     EbaySellingServices,
     EbayConnector,
+    EbayApplicationTokens,
+    EbayPublicKeyClient,
+    EbayNotificationVerifier,
   ],
-  exports: [EbayConnector],
+  exports: [EbayConnector, EbayNotificationVerifier],
 })
 export class EbayConnectorModule {}

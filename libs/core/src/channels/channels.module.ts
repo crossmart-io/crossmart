@@ -18,7 +18,10 @@ import { OAuthStateService } from './services/oauth-state.service.js';
 import { ConnectionCredentialsVault } from './services/connection-credentials.vault.js';
 import { OAuthStateSigner } from './services/oauth-state.signer.js';
 import { ConnectionAccountStore } from './services/connection-account.store.js';
+import { EbayAccountPurger } from './ebay/services/ebay-account.purger.js';
+import { EbayAccountDeletionService } from './ebay/services/ebay-account-deletion.service.js';
 import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.service.js';
+import { EbayDeletionChallengeService } from './ebay/services/ebay-deletion-challenge.service.js';
 import { GoogleMerchantSetupService } from './google-merchant/services/google-merchant-setup.service.js';
 
 /**
@@ -49,6 +52,9 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     ChannelWebhooksService,
     ConnectionAccountStore,
     EbayAccountSetupService,
+    EbayAccountPurger,
+    EbayAccountDeletionService,
+    EbayDeletionChallengeService,
     GoogleMerchantSetupService,
   ],
   exports: [
@@ -56,6 +62,8 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     ChannelConnectionsService,
     ChannelWebhooksService,
     EbayAccountSetupService,
+    EbayAccountDeletionService,
+    EbayDeletionChallengeService,
     GoogleMerchantSetupService,
     ChannelSessionFactory,
     ChannelConnectionRepository,
