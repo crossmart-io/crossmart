@@ -1,7 +1,7 @@
-# ADR 0014: Agents sign in with OAuth, and may open sandbox accounts
+# ADR 0019: Agents sign in with OAuth, and may open sandbox accounts
 
-- Status: Proposed
-- Date: 2026-11-04
+- Status: Accepted
+- Date: 2026-11-05
 
 ## Context
 
@@ -13,6 +13,11 @@ authorization server, and the person signs in and approves in the browser. The M
 profile identifies clients by Client ID Metadata Documents (CIMD) and keeps Dynamic Client
 Registration only as a deprecated fallback.
 
+Client support is uneven (late 2026). Claude, ChatGPT, Codex and VS Code prefer CIMD. ChatGPT's
+document declares `private_key_jwt`, and the others declare `none`. Gemini CLI, Copilot Studio,
+Mistral Le Chat and Cursor register only through DCR. No published source covers Grok or
+OpenClaw.
+
 Agents also start work before their user has an account. An agent asked to "put my products on
 Shopify" should be able to open a Crossmart account for the user, build the catalog, and hand it
 over, without the user filling in a form first.
@@ -22,20 +27,37 @@ over, without the user filling in a form first.
 **1. OAuth 2.1 for the MCP server, from Better Auth.**
 
 - The API is the authorization server: Better Auth with `jwt()`, `@better-auth/mcp` (`mcp()`,
-  which is the OAuth provider) and `@better-auth/cimd` (`cimd()`, profile `mcp-2026-07-28`).
-  Dynamic Client Registration stays off.
+  which is built on `@better-auth/oauth-provider`) and `@better-auth/cimd` (`cimd()`, profile
+  `mcp-2026-07-28`). Authorization server metadata advertises
+  `client_id_metadata_document_supported` and the token endpoint auth methods `none` and
+  `private_key_jwt`, so both Claude and ChatGPT use CIMD.
+- **Dynamic Client Registration stays on as a fallback**, because several clients have no CIMD
+  yet (see Context). It is open (no session) and restricted. It registers public clients only
+  (`none`) with the authorization code grant, PKCE and the scopes below. It is rate-limited per
+  IP, and the cleanup job deletes registrations that never complete a grant within 24 hours.
+  Remove it once those clients adopt CIMD.
 - The MCP server (`https://mcp.crossmart.io/mcp`) is the protected resource. Without a token it
   answers 401 with a `WWW-Authenticate` header that points to its Protected Resource Metadata.
   It verifies access tokens against the API's JWKS: signature, issuer, audience (the MCP URL) and
   expiry. Nothing goes to the database for that.
 - **Workspace at consent.** A token acts for one user in one workspace. The consent page, in the web
   app, lists the user's workspaces and the agent picks up the chosen one. The token can never
-  act outside it, and the user's role there caps what it can do.
-- **Scopes:** `catalog:read`, `catalog:write`, `orders:read`, `stores:write`, `reports:read`.
-  Read-only consent is a choice on the consent page. Tools check their scope.
+  act outside it, and the user's role there caps what it can do. This uses the provider's
+  post-login step: the web app's workspace page runs before consent, and `consentReferenceId`
+  returns the chosen workspace. Consent is stored per workspace, and the workspace id goes into
+  the access token as a namespaced claim.
+- **Scopes:** `catalog:read`, `catalog:write`, `orders:read`, `stores:write`, `reports:read`,
+  `suggestions:write` (ask for AI content, approve or reject), plus `offline_access` for refresh
+  tokens. Read-only consent is a choice on the consent page. A call is allowed only when both the
+  scope and the user's role permit it, and tools check their scope.
+- Access tokens last 1 hour and refresh tokens 30 days (rotated), the provider's defaults.
+  Revoking a connection under Settings revokes its tokens and consent, and the API refuses the
+  connection's still-valid access tokens at once.
 - The MCP server calls the API with the access token. The API accepts it as a new principal kind,
   `OAuthClient`, which is attributed to the user and labelled with the client's name in the
-  activity log (actor type `agent`).
+  activity log (actor type `agent`). The API checks the audience itself and accepts only tokens
+  issued for the MCP server. Both run in the same trust boundary, so this is not the token
+  pass-through to a third-party API that the MCP spec forbids.
 - API keys stay, for scripts and self-hosters.
 
 **2. Agent-created sandbox accounts (after part 1).**
@@ -62,6 +84,8 @@ over, without the user filling in a form first.
 - The web app needs a consent page (choose the workspace and read-only or full access) and a
   claim page. Connected agents need a revoke button under Settings.
 - Better Auth's OAuth tables join the schema through an additive migration.
+- Open DCR lets anyone register a client. Registrations are limited to public clients and
+  rate-limited, and unused ones are deleted. Every grant still needs a signed-in user's consent.
 - Activity, audit and rate limits need an `agent` actor alongside users and API keys.
 - Sandbox accounts are a new abuse surface: account creation that sends email. The limits above,
   the 14-day expiry, sending no email for existing addresses, and the no-publish rule are the
