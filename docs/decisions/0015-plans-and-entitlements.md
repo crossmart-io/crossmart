@@ -1,4 +1,4 @@
-# ADR 0014: Plans as data, enforced by one entitlement service
+# ADR 0015: Plans as data, enforced by one entitlement service
 
 - Status: Accepted
 - Date: 2026-11-05

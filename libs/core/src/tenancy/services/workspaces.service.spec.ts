@@ -1,4 +1,4 @@
-import { ForbiddenException, HttpStatus } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpStatus } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -8,6 +8,7 @@ import type { EntitlementService } from '../../entitlements/services/entitlement
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import { resolveRole } from '../permissions/role-permissions.js';
 import type { NewWorkspace, WorkspaceRepository } from '../repositories/workspace.repository.js';
+import { MAX_WORKSPACES_PER_ORGANIZATION } from '../tenancy.constants.js';
 import { WorkspacesService } from './workspaces.service.js';
 
 function stored(fields: Partial<NewWorkspace> & { id?: string } = {}) {
@@ -27,6 +28,7 @@ function stored(fields: Partial<NewWorkspace> & { id?: string } = {}) {
 function createService() {
   const workspaces = {
     isOrganizationOwner: vi.fn().mockResolvedValue(true),
+    countInOrganization: vi.fn().mockResolvedValue(1),
     slugsLike: vi.fn().mockResolvedValue(['eu-store']),
     create: vi.fn((record: NewWorkspace) => Promise.resolve(stored(record))),
     findById: vi.fn().mockResolvedValue(stored({ name: 'Default' })),
@@ -69,6 +71,15 @@ describe('WorkspacesService.create', () => {
     await expect(service.create('org-1', 'user-9', { name: 'X' })).rejects.toBeInstanceOf(
       ForbiddenException,
     );
+  });
+
+  it('never goes past the hard ceiling, whatever the plan allows', async () => {
+    const { service, workspaces } = createService();
+    workspaces.countInOrganization.mockResolvedValueOnce(MAX_WORKSPACES_PER_ORGANIZATION);
+    await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(workspaces.create).not.toHaveBeenCalled();
   });
 
   it('asks the plan for room, and creates nothing when it has none', async () => {

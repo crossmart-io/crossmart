@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { WorkspaceRole } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -17,7 +17,10 @@ import {
 } from '../repositories/workspace.repository.js';
 import { uniqueSlug } from '../rules/unique-slug.js';
 import { workspaceDisplayName } from '../rules/workspace-display-name.js';
-import { DEFAULT_WORKSPACE_CURRENCY } from '../tenancy.constants.js';
+import {
+  DEFAULT_WORKSPACE_CURRENCY,
+  MAX_WORKSPACES_PER_ORGANIZATION,
+} from '../tenancy.constants.js';
 
 /**
  * More workspaces for one organization, such as one per client or per brand. Owners of a
@@ -82,6 +85,12 @@ export class WorkspacesService {
   private async assertCanCreate(organizationId: string, userId: string): Promise<void> {
     if (!(await this.workspaces.isOrganizationOwner(organizationId, userId))) {
       throw new ForbiddenException('Only owners of a workspace here can create workspaces');
+    }
+    const count = await this.workspaces.countInOrganization(organizationId);
+    if (count >= MAX_WORKSPACES_PER_ORGANIZATION) {
+      throw new ConflictException(
+        `An organization can have ${MAX_WORKSPACES_PER_ORGANIZATION} workspaces`,
+      );
     }
     await this.entitlements.assert(organizationId, Feature.Workspaces);
   }

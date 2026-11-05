@@ -52,3 +52,6 @@ export const CUSTOM_ROLE_NAME_MAX_LENGTH = 60;
 export const CUSTOM_ROLE_DESCRIPTION_MAX_LENGTH = 200;
 /** Enough for real teams, and a bound on what one workspace stores. */
 export const MAX_CUSTOM_ROLES = 30;
+
+/** A hard ceiling against abuse, whatever the plan allows. Plan limits sit below it. */
+export const MAX_WORKSPACES_PER_ORGANIZATION = 25;

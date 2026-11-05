@@ -77,7 +77,7 @@ wording in `activity-summary.ts`; actions are stored as text, so this needs no m
 
 ## Plans and entitlements
 
-Plans are data (ADR [0014](decisions/0014-plans-and-entitlements.md)), in `libs/core/src/entitlements`:
+Plans are data (ADR [0015](decisions/0015-plans-and-entitlements.md)), in `libs/core/src/entitlements`:
 
 ```
 Plan (code, name, active, isDefault, sortOrder)
