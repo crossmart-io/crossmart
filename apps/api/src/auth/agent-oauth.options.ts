@@ -25,6 +25,9 @@ export type WorkspaceMembershipCheck = (workspaceId: string, userId: string) => 
 /** The session field holding the workspace picked for an agent during authorization. */
 export const OAUTH_WORKSPACE_SESSION_FIELD = 'oauthWorkspaceId';
 
+/** The only client action a signed-in user may take: reading a client's public details. */
+const OAUTH_CLIENT_READ_ACTION = 'read';
+
 /** How the MCP server appears as a protected resource. */
 const MCP_RESOURCE_NAME = 'Crossmart MCP server';
 
@@ -97,6 +100,8 @@ export function agentOAuthPlugins(
       allowUnauthenticatedClientRegistration: true,
       // Desktop agents (Claude Code, Cursor) register loopback redirects: those are native clients.
       clientRegistrationDefaultApplicationType: 'infer',
+      // Clients register themselves or come from metadata documents; nobody manages them by hand.
+      clientPrivileges: ({ action }) => action === OAUTH_CLIENT_READ_ACTION,
       clientRegistrationAllowedScopes: AGENT_TOKEN_SCOPES,
       clientRegistrationDefaultScopes: AGENT_TOKEN_SCOPES,
       postLogin: workspacePickStep(page(OAUTH_WEB_PAGES.workspace), isWorkspaceMember),

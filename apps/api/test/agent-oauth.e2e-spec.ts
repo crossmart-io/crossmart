@@ -59,6 +59,23 @@ describe('Agents connected with OAuth (ADR 0019)', () => {
       );
     });
 
+    it('lets signed-in users read a client’s public details, never create or change clients', async () => {
+      const user = await signUp(app, 'Ari');
+      const clientId = await registerAgent(app, 'Shown Agent');
+
+      const details = await server()
+        .get('/api/auth/oauth2/public-client')
+        .query({ client_id: clientId })
+        .set('Cookie', user.cookie);
+      const created = await server()
+        .post('/api/auth/oauth2/create-client')
+        .set('Cookie', user.cookie)
+        .send({ client_name: 'Mine', redirect_uris: ['https://agent.example/cb'] });
+
+      expect(details.body.client_name).toBe('Shown Agent');
+      expect(created.status).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
     it('registers public clients only', async () => {
       const response = await server()
         .post('/api/auth/oauth2/register')
