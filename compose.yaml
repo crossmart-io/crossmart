@@ -1,13 +1,19 @@
 # Crossmart self-hosted stack.
 #   Local development (infrastructure only):  docker compose up -d postgres redis
 #   Full stack:                               docker compose --profile app up -d --build
+#
+# POSTGRES_PASSWORD and REDIS_PASSWORD are required (compose reads them from the shell or .env).
+# Generate URL-safe values, as they also go into DATABASE_URL and REDIS_URL:
+#   openssl rand -hex 24
+# PostgreSQL and Redis publish their ports on 127.0.0.1 only, for the API and worker running on
+# this machine during development; they are never reachable from other hosts.
 
 name: crossmart
 
 x-app-environment: &app-environment
   NODE_ENV: production
-  DATABASE_URL: postgresql://crossmart:crossmart@postgres:5432/crossmart
-  REDIS_URL: redis://redis:6379
+  DATABASE_URL: postgresql://crossmart:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD (openssl rand -hex 24)}@postgres:5432/crossmart
+  REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD (openssl rand -hex 24)}@redis:6379
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET (openssl rand -base64 32)}
   BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
 
@@ -16,10 +22,10 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: crossmart
-      POSTGRES_PASSWORD: crossmart
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD (openssl rand -hex 24)}
       POSTGRES_DB: crossmart
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -30,12 +36,15 @@ services:
 
   redis:
     image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD (openssl rand -hex 24)}
+    command: ['sh', '-c', 'exec redis-server --requirepass "$$REDIS_PASSWORD"']
     ports:
-      - '${REDIS_PORT:-6379}:6379'
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ['CMD-SHELL', 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep PONG']
       interval: 5s
       timeout: 5s
       retries: 10

@@ -43,6 +43,8 @@ Requirements: Node.js 22+ (see `.nvmrc`), pnpm 10, Docker.
 ```bash
 pnpm install
 cp .env.example .env                  # then set BETTER_AUTH_SECRET: openssl rand -base64 32
+                                      # and POSTGRES_PASSWORD / REDIS_PASSWORD: openssl rand -hex 24,
+                                      # also in DATABASE_URL and REDIS_URL
 docker compose up -d postgres redis   # set POSTGRES_PORT / REDIS_PORT if 5432 / 6379 are taken
 pnpm db:migrate
 pnpm start:api                        # http://localhost:3000/api/docs
@@ -62,10 +64,21 @@ workspace already has products. Never run it against a server other people can r
 
 ```bash
 export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+export REDIS_PASSWORD="$(openssl rand -hex 24)"
 docker compose --profile app up -d --build
 ```
 
-This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
+This starts PostgreSQL, Redis, applies migrations, and runs the API and worker. Keep the three
+secrets (for example in `.env` next to `compose.yaml`): compose refuses to start without them.
+PostgreSQL and Redis require their passwords and publish their ports on `127.0.0.1` only, so
+they are not reachable from other machines.
+
+**Upgrading an existing stack:** PostgreSQL sets its password only when the data volume is first
+created. Keep the old one (`crossmart`) as `POSTGRES_PASSWORD`, or change it first with
+`ALTER USER crossmart PASSWORD '…'` and then set the new value. Redis picks up `REDIS_PASSWORD`
+when its container is recreated; add it to `REDIS_URL` (`redis://:<password>@host:6379`) for the
+API and worker you run outside compose.
 
 ## Authentication
 

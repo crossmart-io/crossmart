@@ -12,7 +12,8 @@ Thanks for helping build Crossmart. This guide explains how to set up the projec
 
 ```bash
 pnpm install
-cp .env.example .env    # then set BETTER_AUTH_SECRET: openssl rand -base64 32
+cp .env.example .env    # then set BETTER_AUTH_SECRET (openssl rand -base64 32), and
+                        # POSTGRES_PASSWORD / REDIS_PASSWORD (openssl rand -hex 24) in the URLs too
 docker compose up -d postgres redis
 pnpm db:migrate
 pnpm start:api

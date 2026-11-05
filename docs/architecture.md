@@ -322,7 +322,7 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 
 ## 9. Deployment
 
-- **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out.
+- **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out. PostgreSQL and Redis require `POSTGRES_PASSWORD` and `REDIS_PASSWORD` (Redis runs with `--requirepass`) and publish their ports on 127.0.0.1 only.
 - **Cloud:** Railway (US East), using the same Docker images, with `staging` and `production` environments, a static egress IP, managed Postgres with PITR plus a daily off-site dump to S3/R2.
 - **CI (GitHub Actions):** lint, typecheck, unit + contract tests, build and push images to GHCR, publish `openapi.json` on release.
 
