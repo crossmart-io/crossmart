@@ -4,7 +4,12 @@
   "env": {
     "node": true
   },
-  "ignorePatterns": ["dist", "coverage", "libs/database/src/generated"],
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "libs/database/src/generated",
+    "sdks/typescript/src/generated"
+  ],
   "rules": {
     "typescript/no-explicit-any": "error",
     "typescript/no-floating-promises": "error",

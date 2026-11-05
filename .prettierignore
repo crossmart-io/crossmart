@@ -3,4 +3,5 @@ coverage
 node_modules
 pnpm-lock.yaml
 libs/database/src/generated
+sdks/typescript/src/generated
 libs/database/prisma/migrations
