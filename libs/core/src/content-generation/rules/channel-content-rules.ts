@@ -42,6 +42,22 @@ const EBAY_RULES: ChannelContentRules = {
 };
 
 /**
+ * The catalog: the merchant's own product content, which every store starts from. It is
+ * written channel-neutral, for the merchant's site and as the base the stores adapt.
+ */
+export const CATALOG_CONTENT_RULES: ChannelContentRules = {
+  channelName: 'the merchant’s product catalog (the master copy every sales channel starts from)',
+  titleMaxLength: 255,
+  descriptionMaxLength: 5_000,
+  descriptionFormat: DescriptionFormat.RichHtml,
+  allowsLinks: false,
+  guidance: [
+    'Write a clear, descriptive title: product name first, then the attributes that tell variants and similar products apart. No promotional words.',
+    'The description is HTML for any sales channel: a short intro paragraph, then a <ul> of features and specifications. No links, prices, shipping or store-specific details.',
+  ],
+};
+
+/**
  * Content rules per channel. A channel without rules here cannot have content generated yet;
  * adding its entry is all it takes.
  */

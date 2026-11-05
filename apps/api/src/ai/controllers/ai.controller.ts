@@ -22,6 +22,8 @@ import {
   AiGateway,
   type AiUsagePeriod,
   AiUsageService,
+  ContentDraftService,
+  type ContentDraftRequest,
   ContentGenerationService,
   WorkspacePermission,
 } from '@crossmart/core';
@@ -33,10 +35,12 @@ import {
   AI_STATUS_PATH,
   AI_TAG,
   AI_USAGE_PATH,
+  CONTENT_DRAFTS_PATH,
   CONTENT_GENERATIONS_PATH,
 } from '../ai.constants.js';
 import { AiStatusDto } from '../dto/ai-status.dto.js';
 import { AiUsageQueryDto, AiUsageReportDto } from '../dto/ai-usage.dto.js';
+import { ContentDraftDto, CreateContentDraftDto } from '../dto/content-draft.dto.js';
 import { ContentGenerationReceiptDto, GenerateContentDto } from '../dto/content-generation.dto.js';
 
 const PERIOD_INCOMPLETE = 'Give both from and to, or neither';
@@ -50,6 +54,7 @@ export class AiController {
     private readonly ai: AiGateway,
     private readonly usage: AiUsageService,
     private readonly contentGeneration: ContentGenerationService,
+    private readonly contentDrafts: ContentDraftService,
   ) {}
 
   @Get(AI_STATUS_PATH)
@@ -96,6 +101,40 @@ export class AiController {
       actor,
     );
     return ContentGenerationReceiptDto.from(receipt);
+  }
+
+  @Post(CONTENT_DRAFTS_PATH)
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(WorkspacePermission.GenerateContent)
+  @ApiOperation({
+    summary: 'Rewrite a product’s title or description with AI, right away',
+    description:
+      'Rewrites the fields asked for, for the catalog or for one store, optionally following ' +
+      'an instruction. The answer is a draft for the editor: nothing is stored until the ' +
+      'merchant saves it. Answers 503 while AI is not configured.',
+  })
+  @ApiOkResponse({ type: ContentDraftDto })
+  async draftContent(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Body() body: CreateContentDraftDto,
+  ): Promise<ContentDraftDto> {
+    return ContentDraftDto.from(
+      await this.contentDrafts.draft(this.draftRequest(workspaceId, body)),
+    );
+  }
+
+  private draftRequest(workspaceId: string, body: CreateContentDraftDto): ContentDraftRequest {
+    return {
+      workspaceId,
+      productId: body.productId,
+      connectionId: body.connectionId ?? null,
+      fields: body.fields,
+      instruction: body.instruction?.trim() || null,
+      current: {
+        ...(body.title === undefined ? {} : { title: body.title }),
+        ...(body.descriptionHtml === undefined ? {} : { descriptionHtml: body.descriptionHtml }),
+      },
+    };
   }
 
   private periodOf({ from, to }: AiUsageQueryDto): AiUsagePeriod | undefined {

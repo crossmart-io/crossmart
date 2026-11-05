@@ -36,6 +36,12 @@ that cannot be bypassed and never applies a change over a newer edit.
   product and store, queued in one `addBulk`, deduplicated while waiting. Channel rules (title
   length, HTML allowed, links, guidance) are constants per channel; channels without rules cannot
   be generated for yet. Prompts are versioned files in `libs/core/src/ai/prompts`.
+- **Content drafts** (`POST /ai/content-drafts`) are the interactive path: a merchant editing a
+  title or description asks for a rewrite (optionally with an instruction such as "shorter"), for
+  the catalog or for one store, and gets the text back right away to keep, edit or discard. It is
+  a synchronous call on the API, metered as `content_draft`, with nothing queued or stored; the
+  merchant's save is the review. The catalog has its own channel-neutral content rules. Background
+  agents keep using suggestions.
 - **Permissions:** `suggestions:view` (every role), `ai:generate` (Owner, Admin, Editor) and the
   existing `suggestions:approve` (Owner, Admin, Approver) for approving and rejecting.
 

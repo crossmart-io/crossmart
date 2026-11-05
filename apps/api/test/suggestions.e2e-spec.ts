@@ -8,6 +8,7 @@ import {
   AI_NOT_CONFIGURED_MESSAGE,
   AiFeature,
   AiProvider,
+  ContentField,
   ContentGenerationQueue,
   ContentGenerationRunner,
   SuggestionKind,
@@ -323,5 +324,77 @@ describe('Suggestions and the Content Generator (e2e)', () => {
       .query({ from: '2026-11-02T00:00:00Z' })
       .set('Cookie', owner.cookie);
     expect(period.status).toBe(HttpStatus.BAD_REQUEST);
+  });
+  describe('content drafts', () => {
+    function draft(user: SignedUpUser, body: object, apiKey?: string) {
+      const call = request(server()).post(`${base(user)}/ai/content-drafts`);
+      return (apiKey ? call.set(API_KEY_HEADER, apiKey) : call.set('Cookie', user.cookie)).send(
+        body,
+      );
+    }
+
+    it('rewrites catalog and store fields right away, and stores nothing', async () => {
+      const { owner, connectionId, productId } = await workspaceWithProduct('Draft Owner');
+
+      const catalog = await draft(owner, {
+        productId,
+        fields: [ContentField.Title, ContentField.Description],
+        instruction: 'Mention the size',
+        title: 'Unsaved mug title',
+      });
+      const store = await draft(owner, { productId, connectionId, fields: [ContentField.Title] });
+
+      expect(catalog.status).toBe(HttpStatus.OK);
+      expect(catalog.body).toEqual({
+        title: GENERATED.title,
+        descriptionHtml: GENERATED.descriptionHtml,
+      });
+      expect(store.status).toBe(HttpStatus.OK);
+      expect(store.body).toEqual({ title: GENERATED.title, descriptionHtml: null });
+      const product = await request(server())
+        .get(`${base(owner)}/products/${productId}`)
+        .set('Cookie', owner.cookie);
+      expect(product.body.title).toBe('Mug');
+      expect(await pending(owner)).toEqual([]);
+      const usage = await request(server())
+        .get(`${base(owner)}/ai/usage`)
+        .set('Cookie', owner.cookie);
+      expect(JSON.stringify(usage.body)).toContain(AiFeature.ContentDraft);
+    });
+
+    it('checks permissions, the workspace and the request', async () => {
+      const { owner, productId } = await workspaceWithProduct('Draft Perms');
+      const viewerKey = await keyWithRole(owner, WorkspaceRole.VIEWER);
+      const stranger = await signUp(app, 'Draft Stranger');
+      const fields = [ContentField.Title];
+
+      expect((await draft(owner, { productId, fields }, viewerKey)).status).toBe(
+        HttpStatus.FORBIDDEN,
+      );
+      expect((await draft(stranger, { productId, fields })).status).toBe(HttpStatus.NOT_FOUND);
+      const invalid = await Promise.all(
+        [
+          { productId, fields: [] },
+          { productId, fields: ['price'] },
+          { productId, fields, instruction: 'x'.repeat(501) },
+          { fields },
+        ].map((body) => draft(owner, body)),
+      );
+      expect(invalid.map((response) => response.status)).toEqual(
+        Array(4).fill(HttpStatus.BAD_REQUEST),
+      );
+    });
+
+    it('says AI is not configured without a provider key', async () => {
+      const { owner, productId } = await workspaceWithProduct('Draft Off');
+      ai.setConfigured(false);
+      try {
+        const refused = await draft(owner, { productId, fields: [ContentField.Title] });
+        expect(refused.status).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+        expect(refused.body.message).toBe(AI_NOT_CONFIGURED_MESSAGE);
+      } finally {
+        ai.setConfigured(true);
+      }
+    });
   });
 });

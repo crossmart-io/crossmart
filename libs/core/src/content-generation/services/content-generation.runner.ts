@@ -5,7 +5,11 @@ import type { ActivityEntry } from '../../activity/entities/activity-entry.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
-import { AiNotConfiguredError, AiOutputRejectedError } from '../../ai/errors/ai.errors.js';
+import {
+  AiKeyRejectedError,
+  AiNotConfiguredError,
+  AiOutputRejectedError,
+} from '../../ai/errors/ai.errors.js';
 import type { NewSuggestion } from '../../suggestions/entities/suggestion.js';
 import { SuggestionAgent } from '../../suggestions/enums/suggestion-agent.enum.js';
 import { SuggestionKind } from '../../suggestions/enums/suggestion-kind.enum.js';
@@ -43,7 +47,9 @@ export class ContentGenerationRunner {
       await this.activity.record(job.workspaceId, Actor.system(), this.entryFor(target));
     } catch (error) {
       const permanent =
-        error instanceof AiOutputRejectedError || error instanceof AiNotConfiguredError;
+        error instanceof AiOutputRejectedError ||
+        error instanceof AiNotConfiguredError ||
+        error instanceof AiKeyRejectedError;
       if (permanent || options.finalAttempt) {
         await this.activity.recordFailure(
           job.workspaceId,
