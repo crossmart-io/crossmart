@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "crossmart"
+dynamic = ["version"]
+description = "Official Python SDK for Crossmart, the open-source multichannel platform for sellers and their AI agents."
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Crossmart", email = "hello@crossmart.io" }]
+requires-python = ">=3.11"
+keywords = ["crossmart", "ecommerce", "multichannel", "listings", "shopify", "ebay", "sdk", "ai-agents"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Office/Business",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
+dependencies = [
+  # The bounds the generated client supports (openapi-python-client 0.29).
+  "httpx>=0.23.1,<0.29.0",
+  "attrs>=22.2.0",
+]
+
+[project.urls]
+Homepage = "https://crossmart.io"
+Documentation = "https://github.com/crossmart-io/crossmart/tree/main/sdks/python#readme"
+Repository = "https://github.com/crossmart-io/crossmart"
+Issues = "https://github.com/crossmart-io/crossmart/issues"
+
+[dependency-groups]
+# Pinned so regenerating the client gives the same output locally and in CI.
+dev = [
+  "openapi-python-client==0.29.1",
+  "ruff==0.17.3",
+  "mypy==2.4.1",
+  "pytest==9.2.0",
+  "respx==0.23.1",
+]
+
+[tool.hatch.version]
+path = "crossmart/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["crossmart", "tests", "README.md", "LICENSE"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["crossmart"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["crossmart/_generated"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "N", "S", "SIM", "RUF", "PL", "PT", "C4", "RET", "D"]
+ignore = [
+  "D100", "D104", "D105", "D107", # module, package and dunder docstrings
+  "D102", "D103", # public methods document themselves in their resource's class docstring
+  "D203", "D213", # conflicting pydocstyle defaults
+  "D401", # summaries describe what a call returns ("One page of products"), like the API docs
+  "PLR0913", # resource methods mirror the API's parameters
+  "RUF001", "RUF002", # the API's own text uses typographic apostrophes and arrows
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "PLR2004", "S105", "S106"]
+"scripts/**" = ["D"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["crossmart", "tests"]
+
+[[tool.mypy.overrides]]
+# Generated code is checked by its generator, not by this project's rules.
+module = "crossmart._generated.*"
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"

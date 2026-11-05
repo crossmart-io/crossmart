@@ -1,0 +1,22 @@
+{
+  "range": "last_7_days",
+  "interval": "day",
+  "timeZone": "sample",
+  "currencyCode": "sample",
+  "current": {
+    "sales": "sample",
+    "orders": 1,
+    "units": 1,
+    "averageOrderValue": "sample"
+  },
+  "previous": {
+    "sales": "sample",
+    "orders": 1,
+    "units": 1,
+    "averageOrderValue": "sample"
+  },
+  "buckets": [],
+  "stores": [],
+  "topProducts": [],
+  "otherCurrencyOrders": 1
+}
