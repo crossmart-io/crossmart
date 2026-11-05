@@ -1093,6 +1093,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/item-specifics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the listing’s item specifics
+         * @description The item specifics the listing’s channel category asks for (none until it has a category), with the values set on the listing.
+         */
+        get: operations["ProductChannelItemSpecificsController_get_v1"];
+        /**
+         * Set the listing’s item specifics
+         * @description Replaces the item specifics set on the listing. They are sent on publish ahead of the ones Crossmart derives (such as Brand from the vendor). The listing is sent again when the channel holds it or its last publish failed.
+         */
+        put: operations["ProductChannelItemSpecificsController_save_v1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/orders": {
         parameters: {
             query?: never;
@@ -2692,6 +2716,46 @@ export interface components {
         };
         ChooseChannelCategoryDto: {
             category: components["schemas"]["ChannelCategoryDto"] | null;
+        };
+        /** @enum {string} */
+        CategoryAspectUsage: CategoryAspectUsage;
+        /**
+         * @description `selection_only` takes one of `values`; `free_text` takes any text
+         * @enum {string}
+         */
+        CategoryAspectMode: CategoryAspectMode;
+        CategoryAspectDto: {
+            /** @example Color */
+            name: string;
+            /** @description The channel refuses listings in the category without it */
+            required: boolean;
+            usage: components["schemas"]["CategoryAspectUsage"];
+            /** @description `selection_only` takes one of `values`; `free_text` takes any text */
+            mode: components["schemas"]["CategoryAspectMode"];
+            /** @description Whether a listing may give it several values */
+            multiple: boolean;
+            /** @description The channel’s values, the first ones only */
+            values: string[];
+        };
+        ItemSpecificDto: {
+            /** @example Material */
+            name: string;
+            /**
+             * @description Blank values are dropped; a specific left without values is removed
+             * @example [
+             *       "Stoneware"
+             *     ]
+             */
+            values: string[];
+        };
+        ListingItemSpecificsDto: {
+            category: components["schemas"]["ChannelCategoryDto"] | null;
+            /** @description Required first, then recommended, then optional; none without a category */
+            aspects: components["schemas"]["CategoryAspectDto"][];
+            itemSpecifics: components["schemas"]["ItemSpecificDto"][];
+        };
+        SaveItemSpecificsDto: {
+            itemSpecifics: components["schemas"]["ItemSpecificDto"][];
         };
         /** @enum {string} */
         OrderStatus: OrderStatus;
@@ -4979,6 +5043,56 @@ export interface operations {
             };
         };
     };
+    ProductChannelItemSpecificsController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingItemSpecificsDto"];
+                };
+            };
+        };
+    };
+    ProductChannelItemSpecificsController_save_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveItemSpecificsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingItemSpecificsDto"];
+                };
+            };
+        };
+    };
     OrdersController_list_v1: {
         parameters: {
             query?: {
@@ -5535,6 +5649,7 @@ export enum ActivityAction {
     channel_policies_opted_in = "channel_policies_opted_in",
     channel_default_policies_created = "channel_default_policies_created",
     listing_category_changed = "listing_category_changed",
+    listing_item_specifics_changed = "listing_item_specifics_changed",
     channel_sync_requested = "channel_sync_requested",
     stock_oversold = "stock_oversold",
     content_generation_requested = "content_generation_requested",
@@ -5697,6 +5812,14 @@ export enum PriceWarning {
 export enum ListingVisibility {
     VISIBLE = "VISIBLE",
     HIDDEN = "HIDDEN"
+}
+export enum CategoryAspectUsage {
+    recommended = "recommended",
+    optional = "optional"
+}
+export enum CategoryAspectMode {
+    free_text = "free_text",
+    selection_only = "selection_only"
 }
 export enum OrderStatus {
     OPEN = "OPEN",
