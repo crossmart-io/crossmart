@@ -113,6 +113,11 @@ export const EBAY_DEFAULT_LANGUAGE = 'en-US';
 /** Inventory API limits, from eBay's reference. */
 export const EBAY_TITLE_MAX_LENGTH = 80;
 export const EBAY_DESCRIPTION_MAX_LENGTH = 500_000;
+/**
+ * The longest description worth writing: eBay's 500,000 is a hard limit for templated HTML,
+ * far beyond what buyers read on a phone, so generated descriptions aim for this.
+ */
+export const EBAY_DESCRIPTION_TARGET_LENGTH = 4_000;
 export const EBAY_MAX_IMAGES = 24;
 export const EBAY_SKU_MAX_LENGTH = 50;
 export const EBAY_BULK_PRICE_MAX_SKUS = 25;

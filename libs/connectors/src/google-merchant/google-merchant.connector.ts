@@ -43,6 +43,7 @@ import {
 } from './google-merchant-settings.js';
 import { GoogleOAuthClient } from './oauth/google-oauth.client.js';
 import { GoogleListingPublisher } from './publish/google-listing-publisher.js';
+import { GOOGLE_MERCHANT_CONTENT_LIMITS } from './google-merchant-content-limits.js';
 
 /** Characters merchants type around the id, as Merchant Center shows it: `123-456-789`. */
 const ACCOUNT_ID_NOISE = /[\s-]/g;
@@ -63,6 +64,7 @@ export class GoogleMerchantConnector implements OAuthAppConnector, ListingPublis
     ChannelCapability.UpdatePrice,
   ]);
   readonly requiredScopes = GOOGLE_REQUIRED_SCOPES;
+  readonly contentLimits = GOOGLE_MERCHANT_CONTENT_LIMITS;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {
       name: MERCHANT_API_BUCKET_NAME,

@@ -48,6 +48,7 @@ import {
 import { type EbaySettings, parseEbaySettings } from './ebay-settings.js';
 import type { EbayShipFrom } from './listing/ebay-listing-defaults.js';
 import { EbayOAuthClient } from './oauth/ebay-oauth.client.js';
+import { EBAY_CONTENT_LIMITS } from './ebay-content-limits.js';
 
 const NOT_APPROVED = 'The app was not approved on eBay';
 
@@ -67,6 +68,7 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
     ChannelCapability.ProvideTaxonomy,
   ]);
   readonly requiredScopes = EBAY_REQUIRED_SCOPES;
+  readonly contentLimits = EBAY_CONTENT_LIMITS;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {
       name: EBAY_API_BUCKET_NAME,

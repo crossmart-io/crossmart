@@ -5,7 +5,8 @@ import { ChannelConnectionsService } from '../../channels/services/channel-conne
 import type { ListingContent } from '../../listings/entities/listing-override.js';
 import { ListingContentReader } from '../../listings/services/listing-content.reader.js';
 import type { ContentGenerationJob } from '../entities/content-generation.js';
-import { type ChannelContentRules, contentRulesFor } from '../rules/channel-content-rules.js';
+import type { ChannelContentRules } from '../rules/channel-content-rules.js';
+import { ChannelContentRulesResolver } from './channel-content-rules.resolver.js';
 
 /** Everything the agent needs to write for one product on one store. */
 export interface ContentTarget {
@@ -23,11 +24,12 @@ export class ContentTargetLoader {
   constructor(
     private readonly connections: ChannelConnectionsService,
     private readonly content: ListingContentReader,
+    private readonly rules: ChannelContentRulesResolver,
   ) {}
 
   async load(job: ContentGenerationJob): Promise<ContentTarget | null> {
     const store = await this.findStore(job);
-    const rules = store ? contentRulesFor(store.channel) : null;
+    const rules = store ? this.rules.rulesFor(store.channel) : null;
     if (!store || !rules) return null;
     const listing = await this.content.read(job);
     if (!listing) return null;
