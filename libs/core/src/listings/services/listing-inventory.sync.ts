@@ -5,6 +5,7 @@ import {
   type ChannelSession,
   type InventoryQuantityUpdate,
   type InventorySync,
+  type InventoryUpdateFailure,
   supportsCapability,
 } from '@crossmart/connectors';
 import type { ListingSyncJob } from '../entities/listing-sync-job.js';
@@ -42,6 +43,19 @@ async function driftedOnly(
   );
 }
 
+/** Sends the quantities in batches the connector accepts; returns the items it rejected. */
+async function setInBatches(
+  connector: InventorySync,
+  session: ChannelSession,
+  updates: InventoryQuantityUpdate[],
+): Promise<InventoryUpdateFailure[]> {
+  const failures: InventoryUpdateFailure[] = [];
+  for (const batch of chunk(updates, connector.maxBatchSize)) {
+    failures.push(...(await connector.setQuantities(session, batch)));
+  }
+  return failures;
+}
+
 /**
  * Sets a listing's stock on its channel, in batches of the connector's `maxBatchSize`. Items
  * the channel rejects are reported on the listing; the rest are applied. Reconciliation jobs
@@ -74,14 +88,11 @@ export class ListingInventorySync {
     try {
       const session = await this.connections.openSession(job.workspaceId, job.connectionId);
       const pending = job.reconcile ? await driftedOnly(connector, session, updates) : updates;
-      const failures = [];
-      for (const batch of chunk(pending, connector.maxBatchSize)) {
-        failures.push(...(await connector.setQuantities(session, batch)));
-      }
-      const [firstFailure] = failures;
+      const [firstFailure] = await setInBatches(connector, session, pending);
+      const ref = { workspaceId: job.workspaceId, listingId: listing.id };
       await (firstFailure
-        ? this.outcomes.partlyFailed(listing.id, firstFailure.message)
-        : this.outcomes.synced(listing.id));
+        ? this.outcomes.partlyFailed(ref, firstFailure.message)
+        : this.outcomes.synced(ref));
     } catch (error) {
       await this.outcomes.failed(
         {

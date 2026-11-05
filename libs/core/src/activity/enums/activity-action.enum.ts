@@ -69,6 +69,8 @@ export enum ActivityAction {
   ChannelDefaultPoliciesCreated = 'channel_default_policies_created',
   /** The merchant chose the channel category one listing goes in; the detail names the store. */
   ListingCategoryChanged = 'listing_category_changed',
+  /** The merchant set the item specifics of one listing; the detail names the store. */
+  ListingItemSpecificsChanged = 'listing_item_specifics_changed',
   /** The merchant asked to publish the selected products and sync the rest. */
   ChannelSyncRequested = 'channel_sync_requested',
   /** An order took more units than were left: they were sold twice and need resolving. */

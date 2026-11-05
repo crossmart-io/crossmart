@@ -51,6 +51,7 @@ import {
 import { missingScopes } from './shopify-scopes.js';
 import { parseShopifySettings, type ShopifySettings } from './shopify-settings.js';
 import { ShopifyWebhookParser } from './webhooks/shopify-webhook-parser.js';
+import { SHOPIFY_CONTENT_LIMITS } from './shopify-content-limits.js';
 
 interface VerifiedCallback {
   shopDomain: string;
@@ -87,6 +88,7 @@ export class ShopifyConnector
     ChannelCapability.FetchOrders,
   ]);
   readonly requiredScopes = SHOPIFY_REQUIRED_SCOPES;
+  readonly contentLimits = SHOPIFY_CONTENT_LIMITS;
   readonly optionalScopes = SHOPIFY_OPTIONAL_SCOPES;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {

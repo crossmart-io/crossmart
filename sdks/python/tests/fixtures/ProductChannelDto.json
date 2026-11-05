@@ -1,0 +1,13 @@
+{
+  "connection": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "channel": "shopify",
+    "displayName": "sample",
+    "status": "CONNECTED",
+    "currencyCode": "sample"
+  },
+  "selected": true,
+  "listing": null,
+  "override": null,
+  "variants": []
+}

@@ -1,9 +1,10 @@
 import { type CountedRecords, toPageWindow } from '@crossmart/common';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { ChannelCategory } from '@crossmart/connectors';
 import { ListingSource, ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
 import type { ChannelListingQuery } from '../entities/listing-views.js';
+import { LISTING_NOT_FOUND } from '../listings.constants.js';
 import {
   LISTING_ROW_INCLUDE,
   LISTING_STOCK_INCLUDE,
@@ -20,6 +21,12 @@ const OLDEST_FIRST = [
   { createdAt: 'asc' },
   { id: 'asc' },
 ] as const satisfies Prisma.ListingOrderByWithRelationInput[];
+
+/** A listing to write to, always within its workspace. */
+export interface ListingRef {
+  workspaceId: string;
+  listingId: string;
+}
 
 /** What a successful publish or update stores. */
 export interface PublishedListingRecord {
@@ -76,7 +83,10 @@ export class ListingSyncRepository {
       data: { workspaceId, connectionId, productId, status: ListingStatus.PENDING },
       select: { id: true },
     });
-    return this.prisma.listing.findUniqueOrThrow({ where: { id }, include: LISTING_SYNC_INCLUDE });
+    return this.prisma.listing.findUniqueOrThrow({
+      where: { id, workspaceId },
+      include: LISTING_SYNC_INCLUDE,
+    });
   }
 
   /** Pending listings for the products that have none on the connection yet. */
@@ -142,57 +152,49 @@ export class ListingSyncRepository {
     });
   }
 
-  /** Stores the channel ids and status of a publish, and replaces the variant mappings, at once. */
-  async recordPublished(listingId: string, record: PublishedListingRecord): Promise<void> {
+  /**
+   * Stores the channel ids and status of a publish, and replaces the variant mappings, at once.
+   * Throws when the listing is not in the workspace (or was deleted meanwhile).
+   */
+  async recordPublished(listing: ListingRef, record: PublishedListingRecord): Promise<void> {
     const { variants, syncedAt, ...fields } = record;
+    const { workspaceId, listingId } = listing;
     await this.prisma.$transaction(async (tx) => {
-      const listing = await tx.listing.update({
-        where: { id: listingId },
-        data: { ...fields, lastSyncedAt: syncedAt, lastError: null },
-        select: { workspaceId: true },
-      });
-      await tx.listingVariant.deleteMany({ where: { listingId } });
+      await this.updateListing(tx, listing, { ...fields, lastSyncedAt: syncedAt, lastError: null });
+      await tx.listingVariant.deleteMany({ where: { listingId, workspaceId } });
       await tx.listingVariant.createMany({
-        data: variants.map((variant) => ({
-          ...variant,
-          listingId,
-          workspaceId: listing.workspaceId,
-        })),
+        data: variants.map((variant) => ({ ...variant, listingId, workspaceId })),
       });
     });
   }
 
   /** Puts the listing in a channel category; null lets the next publish pick one. */
-  async saveCategory(listingId: string, category: ChannelCategory | null): Promise<void> {
-    await this.prisma.listing.update({
-      where: { id: listingId },
-      data: {
-        channelCategoryId: category?.id ?? null,
-        channelCategoryName: category?.name ?? null,
-      },
+  async saveCategory(listing: ListingRef, category: ChannelCategory | null): Promise<void> {
+    await this.updateListing(this.prisma, listing, {
+      channelCategoryId: category?.id ?? null,
+      channelCategoryName: category?.name ?? null,
     });
   }
 
   /** A sync that only refreshed prices or stock. */
-  async recordSynced(listingId: string, syncedAt: Date): Promise<void> {
-    await this.prisma.listing.update({
-      where: { id: listingId },
-      data: { lastSyncedAt: syncedAt, lastError: null },
-    });
+  async recordSynced(listing: ListingRef, syncedAt: Date): Promise<void> {
+    await this.updateListing(this.prisma, listing, { lastSyncedAt: syncedAt, lastError: null });
   }
 
   /** Records why a sync failed. A publish failure also marks the listing as in error. */
-  async recordFailure(listingId: string, lastError: string, status?: ListingStatus): Promise<void> {
-    await this.prisma.listing.update({
-      where: { id: listingId },
-      data: { lastError, ...(status ? { status } : {}) },
-    });
+  async recordFailure(
+    listing: ListingRef,
+    lastError: string,
+    status?: ListingStatus,
+  ): Promise<void> {
+    await this.updateListing(this.prisma, listing, { lastError, ...(status ? { status } : {}) });
   }
 
-  async markDelisted(listingId: string, syncedAt: Date): Promise<void> {
-    await this.prisma.listing.update({
-      where: { id: listingId },
-      data: { status: ListingStatus.DELISTED, lastSyncedAt: syncedAt, lastError: null },
+  async markDelisted(listing: ListingRef, syncedAt: Date): Promise<void> {
+    await this.updateListing(this.prisma, listing, {
+      status: ListingStatus.DELISTED,
+      lastSyncedAt: syncedAt,
+      lastError: null,
     });
   }
 
@@ -295,5 +297,20 @@ export class ListingSyncRepository {
       select: { connectionId: true, productId: true },
       distinct: ['connectionId', 'productId'],
     });
+  }
+
+  /** Updates one listing of the workspace; none updated means it is not found. */
+  private async updateListing(
+    client: Pick<Prisma.TransactionClient, 'listing'>,
+    { workspaceId, listingId }: ListingRef,
+    data: Prisma.ListingUpdateManyMutationInput,
+  ): Promise<void> {
+    const { count } = await client.listing.updateMany({
+      where: { id: listingId, workspaceId },
+      data,
+    });
+    if (count === 0) {
+      throw new NotFoundException(LISTING_NOT_FOUND);
+    }
   }
 }

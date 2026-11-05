@@ -113,7 +113,7 @@ describe('ApiKeysService.authenticate', () => {
       permissions: builtInPermissions(WorkspaceRole.EDITOR),
       createdById: 'user-1',
     });
-    expect(repository.markUsed).toHaveBeenCalledWith('key-1', NOW);
+    expect(repository.markUsed).toHaveBeenCalledWith('ws-1', 'key-1', NOW);
   });
 
   it('skips the lookup for tokens without the key prefix', async () => {

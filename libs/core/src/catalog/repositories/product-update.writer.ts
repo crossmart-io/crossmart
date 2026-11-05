@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InventoryMovementReason, type Prisma, PrismaService } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
-import { toMovementActor } from '../../inventory/mappers/movement-actor.mapper.js';
+import type { LockedStock } from '../../inventory/entities/inventory-ledger.js';
+import { InventoryLedger } from '../../inventory/repositories/inventory-ledger.js';
 import type { ProductDraft, VariantDraft } from '../entities/product-draft.js';
 import {
   toMediaInputs,
@@ -12,28 +13,31 @@ import {
 
 type Transaction = Prisma.TransactionClient;
 
-interface CurrentStock {
-  inventoryItemId: string;
-  available: number;
-  reserved: number;
+/** The product being edited, and who edits it. */
+interface ProductEdit {
+  workspaceId: string;
+  productId: string;
+  actor: Actor;
 }
 
 interface VariantEdit {
-  variantId: string;
   variant: VariantDraft;
   position: number;
-  current: CurrentStock;
+  stock: LockedStock;
 }
 
 /**
  * Replaces a product's content, variants and media in one transaction. Variants keep their
- * ids (and their listings, later) when edited; stock changes become ledger adjustments.
- * The editor's quantity is the available stock: reserved units stay reserved. Ledger entries
- * are credited to the editor, like manual adjustments.
+ * ids (and their listings, later) when edited; stock changes go through the inventory ledger
+ * against the locked stock. The editor's quantity is the available stock: reserved units stay
+ * reserved. Ledger entries are credited to the editor, like manual adjustments.
  */
 @Injectable()
 export class ProductUpdateWriter {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ledger: InventoryLedger,
+  ) {}
 
   async update(
     workspaceId: string,
@@ -41,81 +45,79 @@ export class ProductUpdateWriter {
     draft: ProductDraft,
     actor: Actor,
   ): Promise<void> {
+    const edit: ProductEdit = { workspaceId, productId, actor };
     await this.prisma.$transaction(async (tx) => {
-      const stock = await this.readCurrentStock(tx, productId);
-      await this.removeDroppedVariants(tx, productId, draft.variants);
+      const stock = await this.lockStock(tx, edit);
+      await this.removeDroppedVariants(tx, edit, draft.variants);
       for (const [position, variant] of draft.variants.entries()) {
         const current = variant.id ? stock.get(variant.id) : undefined;
-        if (variant.id && current) {
-          await this.updateVariant(tx, workspaceId, actor, {
-            variantId: variant.id,
-            variant,
-            position,
-            current,
-          });
+        if (current) {
+          await this.updateVariant(tx, edit, { variant, position, stock: current });
         } else {
-          await tx.variant.create({
-            data: {
-              ...toNewVariantInput(workspaceId, variant, position),
-              product: { connect: { id: productId } },
-            },
-          });
+          await this.createVariant(tx, edit, variant, position);
         }
       }
       await this.replaceMedia(tx, workspaceId, productId, draft);
-      await tx.product.update({ where: { id: productId }, data: toProductFields(draft) });
+      await tx.product.updateMany({
+        where: { id: productId, workspaceId },
+        data: toProductFields(draft),
+      });
     });
   }
 
-  private async readCurrentStock(
-    tx: Transaction,
-    productId: string,
-  ): Promise<Map<string, CurrentStock>> {
+  /** Locks the stock of the product's variants, so a concurrent order or adjustment waits. */
+  private async lockStock(tx: Transaction, edit: ProductEdit): Promise<Map<string, LockedStock>> {
     const items = await tx.inventoryItem.findMany({
-      where: { variant: { productId } },
-      select: { id: true, variantId: true, available: true, reserved: true },
+      where: { workspaceId: edit.workspaceId, variant: { productId: edit.productId } },
+      select: { id: true },
     });
-    return new Map(
-      items.map((item) => [
-        item.variantId,
-        { inventoryItemId: item.id, available: item.available, reserved: item.reserved },
-      ]),
-    );
+    const ids = items.map((item) => item.id);
+    const locked = await this.ledger.lockItems(tx, edit.workspaceId, ids);
+    return new Map(locked.map((stock) => [stock.variantId, stock]));
   }
 
   private async removeDroppedVariants(
     tx: Transaction,
-    productId: string,
+    { workspaceId, productId }: ProductEdit,
     variants: VariantDraft[],
   ): Promise<void> {
     const keptIds = variants.flatMap((variant) => (variant.id ? [variant.id] : []));
-    await tx.variant.deleteMany({ where: { productId, id: { notIn: keptIds } } });
+    await tx.variant.deleteMany({ where: { workspaceId, productId, id: { notIn: keptIds } } });
+  }
+
+  private async createVariant(
+    tx: Transaction,
+    { workspaceId, productId }: ProductEdit,
+    variant: VariantDraft,
+    position: number,
+  ): Promise<void> {
+    await tx.variant.create({
+      data: {
+        ...toNewVariantInput(workspaceId, variant, position),
+        product: { connect: { id: productId } },
+      },
+    });
   }
 
   private async updateVariant(
     tx: Transaction,
-    workspaceId: string,
-    actor: Actor,
-    { variantId, variant, position, current }: VariantEdit,
+    { workspaceId, productId, actor }: ProductEdit,
+    { variant, position, stock }: VariantEdit,
   ): Promise<void> {
-    await tx.variant.update({ where: { id: variantId }, data: toVariantFields(variant, position) });
-    const delta = variant.inventory.quantity - current.available;
-    await tx.inventoryItem.update({
-      where: { id: current.inventoryItemId },
-      data: { tracked: variant.inventory.tracked, available: { increment: delta } },
+    await tx.variant.updateMany({
+      where: { id: stock.variantId, workspaceId, productId },
+      data: toVariantFields(variant, position),
     });
-    if (delta !== 0) {
-      await tx.inventoryMovement.create({
-        data: {
-          workspaceId,
-          inventoryItemId: current.inventoryItemId,
-          delta,
-          quantityAfter: variant.inventory.quantity + current.reserved,
-          reason: InventoryMovementReason.ADJUSTMENT,
-          ...toMovementActor(actor),
-        },
-      });
-    }
+    await tx.inventoryItem.updateMany({
+      where: { id: stock.id, workspaceId },
+      data: { tracked: variant.inventory.tracked },
+    });
+    await this.ledger.applyMovement(tx, workspaceId, {
+      stock,
+      availableDelta: variant.inventory.quantity - stock.available,
+      reservedDelta: 0,
+      entry: { reason: InventoryMovementReason.ADJUSTMENT, actor },
+    });
   }
 
   private async replaceMedia(
@@ -124,7 +126,7 @@ export class ProductUpdateWriter {
     productId: string,
     draft: ProductDraft,
   ): Promise<void> {
-    await tx.productMedia.deleteMany({ where: { productId } });
+    await tx.productMedia.deleteMany({ where: { productId, workspaceId } });
     await tx.productMedia.createMany({
       data: toMediaInputs(workspaceId, draft.media).map((media) => ({ ...media, productId })),
     });

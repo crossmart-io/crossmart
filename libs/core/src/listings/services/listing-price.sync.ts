@@ -27,7 +27,7 @@ export class ListingPriceSync {
     try {
       const session = await this.connections.openSession(job.workspaceId, job.connectionId);
       await connection.connector.updatePrices(session, updates);
-      await this.outcomes.synced(target.listing.id);
+      await this.outcomes.synced({ workspaceId: job.workspaceId, listingId: target.listing.id });
     } catch (error) {
       await this.outcomes.failed(
         {

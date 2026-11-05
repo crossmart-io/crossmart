@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { AppConfigService } from '@crossmart/common';
-import { ChannelError, ChannelType } from '@crossmart/connectors';
+import { AppConfigService, describeError } from '@crossmart/common';
+import { ChannelType } from '@crossmart/connectors';
 import { ChannelAuthorizationService, ChannelConnectError } from '@crossmart/core';
 import { Public } from '../../auth/decorators/public.decorator.js';
 import { AuthService } from '../../auth/services/auth.service.js';
@@ -78,13 +78,11 @@ export class ChannelOAuthController {
   }
 
   /**
-   * Why the connection failed, for operators. Channel errors carry a code and a message that
-   * never holds tokens or response bodies; anything else is named by its type only.
+   * Why the connection failed, for operators. Connect errors carry a message written for them;
+   * anything else is described without tokens or response bodies (`describeError`).
    */
   private describe(error: unknown): string {
-    if (error instanceof ChannelConnectError) return error.message;
-    if (error instanceof ChannelError) return `${error.code}: ${error.message}`;
-    return error instanceof Error ? error.name : typeof error;
+    return error instanceof ChannelConnectError ? error.message : describeError(error);
   }
 
   private channelsPage(params: Partial<Record<ChannelsPageQuery, string>>): string {

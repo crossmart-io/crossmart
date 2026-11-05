@@ -1,0 +1,15 @@
+{
+  "inventoryItemId": "00000000-0000-4000-8000-000000000001",
+  "variantId": "00000000-0000-4000-8000-000000000001",
+  "productId": "00000000-0000-4000-8000-000000000001",
+  "productTitle": "sample",
+  "optionValues": [],
+  "sku": "sample",
+  "imageUrl": "sample",
+  "tracked": true,
+  "onHand": 1,
+  "reserved": 1,
+  "available": 1,
+  "stockLevel": "in_stock",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

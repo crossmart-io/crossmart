@@ -24,6 +24,7 @@ export class ApiKeyCleanup {
         !permissionsCover(permissions, resolveRole(key.role, key.customRole).permissions),
     );
     await this.apiKeys.revokeMany(
+      workspaceId,
       excess.map((key) => key.id),
       new Date(),
     );

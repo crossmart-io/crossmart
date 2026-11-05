@@ -22,7 +22,10 @@ export class ListingCategoryWriter {
       target.connectionId,
       target.productId,
     );
-    await this.listings.saveCategory(listing.id, category);
+    await this.listings.saveCategory(
+      { workspaceId: target.workspaceId, listingId: listing.id },
+      category,
+    );
     if (listing.externalId) {
       await this.queue.enqueue([{ ...target, kind: SyncJobKind.Content }]);
     }

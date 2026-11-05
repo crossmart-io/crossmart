@@ -48,7 +48,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "oxlint --fix",
+      "oxlint --fix --no-error-on-unmatched-pattern",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [

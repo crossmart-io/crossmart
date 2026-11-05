@@ -10,6 +10,7 @@ import type {
   OAuthAuthorizeRequest,
   OAuthCallback,
 } from './auth/oauth-authorization.js';
+import type { ChannelContentLimits } from './content/channel-content-limits.js';
 import type { RateLimitBucket } from './rate-limit-bucket.js';
 
 /**
@@ -27,6 +28,8 @@ export interface ChannelConnector {
   readonly requiredScopes: readonly string[];
   /** Scopes the connector asks for too, and what a connection without each cannot do. */
   readonly optionalScopes?: readonly OptionalScope[];
+  /** What listings on the channel take; channels without them get no generated content. */
+  readonly contentLimits?: ChannelContentLimits;
 
   /** Whether this instance has what the connector needs (app credentials, for OAuth apps). */
   isConfigured(): boolean;

@@ -8,11 +8,11 @@ import {
 import { ChannelConnectionStatus } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { ChannelEventBus } from '../../events/services/channel-event-bus.js';
 import type { ChannelConnectionRecord } from '../repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
+import { connectionSubject } from '../rules/connection-subject.js';
 
 /**
  * Acts on a verified webhook event by its channel-neutral kind. Every handler is idempotent,
@@ -73,7 +73,7 @@ export class ChannelWebhookDispatcher {
       (connection) => connection.status !== ChannelConnectionStatus.DISCONNECTED,
     );
     for (const connection of connected) {
-      await this.connections.markDisconnected(connection.id, new Date());
+      await this.connections.markDisconnected(connection.workspaceId, connection.id, new Date());
       await this.recordUninstall(connector, connection);
     }
   }
@@ -84,11 +84,7 @@ export class ChannelWebhookDispatcher {
   ): Promise<void> {
     return this.activity.record(connection.workspaceId, Actor.system(), {
       action: ActivityAction.ChannelDisconnected,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connection.id,
-        label: connection.displayName,
-      },
+      subject: connectionSubject(connection),
       detail: connector.displayName,
     });
   }

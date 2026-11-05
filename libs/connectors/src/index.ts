@@ -55,3 +55,8 @@ export * from './google-merchant/google-merchant-country.js';
 export * from './google-merchant/google-merchant-settings.js';
 export { PRODUCT_URL_HANDLE_PLACEHOLDER } from './google-merchant/google-merchant.constants.js';
 export * from './sdk/time/time.constants.js';
+export * from './sdk/content/channel-content-limits.js';
+export * from './sdk/content/description-format.enum.js';
+export * from './shopify/shopify-content-limits.js';
+export * from './ebay/ebay-content-limits.js';
+export * from './google-merchant/google-merchant-content-limits.js';

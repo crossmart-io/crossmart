@@ -119,8 +119,4 @@ export class ListingRepository {
       include: { variants: true },
     });
   }
-
-  async markFailed(listingId: string, status: ListingStatus, lastError: string): Promise<void> {
-    await this.prisma.listing.update({ where: { id: listingId }, data: { status, lastError } });
-  }
 }

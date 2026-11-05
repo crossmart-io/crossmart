@@ -150,3 +150,8 @@ export const SHOPIFY_FIRST_POSITION = 1;
 export const SHOPIFY_USER_ERROR_SEPARATOR = '; ';
 /** The admin URL of a product, for listings that are not on the online store. */
 export const SHOPIFY_ADMIN_PRODUCT_PATH = '/admin/products/';
+
+/** Shopify's product title limit. Shopify states no description limit. */
+export const SHOPIFY_TITLE_MAX_LENGTH = 255;
+/** The longest product description worth writing for a store page. */
+export const SHOPIFY_DESCRIPTION_TARGET_LENGTH = 5_000;
