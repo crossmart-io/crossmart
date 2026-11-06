@@ -47,6 +47,7 @@ import { ProductChannelViews } from './services/product-channel.views.js';
 import { ListingEditorViews } from './services/listing-editor.views.js';
 import { ListingDisplayResolver } from './services/listing-display.resolver.js';
 import { ProductStoreDisplays } from './services/product-store-displays.js';
+import { StoreListingStates } from './services/store-listing-states.js';
 import { ListingRequeuer } from './services/listing-requeuer.js';
 import { ListingRetryService } from './services/listing-retry.service.js';
 import { ProductChannelsService } from './services/product-channels.service.js';
@@ -113,6 +114,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingEditorViews,
     ListingDisplayResolver,
     ProductStoreDisplays,
+    StoreListingStates,
     ListingRequeuer,
     ListingRetryService,
     ProductChannelsService,
@@ -129,6 +131,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     { provide: SyncJobQueue, useClass: BullSyncJobQueue },
   ],
   exports: [
+    StoreListingStates,
     SyncProgressService,
     ListingEditorService,
     ProductStoreDisplays,

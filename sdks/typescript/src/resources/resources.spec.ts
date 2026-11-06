@@ -232,6 +232,12 @@ const ROUTES: RouteCase[] = [
     path: `${WORKSPACE}/analytics/inventory`,
   },
   {
+    name: 'reports.listingHealth',
+    call: (cm) => cm.reports.listingHealth(),
+    method: 'GET',
+    path: `${WORKSPACE}/analytics/listings`,
+  },
+  {
     name: 'ai.status',
     call: (cm) => cm.ai.status(),
     method: 'GET',

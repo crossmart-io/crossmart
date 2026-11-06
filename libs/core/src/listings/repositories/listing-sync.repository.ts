@@ -376,6 +376,16 @@ export class ListingSyncRepository {
     return new Map(groups.map((group) => [group.connectionId, group._count._all]));
   }
 
+  /** The workspace's failed listings on any store, latest change first. */
+  listRecentFailures(workspaceId: string, limit: number): Promise<ListingRowRecord[]> {
+    return this.prisma.listing.findMany({
+      where: { workspaceId, status: ListingStatus.ERROR },
+      include: LISTING_ROW_INCLUDE,
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
+  }
+
   async listProductIdsOnChannel(workspaceId: string, connectionId: string): Promise<string[]> {
     const pairs = await this.findPairs({ workspaceId, connectionId });
     return pairs.map((pair) => pair.productId);

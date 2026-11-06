@@ -26,11 +26,22 @@ export const REPORT_TOOLS = [
     name: 'get_inventory_report',
     title: 'Get the inventory report',
     description:
-      'Stock value at cost and at price, variants low or out of stock, and each store’s ' +
-      'listings by status, as of now.',
+      'Stock value at cost and at price, variants low or out of stock (and the ones lowest on ' +
+      'stock), and each store’s listings by status, as of now.',
     input: {},
     readOnly: true,
     toCall: () => ({ method: HttpMethod.Get, path: `${WORKSPACE_PATH}/analytics/inventory` }),
+  }),
+  defineTool({
+    name: 'get_listing_health_report',
+    title: 'Get the listing health report',
+    description:
+      'Each store’s products by display state (draft, needs_details, ready, publishing, ' +
+      'published, failed, removing, removed) and the latest listings a channel refused, each ' +
+      'with its reason and the requirement to fix, as of now.',
+    input: {},
+    readOnly: true,
+    toCall: () => ({ method: HttpMethod.Get, path: `${WORKSPACE_PATH}/analytics/listings` }),
   }),
   defineTool({
     name: 'get_platform_health',

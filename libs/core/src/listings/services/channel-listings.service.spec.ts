@@ -46,6 +46,9 @@ function setup(records: ListingRowRecord[]) {
       records,
       total: records.length,
     }),
+    listRecentFailures: vi
+      .fn<ListingSyncRepository['listRecentFailures']>()
+      .mockResolvedValue(records),
   };
   const products = {
     matchingIds: vi
@@ -65,7 +68,7 @@ function setup(records: ListingRowRecord[]) {
     products as unknown as ChannelProductsRepository,
     displays as unknown as ListingDisplayResolver,
   );
-  return { service, products, displays, store };
+  return { service, products, displays, listings, store };
 }
 
 describe('ChannelListingsService', () => {
@@ -104,5 +107,24 @@ describe('ChannelListingsService', () => {
     await service.list(WORKSPACE_ID, CONNECTION_ID, QUERY);
 
     expect(displays.resolve.mock.calls[0]?.[1].candidate.active).toBe(false);
+  });
+
+  it('lists recent failures across stores in their order, each with its store', async () => {
+    const other = connectionView({ id: 'conn-2', displayName: 'Other' });
+    const records = [
+      { ...row('p-1', ListingStatus.ERROR), connectionId: 'conn-2' },
+      row('p-3', ListingStatus.ERROR),
+      { ...row('p-4', ListingStatus.ERROR), connectionId: 'gone' },
+    ];
+    const { service, products, listings, store } = setup(records);
+
+    const rows = await service.recentFailures(WORKSPACE_ID, [store, other], 5);
+
+    expect(listings.listRecentFailures).toHaveBeenCalledWith(WORKSPACE_ID, 5);
+    expect(products.matchingIds).toHaveBeenCalledTimes(2);
+    expect(rows.map((item) => [item.productId, item.connectionId])).toEqual([
+      ['p-1', 'conn-2'],
+      ['p-3', CONNECTION_ID],
+    ]);
   });
 });

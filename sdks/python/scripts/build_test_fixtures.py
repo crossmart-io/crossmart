@@ -24,6 +24,7 @@ SCHEMAS = (
     "OrderSummaryDto",
     "OrderDetailDto",
     "SalesReportDto",
+    "ListingHealthReportDto",
     "SuggestionDto",
     "WorkspaceDto",
     "CurrentApiKeyDto",
