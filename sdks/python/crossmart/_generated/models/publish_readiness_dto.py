@@ -18,8 +18,8 @@ class PublishReadinessDto:
         ready (bool): True when listings can be published to this store
         missing (list[PublishRequirement]): What to finish before publishing, in order; empty when ready. `reconnect`
             alone when the store needs to be connected again. eBay: `shipping_policy`, `payment_policy`, `return_policy`,
-            `ship_from_location`. Google: `listing_setup`. `account_settings` when the account was never read. Example:
-            ['shipping_policy', 'ship_from_location'].
+            `ship_from_location`. Google: `listing_setup`. Etsy: `item_details`, `shipping_profile`, `processing_profile`.
+            `account_settings` when the account was never read. Example: ['shipping_policy', 'ship_from_location'].
     """
 
     ready: bool
