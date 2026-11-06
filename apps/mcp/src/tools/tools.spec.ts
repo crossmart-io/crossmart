@@ -72,4 +72,66 @@ describe('MCP tools', () => {
       path: `${WORKSPACE_PATH}/suggestions/s-1/approve`,
     });
   });
+
+  it('lists a store’s products by state, with the rest as query', () => {
+    const call = tool('list_store_products').toCall({
+      connectionId: 'c-1',
+      state: 'failed',
+      page: 2,
+    } as never);
+    expect(call).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/channel-connections/c-1/products`,
+      query: { state: 'failed', page: 2 },
+    });
+  });
+
+  it('retries one product on one store', () => {
+    expect(
+      tool('retry_store_listing').toCall({ productId: 'p-1', connectionId: 'c-1' } as never),
+    ).toEqual({
+      method: HttpMethod.Post,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/retry`,
+    });
+    expect(tool('retry_store_listing').readOnly).toBe(false);
+  });
+
+  it('reads a store and a product on every store', () => {
+    expect(tool('get_store').toCall({ connectionId: 'c-1' } as never).path).toBe(
+      `${WORKSPACE_PATH}/channel-connections/c-1`,
+    );
+    expect(tool('get_product_stores').toCall({ productId: 'p-1' } as never).path).toBe(
+      `${WORKSPACE_PATH}/products/p-1/channels`,
+    );
+  });
+
+  it('reads and replaces item specifics, the replace marked destructive', () => {
+    const target = { productId: 'p-1', connectionId: 'c-1' };
+    const path = `${WORKSPACE_PATH}/products/p-1/channels/c-1/item-specifics`;
+    expect(tool('get_item_specifics').toCall(target as never)).toEqual({
+      method: HttpMethod.Get,
+      path,
+    });
+    const itemSpecifics = [{ name: 'Color', values: ['Blue'] }];
+    expect(tool('save_item_specifics').toCall({ ...target, itemSpecifics } as never)).toEqual({
+      method: HttpMethod.Put,
+      path,
+      body: { itemSpecifics },
+    });
+    expect(tool('save_item_specifics').destructive).toBe(true);
+  });
+
+  it('suggests categories and sets one, null letting the next publish pick', () => {
+    const target = { productId: 'p-1', connectionId: 'c-1' };
+    expect(tool('suggest_store_categories').toCall({ ...target, search: 'mug' } as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/category-suggestions`,
+      query: { search: 'mug' },
+    });
+    expect(tool('set_store_category').toCall({ ...target, category: null } as never)).toEqual({
+      method: HttpMethod.Put,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/category`,
+      body: { category: null },
+    });
+  });
 });
