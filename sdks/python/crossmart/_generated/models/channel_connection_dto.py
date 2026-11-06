@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
     from ..models.pricing_rule_dto import PricingRuleDto
     from ..models.product_selection_rule_dto import ProductSelectionRuleDto
+    from ..models.publish_readiness_dto import PublishReadinessDto
     from ..models.shopify_settings_dto import ShopifySettingsDto
 
 
@@ -48,6 +49,7 @@ class ChannelConnectionDto:
         created_at (datetime.datetime):
         updated_at (datetime.datetime):
         failed_listings (float): Listings in this store whose last sync failed
+        publish_readiness (PublishReadinessDto):
     """
 
     id: UUID
@@ -69,6 +71,7 @@ class ChannelConnectionDto:
     created_at: datetime.datetime
     updated_at: datetime.datetime
     failed_listings: float
+    publish_readiness: PublishReadinessDto
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -148,6 +151,8 @@ class ChannelConnectionDto:
 
         failed_listings = self.failed_listings
 
+        publish_readiness = self.publish_readiness.to_dict()
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -171,6 +176,7 @@ class ChannelConnectionDto:
                 "createdAt": created_at,
                 "updatedAt": updated_at,
                 "failedListings": failed_listings,
+                "publishReadiness": publish_readiness,
             }
         )
 
@@ -182,6 +188,7 @@ class ChannelConnectionDto:
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
         from ..models.product_selection_rule_dto import ProductSelectionRuleDto
+        from ..models.publish_readiness_dto import PublishReadinessDto
         from ..models.shopify_settings_dto import ShopifySettingsDto
 
         d = dict(src_dict)
@@ -324,6 +331,8 @@ class ChannelConnectionDto:
 
         failed_listings = d.pop("failedListings")
 
+        publish_readiness = PublishReadinessDto.from_dict(d.pop("publishReadiness"))
+
         channel_connection_dto = cls(
             id=id,
             channel=channel,
@@ -344,6 +353,7 @@ class ChannelConnectionDto:
             created_at=created_at,
             updated_at=updated_at,
             failed_listings=failed_listings,
+            publish_readiness=publish_readiness,
         )
 
         channel_connection_dto.additional_properties = d

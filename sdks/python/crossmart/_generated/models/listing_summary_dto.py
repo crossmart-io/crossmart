@@ -10,6 +10,7 @@ from attrs import field as _attrs_field
 
 from ..models.listing_source import ListingSource
 from ..models.listing_status import ListingStatus
+from ..models.publish_requirement import PublishRequirement
 
 if TYPE_CHECKING:
     from ..models.channel_category_dto import ChannelCategoryDto
@@ -28,6 +29,8 @@ class ListingSummaryDto:
         external_id (None | str): The product’s id on the channel
         external_url (None | str): Where to see it on the channel
         last_error (None | str): Why the last sync failed
+        missing_requirement (None | PublishRequirement): What the channel refused the last publish for lacking (such as
+            `item_specifics`), when the merchant can add it; null otherwise
         last_synced_at (datetime.datetime | None):
         category (ChannelCategoryDto | None): The channel category it is listed in, on channels with categories (eBay)
     """
@@ -38,6 +41,7 @@ class ListingSummaryDto:
     external_id: None | str
     external_url: None | str
     last_error: None | str
+    missing_requirement: None | PublishRequirement
     last_synced_at: datetime.datetime | None
     category: ChannelCategoryDto | None
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -59,6 +63,12 @@ class ListingSummaryDto:
 
         last_error: None | str
         last_error = self.last_error
+
+        missing_requirement: None | str
+        if isinstance(self.missing_requirement, PublishRequirement):
+            missing_requirement = self.missing_requirement.value
+        else:
+            missing_requirement = self.missing_requirement
 
         last_synced_at: None | str
         if isinstance(self.last_synced_at, datetime.datetime):
@@ -82,6 +92,7 @@ class ListingSummaryDto:
                 "externalId": external_id,
                 "externalUrl": external_url,
                 "lastError": last_error,
+                "missingRequirement": missing_requirement,
                 "lastSyncedAt": last_synced_at,
                 "category": category,
             }
@@ -121,6 +132,21 @@ class ListingSummaryDto:
 
         last_error = _parse_last_error(d.pop("lastError"))
 
+        def _parse_missing_requirement(data: object) -> None | PublishRequirement:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                missing_requirement_type_0 = PublishRequirement(data)
+
+                return missing_requirement_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | PublishRequirement, data)
+
+        missing_requirement = _parse_missing_requirement(d.pop("missingRequirement"))
+
         def _parse_last_synced_at(data: object) -> datetime.datetime | None:
             if data is None:
                 return data
@@ -158,6 +184,7 @@ class ListingSummaryDto:
             external_id=external_id,
             external_url=external_url,
             last_error=last_error,
+            missing_requirement=missing_requirement,
             last_synced_at=last_synced_at,
             category=category,
         )

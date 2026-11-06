@@ -11,6 +11,7 @@ from .._generated.api.listings import (
     product_channels_controller_clear_override_v_1,
     product_channels_controller_list_v_1,
     product_channels_controller_remove_v_1,
+    product_channels_controller_retry_v_1,
     product_channels_controller_save_override_v_1,
     store_products_controller_add_v_1,
     store_products_controller_remove_v_1,
@@ -70,6 +71,23 @@ class Listings(SyncResource):
                 client=self._http,
             )
         return unwrap(response)
+
+    def retry(self, product_id: Id, store_id: Id) -> ProductChannelDto:
+        """Publishes the product to one store again, such as after a failed publish.
+
+        Only this product and store are queued, unlike ``stores.sync``. The listing is pending at
+        once (``display_state`` is ``publishing``). Raises a 409 error when the store must be
+        connected again or does not include the product, and a 402 when the plan has no room for
+        another active listing.
+        """
+        with translate_transport_errors():
+            response = product_channels_controller_retry_v_1.sync_detailed(
+                as_uuid(self._workspace()),
+                as_uuid(product_id),
+                as_uuid(store_id),
+                client=self._http,
+            )
+        return unwrap_as(response, ProductChannelDto)
 
     def remove(self, product_id: Id, store_id: Id) -> ProductChannelDto:
         """Removes the product from a store. It is delisted there at once."""
@@ -161,6 +179,17 @@ class AsyncListings(AsyncResource):
                 client=self._http,
             )
         return unwrap(response)
+
+    async def retry(self, product_id: Id, store_id: Id) -> ProductChannelDto:
+        """Publishes the product to one store again. See :meth:`Listings.retry`."""
+        with translate_transport_errors():
+            response = await product_channels_controller_retry_v_1.asyncio_detailed(
+                as_uuid(await self._workspace()),
+                as_uuid(product_id),
+                as_uuid(store_id),
+                client=self._http,
+            )
+        return unwrap_as(response, ProductChannelDto)
 
     async def remove(self, product_id: Id, store_id: Id) -> ProductChannelDto:
         """Removes the product from a store. It is delisted there at once."""

@@ -150,6 +150,12 @@ const ROUTES: RouteCase[] = [
     path: `${WORKSPACE}/products/${PRODUCT_ID}/channels/${CONNECTION_ID}`,
   },
   {
+    name: 'listings.retry',
+    call: (cm) => cm.listings.retry(PRODUCT_ID, CONNECTION_ID),
+    method: 'POST',
+    path: `${WORKSPACE}/products/${PRODUCT_ID}/channels/${CONNECTION_ID}/retry`,
+  },
+  {
     name: 'listings.publishMany',
     call: (cm) => cm.listings.publishMany(CONNECTION_ID, [PRODUCT_ID]),
     method: 'POST',

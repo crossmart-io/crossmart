@@ -104,7 +104,7 @@ export class ProductsResource extends Resource {
    * Replaces a product (PUT). Send the whole product: variants left out are removed, a variant
    * keeps its identity through its `id`, and optional fields left out take their defaults. Read
    * it with `get()` first and send every field you want to keep. A variant's `quantity` sets its
-   * available stock (default 0), so send `variant.available` to keep it as it is.
+   * available stock; leave it out to keep the stock as it is (a new variant then starts at 0).
    *
    * @example
    * ```ts

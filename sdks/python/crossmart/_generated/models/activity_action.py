@@ -28,6 +28,7 @@ class ActivityAction(StrEnum):
     LISTING_OVERRIDE_UPDATED = "listing_override_updated"
     LISTING_PUBLISHED = "listing_published"
     LISTING_REMOVED = "listing_removed"
+    LISTING_RETRY_REQUESTED = "listing_retry_requested"
     LISTING_SYNC_FAILED = "listing_sync_failed"
     LISTING_UPDATED = "listing_updated"
     MEMBER_INVITED = "member_invited"

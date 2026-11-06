@@ -15,6 +15,8 @@ import { Resource } from './resource.js';
 const PRODUCT_CHANNELS_PATH = '/api/v1/workspaces/{workspaceId}/products/{productId}/channels';
 const PRODUCT_CHANNEL_PATH =
   '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}';
+const RETRY_PATH =
+  '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/retry';
 const OVERRIDE_PATH =
   '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/override';
 const STORE_LISTINGS_PATH =
@@ -93,6 +95,32 @@ export class ListingsResource extends Resource {
     const workspaceId = await this.workspaceId(options);
     return unwrap(
       this.http.DELETE(PRODUCT_CHANNEL_PATH, {
+        params: { path: { workspaceId, productId, connectionId } },
+        signal: options?.signal,
+      }),
+    );
+  }
+
+  /**
+   * Publishes a product to one store again, such as after a failed publish, without resyncing
+   * the whole store. The listing is pending at once (`displayState` is `publishing`) and the
+   * store is updated in the background. Throws a `409` when the store needs to be connected
+   * again or does not include the product.
+   *
+   * @example
+   * ```ts
+   * const channel = await crossmart.listings.retry(productId, connectionId);
+   * console.log(channel.displayState); // 'publishing'
+   * ```
+   */
+  async retry(
+    productId: string,
+    connectionId: string,
+    options?: RequestOptions,
+  ): Promise<ProductChannel> {
+    const workspaceId = await this.workspaceId(options);
+    return unwrap(
+      this.http.POST(RETRY_PATH, {
         params: { path: { workspaceId, productId, connectionId } },
         signal: options?.signal,
       }),
