@@ -9,7 +9,8 @@ const SERVER_VERSION = process.env.npm_package_version ?? '0.0.0';
 const INSTRUCTIONS =
   'Crossmart keeps one catalog and one stock count for a seller and publishes them to their ' +
   'stores. Read before you write: find ids with list_products, list_inventory or list_stores. ' +
-  'Every change is recorded in the activity log under this API key.';
+  'Every change is recorded in the activity log under this API key. For questions about ' +
+  'Crossmart itself (features, plans, how to do something), use ask_crossmart.';
 
 /** An MCP server whose tools act with one API key. */
 export function createMcpServer(apiUrl: string, apiKey: string | undefined): McpServer {

@@ -44,7 +44,8 @@
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "prepare": "husky",
-    "seed:demo": "tsx tools/demo-seed/main.ts"
+    "seed:demo": "tsx tools/demo-seed/main.ts",
+    "knowledge:build": "tsx tools/knowledge-base/main.ts"
   },
   "lint-staged": {
     "*.ts": [

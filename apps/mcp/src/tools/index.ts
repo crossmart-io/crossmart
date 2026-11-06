@@ -1,4 +1,5 @@
 import type { ApiToolSpec } from './api-tool.js';
+import { ASK_TOOLS } from './ask.tools.js';
 import { CATALOG_TOOLS } from './catalog.tools.js';
 import { INVENTORY_TOOLS } from './inventory.tools.js';
 import { LISTING_TOOLS } from './listings.tools.js';
@@ -16,4 +17,5 @@ export const ALL_TOOLS: readonly ApiToolSpec[] = [
   ...LISTING_TOOLS,
   ...REPORT_TOOLS,
   ...SUGGESTION_TOOLS,
+  ...ASK_TOOLS,
 ];

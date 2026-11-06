@@ -13,6 +13,7 @@ export const PASSWORD_RESET_TTL_SECONDS = 60 * 60;
 export const CLIENT_IP_HEADERS = ['x-real-ip'];
 
 export const IS_PUBLIC_METADATA_KEY = 'crossmart:is-public';
+export const ALLOWS_ANONYMOUS_METADATA_KEY = 'crossmart:allows-anonymous';
 export const REQUIRED_PERMISSION_METADATA_KEY = 'crossmart:required-permission';
 
 /** Route parameter that names the workspace a request acts on. */
