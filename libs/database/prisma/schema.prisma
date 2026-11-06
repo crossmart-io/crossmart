@@ -1041,3 +1041,21 @@ model AiUsage {
   @@index([workspaceId, createdAt])
   @@map("ai_usage")
 }
+
+/// AI calls Crossmart pays for itself, outside any workspace, such as Ask Crossmart's answers to
+/// public questions. Kept apart from `ai_usage` so no tenant row is ever written without a
+/// workspace, and so platform spend can be reported on its own.
+model PlatformAiUsage {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  /// An `AiFeature` value; kept as text so new features need no migration.
+  feature      String
+  /// An `AiProviderName` value.
+  provider     String
+  model        String
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([feature, createdAt])
+  @@map("platform_ai_usage")
+}

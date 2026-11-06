@@ -57,6 +57,16 @@ describe('AnthropicAiProvider', () => {
     await expect(provider.complete(REQUEST)).rejects.toThrow(AiNotConfiguredError);
   });
 
+  it('uses the request’s own model when it names one, with or without the refusal fallback', async () => {
+    const { provider, create } = setup('sk-test');
+
+    await provider.complete({ ...REQUEST, model: 'claude-haiku-5-5' });
+
+    const params = sentParams(create) as MessageCreateParamsNonStreaming & { betas?: string[] };
+    expect(params.model).toBe('claude-haiku-5-5');
+    expect(params.betas).toBeUndefined();
+  });
+
   it('asks the configured model for output in the request’s JSON schema', async () => {
     const { provider, create, factory } = setup('sk-test');
 

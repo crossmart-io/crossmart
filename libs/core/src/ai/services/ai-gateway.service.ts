@@ -4,11 +4,13 @@ import { Feature } from '../../entitlements/enums/feature.enum.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type {
   AiCallContext,
+  AiPlatformCallContext,
   AiCompletion,
   AiGeneration,
   AiStatus,
   AiStructuredRequest,
 } from '../entities/ai-completion.js';
+import type { AiFeature } from '../enums/ai-feature.enum.js';
 import { AiNotConfiguredError, AiOutputRejectedError } from '../errors/ai.errors.js';
 import { AiProvider } from '../providers/ai-provider.js';
 import { parseStructuredOutput } from '../rules/structured-output.js';
@@ -66,11 +68,39 @@ export class AiGateway {
     await this.assertCredits(context.workspaceId);
     const completion = await this.provider.complete(request);
     await this.meter(context, completion);
+    return this.validate(context.feature, completion, request);
+  }
+
+  /**
+   * A call Crossmart pays for itself, outside any workspace (Ask Crossmart). It spends no plan
+   * credits, so the caller must bound it (rate limits, a daily cap); it is metered apart, in
+   * `platform_ai_usage`, and validated like any other.
+   */
+  async generateForPlatform<Output>(
+    context: AiPlatformCallContext,
+    request: AiStructuredRequest<Output>,
+  ): Promise<AiGeneration<Output>> {
+    this.assertConfigured();
+    const completion = await this.provider.complete(request);
+    await this.usage.recordPlatform({
+      feature: context.feature,
+      provider: this.provider.name,
+      model: completion.model,
+      ...completion.usage,
+    });
+    return this.validate(context.feature, completion, request);
+  }
+
+  private validate<Output>(
+    feature: AiFeature,
+    completion: AiCompletion,
+    request: AiStructuredRequest<Output>,
+  ): AiGeneration<Output> {
     try {
       return { output: parseStructuredOutput(completion, request.schema), model: completion.model };
     } catch (error) {
       if (error instanceof AiOutputRejectedError) {
-        this.logger.warn(`Rejected ${context.feature} output: ${error.reason}`);
+        this.logger.warn(`Rejected ${feature} output: ${error.reason}`);
       }
       throw error;
     }

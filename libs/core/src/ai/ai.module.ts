@@ -4,6 +4,7 @@ import { AnthropicAiProvider } from './providers/anthropic/anthropic-ai.provider
 import { AnthropicClientFactory } from './providers/anthropic/anthropic-client.factory.js';
 import { AiProvider } from './providers/ai-provider.js';
 import { AiUsageRepository } from './repositories/ai-usage.repository.js';
+import { PlatformAiUsageRepository } from './repositories/platform-ai-usage.repository.js';
 import { AiGateway } from './services/ai-gateway.service.js';
 import { AiUsageService } from './services/ai-usage.service.js';
 
@@ -18,6 +19,7 @@ import { AiUsageService } from './services/ai-usage.service.js';
     AnthropicClientFactory,
     { provide: AiProvider, useClass: AnthropicAiProvider },
     AiUsageRepository,
+    PlatformAiUsageRepository,
     AiUsageService,
     AiGateway,
   ],

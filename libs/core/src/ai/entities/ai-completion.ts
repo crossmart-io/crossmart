@@ -13,6 +13,8 @@ export interface AiStructuredRequest<Output> {
   prompt: string;
   schema: z.ZodType<Output>;
   maxOutputTokens: number;
+  /** A model for this call only, such as a cheaper one for a high-volume feature. */
+  model?: string;
 }
 
 export interface AiTokenUsage {
@@ -32,6 +34,11 @@ export interface AiCompletion {
 /** Who a call is for and what it does, for metering. */
 export interface AiCallContext {
   workspaceId: string;
+  feature: AiFeature;
+}
+
+/** A call Crossmart pays for itself, outside any workspace, for metering. */
+export interface AiPlatformCallContext {
   feature: AiFeature;
 }
 

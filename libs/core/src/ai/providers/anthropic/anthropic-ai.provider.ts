@@ -71,8 +71,9 @@ export class AnthropicAiProvider extends AiProvider {
 
   private toParams<Output>(request: AiStructuredRequest<Output>): MessageCreateParamsNonStreaming {
     const format = zodOutputFormat(request.schema);
+    const model = request.model ?? this.model;
     return {
-      model: this.model,
+      model,
       max_tokens: request.maxOutputTokens,
       system: request.system,
       messages: [{ role: USER_ROLE, content: request.prompt }],
@@ -80,12 +81,12 @@ export class AnthropicAiProvider extends AiProvider {
         effort: ANTHROPIC_EFFORT,
         format: { type: format.type, schema: format.schema },
       },
-      ...this.refusalFallback(),
+      ...this.refusalFallback(model),
     };
   }
 
-  private refusalFallback(): Partial<MessageCreateParamsNonStreaming> {
-    return REFUSAL_FALLBACK_MODELS.has(this.model)
+  private refusalFallback(model: string): Partial<MessageCreateParamsNonStreaming> {
+    return REFUSAL_FALLBACK_MODELS.has(model)
       ? { betas: [REFUSAL_FALLBACK_BETA], fallbacks: REFUSAL_FALLBACKS }
       : {};
   }

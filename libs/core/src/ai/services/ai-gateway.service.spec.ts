@@ -26,6 +26,7 @@ function setup(provider = new FakeAiProvider()) {
       recorded.push(input);
       return Promise.resolve();
     }),
+    recordPlatform: vi.fn<AiUsageService['recordPlatform']>().mockResolvedValue(),
   };
   const entitlements = {
     assertInWorkspace: vi.fn<EntitlementService['assertInWorkspace']>().mockResolvedValue(),
@@ -35,7 +36,7 @@ function setup(provider = new FakeAiProvider()) {
     usage as unknown as AiUsageService,
     entitlements as unknown as EntitlementService,
   );
-  return { gateway, provider, recorded, entitlements };
+  return { gateway, provider, recorded, entitlements, usage };
 }
 
 describe('AiGateway', () => {
@@ -108,5 +109,44 @@ describe('AiGateway', () => {
     await gateway.assertCredits('ws-1', 5);
 
     expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.AiCredits, 5);
+  });
+
+  describe('platform calls', () => {
+    const PLATFORM = { feature: AiFeature.Ask };
+
+    it('answers without plan credits and meters the call outside any workspace', async () => {
+      const { gateway, provider, recorded, entitlements, usage } = setup();
+      provider.answerWith({ title: 'Mug' });
+
+      const generation = await gateway.generateForPlatform(PLATFORM, REQUEST);
+
+      expect(generation.output).toEqual({ title: 'Mug' });
+      expect(entitlements.assertInWorkspace).not.toHaveBeenCalled();
+      expect(recorded).toEqual([]);
+      expect(usage.recordPlatform).toHaveBeenCalledWith({
+        feature: AiFeature.Ask,
+        provider: AiProviderName.Anthropic,
+        model: FAKE_AI_MODEL,
+        ...FAKE_AI_USAGE,
+      });
+    });
+
+    it('still rejects an answer off its schema, after metering it', async () => {
+      const { gateway, provider, usage } = setup();
+      provider.answerWith({ nope: true });
+
+      await expect(gateway.generateForPlatform(PLATFORM, REQUEST)).rejects.toThrow(
+        AiOutputRejectedError,
+      );
+      expect(usage.recordPlatform).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses when AI is not configured', async () => {
+      const { gateway } = setup(new FakeAiProvider(false));
+
+      await expect(gateway.generateForPlatform(PLATFORM, REQUEST)).rejects.toThrow(
+        AiNotConfiguredError,
+      );
+    });
   });
 });
