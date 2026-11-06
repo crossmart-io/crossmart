@@ -25,6 +25,7 @@ import { EbayAccountDeletionService } from './ebay/services/ebay-account-deletio
 import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.service.js';
 import { EbayDeletionChallengeService } from './ebay/services/ebay-deletion-challenge.service.js';
 import { GoogleMerchantSetupService } from './google-merchant/services/google-merchant-setup.service.js';
+import { EtsyShopSetupService } from './etsy/services/etsy-shop-setup.service.js';
 
 /**
  * Channel connections: OAuth install, sealed credentials, sessions with token refresh,
@@ -60,6 +61,7 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     EbayAccountDeletionService,
     EbayDeletionChallengeService,
     GoogleMerchantSetupService,
+    EtsyShopSetupService,
   ],
   exports: [
     ChannelAuthorizationService,
@@ -69,6 +71,7 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     EbayAccountDeletionService,
     EbayDeletionChallengeService,
     GoogleMerchantSetupService,
+    EtsyShopSetupService,
     ChannelSessionFactory,
     ChannelConnectionRepository,
     ListingRepository,

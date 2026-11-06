@@ -13,7 +13,7 @@ export class StartAuthorizationDto implements AuthorizationRequest {
     maxLength: ACCOUNT_HANDLE_MAX_LENGTH,
     example: 'demo-store.myshopify.com',
     description:
-      'The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`.',
+      'The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`. For Etsy, the shop name (the merchant must sign in to that shop).',
   })
   @IsString()
   @IsNotEmpty()
@@ -28,7 +28,7 @@ export class StartedAuthorizationDto implements StartedAuthorization {
   @ApiProperty({
     example: 'demo-store.myshopify.com',
     description:
-      'The account handle, normalized: a myshopify.com domain, or an eBay marketplace id',
+      'The account handle, normalized: a myshopify.com domain, an eBay marketplace id, or a lower-cased Etsy shop name',
   })
   accountHandle: string;
 

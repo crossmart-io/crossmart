@@ -49,6 +49,15 @@ const GOOGLE_MERCHANT_GUIDANCE: ChannelContentGuidance = {
   ],
 };
 
+const ETSY_GUIDANCE: ChannelContentGuidance = {
+  channelName: 'Etsy (handmade, vintage and craft supplies marketplace)',
+  guidance: [
+    'Etsy titles are at most 140 characters. Lead with what the item is and what buyers search for (material, style, occasion); no ALL CAPS, and use each of % : & + at most once.',
+    'Etsy shows the description as plain text: short paragraphs and simple lists; formatting and links are removed. Tell the item’s story: how it is made, materials, size and care.',
+    'Etsy listings take up to 13 tags of at most 20 characters each (letters, numbers and spaces): multi-word phrases buyers search for, without repeating the title word for word.',
+  ],
+};
+
 /**
  * The catalog: the merchant's own product content, which every store starts from. It is
  * written channel-neutral, for the merchant's site and as the base the stores adapt.
@@ -75,6 +84,7 @@ export const CHANNEL_CONTENT_GUIDANCE: Readonly<
   [ChannelType.Shopify]: SHOPIFY_GUIDANCE,
   [ChannelType.Ebay]: EBAY_GUIDANCE,
   [ChannelType.GoogleMerchant]: GOOGLE_MERCHANT_GUIDANCE,
+  [ChannelType.Etsy]: ETSY_GUIDANCE,
 };
 
 /**

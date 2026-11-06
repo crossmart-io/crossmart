@@ -51,6 +51,13 @@ export const POLICY_ID_MAX_LENGTH = 64;
 /** Google Merchant Center setup of a connection, under the connection. */
 export const GOOGLE_LISTING_SETUP_PATH = `:${CONNECTION_ID_PARAM}/google-merchant/listing-setup`;
 export const GOOGLE_TARGET_COUNTRY_SCHEMA_NAME = 'GoogleTargetCountry';
+/** Etsy setup of a connection, under the connection. */
+export const ETSY_LISTING_SETUP_PATH = `:${CONNECTION_ID_PARAM}/etsy/listing-setup`;
+export const ETSY_SHOP_REFRESH_PATH = `:${CONNECTION_ID_PARAM}/etsy/shop/refresh`;
+export const ETSY_WHO_MADE_SCHEMA_NAME = 'EtsyWhoMade';
+export const ETSY_WHEN_MADE_SCHEMA_NAME = 'EtsyWhenMade';
+/** Etsy profile ids are positive integers, sent as strings. */
+export const ETSY_PROFILE_ID_PATTERN = /^[1-9]\d{0,19}$/;
 /** Longest product page address template accepted. */
 export const PRODUCT_URL_TEMPLATE_MAX_LENGTH = 2_000;
 
