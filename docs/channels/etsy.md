@@ -5,7 +5,7 @@ Crossmart connects to Etsy through Etsy's **Open API v3** (`https://api.etsy.com
 Crossmart reads the shop and its shipping and processing profiles, the merchant saves a listing
 setup, and products are published as Etsy listings with their variations, images and stock.
 Crossmart reads the shop's receipts to move stock, and sends stock back to the listings. See
-[ADR 0018](../decisions/0018-etsy-connector.md).
+[ADR 0021](../decisions/0021-etsy-connector.md).
 
 **Status: in development.** The connector is built from Etsy's documentation and tested against
 recorded fixtures only; it has not yet run against a live Etsy app. Until the instance has an
@@ -237,7 +237,7 @@ refilled at 5 per second, until the app's real quota is known.
    (`ETSY_API_BUCKET_*`) if the quota allows.
 6. Connect a test shop: create a shipping profile and a processing profile on Etsy, connect,
    save the listing setup, and publish one product. Verify the facts marked as unverified in
-   ADR 0018.
+   ADR 0021.
 
 ## Not yet
 

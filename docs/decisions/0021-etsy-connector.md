@@ -1,4 +1,4 @@
-# ADR 0018: Etsy connector
+# ADR 0021: Etsy connector
 
 - Status: Accepted
 - Date: 2026-11-06
