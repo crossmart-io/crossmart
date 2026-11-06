@@ -49,14 +49,16 @@ settings or billing. It only sees the tools its scopes cover. The activity log s
 agent with the user's name. Members see and disconnect their agents under Settings (`GET/DELETE
 /api/v1/workspaces/{id}/agent-connections`), and disconnecting stops the agent at once.
 
-| Scope               | Tools                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `list_suggestions` |
-| `catalog:write`     | `create_product`, `replace_product`, `adjust_stock`                                 |
-| `orders:read`       | `list_orders`, `get_order`                                                          |
-| `stores:write`      | `add_product_to_store`, `remove_product_from_store`                                 |
-| `reports:read`      | `get_sales_report`, `get_inventory_report`                                          |
-| `suggestions:write` | `generate_content`, `approve_suggestion`                                            |
+| Scope               | Tools                                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `get_store`, `list_store_products`, `get_product_stores`, `list_suggestions`                             |
+| `catalog:write`     | `create_product`, `replace_product`, `adjust_stock`                                                                                                                       |
+| `orders:read`       | `list_orders`, `get_order`                                                                                                                                                |
+| `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics` |
+| `reports:read`      | `get_sales_report`, `get_inventory_report`                                                                                                                                |
+| `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                  |
+
+`get_platform_health` needs no scope.
 
 **Or use an API key**, for scripts and self-hosted setups: send it as `Authorization: Bearer <key>`
 or `x-api-key`. A key works in exactly one workspace, which the server finds with
