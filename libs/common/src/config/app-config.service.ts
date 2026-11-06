@@ -143,6 +143,16 @@ export class AppConfigService {
     return clientId && clientSecret ? { clientId, clientSecret } : null;
   }
 
+  /**
+   * The Etsy app, or null unless its keystring and shared secret are both set. The keystring
+   * is the OAuth client id; Etsy's OAuth uses PKCE, so the secret only signs API calls.
+   */
+  get etsyApp(): OAuthAppCredentials | null {
+    const clientId = this.configService.get('ETSY_API_KEY', { infer: true });
+    const clientSecret = this.configService.get('ETSY_SHARED_SECRET', { infer: true });
+    return clientId && clientSecret ? { clientId, clientSecret } : null;
+  }
+
   /** Whether plan limits block actions; when false they are only reported. */
   get entitlementsEnforced(): boolean {
     return this.configService.get('ENTITLEMENTS_ENFORCED', { infer: true });

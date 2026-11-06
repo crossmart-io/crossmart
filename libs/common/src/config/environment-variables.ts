@@ -167,6 +167,16 @@ export class EnvironmentVariables {
   @IsString()
   GOOGLE_CLIENT_SECRET?: string;
 
+  /** The keystring of the Crossmart Etsy app: its OAuth client id and the first half of `x-api-key`. */
+  @IsOptional()
+  @IsString()
+  ETSY_API_KEY?: string;
+
+  /** The shared secret of the Etsy app: the second half of `x-api-key`; never logged. */
+  @IsOptional()
+  @IsString()
+  ETSY_SHARED_SECRET?: string;
+
   /**
    * Whether plan limits block actions (`true`) or are only reported (default). Usage and limits
    * are computed either way; keep it off until billing lets merchants upgrade.
