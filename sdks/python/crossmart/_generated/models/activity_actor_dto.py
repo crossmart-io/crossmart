@@ -19,15 +19,20 @@ class ActivityActorDto:
         type_ (ActivityActorType):
         user_id (None | UUID):
         api_key_id (None | UUID):
-        name (None | str): User or API key name; null for system actions and deleted users or keys
-        email (None | str): Set for users only
+        agent_client_id (None | str): The OAuth client id of the connected agent, for agent actions
+        name (None | str): User or API key name; for an agent, the user it acted for. Null for system actions and
+            deleted users or keys
+        email (None | str): Set for users, and for the user an agent acted for
+        agent_name (None | str): The agent's name, such as "Claude", for agent actions
     """
 
     type_: ActivityActorType
     user_id: None | UUID
     api_key_id: None | UUID
+    agent_client_id: None | str
     name: None | str
     email: None | str
+    agent_name: None | str
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -45,11 +50,17 @@ class ActivityActorDto:
         else:
             api_key_id = self.api_key_id
 
+        agent_client_id: None | str
+        agent_client_id = self.agent_client_id
+
         name: None | str
         name = self.name
 
         email: None | str
         email = self.email
+
+        agent_name: None | str
+        agent_name = self.agent_name
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -58,8 +69,10 @@ class ActivityActorDto:
                 "type": type_,
                 "userId": user_id,
                 "apiKeyId": api_key_id,
+                "agentClientId": agent_client_id,
                 "name": name,
                 "email": email,
+                "agentName": agent_name,
             }
         )
 
@@ -100,6 +113,13 @@ class ActivityActorDto:
 
         api_key_id = _parse_api_key_id(d.pop("apiKeyId"))
 
+        def _parse_agent_client_id(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        agent_client_id = _parse_agent_client_id(d.pop("agentClientId"))
+
         def _parse_name(data: object) -> None | str:
             if data is None:
                 return data
@@ -114,12 +134,21 @@ class ActivityActorDto:
 
         email = _parse_email(d.pop("email"))
 
+        def _parse_agent_name(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        agent_name = _parse_agent_name(d.pop("agentName"))
+
         activity_actor_dto = cls(
             type_=type_,
             user_id=user_id,
             api_key_id=api_key_id,
+            agent_client_id=agent_client_id,
             name=name,
             email=email,
+            agent_name=agent_name,
         )
 
         activity_actor_dto.additional_properties = d

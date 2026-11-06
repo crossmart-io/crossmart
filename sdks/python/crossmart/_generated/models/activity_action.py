@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class ActivityAction(StrEnum):
+    AGENT_DISCONNECTED = "agent_disconnected"
     API_KEY_CREATED = "api_key_created"
     API_KEY_REVOKED = "api_key_revoked"
     CHANNEL_CATALOG_IMPORTED = "channel_catalog_imported"
