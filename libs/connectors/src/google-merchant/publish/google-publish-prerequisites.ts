@@ -11,6 +11,9 @@ export const NO_SETUP =
 export const NO_IMAGE =
   'Google needs at least one photo. Add an image to this product (Google takes only https links).';
 
+export const NOT_ACTIVE =
+  'Google lists only active products. Make the product active, or set it visible on this store.';
+
 const HTTPS_PREFIX = 'https://';
 
 export const GOOGLE_NO_SETUP: UnmetPublishRequirement = {
@@ -23,6 +26,11 @@ export const GOOGLE_NO_IMAGE: UnmetPublishRequirement = {
   reason: NO_IMAGE,
 };
 
+export const GOOGLE_INACTIVE_PRODUCT: UnmetPublishRequirement = {
+  requirement: PublishRequirement.ActiveProduct,
+  reason: NOT_ACTIVE,
+};
+
 /** Google lists nothing until the merchant saves the connection's listing setup. */
 export function unmetGoogleAccountRequirements(
   settings: ChannelSettings | null | undefined,
@@ -32,9 +40,17 @@ export function unmetGoogleAccountRequirements(
     : [GOOGLE_NO_SETUP];
 }
 
-/** Google needs at least one https image. */
+/** Whether Google can take one of these images: it needs an https link. */
+export function hasGoogleImage(imageUrls: readonly string[]): boolean {
+  return imageUrls.some((url) => url.startsWith(HTTPS_PREFIX));
+}
+
+/** Google needs at least one https image, and lists only products that are shown. */
 export function unmetGoogleProductRequirements(
   candidate: PublishCandidate,
 ): UnmetPublishRequirement[] {
-  return candidate.imageUrls.some((url) => url.startsWith(HTTPS_PREFIX)) ? [] : [GOOGLE_NO_IMAGE];
+  const unmet: UnmetPublishRequirement[] = [];
+  if (!hasGoogleImage(candidate.imageUrls)) unmet.push(GOOGLE_NO_IMAGE);
+  if (!candidate.active) unmet.push(GOOGLE_INACTIVE_PRODUCT);
+  return unmet;
 }

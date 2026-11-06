@@ -132,6 +132,25 @@ const ROUTES: RouteCase[] = [
     path: `${WORKSPACE}/channel-connections/${CONNECTION_ID}/sync`,
   },
   {
+    name: 'stores.syncProgress',
+    call: (cm) => cm.stores.syncProgress(CONNECTION_ID),
+    method: 'GET',
+    path: `${WORKSPACE}/channel-connections/${CONNECTION_ID}/sync`,
+  },
+  {
+    name: 'listings.editor',
+    call: (cm) => cm.listings.editor(PRODUCT_ID, CONNECTION_ID),
+    method: 'GET',
+    path: `${WORKSPACE}/products/${PRODUCT_ID}/channels/${CONNECTION_ID}/listing`,
+  },
+  {
+    name: 'listings.patchOverride',
+    call: (cm) => cm.listings.patchOverride(PRODUCT_ID, CONNECTION_ID, { title: null }),
+    method: 'PATCH',
+    path: `${WORKSPACE}/products/${PRODUCT_ID}/channels/${CONNECTION_ID}/override`,
+    body: { title: null },
+  },
+  {
     name: 'listings.forProduct',
     call: (cm) => cm.listings.forProduct(PRODUCT_ID),
     method: 'GET',

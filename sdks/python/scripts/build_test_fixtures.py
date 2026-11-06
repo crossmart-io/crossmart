@@ -20,6 +20,7 @@ SCHEMAS = (
     "InventoryItemDto",
     "ChannelConnectionDto",
     "ProductChannelDto",
+    "ListingEditorDto",
     "OrderSummaryDto",
     "OrderDetailDto",
     "SalesReportDto",

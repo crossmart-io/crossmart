@@ -18,6 +18,7 @@ import {
 import { AMOUNT_PATTERN, normalizeAmount } from '@crossmart/common';
 import type {
   ListingOverrideInput,
+  ListingOverridePatch,
   ListingOverrideView,
   VariantPriceOverrideInput,
 } from '@crossmart/core';
@@ -35,6 +36,25 @@ const URL_OPTIONS = { protocols: ['http', 'https'], require_protocol: true, requ
 
 function amountOrNull(value: string | null | undefined): string | null {
   return value ? (normalizeAmount(value) ?? value) : null;
+}
+
+/** A blank title follows the product. */
+function normalizedTitle(title: string | null | undefined): string | null {
+  const trimmed = title?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/** Tags trimmed and without repeats; null follows the product. */
+function normalizedTags(tags: string[] | null | undefined): string[] | null {
+  return tags ? [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))] : null;
+}
+
+function normalizedPrices(entries: VariantPriceOverrideInput[]): VariantPriceOverrideInput[] {
+  return entries.map((entry) => ({
+    variantId: entry.variantId,
+    price: amountOrNull(entry.price),
+    compareAtPrice: amountOrNull(entry.compareAtPrice),
+  }));
 }
 
 export class VariantPriceOverrideDto implements VariantPriceOverrideInput {
@@ -128,21 +148,38 @@ export class ListingOverrideDto {
   variantPrices?: VariantPriceOverrideDto[];
 
   toInput(): ListingOverrideInput {
-    const title = this.title?.trim();
     return {
-      title: title ? title : null,
+      title: normalizedTitle(this.title),
       descriptionHtml: this.descriptionHtml ?? null,
-      tags: this.tags ? [...new Set(this.tags.map((tag) => tag.trim()).filter(Boolean))] : null,
+      tags: normalizedTags(this.tags),
       mediaUrls: this.mediaUrls ?? null,
       visibility: this.visibility ?? null,
       inventoryBuffer: this.inventoryBuffer ?? null,
       maxQuantity: this.maxQuantity ?? null,
-      variantPrices: (this.variantPrices ?? []).map((entry) => ({
-        variantId: entry.variantId,
-        price: amountOrNull(entry.price),
-        compareAtPrice: amountOrNull(entry.compareAtPrice),
-      })),
+      variantPrices: normalizedPrices(this.variantPrices ?? []),
     };
+  }
+}
+
+/**
+ * Some overrides to change, keeping the rest: an absent field keeps its override, and null
+ * reverts it to the product's value. Each `variantPrices` entry replaces that variant's prices
+ * only; both prices null reverts the variant to the pricing rule.
+ */
+export class ListingOverridePatchDto extends ListingOverrideDto {
+  toPatch(): ListingOverridePatch {
+    const patch: ListingOverridePatch = {};
+    if (this.title !== undefined) patch.title = normalizedTitle(this.title);
+    if (this.descriptionHtml !== undefined) patch.descriptionHtml = this.descriptionHtml;
+    if (this.tags !== undefined) patch.tags = normalizedTags(this.tags);
+    if (this.mediaUrls !== undefined) patch.mediaUrls = this.mediaUrls;
+    if (this.visibility !== undefined) patch.visibility = this.visibility;
+    if (this.inventoryBuffer !== undefined) patch.inventoryBuffer = this.inventoryBuffer;
+    if (this.maxQuantity !== undefined) patch.maxQuantity = this.maxQuantity;
+    if (this.variantPrices !== undefined) {
+      patch.variantPrices = normalizedPrices(this.variantPrices);
+    }
+    return patch;
   }
 }
 

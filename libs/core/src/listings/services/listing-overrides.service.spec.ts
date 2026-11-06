@@ -151,4 +151,25 @@ describe('ListingOverridesService', () => {
     });
     expect(activity.entries[0].action).toBe(ActivityAction.ListingOverrideUpdated);
   });
+
+  it('reverts one field to the product with a patch, keeping every other override', async () => {
+    const { service, writer } = setup();
+
+    await service.patch(TARGET, { descriptionHtml: null }, ACTOR);
+
+    expect(writer.save).toHaveBeenCalledWith(TARGET, { ...EMPTY, inventoryBuffer: 2 });
+  });
+
+  it('validates a patched variant price against the product', async () => {
+    const { service, writer } = setup();
+
+    await expect(
+      service.patch(
+        TARGET,
+        { variantPrices: [{ variantId: 'foreign', price: '1.00', compareAtPrice: null }] },
+        ACTOR,
+      ),
+    ).rejects.toThrow(BadRequestException);
+    expect(writer.save).not.toHaveBeenCalled();
+  });
 });

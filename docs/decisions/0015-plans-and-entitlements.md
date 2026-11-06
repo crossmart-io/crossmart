@@ -1,6 +1,6 @@
 # ADR 0015: Plans as data, enforced by one entitlement service
 
-- Status: Accepted
+- Status: Accepted. The seeded plans are superseded by [ADR 0020](0020-plan-lineup.md).
 - Date: 2026-11-05
 
 ## Context

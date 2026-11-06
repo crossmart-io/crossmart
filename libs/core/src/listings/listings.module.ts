@@ -42,7 +42,9 @@ import { ListingSyncScheduler } from './services/listing-sync.scheduler.js';
 import { ListingTargetResolver } from './services/listing-target.resolver.js';
 import { PricingPreviewService } from './services/pricing-preview.service.js';
 import { ProductChannelViews } from './services/product-channel.views.js';
+import { ListingEditorViews } from './services/listing-editor.views.js';
 import { ListingDisplayResolver } from './services/listing-display.resolver.js';
+import { ProductStoreDisplays } from './services/product-store-displays.js';
 import { ListingRequeuer } from './services/listing-requeuer.js';
 import { ListingRetryService } from './services/listing-retry.service.js';
 import { ProductChannelsService } from './services/product-channels.service.js';
@@ -50,6 +52,9 @@ import { ProductSelectionService } from './services/product-selection.service.js
 import { SyncConnectionLoader } from './services/sync-connection.loader.js';
 import { SyncJobQueue } from './services/sync-job.queue.js';
 import { SyncPlanner } from './services/sync-planner.js';
+import { SyncProgressService } from './services/sync-progress.service.js';
+import { SyncRequestQueue } from './services/sync-request.queue.js';
+import { ListingEditorService } from './services/listing-editor.service.js';
 import { SyncProductLoader } from './services/sync-product.loader.js';
 
 /**
@@ -89,6 +94,9 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingSyncRunner,
     ListingSyncScheduler,
     SyncPlanner,
+    SyncRequestQueue,
+    SyncProgressService,
+    ListingEditorService,
     ChannelSyncService,
     ChannelListingsService,
     ChannelProductsService,
@@ -99,7 +107,9 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ConnectionRulesService,
     PricingPreviewService,
     ProductChannelViews,
+    ListingEditorViews,
     ListingDisplayResolver,
+    ProductStoreDisplays,
     ListingRequeuer,
     ListingRetryService,
     ProductChannelsService,
@@ -115,6 +125,9 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     { provide: SyncJobQueue, useClass: BullSyncJobQueue },
   ],
   exports: [
+    SyncProgressService,
+    ListingEditorService,
+    ProductStoreDisplays,
     ChannelPriceResolver,
     ProductSelectionService,
     ChannelSyncService,

@@ -1,12 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChannelType } from '@crossmart/connectors';
-import type { PriceRange, ProductPage, ProductStoreBadge, ProductSummary } from '@crossmart/core';
+import { ChannelType, PublishRequirement } from '@crossmart/connectors';
+import {
+  type DisplayedProductPage,
+  type DisplayedProductSummary,
+  type DisplayedStoreBadge,
+  ListingDisplayState,
+  type PriceRange,
+} from '@crossmart/core';
 import { ListingSource, ListingStatus, ProductStatus } from '@crossmart/database';
 import { CHANNEL_TYPE_SCHEMA_NAME } from '../../channels/channels.constants.js';
 import {
   LISTING_SOURCE_SCHEMA_NAME,
   LISTING_STATUS_SCHEMA_NAME,
 } from '../../listings/listings.constants.js';
+import {
+  DisplayReasonProperty,
+  DisplayRequirementProperty,
+  DisplayStateProperty,
+} from '../../listings/dto/listing-display.decorators.js';
 import { PRODUCT_STATUS_SCHEMA_NAME } from '../catalog.constants.js';
 
 export class PriceRangeDto implements PriceRange {
@@ -17,7 +28,7 @@ export class PriceRangeDto implements PriceRange {
   max: string;
 }
 
-export class ProductStoreBadgeDto implements ProductStoreBadge {
+export class ProductStoreBadgeDto implements DisplayedStoreBadge {
   @ApiProperty({ format: 'uuid' })
   connectionId: string;
 
@@ -32,9 +43,18 @@ export class ProductStoreBadgeDto implements ProductStoreBadge {
 
   @ApiProperty({ enum: ListingSource, enumName: LISTING_SOURCE_SCHEMA_NAME })
   source: ListingSource;
+
+  @DisplayStateProperty()
+  displayState: ListingDisplayState;
+
+  @DisplayReasonProperty()
+  displayReason: string | null;
+
+  @DisplayRequirementProperty()
+  displayRequirement: PublishRequirement | null;
 }
 
-export class ProductSummaryDto implements ProductSummary {
+export class ProductSummaryDto implements DisplayedProductSummary {
   @ApiProperty({ format: 'uuid' })
   id: string;
 
@@ -78,12 +98,15 @@ export class ProductSummaryDto implements ProductSummary {
   @ApiProperty()
   updatedAt: Date;
 
-  static from(summary: ProductSummary): ProductSummaryDto {
-    return Object.assign(new ProductSummaryDto(), summary);
+  static from(summary: DisplayedProductSummary): ProductSummaryDto {
+    return Object.assign(new ProductSummaryDto(), {
+      ...summary,
+      stores: summary.stores.map((badge) => Object.assign(new ProductStoreBadgeDto(), badge)),
+    });
   }
 }
 
-export class ProductPageDto implements ProductPage {
+export class ProductPageDto implements DisplayedProductPage {
   @ApiProperty({ type: [ProductSummaryDto] })
   items: ProductSummaryDto[];
 
@@ -93,7 +116,7 @@ export class ProductPageDto implements ProductPage {
   @ApiProperty({ description: 'How many match in all, for page numbers' })
   total: number;
 
-  static from(page: ProductPage): ProductPageDto {
+  static from(page: DisplayedProductPage): ProductPageDto {
     return Object.assign(new ProductPageDto(), {
       items: page.items.map((item) => ProductSummaryDto.from(item)),
       nextCursor: page.nextCursor,

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChannelType } from '@crossmart/connectors';
+import { ChannelType, PublishRequirement } from '@crossmart/connectors';
 import {
   type ChannelVariantView,
   type ConnectionSummary,
@@ -12,7 +12,11 @@ import {
   CHANNEL_TYPE_SCHEMA_NAME,
 } from '../../channels/channels.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
-import { DisplayReasonProperty, DisplayStateProperty } from './listing-display.decorators.js';
+import {
+  DisplayReasonProperty,
+  DisplayRequirementProperty,
+  DisplayStateProperty,
+} from './listing-display.decorators.js';
 import { ListingOverrideViewDto } from './listing-override.dto.js';
 import { ResolvedPriceDto } from './price-resolution.dto.js';
 
@@ -65,6 +69,9 @@ export class ProductChannelDto implements ProductChannelView {
   @DisplayReasonProperty()
   displayReason: string | null;
 
+  @DisplayRequirementProperty()
+  displayRequirement: PublishRequirement | null;
+
   @ApiProperty({ type: ListingSummaryDto, nullable: true })
   listing: ListingSummaryDto | null;
 
@@ -80,6 +87,7 @@ export class ProductChannelDto implements ProductChannelView {
       selected: view.selected,
       displayState: view.displayState,
       displayReason: view.displayReason,
+      displayRequirement: view.displayRequirement,
       listing: view.listing ? ListingSummaryDto.from(view.listing) : null,
       override: view.override ? ListingOverrideViewDto.from(view.override) : null,
       variants: view.variants.map((variant) =>

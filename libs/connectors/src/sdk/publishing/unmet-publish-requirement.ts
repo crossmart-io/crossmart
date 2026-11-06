@@ -12,6 +12,15 @@ export interface UnmetPublishRequirement {
 export interface PublishCandidate {
   /** The product's image URLs, in order. */
   imageUrls: readonly string[];
+  /**
+   * Whether the listing would be shown on the channel: the product is active, or the merchant
+   * set it visible on this store.
+   */
+  active: boolean;
+  /** The names of the product's options ("Size", "Color"), in order. */
+  optionNames: readonly string[];
+  /** How many variants the product has. */
+  variantCount: number;
 }
 
 /**

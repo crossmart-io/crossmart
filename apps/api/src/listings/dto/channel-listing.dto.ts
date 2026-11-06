@@ -9,13 +9,18 @@ import {
   type ChannelListingRow,
   type ListingSummary,
   ListingDisplayState,
+  type SyncProgress,
   type SyncRequestResult,
 } from '@crossmart/core';
 import { PublishRequirement } from '@crossmart/connectors';
 import { ListingSource, ListingStatus } from '@crossmart/database';
 import { LISTING_SOURCE_SCHEMA_NAME, LISTING_STATUS_SCHEMA_NAME } from '../listings.constants.js';
 import { PUBLISH_REQUIREMENT_SCHEMA_NAME } from '../../channels/channels.constants.js';
-import { DisplayReasonProperty, DisplayStateProperty } from './listing-display.decorators.js';
+import {
+  DisplayReasonProperty,
+  DisplayRequirementProperty,
+  DisplayStateProperty,
+} from './listing-display.decorators.js';
 import { PageNumberProperty } from '../../common/page-number.decorator.js';
 import { ChannelCategoryDto } from './channel-category.dto.js';
 
@@ -57,6 +62,15 @@ export class ListingSummaryDto implements ListingSummary {
   lastSyncedAt: Date | null;
 
   @ApiProperty({
+    type: Date,
+    nullable: true,
+    description:
+      'When a sync or retry queued its publish, update or delist; null once that job finished ' +
+      'or gave up. While set, a selected listing shows `displayState: publishing`.',
+  })
+  syncRequestedAt: Date | null;
+
+  @ApiProperty({
     type: ChannelCategoryDto,
     nullable: true,
     description: 'The channel category it is listed in, on channels with categories (eBay)',
@@ -89,6 +103,9 @@ export class ChannelListingDto extends ListingSummaryDto implements ChannelListi
 
   @DisplayReasonProperty()
   displayReason: string | null;
+
+  @DisplayRequirementProperty()
+  displayRequirement: PublishRequirement | null;
 
   static fromRow(row: ChannelListingRow): ChannelListingDto {
     return Object.assign(new ChannelListingDto(), {
@@ -145,7 +162,11 @@ export class ListChannelListingsQueryDto implements ChannelListingQuery {
 }
 
 export class SyncRequestResultDto implements SyncRequestResult {
-  @ApiProperty({ description: 'Selected products queued to be published or updated' })
+  @ApiProperty({
+    description:
+      'Selected products queued to be published or updated. With `delisting`, the total a ' +
+      'progress bar counts down from `GET …/sync`’s `pending`.',
+  })
   queued: number;
 
   @ApiProperty({ description: 'Listings queued to be delisted, as they are no longer selected' })
@@ -153,5 +174,24 @@ export class SyncRequestResultDto implements SyncRequestResult {
 
   static from(result: SyncRequestResult): SyncRequestResultDto {
     return Object.assign(new SyncRequestResultDto(), result);
+  }
+}
+
+export class SyncProgressDto implements SyncProgress {
+  @ApiProperty({
+    description:
+      'Listings whose publish, update or delist a sync or retry queued and whose job has not ' +
+      'finished yet (each shows `syncRequestedAt`, and `displayState: publishing` while selected)',
+  })
+  pending: number;
+
+  @ApiProperty({ description: 'The store’s listings in error now, whatever queued them' })
+  failed: number;
+
+  @ApiProperty({ description: 'True once nothing a sync or retry queued is still pending' })
+  done: boolean;
+
+  static from(progress: SyncProgress): SyncProgressDto {
+    return Object.assign(new SyncProgressDto(), progress);
   }
 }

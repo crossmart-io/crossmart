@@ -8,13 +8,14 @@ const NO_POLICY: UnmetPublishRequirement = {
   requirement: PublishRequirement.ShippingPolicy,
   reason: 'Choose a shipping policy',
 };
+const QUEUED_AT = new Date('2026-11-10T10:00:00Z');
 const NO_IMAGES: UnmetPublishRequirement = {
   requirement: PublishRequirement.Images,
   reason: 'Add an image',
 };
 
 function listing(status: ListingStatus, overrides: Partial<DisplayedListing> = {}) {
-  return { status, lastError: null, missingRequirement: null, ...overrides };
+  return { status, lastError: null, missingRequirement: null, syncRequestedAt: null, ...overrides };
 }
 
 function input(overrides: Partial<ListingDisplayInput> = {}): ListingDisplayInput {
@@ -27,6 +28,7 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(input({ selected: false }))).toEqual({
         state: ListingDisplayState.Draft,
         reason: null,
+        requirement: null,
       });
     });
 
@@ -63,13 +65,18 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(failed)).toEqual({
         state: ListingDisplayState.Failed,
         reason: 'eBay is down',
+        requirement: null,
       });
     });
   });
 
   describe('a selected product off the channel', () => {
     it('is ready when nothing blocks it and nothing is queued', () => {
-      expect(listingDisplayOf(input())).toEqual({ state: ListingDisplayState.Ready, reason: null });
+      expect(listingDisplayOf(input())).toEqual({
+        state: ListingDisplayState.Ready,
+        reason: null,
+        requirement: null,
+      });
     });
 
     it('is ready again once delisted, until it is queued', () => {
@@ -84,6 +91,14 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(queued).state).toBe(ListingDisplayState.Publishing);
     });
 
+    it('is publishing while a sync it was queued by runs, even after a delist', () => {
+      const queued = input({
+        listing: listing(ListingStatus.DELISTED, { syncRequestedAt: QUEUED_AT }),
+      });
+
+      expect(listingDisplayOf(queued).state).toBe(ListingDisplayState.Publishing);
+    });
+
     it('needs details, with the first blocker’s reason, when something blocks it', () => {
       const blocked = input({
         listing: listing(ListingStatus.PENDING),
@@ -93,6 +108,7 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(blocked)).toEqual({
         state: ListingDisplayState.NeedsDetails,
         reason: NO_POLICY.reason,
+        requirement: PublishRequirement.ShippingPolicy,
       });
     });
   });
@@ -104,7 +120,28 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(held)).toEqual({
         state: ListingDisplayState.Published,
         reason: null,
+        requirement: null,
       });
+    });
+
+    it('is publishing while a sync or retry updates it, and published once that finished', () => {
+      const queued = listing(ListingStatus.ACTIVE, { syncRequestedAt: QUEUED_AT });
+
+      expect(listingDisplayOf(input({ listing: queued })).state).toBe(
+        ListingDisplayState.Publishing,
+      );
+      expect(listingDisplayOf(input({ listing: { ...queued, syncRequestedAt: null } })).state).toBe(
+        ListingDisplayState.Published,
+      );
+    });
+
+    it('is removing, not publishing, once unselected while its delist is queued', () => {
+      const queued = input({
+        selected: false,
+        listing: listing(ListingStatus.ACTIVE, { syncRequestedAt: QUEUED_AT }),
+      });
+
+      expect(listingDisplayOf(queued).state).toBe(ListingDisplayState.Removing);
     });
   });
 
@@ -115,6 +152,7 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(failed)).toEqual({
         state: ListingDisplayState.Failed,
         reason: 'Bad price',
+        requirement: null,
       });
     });
 
@@ -129,6 +167,7 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(refused)).toEqual({
         state: ListingDisplayState.NeedsDetails,
         reason: 'eBay requires these item specifics: Brand',
+        requirement: PublishRequirement.ItemSpecifics,
       });
     });
 
@@ -141,6 +180,33 @@ describe('listingDisplayOf', () => {
       expect(listingDisplayOf(failed)).toEqual({
         state: ListingDisplayState.NeedsDetails,
         reason: NO_IMAGES.reason,
+        requirement: PublishRequirement.Images,
+      });
+    });
+
+    it('is publishing once a sync queued it again, when nothing blocks it', () => {
+      const requeued = input({
+        listing: listing(ListingStatus.ERROR, {
+          lastError: 'Bad price',
+          syncRequestedAt: QUEUED_AT,
+        }),
+      });
+
+      expect(listingDisplayOf(requeued).state).toBe(ListingDisplayState.Publishing);
+    });
+
+    it('still needs details when queued again without what the channel asked for', () => {
+      const requeued = input({
+        listing: listing(ListingStatus.ERROR, {
+          lastError: 'Choose a category',
+          missingRequirement: PublishRequirement.Category,
+          syncRequestedAt: QUEUED_AT,
+        }),
+      });
+
+      expect(listingDisplayOf(requeued)).toMatchObject({
+        state: ListingDisplayState.NeedsDetails,
+        requirement: PublishRequirement.Category,
       });
     });
   });

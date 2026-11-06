@@ -32,10 +32,13 @@ export const LISTING_ROW_INCLUDE = {
   product: {
     select: {
       title: true,
+      status: true,
+      optionNames: true,
       media: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
       _count: { select: { variants: true } },
     },
   },
+  override: { select: { visibility: true } },
 } satisfies Prisma.ListingInclude;
 
 export type ListingRowRecord = Prisma.ListingGetPayload<{ include: typeof LISTING_ROW_INCLUDE }>;

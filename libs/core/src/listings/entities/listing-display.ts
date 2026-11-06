@@ -10,6 +10,11 @@ export interface ListingDisplay {
    * message. Never holds secrets. Null for the other states.
    */
   reason: string | null;
+  /**
+   * For `needs_details`: the one thing to add first, so a client can route "Fix" to it. Null
+   * for the other states.
+   */
+  requirement: PublishRequirement | null;
 }
 
 /** The parts of a listing its display state reads. */
@@ -17,6 +22,8 @@ export interface DisplayedListing {
   status: ListingStatus;
   lastError: string | null;
   missingRequirement: PublishRequirement | null;
+  /** When a sync or retry queued its job; null once the job finished. */
+  syncRequestedAt: Date | null;
 }
 
 /** Everything one product's display state on one store follows from. */

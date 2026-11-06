@@ -9,6 +9,7 @@
   "selected": true,
   "displayState": "draft",
   "displayReason": "sample",
+  "displayRequirement": null,
   "listing": null,
   "override": null,
   "variants": []

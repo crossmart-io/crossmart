@@ -5,7 +5,7 @@ import { FEATURE_KINDS } from '../entitlements.constants.js';
 import type { Feature } from '../enums/feature.enum.js';
 import { SubscriptionStatus } from '@crossmart/database';
 
-export const TEST_PLAN = { code: 'free', name: 'Free', version: 1 };
+export const TEST_PLAN = { code: 'free', name: 'Free', version: 1, offered: false };
 
 /** A failed check of a counted feature: `limit` in use, one more requested. */
 export function limitReachedCheck(feature: Feature, limit = 2): EntitlementCheck {

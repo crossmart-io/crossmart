@@ -66,4 +66,14 @@ describe('CrossmartApiClient', () => {
       new CrossmartApiError(400, 'price must be an amount; title is empty'),
     );
   });
+
+  it('keeps the API’s error code when it gives one', async () => {
+    const { client } = setup(
+      jsonResponse({ message: 'Upgrade to add listings', code: 'plan_limit_reached' }, 402),
+    );
+    await expect(client.call({ method: HttpMethod.Get, path: '/api/v1/x' })).rejects.toMatchObject({
+      status: 402,
+      code: 'plan_limit_reached',
+    });
+  });
 });

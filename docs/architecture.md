@@ -92,18 +92,21 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   of the default plan; existing ones keep the version they are on until moved explicitly.
 - **Features.** `Feature` names every limit and flag; `FEATURE_KINDS` says which is which. A feature
   a version does not list is not included, so a migration adding a feature gives every version a row.
-- **Seeded plans** (a starting point, to validate with design partners; Enterprise is custom):
+- **Seeded plans:** the Crossmart Cloud lineup of ADR [0020](decisions/0020-plan-lineup.md), each
+  plan's latest version. New organizations start on Starter (`isDefault`). Free and Agency are legacy
+  (`active` false): not offered, kept by the organizations on them. Enterprise is sold by contract,
+  and its version 1 is the floor a contract starts from. Prices are not stored here; billing owns them.
 
-  | Feature               | Free | Starter | Growth | Agency |
-  | --------------------- | ---: | ------: | -----: | -----: |
-  | `active_listings`     |   50 |   1,000 | 10,000 | 50,000 |
-  | `channel_connections` |    2 |       ∞ |      ∞ |      ∞ |
-  | `workspaces`          |    1 |       1 |      1 |     25 |
-  | `members`             |    2 |       5 |     15 |      ∞ |
-  | `api_keys`            |    2 |      10 |     25 |    100 |
-  | `ai_credits` / month  |  100 |   1,000 |  5,000 | 20,000 |
-  | `autonomous_agents`   |    — |       — |      ✓ |      ✓ |
-  | `bring_your_own_key`  |    — |       — |      — |      ✓ |
+  | Feature               | Starter |   Pro | Growth |  Scale | Enterprise |
+  | --------------------- | ------: | ----: | -----: | -----: | ---------: |
+  | `active_listings`     |   1,000 | 3,000 | 10,000 | 50,000 |    100,000 |
+  | `channel_connections` |       3 |     5 |     10 |      ∞ |          ∞ |
+  | `workspaces`          |       1 |     1 |      2 |      5 |          ∞ |
+  | `members`             |       2 |     5 |     10 |     25 |          ∞ |
+  | `api_keys`            |       5 |    10 |     25 |    100 |          ∞ |
+  | `ai_credits` / month  |     300 | 1,500 |  5,000 | 20,000 |     20,000 |
+  | `autonomous_agents`   |       ✓ |     ✓ |      ✓ |      ✓ |          ✓ |
+  | `bring_your_own_key`  |       — |     — |      — |      ✓ |          ✓ |
 
 - **Usage** is counted from the data across the organization's workspaces, one aggregate query per
   feature: listings with status `ACTIVE`, connections not `DISCONNECTED`, workspaces, distinct
@@ -121,8 +124,9 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   before writing anything when the products that would go live do not fit (`ActiveListingsGate`),
   and the worker checks each listing it is about to make live: a blocked one is not sent and is
   marked `ERROR` with the reason.
-- `GET /api/v1/organizations/{id}/subscription` returns the plan, `enforced`, and every feature
-  with its limit and usage, for members holding `billing:view` (owners and admins).
+- `GET /api/v1/organizations/{id}/subscription` returns the plan (`offered` is false on a legacy
+  plan), `enforced`, and every feature with its limit and usage, for members holding `billing:view`
+  (owners and admins).
 
 ## 3. Core domain model (initial)
 
@@ -259,7 +263,11 @@ the listing `ERROR` with the channel's message in `lastError`.
 Triggers:
 
 - **Publish / Sync now** (`POST …/channel-connections/:id/sync`): every selected product gets a pending listing and a
-  content job; every listing the channel holds for a product no longer selected gets a delist job.
+  content job; every listing the channel holds for a product no longer selected gets a delist job. `SyncRequestQueue`
+  stamps each queued listing's `syncRequestedAt` before its job is queued, and `ListingSyncRunner` clears it when the
+  content or delist job finishes or the queue gives up, so a selected listing shows `publishing` meanwhile and
+  `GET …/sync` counts what is left. A per-listing mark, not a sync run id: jobs coalesce per listing (a later edit
+  replaces a queued job), so only the listing knows whether its latest job ran. A retry marks its listing the same way.
 - **Catalog changes** go through the in-process `CatalogEventBus`, so the catalog does not depend on channels: a
   product edit queues content and stock, a bulk status or tag change queues content, a bulk price change and a CSV
   update import queue content or prices. Only listings the channel already holds are synced; new products wait for

@@ -12,8 +12,6 @@ import type { ChannelSettings } from '../../sdk/channel-settings.js';
 import { ChannelType } from '../../sdk/channel-type.enum.js';
 import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
-import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
-import type { UnmetPublishRequirement } from '../../sdk/publishing/unmet-publish-requirement.js';
 import { assignVariantKeys } from '../../sdk/listings/variant-keys.js';
 import {
   GOOGLE_OFFER_ID_PATTERN,
@@ -26,19 +24,17 @@ import {
   isGoogleMerchantSettings,
 } from '../google-merchant-settings.js';
 import { toGooglePrices } from './google-price.js';
-import { GOOGLE_NO_SETUP, unmetGoogleProductRequirements } from './google-publish-prerequisites.js';
+import {
+  GOOGLE_INACTIVE_PRODUCT,
+  GOOGLE_NO_IMAGE,
+  GOOGLE_NO_SETUP,
+  hasGoogleImage,
+} from './google-publish-prerequisites.js';
 import { toProductInput } from './google-product.mapper.js';
 import { type GoogleFeed, GoogleProductInputsClient } from './google-product-inputs.client.js';
 
-export { NO_IMAGE, NO_SETUP } from './google-publish-prerequisites.js';
-export const NOT_ACTIVE =
-  'Google lists only active products. Make the product active, or set it visible on this store.';
+export { NO_IMAGE, NO_SETUP, NOT_ACTIVE } from './google-publish-prerequisites.js';
 export const NO_REFERENCE = 'Crossmart cannot find this listing’s offers on Google.';
-
-const INACTIVE_PRODUCT: UnmetPublishRequirement = {
-  requirement: PublishRequirement.ActiveProduct,
-  reason: NOT_ACTIVE,
-};
 
 /** A connection ready to list: its settings, with the listing setup saved. */
 interface ReadyAccount {
@@ -82,7 +78,7 @@ export class GoogleListingPublisher implements ListingPublisher {
 
   async publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     if (!draft.product.active) {
-      throw ChannelError.unmet(ChannelType.GoogleMerchant, INACTIVE_PRODUCT);
+      throw ChannelError.unmet(ChannelType.GoogleMerchant, GOOGLE_INACTIVE_PRODUCT);
     }
     return this.write(session, draft);
   }
@@ -133,8 +129,9 @@ export class GoogleListingPublisher implements ListingPublisher {
   private async write(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     const account = readyAccount(draft.accountSettings);
     const imageUrls = draft.product.images.map(({ url }) => url);
-    const [unmetImage] = unmetGoogleProductRequirements({ imageUrls });
-    if (unmetImage) throw ChannelError.unmet(ChannelType.GoogleMerchant, unmetImage);
+    if (!hasGoogleImage(imageUrls)) {
+      throw ChannelError.unmet(ChannelType.GoogleMerchant, GOOGLE_NO_IMAGE);
+    }
     const ids = offerIds(draft);
     const feed = feedOf(account);
     const target = {

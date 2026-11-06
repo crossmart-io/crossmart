@@ -115,4 +115,22 @@ describe('ListingSyncRepository writes', () => {
     ).rejects.toThrow(NotFoundException);
     expect(listingVariant.deleteMany).not.toHaveBeenCalled();
   });
+
+  it('marks a sync request on the products’ listings of one store, and clears it per product', async () => {
+    const { repository, listing } = setup(2);
+    const scope = { workspaceId: 'ws-1', connectionId: 'conn-1' };
+    const requestedAt = new Date('2026-11-10T10:00:00Z');
+
+    await repository.markSyncRequested(scope, ['p-1', 'p-2'], requestedAt);
+    await repository.clearSyncRequest(scope, 'p-1');
+
+    expect(listing.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { ...scope, productId: { in: ['p-1', 'p-2'] } },
+      data: { syncRequestedAt: requestedAt },
+    });
+    expect(listing.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { ...scope, productId: 'p-1', syncRequestedAt: { not: null } },
+      data: { syncRequestedAt: null },
+    });
+  });
 });

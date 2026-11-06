@@ -23,6 +23,10 @@ export const MISSING_LOCATION =
   'Set where items ship from in this eBay connection’s listing defaults.';
 export const NO_IMAGES =
   'eBay needs at least one photo. Add an image to this product (eBay takes only https links).';
+export const NOT_ACTIVE =
+  'eBay listings cannot be hidden. Make the product active, or set it visible on this store.';
+export const NO_OPTIONS =
+  'Give this product’s options names (such as Size) to list its variants on eBay.';
 
 /** The listing defaults every listing needs. */
 type RequiredDefault =
@@ -62,6 +66,16 @@ export const EBAY_NO_IMAGES: UnmetPublishRequirement = {
   reason: NO_IMAGES,
 };
 
+export const EBAY_INACTIVE_PRODUCT: UnmetPublishRequirement = {
+  requirement: PublishRequirement.ActiveProduct,
+  reason: NOT_ACTIVE,
+};
+
+export const EBAY_UNNAMED_OPTIONS: UnmetPublishRequirement = {
+  requirement: PublishRequirement.OptionNames,
+  reason: NO_OPTIONS,
+};
+
 export function isCompleteListingDefaults(
   defaults: EbayListingDefaults,
 ): defaults is CompleteListingDefaults {
@@ -80,9 +94,19 @@ export function unmetEbayAccountRequirements(
   return DEFAULT_REQUIREMENTS.filter(({ field }) => !defaults[field]).map(({ unmet }) => unmet);
 }
 
-/** eBay needs at least one https image it can download. */
+/**
+ * What eBay refuses a new listing for, in the order the merchant fixes them: at least one https
+ * image it can download, a shown product (eBay has no hidden listings), and named options for a
+ * product with several variants.
+ */
 export function unmetEbayProductRequirements(
   candidate: PublishCandidate,
 ): UnmetPublishRequirement[] {
-  return candidate.imageUrls.some(isHttps) ? [] : [EBAY_NO_IMAGES];
+  const unmet: UnmetPublishRequirement[] = [];
+  if (!candidate.imageUrls.some(isHttps)) unmet.push(EBAY_NO_IMAGES);
+  if (!candidate.active) unmet.push(EBAY_INACTIVE_PRODUCT);
+  if (candidate.variantCount > 1 && candidate.optionNames.length === 0) {
+    unmet.push(EBAY_UNNAMED_OPTIONS);
+  }
+  return unmet;
 }

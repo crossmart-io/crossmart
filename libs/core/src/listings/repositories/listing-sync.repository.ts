@@ -28,6 +28,12 @@ export interface ListingRef {
   listingId: string;
 }
 
+/** A connection's listings, within its workspace. */
+export interface ListingScope {
+  workspaceId: string;
+  connectionId: string;
+}
+
 /** What a successful publish or update stores. */
 export interface PublishedListingRecord {
   externalId: string;
@@ -215,6 +221,39 @@ export class ListingSyncRepository {
       },
       data: { status: ListingStatus.PENDING, lastError: null, missingRequirement: null },
     });
+  }
+
+  /**
+   * Marks the products' listings on the connection as queued by a sync or retry, until their
+   * job finishes. Call it before the jobs are queued, so a fast job never finishes first.
+   */
+  async markSyncRequested(
+    scope: ListingScope,
+    productIds: string[],
+    requestedAt: Date,
+  ): Promise<void> {
+    await this.prisma.listing.updateMany({
+      where: { ...scope, productId: { in: productIds } },
+      data: { syncRequestedAt: requestedAt },
+    });
+  }
+
+  /** The product's job on the connection finished (or gave up): its listings are settled. */
+  async clearSyncRequest(scope: ListingScope, productId: string): Promise<void> {
+    await this.prisma.listing.updateMany({
+      where: { ...scope, productId, syncRequestedAt: { not: null } },
+      data: { syncRequestedAt: null },
+    });
+  }
+
+  /** How many of the connection's listings a sync or retry queued and their job has not settled. */
+  countSyncPending(scope: ListingScope): Promise<number> {
+    return this.prisma.listing.count({ where: { ...scope, syncRequestedAt: { not: null } } });
+  }
+
+  /** How many of the connection's listings are in error now. */
+  countFailed(scope: ListingScope): Promise<number> {
+    return this.prisma.listing.count({ where: { ...scope, status: ListingStatus.ERROR } });
   }
 
   async markDelisted(listing: ListingRef, syncedAt: Date): Promise<void> {

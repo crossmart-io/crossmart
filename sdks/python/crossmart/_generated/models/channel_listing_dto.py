@@ -33,6 +33,8 @@ class ChannelListingDto:
         missing_requirement (None | PublishRequirement): What the channel refused the last publish for lacking (such as
             `item_specifics`), when the merchant can add it; null otherwise
         last_synced_at (datetime.datetime | None):
+        sync_requested_at (datetime.datetime | None): When a sync or retry queued its publish, update or delist; null
+            once that job finished or gave up. While set, a selected listing shows `displayState: publishing`.
         category (ChannelCategoryDto | None): The channel category it is listed in, on channels with categories (eBay)
         product_id (UUID):
         product_title (str):
@@ -40,11 +42,17 @@ class ChannelListingDto:
         variant_count (float):
         display_state (ListingDisplayState): The product on this store, in one state computed by the server: `draft`
             (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something
-            publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`,
-            `failed`, `removing` (being taken off) or `removed`.
+            publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update
+            of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or
+            `removed`.
         display_reason (None | str): For `needs_details` and `failed`: a short, merchant-readable reason (what to add,
             or the channel’s message). Never holds secrets. Null for the other states. Example: Choose a shipping policy in
             this eBay connection’s listing defaults..
+        display_requirement (None | PublishRequirement): For `needs_details`: the requirement to fix first, so a client
+            can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`,
+            `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`,
+            `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics`
+            are known once the channel refused a publish. Null for the other states.
     """
 
     id: UUID
@@ -55,6 +63,7 @@ class ChannelListingDto:
     last_error: None | str
     missing_requirement: None | PublishRequirement
     last_synced_at: datetime.datetime | None
+    sync_requested_at: datetime.datetime | None
     category: ChannelCategoryDto | None
     product_id: UUID
     product_title: str
@@ -62,6 +71,7 @@ class ChannelListingDto:
     variant_count: float
     display_state: ListingDisplayState
     display_reason: None | str
+    display_requirement: None | PublishRequirement
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -94,6 +104,12 @@ class ChannelListingDto:
         else:
             last_synced_at = self.last_synced_at
 
+        sync_requested_at: None | str
+        if isinstance(self.sync_requested_at, datetime.datetime):
+            sync_requested_at = self.sync_requested_at.isoformat()
+        else:
+            sync_requested_at = self.sync_requested_at
+
         category: dict[str, Any] | None
         if isinstance(self.category, ChannelCategoryDto):
             category = self.category.to_dict()
@@ -114,6 +130,12 @@ class ChannelListingDto:
         display_reason: None | str
         display_reason = self.display_reason
 
+        display_requirement: None | str
+        if isinstance(self.display_requirement, PublishRequirement):
+            display_requirement = self.display_requirement.value
+        else:
+            display_requirement = self.display_requirement
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -126,6 +148,7 @@ class ChannelListingDto:
                 "lastError": last_error,
                 "missingRequirement": missing_requirement,
                 "lastSyncedAt": last_synced_at,
+                "syncRequestedAt": sync_requested_at,
                 "category": category,
                 "productId": product_id,
                 "productTitle": product_title,
@@ -133,6 +156,7 @@ class ChannelListingDto:
                 "variantCount": variant_count,
                 "displayState": display_state,
                 "displayReason": display_reason,
+                "displayRequirement": display_requirement,
             }
         )
 
@@ -200,6 +224,21 @@ class ChannelListingDto:
 
         last_synced_at = _parse_last_synced_at(d.pop("lastSyncedAt"))
 
+        def _parse_sync_requested_at(data: object) -> datetime.datetime | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                sync_requested_at_type_0 = datetime.datetime.fromisoformat(data)
+
+                return sync_requested_at_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(datetime.datetime | None, data)
+
+        sync_requested_at = _parse_sync_requested_at(d.pop("syncRequestedAt"))
+
         def _parse_category(data: object) -> ChannelCategoryDto | None:
             if data is None:
                 return data
@@ -237,6 +276,21 @@ class ChannelListingDto:
 
         display_reason = _parse_display_reason(d.pop("displayReason"))
 
+        def _parse_display_requirement(data: object) -> None | PublishRequirement:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                display_requirement_type_0 = PublishRequirement(data)
+
+                return display_requirement_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | PublishRequirement, data)
+
+        display_requirement = _parse_display_requirement(d.pop("displayRequirement"))
+
         channel_listing_dto = cls(
             id=id,
             status=status,
@@ -246,6 +300,7 @@ class ChannelListingDto:
             last_error=last_error,
             missing_requirement=missing_requirement,
             last_synced_at=last_synced_at,
+            sync_requested_at=sync_requested_at,
             category=category,
             product_id=product_id,
             product_title=product_title,
@@ -253,6 +308,7 @@ class ChannelListingDto:
             variant_count=variant_count,
             display_state=display_state,
             display_reason=display_reason,
+            display_requirement=display_requirement,
         )
 
         channel_listing_dto.additional_properties = d

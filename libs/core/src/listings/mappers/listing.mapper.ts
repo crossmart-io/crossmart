@@ -7,7 +7,11 @@ import type {
   VariantPriceOverrideInput,
 } from '../entities/listing-override.js';
 import type { ListingDisplay } from '../entities/listing-display.js';
-import type { ChannelListingRow, ListingSummary } from '../entities/listing-views.js';
+import type {
+  ChannelListingRow,
+  ListingDisplayFields,
+  ListingSummary,
+} from '../entities/listing-views.js';
 import type { VariantPriceOverride } from '../entities/price-resolution.js';
 import type { ListingRowRecord, ListingSyncRecord } from '../repositories/listing-sync.queries.js';
 
@@ -21,6 +25,7 @@ type ListingFields = Pick<
   | 'lastError'
   | 'missingRequirement'
   | 'lastSyncedAt'
+  | 'syncRequestedAt'
   | 'channelCategoryId'
   | 'channelCategoryName'
 >;
@@ -37,6 +42,16 @@ export function toListingSummary(record: ListingFields): ListingSummary {
     lastError: record.lastError,
     missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
     lastSyncedAt: record.lastSyncedAt,
+    syncRequestedAt: record.syncRequestedAt,
+  };
+}
+
+/** A display as the fields a view exposes. */
+export function toDisplayFields(display: ListingDisplay): ListingDisplayFields {
+  return {
+    displayState: display.state,
+    displayReason: display.reason,
+    displayRequirement: display.requirement,
   };
 }
 
@@ -46,8 +61,7 @@ export function toChannelListingRow(
 ): ChannelListingRow {
   return {
     ...toListingSummary(record),
-    displayState: display.state,
-    displayReason: display.reason,
+    ...toDisplayFields(display),
     productId: record.productId,
     productTitle: record.product.title,
     imageUrl: record.product.media[0]?.url ?? null,

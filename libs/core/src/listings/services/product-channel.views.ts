@@ -4,10 +4,13 @@ import type { ChannelConnectionView } from '../../channels/entities/channel-conn
 import type { ChannelVariantView, ProductChannelView } from '../entities/listing-views.js';
 import type { PricingContext } from '../entities/price-resolution.js';
 import {
+  toDisplayFields,
   toListingOverrideView,
   toListingSummary,
   toPriceOverrides,
 } from '../mappers/listing.mapper.js';
+import { candidateProductOf } from '../rules/candidate-product.js';
+import { publishCandidateOf } from '../rules/publish-candidate.js';
 import type { ListingSyncRecord } from '../repositories/listing-sync.queries.js';
 import { effectiveQuantity } from '../rules/effective-quantity.js';
 import { variantTitle } from '../rules/variant-title.js';
@@ -43,13 +46,12 @@ export class ProductChannelViews {
       selected,
       removedByHand: rule?.excludeProductIds.includes(product.id) ?? false,
       listing: summary,
-      imageUrls: product.media.map((media) => media.url),
+      candidate: publishCandidateOf(candidateProductOf(product, listing), listing),
     });
     return {
       connection: { ...this.connectionSummary(view), currencyCode: pricing.currencyCode },
       selected,
-      displayState: display.state,
-      displayReason: display.reason,
+      ...toDisplayFields(display),
       listing: summary,
       override: listing ? toListingOverrideView(listing) : null,
       variants: this.variants(product, pricing, listing),

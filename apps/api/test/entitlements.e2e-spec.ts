@@ -147,15 +147,73 @@ describe('Plans and entitlements (e2e)', () => {
       .send({ name });
   }
 
+  describe('the seeded plan lineup (ADR 0020)', () => {
+    /** What an offered plan's latest version allows; null is unlimited. */
+    const allows = (
+      activeListings: number,
+      stores: number | null,
+      workspaces: number | null,
+      members: number | null,
+    ): Limits => ({
+      [Feature.ActiveListings]: activeListings,
+      [Feature.ChannelConnections]: stores,
+      [Feature.Workspaces]: workspaces,
+      [Feature.Members]: members,
+    });
+    const LINEUP: Record<string, Limits> = {
+      starter: { ...allows(1_000, 3, 1, 2), [Feature.AiCredits]: 300 },
+      pro: { ...allows(3_000, 5, 1, 5), [Feature.AiCredits]: 1_500 },
+      growth: { ...allows(10_000, 10, 2, 10), [Feature.AiCredits]: 5_000 },
+      scale: { ...allows(50_000, null, 5, 25), [Feature.AiCredits]: 20_000 },
+      enterprise: allows(100_000, null, null, null),
+    };
+    const LEGACY_PLANS = ['free', 'agency'];
+
+    const latestVersions = () =>
+      prisma.plan.findMany({
+        where: { code: { in: [...Object.keys(LINEUP), ...LEGACY_PLANS] } },
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          versions: { orderBy: { version: 'desc' }, take: 1, include: { features: true } },
+        },
+      });
+
+    it('offers the lineup in order, starts new organizations on Starter and keeps legacy plans', async () => {
+      const plans = await latestVersions();
+
+      expect(plans.filter((plan) => plan.active).map((plan) => plan.code)).toEqual(
+        Object.keys(LINEUP),
+      );
+      expect(plans.filter((plan) => plan.isDefault).map((plan) => plan.code)).toEqual(['starter']);
+      expect(plans.filter((plan) => !plan.active).map((plan) => plan.code)).toEqual(LEGACY_PLANS);
+    });
+
+    it('grants every feature in every offered plan, with the published limits', async () => {
+      for (const plan of (await latestVersions()).filter((entry) => entry.active)) {
+        const features = new Map(plan.versions[0].features.map((row) => [row.feature, row]));
+
+        expect(new Set(features.keys())).toEqual(new Set(Object.values(Feature)));
+        expect(features.get(Feature.AutonomousAgents)?.enabled).toBe(true);
+        for (const [feature, limit] of Object.entries(LINEUP[plan.code])) {
+          expect({ plan: plan.code, feature, limit: features.get(feature)?.limit }).toEqual({
+            plan: plan.code,
+            feature,
+            limit,
+          });
+        }
+      }
+    });
+  });
+
   describe('GET /organizations/:id/subscription', () => {
-    it('puts every new organization on the free plan and reports its usage', async () => {
+    it('puts every new organization on the starter plan and reports its usage', async () => {
       const owner = await signUp(app, 'Plan Owner');
 
       const response = await subscriptionOf(owner);
 
       expect(response.status).toBe(HttpStatus.OK);
       expect(response.body).toMatchObject({
-        plan: { code: 'free', name: 'Free', version: 1 },
+        plan: { code: 'starter', name: 'Starter', version: 2, offered: true },
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: null,
         enforced: false,
@@ -168,7 +226,7 @@ describe('Plans and entitlements (e2e)', () => {
         feature: Feature.ActiveListings,
         kind: FeatureKind.Limit,
         enabled: true,
-        limit: 50,
+        limit: 1_000,
         usage: 0,
       });
       expect(features.get(Feature.Workspaces)).toMatchObject({ limit: 1, usage: 1 });
@@ -176,7 +234,7 @@ describe('Plans and entitlements (e2e)', () => {
       expect(features.get(Feature.AiCredits)).toMatchObject({ usage: 0 });
       expect(features.get(Feature.AutonomousAgents)).toMatchObject({
         kind: FeatureKind.Flag,
-        enabled: false,
+        enabled: true,
         usage: null,
       });
     });

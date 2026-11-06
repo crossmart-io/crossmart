@@ -26,6 +26,13 @@ export class PlanDto {
   })
   version: number;
 
+  @ApiProperty({
+    description:
+      'Whether new organizations can choose this plan. False for a legacy plan, which an ' +
+      'organization already on it keeps',
+  })
+  offered: boolean;
+
   static from(plan: PlanReference): PlanDto {
     return Object.assign(new PlanDto(), plan);
   }
