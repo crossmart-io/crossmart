@@ -1,16 +1,36 @@
 /** Where the docs site keeps its pages, inside a crossmart-docs checkout. */
 export const DOCS_CONTENT_DIR = 'src/content/docs';
 export const DOCS_SITE_URL = 'https://docs.crossmart.io';
-/** Public URLs of this repository's documents. */
-export const REPOSITORY_URL = 'https://github.com/crossmart-io/crossmart';
-export const REPOSITORY_BLOB_URL = `${REPOSITORY_URL}/blob/main`;
+export const SITE_URL = 'https://crossmart.io';
 
 /**
- * This repository's documents that are public and not already on the docs site. ADRs and the
- * architecture notes are left out: they are for contributors, and hold internal reasoning.
+ * crossmart.io publishes its pages as Markdown at this address (llms.txt). Its `##` sections
+ * are the home page's sections; `SITE_SECTIONS` says where each one is on the page.
  */
-export const REPOSITORY_DOCUMENTS = ['README.md', 'docs/channels', 'docs/developers/agents'];
-export const ROOT_README = 'README.md';
+export const SITE_LLMS_URL = `${SITE_URL}/llms.txt`;
+
+/** A `##` section of crossmart.io's llms.txt, and where people read it on the site. */
+export interface SiteSection {
+  heading: string;
+  /** The home page section's id. */
+  anchor: string;
+  /** The chunk title: what the section is about, in the words people ask with. */
+  title: string;
+}
+
+/**
+ * The sections of crossmart.io that Ask learns from. Sections not listed (the page list and
+ * contact details) are left out: they hold links, not answers.
+ */
+export const SITE_SECTIONS: readonly SiteSection[] = [
+  {
+    heading: 'Integrations',
+    anchor: 'channels',
+    title: 'Marketplaces and channels Crossmart supports',
+  },
+  { heading: 'Cloud or self-hosted', anchor: 'hosting', title: 'Crossmart Cloud or self-hosted' },
+  { heading: 'Questions and answers', anchor: 'faq', title: 'Crossmart FAQ' },
+];
 
 export const MARKDOWN_EXTENSIONS = ['.md', '.mdx'];
 export const INDEX_PAGE = 'index';

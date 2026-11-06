@@ -22,6 +22,8 @@ import { AuthService } from '../services/auth.service.js';
  * Global guard: every route needs an API key, an agent's access token or a session cookie unless
  * it is `@Public()`. A route marked `@AllowAnonymous()` identifies callers who send credentials
  * and lets the others through anonymously; a wrong API key or access token is still refused.
+ * On routes any website may call (public CORS, such as Ask), a session cookie counts only from a
+ * trusted origin: from any other site the call is anonymous, even if the browser sent a cookie.
  */
 @Injectable()
 export class AuthenticationGuard implements CanActivate {
@@ -73,7 +75,7 @@ export class AuthenticationGuard implements CanActivate {
     if (bearer !== undefined) {
       return this.agents.authenticate(bearer);
     }
-    return this.authService.findUserBySession(request.headers);
+    return this.authService.findUserBySessionFrom(request);
   }
 
   private bearerToken(request: AuthenticatedRequest): string | undefined {

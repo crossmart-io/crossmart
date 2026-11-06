@@ -13,10 +13,25 @@ const DOCUMENTS = [
 
 describe('searchTerms', () => {
   it('lowercases, drops stopwords and folds plurals', () => {
-    expect(searchTerms('How do I publish my Listings to the stores?')).toEqual([
+    expect(searchTerms('How do I publish my Listings to the docs?')).toEqual([
       'publish',
       'listing',
-      'store',
+      'doc',
+    ]);
+  });
+
+  it('folds synonyms, so marketplaces, stores and channels match', () => {
+    expect(searchTerms('Marketplaces, stores, platforms and integrations')).toEqual([
+      'channel',
+      'channel',
+      'channel',
+      'channel',
+    ]);
+    expect(searchTerms('pricing cost tiers connected')).toEqual([
+      'price',
+      'price',
+      'plan',
+      'connect',
     ]);
   });
 

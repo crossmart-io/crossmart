@@ -26,8 +26,9 @@ FROM platform_ai_usage WHERE feature = 'ask' GROUP BY 1, 2 ORDER BY 1 DESC;
 ## Refreshing the knowledge index
 
 The docs are chunked at build time into
-`libs/core/src/ask/knowledge/docs-knowledge.generated.ts`, which is committed. Rebuild it after the
-docs change (crossmart-docs, `README.md`, `docs/channels/` or `docs/developers/agents/`):
+`libs/core/src/ask/knowledge/docs-knowledge.generated.ts`, which is committed. Rebuild it after
+crossmart-docs or crossmart.io changes. The build reads the docs from a checkout and the site's
+sections from `https://crossmart.io/llms.txt`:
 
 ```bash
 git clone --depth 1 https://github.com/crossmart-io/crossmart-docs ../crossmart-docs   # or git pull
@@ -37,8 +38,21 @@ git add libs/core/src/ask/knowledge/docs-knowledge.generated.ts
 
 The script prints how many chunks and pages it wrote. Its output is already formatted, so
 `pnpm format` leaves it as is. The plans are not in the file: Ask reads the offered plans from the
-database and rebuilds its index every 10 minutes. To change which documents of this repository
-are included, edit `REPOSITORY_DOCUMENTS` in `tools/knowledge-base/knowledge-base.constants.ts`.
+database and rebuilds its index every 10 minutes. To change which sections of crossmart.io are
+included, and the home page anchor each one is cited with, edit `SITE_SECTIONS` in
+`tools/knowledge-base/knowledge-base.constants.ts`.
+
+Every citation must be a public page: a test fails if a chunk's URL is not on
+`PUBLIC_CITATION_HOSTS`. This repository's documents are not read while the repository is private.
+`libs/core/src/ask/services/knowledge-retrieval.spec.ts` checks the top sources for representative
+questions; if a docs change breaks one, check the answers before committing the new index.
+
+## Calling Ask from a website
+
+`/api/v1/ask` allows cross-origin `POST` from any site, without credentials, so a widget can call
+it with `fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body })`.
+Do not send cookies: from a site outside `CORS_ORIGINS` they are ignored and the call is
+anonymous. Answers are plain text.
 
 ## llms.txt
 

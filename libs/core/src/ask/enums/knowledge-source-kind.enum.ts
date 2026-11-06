@@ -2,8 +2,8 @@
 export enum KnowledgeSourceKind {
   /** A page of docs.crossmart.io (the crossmart-docs repository). */
   Docs = 'docs',
-  /** A document in the backend repository, such as a channel guide. */
-  Repository = 'repository',
+  /** A section of crossmart.io, such as the channel list or the FAQ. */
+  Site = 'site',
   /** The offered plans, read from the plan data at run time. */
   Plans = 'plans',
 }

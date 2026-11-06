@@ -24,6 +24,12 @@ import { connectAgent, registerAgent } from './support/agent-oauth.js';
 import { createTestApp, signUp } from './support/test-app.js';
 
 const CLIENT_IP_HEADER = 'x-real-ip';
+/** The marketing site: not a trusted origin, but its widget calls Ask. */
+const SITE_ORIGIN = 'https://crossmart.io';
+const ALLOW_ORIGIN = 'access-control-allow-origin';
+const ALLOW_CREDENTIALS = 'access-control-allow-credentials';
+const ALLOW_METHODS = 'access-control-allow-methods';
+const ALLOW_HEADERS = 'access-control-allow-headers';
 const CITED = {
   outcome: AskOutcome.Answered,
   answer: 'Past a limit the API answers 429 with a Retry-After header.',
@@ -187,6 +193,72 @@ describe('Ask Crossmart (e2e)', () => {
       .send({ question: 'rate limits for an agent' });
 
     expect(response.status).toBe(HttpStatus.OK);
+  });
+
+  describe('from browsers on other sites', () => {
+    const trustedOrigin = () => app.get(AppConfigService).corsOrigins[0];
+
+    it('answers a preflight from the marketing site with any origin and no credentials', async () => {
+      const response = await request(app.getHttpServer())
+        .options('/api/v1/ask')
+        .set('Origin', SITE_ORIGIN)
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'content-type');
+
+      expect(response.status).toBe(HttpStatus.NO_CONTENT);
+      expect(response.headers[ALLOW_ORIGIN]).toBe('*');
+      expect(response.headers[ALLOW_CREDENTIALS]).toBeUndefined();
+      expect(response.headers[ALLOW_METHODS]).toContain('POST');
+      expect(response.headers[ALLOW_HEADERS]).toContain('content-type');
+      expect(response.headers[ALLOW_HEADERS]).toContain(API_KEY_HEADER);
+    });
+
+    it('answers a call from the marketing site, anonymously', async () => {
+      const response = await ask(`What are the rate limits? ${randomUUID()}`).set(
+        'Origin',
+        SITE_ORIGIN,
+      );
+
+      expect(response.status).toBe(HttpStatus.OK);
+      expect(response.body.outcome).toBe(AskOutcome.Answered);
+      expect(response.headers[ALLOW_ORIGIN]).toBe('*');
+      expect(response.headers[ALLOW_CREDENTIALS]).toBeUndefined();
+    });
+
+    it('keeps every other route closed to the marketing site, and open to trusted origins', async () => {
+      const preflight = await request(app.getHttpServer())
+        .options('/api/v1/me')
+        .set('Origin', SITE_ORIGIN)
+        .set('Access-Control-Request-Method', 'GET');
+      const call = await request(app.getHttpServer()).get('/api/v1/me').set('Origin', SITE_ORIGIN);
+      const trusted = await request(app.getHttpServer())
+        .get('/api/v1/me')
+        .set('Origin', trustedOrigin());
+
+      expect(preflight.headers[ALLOW_ORIGIN]).toBeUndefined();
+      expect(call.headers[ALLOW_ORIGIN]).toBeUndefined();
+      expect(trusted.headers[ALLOW_ORIGIN]).toBe(trustedOrigin());
+      expect(trusted.headers[ALLOW_CREDENTIALS]).toBe('true');
+    });
+
+    it('ignores a session cookie sent from another site, so the caller is anonymous', async () => {
+      const owner = await signUp(app, 'Cookie Holder');
+      const ip = randomIp();
+      const fromSite = (call: number) =>
+        ask(`cookie limits ${call} ${randomUUID()}`, ip)
+          .set('Origin', SITE_ORIGIN)
+          .set('Cookie', owner.cookie);
+      for (let call = 0; call < ASK_ANONYMOUS_PER_MINUTE; call += 1) {
+        expect((await fromSite(call)).status).toBe(HttpStatus.OK);
+      }
+
+      // Past the anonymous limit: the cookie did not make the caller the signed-in user.
+      expect((await fromSite(ASK_ANONYMOUS_PER_MINUTE)).status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+      const fromTrusted = await ask(`cookie limits trusted ${randomUUID()}`, ip)
+        .set('Origin', trustedOrigin())
+        .set('Cookie', owner.cookie);
+      expect(fromTrusted.status).toBe(HttpStatus.OK);
+    });
   });
 
   it('answers 503 once the platform’s daily questions are spent', async () => {

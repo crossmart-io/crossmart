@@ -3785,7 +3785,7 @@ export interface components {
         AskAnswerDto: {
             /** @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart */
             outcome: components["schemas"]["AskOutcome"];
-            /** @description The answer, in plain text or short Markdown */
+            /** @description The answer, in plain text (no Markdown) */
             answer: string;
             /** @description Pages the answer is based on */
             citations: components["schemas"]["AskCitationDto"][];

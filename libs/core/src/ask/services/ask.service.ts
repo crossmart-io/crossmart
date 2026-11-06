@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppConfigService, type AskSettings } from '@crossmart/common';
 import { AiFeature } from '../../ai/enums/ai-feature.enum.js';
-import { askSystemPrompt, askUserPrompt } from '../../ai/prompts/ask.v1.prompt.js';
+import { askSystemPrompt, askUserPrompt } from '../../ai/prompts/ask.v2.prompt.js';
 import { AiGateway } from '../../ai/services/ai-gateway.service.js';
 import { ASK_MAX_OUTPUT_TOKENS, ASK_RETRIEVED_CHUNKS } from '../ask.constants.js';
 import type { AskAnswer } from '../entities/ask-answer.js';

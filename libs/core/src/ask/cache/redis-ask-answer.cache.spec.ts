@@ -1,4 +1,5 @@
 import type { Redis } from 'ioredis';
+import { ASK_PROMPT_VERSION } from '../../ai/prompts/ask.v2.prompt.js';
 import { AskConfidence } from '../enums/ask-confidence.enum.js';
 import { AskOutcome } from '../enums/ask-outcome.enum.js';
 import { questionKey, RedisAskAnswerCache } from './redis-ask-answer.cache.js';
@@ -46,6 +47,7 @@ describe('RedisAskAnswerCache', () => {
     ];
     expect(key).toBe(questionKey('my secret question'));
     expect(key).not.toContain('secret');
+    expect(key).toContain(ASK_PROMPT_VERSION);
     expect(mode).toBe('EX');
     expect(ttl).toBeGreaterThan(0);
   });

@@ -22,7 +22,7 @@ class AskAnswerDto:
     Attributes:
         outcome (AskOutcome): `answered` from the cited pages; `unknown` when the docs do not answer it (the answer
             points to support); `out_of_scope` when it is not about Crossmart
-        answer (str): The answer, in plain text or short Markdown
+        answer (str): The answer, in plain text (no Markdown)
         citations (list[AskCitationDto]): Pages the answer is based on
         confidence (AskConfidence):
         handoff (bool): True when a person should take over, at supportEmail
