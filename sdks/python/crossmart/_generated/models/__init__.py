@@ -161,6 +161,7 @@ from .import_job_page_dto import ImportJobPageDto
 from .import_job_status import ImportJobStatus
 from .import_products_dto import ImportProductsDto
 from .inherited_compare_at_price_dto import InheritedCompareAtPriceDto
+from .inherited_optional_text_dto import InheritedOptionalTextDto
 from .inherited_price_dto import InheritedPriceDto
 from .inherited_text_dto import InheritedTextDto
 from .inherited_text_list_dto import InheritedTextListDto
@@ -411,6 +412,7 @@ __all__ = (
     "ImportJobStatus",
     "ImportProductsDto",
     "InheritedCompareAtPriceDto",
+    "InheritedOptionalTextDto",
     "InheritedPriceDto",
     "InheritedTextDto",
     "InheritedTextListDto",

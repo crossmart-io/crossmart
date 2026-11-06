@@ -10,6 +10,7 @@ from ...client import AuthenticatedClient, Client
 from ...models.channel_product_page_dto import ChannelProductPageDto
 from ...models.channel_product_sort import ChannelProductSort
 from ...models.channel_product_state import ChannelProductState
+from ...models.listing_display_state import ListingDisplayState
 from ...models.sort_direction import SortDirection
 from ...types import UNSET, Response, Unset
 
@@ -19,6 +20,7 @@ def _get_kwargs(
     connection_id: str,
     *,
     state: ChannelProductState | Unset = UNSET,
+    display_state: ListingDisplayState | Unset = UNSET,
     search: str | Unset = UNSET,
     sort: ChannelProductSort | Unset = ChannelProductSort.TITLE,
     direction: SortDirection | Unset = SortDirection.ASC,
@@ -34,6 +36,12 @@ def _get_kwargs(
         json_state = state.value
 
     params["state"] = json_state
+
+    json_display_state: str | Unset = UNSET
+    if not isinstance(display_state, Unset):
+        json_display_state = display_state.value
+
+    params["displayState"] = json_display_state
 
     params["search"] = search
 
@@ -103,6 +111,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     state: ChannelProductState | Unset = UNSET,
+    display_state: ListingDisplayState | Unset = UNSET,
     search: str | Unset = UNSET,
     sort: ChannelProductSort | Unset = ChannelProductSort.TITLE,
     direction: SortDirection | Unset = SortDirection.ASC,
@@ -113,13 +122,20 @@ def sync_detailed(
     """The store’s products with their state on the channel
 
      Products the store should have or still has: listed, pending (being published), failed or removing
-    (being delisted). Pass `state=excluded` for the catalog products it does not have. Counts per state
-    follow `search`, so they can label filter tabs.
+    (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState`
+    narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow
+    `search`, so they can label filter tabs.
 
     Args:
         workspace_id (str):
         connection_id (str):
         state (ChannelProductState | Unset):
+        display_state (ListingDisplayState | Unset): The product on this store, in one state
+            computed by the server: `draft` (not selected for the store), `needs_details` (selected,
+            but the store setup or the product lacks something publishing needs), `ready`
+            (publishable, not sent yet), `publishing` (queued or in flight, including an update of a
+            published listing that a sync or retry queued), `published`, `failed`, `removing` (being
+            taken off) or `removed`.
         search (str | Unset):
         sort (ChannelProductSort | Unset):  Default: ChannelProductSort.TITLE.
         direction (SortDirection | Unset):  Default: SortDirection.ASC.
@@ -139,6 +155,7 @@ def sync_detailed(
         workspace_id=workspace_id,
         connection_id=connection_id,
         state=state,
+        display_state=display_state,
         search=search,
         sort=sort,
         direction=direction,
@@ -160,6 +177,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     state: ChannelProductState | Unset = UNSET,
+    display_state: ListingDisplayState | Unset = UNSET,
     search: str | Unset = UNSET,
     sort: ChannelProductSort | Unset = ChannelProductSort.TITLE,
     direction: SortDirection | Unset = SortDirection.ASC,
@@ -170,13 +188,20 @@ def sync(
     """The store’s products with their state on the channel
 
      Products the store should have or still has: listed, pending (being published), failed or removing
-    (being delisted). Pass `state=excluded` for the catalog products it does not have. Counts per state
-    follow `search`, so they can label filter tabs.
+    (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState`
+    narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow
+    `search`, so they can label filter tabs.
 
     Args:
         workspace_id (str):
         connection_id (str):
         state (ChannelProductState | Unset):
+        display_state (ListingDisplayState | Unset): The product on this store, in one state
+            computed by the server: `draft` (not selected for the store), `needs_details` (selected,
+            but the store setup or the product lacks something publishing needs), `ready`
+            (publishable, not sent yet), `publishing` (queued or in flight, including an update of a
+            published listing that a sync or retry queued), `published`, `failed`, `removing` (being
+            taken off) or `removed`.
         search (str | Unset):
         sort (ChannelProductSort | Unset):  Default: ChannelProductSort.TITLE.
         direction (SortDirection | Unset):  Default: SortDirection.ASC.
@@ -197,6 +222,7 @@ def sync(
         connection_id=connection_id,
         client=client,
         state=state,
+        display_state=display_state,
         search=search,
         sort=sort,
         direction=direction,
@@ -212,6 +238,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     state: ChannelProductState | Unset = UNSET,
+    display_state: ListingDisplayState | Unset = UNSET,
     search: str | Unset = UNSET,
     sort: ChannelProductSort | Unset = ChannelProductSort.TITLE,
     direction: SortDirection | Unset = SortDirection.ASC,
@@ -222,13 +249,20 @@ async def asyncio_detailed(
     """The store’s products with their state on the channel
 
      Products the store should have or still has: listed, pending (being published), failed or removing
-    (being delisted). Pass `state=excluded` for the catalog products it does not have. Counts per state
-    follow `search`, so they can label filter tabs.
+    (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState`
+    narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow
+    `search`, so they can label filter tabs.
 
     Args:
         workspace_id (str):
         connection_id (str):
         state (ChannelProductState | Unset):
+        display_state (ListingDisplayState | Unset): The product on this store, in one state
+            computed by the server: `draft` (not selected for the store), `needs_details` (selected,
+            but the store setup or the product lacks something publishing needs), `ready`
+            (publishable, not sent yet), `publishing` (queued or in flight, including an update of a
+            published listing that a sync or retry queued), `published`, `failed`, `removing` (being
+            taken off) or `removed`.
         search (str | Unset):
         sort (ChannelProductSort | Unset):  Default: ChannelProductSort.TITLE.
         direction (SortDirection | Unset):  Default: SortDirection.ASC.
@@ -248,6 +282,7 @@ async def asyncio_detailed(
         workspace_id=workspace_id,
         connection_id=connection_id,
         state=state,
+        display_state=display_state,
         search=search,
         sort=sort,
         direction=direction,
@@ -267,6 +302,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     state: ChannelProductState | Unset = UNSET,
+    display_state: ListingDisplayState | Unset = UNSET,
     search: str | Unset = UNSET,
     sort: ChannelProductSort | Unset = ChannelProductSort.TITLE,
     direction: SortDirection | Unset = SortDirection.ASC,
@@ -277,13 +313,20 @@ async def asyncio(
     """The store’s products with their state on the channel
 
      Products the store should have or still has: listed, pending (being published), failed or removing
-    (being delisted). Pass `state=excluded` for the catalog products it does not have. Counts per state
-    follow `search`, so they can label filter tabs.
+    (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState`
+    narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow
+    `search`, so they can label filter tabs.
 
     Args:
         workspace_id (str):
         connection_id (str):
         state (ChannelProductState | Unset):
+        display_state (ListingDisplayState | Unset): The product on this store, in one state
+            computed by the server: `draft` (not selected for the store), `needs_details` (selected,
+            but the store setup or the product lacks something publishing needs), `ready`
+            (publishable, not sent yet), `publishing` (queued or in flight, including an update of a
+            published listing that a sync or retry queued), `published`, `failed`, `removing` (being
+            taken off) or `removed`.
         search (str | Unset):
         sort (ChannelProductSort | Unset):  Default: ChannelProductSort.TITLE.
         direction (SortDirection | Unset):  Default: SortDirection.ASC.
@@ -305,6 +348,7 @@ async def asyncio(
             connection_id=connection_id,
             client=client,
             state=state,
+            display_state=display_state,
             search=search,
             sort=sort,
             direction=direction,
