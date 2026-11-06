@@ -28,6 +28,7 @@ those, not the role name, so they keep working when roles change.
 | `channels:manage`     | Connect and disconnect stores, set pricing and selection rules, sync |   ✓   |   ✓   |        |          |        |
 | `members:manage`      | Invite, change roles and remove members                              |   ✓   |   ✓   |        |          |        |
 | `api-keys:manage`     | Create and revoke API keys                                           |   ✓   |   ✓   |        |          |        |
+| `webhooks:manage`     | Add, change and delete webhook endpoints, see their deliveries       |   ✓   |   ✓   |        |          |        |
 | `workspace:manage`    | Change the workspace's settings                                      |   ✓   |   ✓   |        |          |        |
 | `billing:view`        | See the organization's plan and usage (in any of its workspaces)     |   ✓   |   ✓   |        |          |        |
 | `workspace:delete`    | Delete the workspace and everything in it                            |   ✓   |       |        |          |        |
@@ -37,9 +38,11 @@ those, not the role name, so they keep working when roles change.
 An agent connected with OAuth ([ADR 0019](decisions/0019-agent-access.md)) acts for the user who
 connected it, in the one workspace they picked. Its permissions are those its scopes unlock
 (`catalog:read`, `catalog:write`, `orders:read`, `stores:write`, `reports:read`,
-`suggestions:write`) that the user's role also holds, worked out again on every request. Agents
-never get `members:*`, `api-keys:manage`, `channels:manage`, `workspace:manage`,
-`workspace:delete` or `billing:*`, and they can only call workspace routes.
+`suggestions:write`, `webhooks:write`) that the user's role also holds, worked out again on every
+request. `webhooks:write` is the only scope that unlocks `webhooks:manage`, since events carry
+workspace data to the URL the agent names. Agents never get `members:*`, `api-keys:manage`,
+`channels:manage`, `workspace:manage`, `workspace:delete` or `billing:*`, and they can only call
+workspace routes.
 
 ## Rules around roles
 
