@@ -493,7 +493,7 @@ export const DOCS_KNOWLEDGE_CHUNKS: readonly KnowledgeChunk[] = [
     source: KnowledgeSourceKind.Site,
     title: 'Marketplaces and channels Crossmart supports',
     url: 'https://crossmart.io/#channels',
-    text: '- Shopify: Building\n- eBay: Building\n- Google Shopping: Next\n- Etsy: Next\n- Amazon: Planned\n- Walmart: Planned\n- TikTok Shop: Planned\n- WooCommerce: Community\n- BigCommerce: Community\n- Meta Shops: Community\n- Pinterest: Community',
+    text: '- Shopify: Live\n- eBay: Live\n- Google Shopping: Coming soon\n- Etsy: Coming soon\n- Amazon: Planned\n- Walmart: Planned\n- TikTok Shop: Planned\n- WooCommerce: Community\n- BigCommerce: Community\n- Meta Shops: Community\n- Pinterest: Community',
   },
   {
     id: 'site:hosting',
@@ -521,14 +521,14 @@ export const DOCS_KNOWLEDGE_CHUNKS: readonly KnowledgeChunk[] = [
     source: KnowledgeSourceKind.Site,
     title: 'Crossmart FAQ › Is Crossmart ready to use?',
     url: 'https://crossmart.io/#faq',
-    text: 'Not yet. Crossmart is being built in the open, and a small group of design partners gets access first. Join the waitlist and we will tell you when your channels are ready.',
+    text: 'Yes, Crossmart is ready. Shopify and eBay are live, and Google Shopping and Etsy are coming soon. Join the waitlist to get access.',
   },
   {
     id: 'site:faq#which-marketplaces-does-crossmart-support',
     source: KnowledgeSourceKind.Site,
     title: 'Crossmart FAQ › Which marketplaces does Crossmart support?',
     url: 'https://crossmart.io/#faq',
-    text: 'The first connectors being built are Shopify and eBay. Google Shopping and Etsy come next, then Amazon, Walmart and TikTok Shop. WooCommerce, BigCommerce, Meta Shops and Pinterest are open for community connectors. Every paid plan includes every channel.',
+    text: 'Shopify and eBay are live. Google Shopping and Etsy are coming soon, then Amazon, Walmart and TikTok Shop. WooCommerce, BigCommerce, Meta Shops and Pinterest are open for community connectors. Every paid plan includes every channel.',
   },
   {
     id: 'site:faq#does-crossmart-work-with-claude-and-chatgpt',
