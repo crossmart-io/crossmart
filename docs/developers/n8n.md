@@ -84,14 +84,11 @@ it simpler and cheaper to run:
 
 The package is not on npm yet. Before it is published and submitted to n8n's
 [verified community nodes](https://docs.n8n.io/integrations/creating-nodes/build/reference/verification-guidelines/),
-the owner has to decide:
+the owner has to settle:
 
-- **License.** Verified nodes must be MIT; the package is AGPL-3.0 like the rest of the repository
-  ([ADR 0003](../decisions/0003-license.md)). The LLC owns the code and can license this package
-  as MIT. Until then, the n8n lint rule that asks for MIT is turned off in
-  `integrations/n8n/eslint.config.mjs`, which also means `n8n.strict` is `false` in its
-  `package.json`. Choosing MIT: set `license`, add a `LICENSE.md`, delete the override and set
-  `strict` back to `true`.
+- **License.** Decided: the package is MIT (`integrations/n8n/LICENSE.md`), as n8n's verified
+  community nodes require. The rest of the repository stays AGPL-3.0
+  ([ADR 0003](../decisions/0003-license.md)).
 - **npm account and provenance.** Since May 2026, n8n requires community nodes to be published
   from a GitHub Action with an npm provenance statement, and checks that the npm package's
   repository and maintainer match GitHub. That needs an npm account or organization for

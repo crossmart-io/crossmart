@@ -11,7 +11,7 @@
 		"inventory",
 		"listings"
 	],
-	"license": "AGPL-3.0-only",
+	"license": "MIT",
 	"homepage": "https://github.com/crossmart-io/crossmart/tree/main/integrations/n8n#readme",
 	"author": {
 		"name": "Crossmart",
@@ -46,7 +46,7 @@
 	],
 	"n8n": {
 		"n8nNodesApiVersion": 1,
-		"strict": false,
+		"strict": true,
 		"credentials": [
 			"dist/credentials/CrossmartApi.credentials.js"
 		],
