@@ -34,6 +34,7 @@ import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { RateLimitMessage } from '../../common/throttling/rate-limit-message.decorator.js';
 import { WorkspacePrincipalThrottlerGuard } from '../../common/throttling/workspace-principal-throttler.guard.js';
 import {
   AI_RATE_LIMITED_MESSAGE,
@@ -57,6 +58,7 @@ const PERIOD_REVERSED = 'from must be before to';
 
 /** The AI agents: whether they are available, what they used, and asking them for content. */
 @ApiTags(AI_TAG)
+@RateLimitMessage(AI_RATE_LIMITED_MESSAGE)
 @Controller(AI_ROUTE)
 export class AiController {
   constructor(

@@ -1,0 +1,25 @@
+# Crossmart
+
+> Crossmart is the open-source multichannel platform for sellers and their AI agents. It keeps one catalog and one stock ledger and publishes them to every store a seller connects.
+
+These docs cover the Crossmart REST API (`https://api.crossmart.io/api/v1`), the TypeScript and Python SDKs, and the MCP server (`https://mcp.crossmart.io/mcp`) that lets AI agents such as Claude, ChatGPT and Cursor work with a seller's catalog, stock, stores and orders. API keys belong to one workspace and carry a role; send them in the `x-api-key` header.
+
+## Ask Crossmart
+
+To get a grounded answer about Crossmart instead of reading every page, call `POST https://api.crossmart.io/api/v1/ask` with JSON `{"question": "..."}`. No key is needed (5 questions a minute and 50 a day per IP address; 20 and 500 with an API key). The answer comes only from these docs and the current plan data, cites the pages it used (`citations`), and sets `outcome` to `unknown` with a support address when the docs do not answer the question. Agents connected to the MCP server can use the `ask_crossmart` tool.
+
+## Documentation
+
+- [Crossmart for developers](https://docs.crossmart.io/developers/): the REST API, authentication with API keys, workspaces, errors, pagination, rate limits and background publishing
+- [Quickstart](https://docs.crossmart.io/developers/quickstart/): create a product, publish it to a store, override it there, and read orders
+- [Roles and permissions](https://docs.crossmart.io/developers/permissions/): what each role and API key may do
+- [TypeScript SDK](https://docs.crossmart.io/developers/sdks/typescript/): `@crossmart/sdk`, typed from the OpenAPI spec
+- [Python SDK](https://docs.crossmart.io/developers/sdks/python/): synchronous and asynchronous clients for Python 3.11+
+- [MCP server](https://docs.crossmart.io/developers/mcp/): connect AI agents, and the tools they get
+
+## Optional
+
+- [API reference](https://docs.crossmart.io/developers/api/): every endpoint and field
+- [OpenAPI spec](https://api.crossmart.io/api/docs-json)
+- [crossmart.io](https://crossmart.io): the product and its pricing
+- [Full docs in one file](https://docs.crossmart.io/llms-full.txt)

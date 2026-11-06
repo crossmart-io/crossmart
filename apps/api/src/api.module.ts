@@ -3,6 +3,7 @@ import { AppConfigModule, MailModule, QueuesModule, StorageModule } from '@cross
 import { DatabaseModule } from '@crossmart/database';
 import { ActivityApiModule } from './activity/activity.module.js';
 import { AiApiModule } from './ai/ai.module.js';
+import { AskApiModule } from './ask/ask.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CatalogApiModule } from './catalog/catalog.module.js';
 import { EntitlementsApiModule } from './entitlements/entitlements.module.js';
@@ -38,6 +39,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     AnalyticsApiModule,
     SuggestionsApiModule,
     AiApiModule,
+    AskApiModule,
   ],
 })
 export class ApiModule {}

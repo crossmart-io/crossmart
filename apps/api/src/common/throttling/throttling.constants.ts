@@ -7,3 +7,9 @@ export const TRACKER_SEPARATOR = ':';
 export const MS_PER_SECOND = 1000;
 /** The tracker of a request outside a workspace route, which these limits never guard. */
 export const NO_WORKSPACE = 'none';
+
+/** The window and limit of a throttled route that does not set its own. */
+export const DEFAULT_THROTTLE_WINDOW_MS = 60_000;
+export const DEFAULT_REQUESTS_PER_WINDOW = 30;
+export const RATE_LIMITED_MESSAGE = 'Too many requests. Wait a minute and try again.';
+export const RATE_LIMIT_MESSAGE_METADATA_KEY = 'crossmart:rate-limit-message';

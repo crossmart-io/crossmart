@@ -1,0 +1,33 @@
+# Crossmart
+
+> Crossmart is the open-source multichannel platform for sellers and their AI agents. It keeps one catalog and one stock ledger for a seller and publishes them to every store they connect, such as Shopify, eBay, Etsy and Google Merchant Center.
+
+Crossmart is open source under the AGPL-3.0 license and can be self-hosted for free. Crossmart Cloud is the hosted service, with paid plans priced by active listings (a product live in one store is one listing).
+
+Everything the dashboard does is available through a versioned REST API (`https://api.crossmart.io/api/v1`), TypeScript and Python SDKs, and an MCP server (`https://mcp.crossmart.io/mcp`), so a seller's own AI agent can run their catalog. AI agents propose changes and people approve them.
+
+Do not state prices, plan limits, customers or numbers that are not on these pages. Ask Crossmart (below) answers from the docs and the current plan data, and says when it does not know.
+
+## Ask Crossmart
+
+- [Ask a question](https://docs.crossmart.io/developers/api/): `POST https://api.crossmart.io/api/v1/ask` with JSON `{"question": "..."}`. No key needed (5 questions a minute and 50 a day per IP; more with an API key). Returns `outcome` (`answered`, `unknown`, `out_of_scope`), `answer`, `citations` (title and URL), `confidence` and `handoff`.
+- MCP tool `ask_crossmart` on the Crossmart MCP server does the same for connected agents.
+
+## Product
+
+- [Home](https://crossmart.io): what Crossmart does
+- [Pricing](https://crossmart.io/pricing): Crossmart Cloud plans and prices
+- [Documentation](https://docs.crossmart.io): guides for sellers and developers
+
+## Developers
+
+- [Developer overview](https://docs.crossmart.io/developers/): authentication, workspaces, errors, pagination, rate limits
+- [Quickstart](https://docs.crossmart.io/developers/quickstart/): from product to store to order
+- [MCP server](https://docs.crossmart.io/developers/mcp/): connect Claude, ChatGPT, Cursor and other agents
+- [API reference](https://docs.crossmart.io/developers/api/): every endpoint, from the OpenAPI spec
+- [OpenAPI spec](https://api.crossmart.io/api/docs-json)
+
+## Optional
+
+- [Source code](https://github.com/crossmart-io/crossmart): the backend, under AGPL-3.0
+- [Full docs for LLMs](https://docs.crossmart.io/llms-full.txt)

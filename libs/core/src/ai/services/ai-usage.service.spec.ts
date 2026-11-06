@@ -1,6 +1,7 @@
 import { AiFeature } from '../enums/ai-feature.enum.js';
 import { AiProviderName } from '../enums/ai-provider-name.enum.js';
 import type { AiUsageRepository } from '../repositories/ai-usage.repository.js';
+import type { PlatformAiUsageRepository } from '../repositories/platform-ai-usage.repository.js';
 import { AiUsageService } from './ai-usage.service.js';
 
 const PERIOD = { from: new Date('2026-11-01T00:00:00Z'), to: new Date('2026-12-01T00:00:00Z') };
@@ -26,7 +27,14 @@ function setup() {
       { feature: 'from_a_newer_version', model: 'a', calls: 9, inputTokens: 9, outputTokens: 9 },
     ]),
   };
-  return { repository, service: new AiUsageService(repository as unknown as AiUsageRepository) };
+  const platformRepository = {
+    create: vi.fn<PlatformAiUsageRepository['create']>().mockResolvedValue(),
+  };
+  const service = new AiUsageService(
+    repository as unknown as AiUsageRepository,
+    platformRepository as unknown as PlatformAiUsageRepository,
+  );
+  return { repository, platformRepository, service };
 }
 
 describe('AiUsageService', () => {
@@ -72,5 +80,21 @@ describe('AiUsageService', () => {
     await service.record(input);
 
     expect(repository.create).toHaveBeenCalledWith(input);
+  });
+
+  it('meters platform calls apart from any workspace', async () => {
+    const { service, platformRepository, repository } = setup();
+    const input = {
+      feature: AiFeature.Ask,
+      provider: AiProviderName.Anthropic,
+      model: 'a',
+      inputTokens: 10,
+      outputTokens: 5,
+    };
+
+    await service.recordPlatform(input);
+
+    expect(platformRepository.create).toHaveBeenCalledWith(input);
+    expect(repository.create).not.toHaveBeenCalled();
   });
 });

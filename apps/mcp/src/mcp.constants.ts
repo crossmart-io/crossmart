@@ -24,6 +24,8 @@ export const API_PREFIX = '/api/v1';
 export const WORKSPACE_PATH = `${API_PREFIX}/workspaces/{workspaceId}`;
 export const CURRENT_API_KEY_PATH = `${API_PREFIX}/api-key`;
 export const API_HEALTH_PATH = `${API_PREFIX}/health`;
+/** Ask Crossmart; it needs no workspace, and takes calls without a key. */
+export const ASK_PATH = `${API_PREFIX}/ask`;
 export const API_KEY_HEADER = 'x-api-key';
 export const BEARER_PREFIX = 'Bearer ';
 export const JSON_INDENTATION = 2;

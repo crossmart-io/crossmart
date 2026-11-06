@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { findEnumValue, utcMonthContaining } from '@crossmart/common';
 import type {
+  AiPlatformUsageRecordInput,
   AiUsageLine,
   AiUsagePeriod,
   AiUsageRecordInput,
@@ -9,6 +10,7 @@ import type {
 } from '../entities/ai-usage.js';
 import { AiFeature } from '../enums/ai-feature.enum.js';
 import { type AiUsageGroup, AiUsageRepository } from '../repositories/ai-usage.repository.js';
+import { PlatformAiUsageRepository } from '../repositories/platform-ai-usage.repository.js';
 
 const NO_USAGE: AiUsageTotals = { calls: 0, inputTokens: 0, outputTokens: 0 };
 
@@ -18,10 +20,18 @@ const NO_USAGE: AiUsageTotals = { calls: 0, inputTokens: 0, outputTokens: 0 };
  */
 @Injectable()
 export class AiUsageService {
-  constructor(private readonly usage: AiUsageRepository) {}
+  constructor(
+    private readonly usage: AiUsageRepository,
+    private readonly platformUsage: PlatformAiUsageRepository,
+  ) {}
 
   record(input: AiUsageRecordInput): Promise<void> {
     return this.usage.create(input);
+  }
+
+  /** Meters a call the platform pays for, which belongs to no workspace and spends no credits. */
+  recordPlatform(input: AiPlatformUsageRecordInput): Promise<void> {
+    return this.platformUsage.create(input);
   }
 
   /** Usage in the period, per feature and model; the current UTC month when none is given. */

@@ -7,4 +7,6 @@ export enum AiFeature {
   ContentGeneration = 'content_generation',
   /** Rewriting a field the merchant is editing, returned as a draft and never stored. */
   ContentDraft = 'content_draft',
+  /** Ask Crossmart: grounded answers about Crossmart itself, paid for by the platform. */
+  Ask = 'ask',
 }

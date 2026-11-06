@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { HttpMethod } from '../api/api-call.js';
-import { API_HEALTH_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
+import { API_HEALTH_PATH, ASK_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
 import { ALL_TOOLS } from './index.js';
 
 const SNAKE_CASE = /^[a-z]+(_[a-z]+)*$/;
@@ -21,18 +21,29 @@ describe('MCP tools', () => {
     }
   });
 
-  it('read only with GET', () => {
-    const readOnlyMethods = ALL_TOOLS.filter((spec) => spec.readOnly).map(
-      (spec) => spec.toCall({} as never).method,
-    );
+  it('read only with GET, apart from asking a question, which changes nothing', () => {
+    const readOnlyMethods = ALL_TOOLS.filter(
+      (spec) => spec.readOnly && spec.name !== 'ask_crossmart',
+    ).map((spec) => spec.toCall({} as never).method);
     expect(new Set(readOnlyMethods)).toEqual(new Set([HttpMethod.Get]));
   });
 
-  it('stay inside the key’s workspace, apart from the health check', () => {
+  it('stay inside the key’s workspace, apart from the health check and Ask', () => {
     const outside = ALL_TOOLS.map((spec) => spec.toCall({} as never).path).filter(
       (path) => !path.startsWith(WORKSPACE_PATH),
     );
-    expect(outside).toEqual([API_HEALTH_PATH]);
+    expect(outside).toEqual([API_HEALTH_PATH, ASK_PATH]);
+  });
+
+  it('asks Crossmart a question, read only and outside any workspace', () => {
+    const spec = tool('ask_crossmart');
+
+    expect(spec.readOnly).toBe(true);
+    expect(spec.toCall({ question: 'Does it support Etsy?' } as never)).toEqual({
+      method: HttpMethod.Post,
+      path: ASK_PATH,
+      body: { question: 'Does it support Etsy?' },
+    });
   });
 
   it('sends a replaced product without its id in the body', () => {

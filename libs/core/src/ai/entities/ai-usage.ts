@@ -10,6 +10,9 @@ export interface AiUsageRecordInput extends AiTokenUsage {
   model: string;
 }
 
+/** One metered call the platform pays for, outside any workspace. */
+export type AiPlatformUsageRecordInput = Omit<AiUsageRecordInput, 'workspaceId'>;
+
 /** A half-open period: from its start, up to but not including its end. */
 export interface AiUsagePeriod {
   from: Date;

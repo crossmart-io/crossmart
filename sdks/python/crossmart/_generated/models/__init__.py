@@ -16,6 +16,11 @@ from .ai_usage_line_dto import AiUsageLineDto
 from .ai_usage_report_dto import AiUsageReportDto
 from .ai_usage_totals_dto import AiUsageTotalsDto
 from .api_key_dto import ApiKeyDto
+from .ask_answer_dto import AskAnswerDto
+from .ask_citation_dto import AskCitationDto
+from .ask_confidence import AskConfidence
+from .ask_outcome import AskOutcome
+from .ask_question_dto import AskQuestionDto
 from .built_in_role_dto import BuiltInRoleDto
 from .bulk_approve_suggestions_dto import BulkApproveSuggestionsDto
 from .bulk_product_action import BulkProductAction
@@ -311,6 +316,11 @@ __all__ = (
     "AiUsageReportDto",
     "AiUsageTotalsDto",
     "ApiKeyDto",
+    "AskAnswerDto",
+    "AskCitationDto",
+    "AskConfidence",
+    "AskOutcome",
+    "AskQuestionDto",
     "BuiltInRoleDto",
     "BulkApproveSuggestionsDto",
     "BulkProductAction",

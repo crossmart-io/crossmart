@@ -78,4 +78,19 @@ describe('AppConfigService', () => {
       ).toEqual({ anthropicApiKey: 'sk-test', model: 'claude-opus-5-5' });
     });
   });
+
+  describe('askSettings', () => {
+    it('falls back to the AI agents’ model when no Ask model is set', () => {
+      expect(
+        appConfig({ ASK_DAILY_QUESTION_CAP: 50, ASK_SUPPORT_EMAIL: 'help@example.com' })
+          .askSettings,
+      ).toEqual({ dailyQuestionCap: 50, model: null, supportEmail: 'help@example.com' });
+    });
+
+    it('returns the Ask model override', () => {
+      expect(appConfig({ ASK_AI_MODEL: 'claude-haiku-5-5' }).askSettings.model).toBe(
+        'claude-haiku-5-5',
+      );
+    });
+  });
 });
