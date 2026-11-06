@@ -53,3 +53,21 @@ export const SEARCH_MAX_LENGTH = 200;
 export const NOTE_MAX_LENGTH = 500;
 /** Products one generate_content call may name; the API's own limit. */
 export const CONTENT_GENERATION_MAX_PRODUCTS = 100;
+
+/** Item specifics limits; the API's own (eBay's) limits. */
+export const ITEM_SPECIFICS_MAX = 60;
+export const ITEM_SPECIFIC_NAME_MAX_LENGTH = 40;
+export const ITEM_SPECIFIC_VALUES_MAX = 30;
+export const ITEM_SPECIFIC_VALUE_MAX_LENGTH = 50;
+
+/** Channel category limits; the API's own. */
+export const CATEGORY_ID_MAX_LENGTH = 64;
+export const CATEGORY_NAME_MAX_LENGTH = 500;
+export const CATEGORY_QUERY_MAX_LENGTH = 255;
+
+/** HTTP statuses some tools explain to the agent when the API refuses with them. */
+export enum RefusalStatus {
+  PaymentRequired = 402,
+  NotFound = 404,
+  Conflict = 409,
+}

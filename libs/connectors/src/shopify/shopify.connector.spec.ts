@@ -156,6 +156,7 @@ describe('ShopifyConnector', () => {
       'x-shopify-topic': 'app/uninstalled',
       'x-shopify-shop-domain': SHOP,
       'x-shopify-webhook-id': 'delivery-1',
+      'x-shopify-triggered-at': new Date().toISOString(),
       ...overrides,
     });
 

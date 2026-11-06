@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import type { ExternalOrder, ExternalOrderLine } from '@crossmart/connectors';
-import { type Prisma, PrismaService } from '@crossmart/database';
+import { InventoryMovementReason, type Prisma, PrismaService } from '@crossmart/database';
+import { Actor } from '../../activity/entities/actor.js';
+import type {
+  LockedStock,
+  StockAfterMovement,
+  StockMovement,
+} from '../../inventory/entities/inventory-ledger.js';
+import { InventoryLedger } from '../../inventory/repositories/inventory-ledger.js';
 import type { OrderToStore, OversoldItem, StoredOrder } from '../entities/order-ingestion.js';
 import { ORDER_LOCK_PREFIX } from '../orders.constants.js';
 import { type LineStock, lineStockChange, orderStatusOf } from '../rules/order-line-stock.js';
-import {
-  addChange,
-  applyItemChange,
-  type ItemChange,
-  type LockedItem,
-  lockItems,
-} from './order-stock.js';
+import { addChange, findProductsOf, type ItemChange } from './order-stock.js';
 
 type Transaction = Prisma.TransactionClient;
 
@@ -53,7 +54,10 @@ function linesOf(
  */
 @Injectable()
 export class OrderWriter {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ledger: InventoryLedger,
+  ) {}
 
   store(input: OrderToStore): Promise<StoredOrder> {
     return this.prisma.$transaction(async (tx) => {
@@ -95,7 +99,7 @@ export class OrderWriter {
     const variantIds = [
       ...new Set(lines.flatMap(({ variantId }) => (variantId ? [variantId] : []))),
     ];
-    const locked = await lockItems(tx, input.workspaceId, variantIds);
+    const locked = await this.ledger.lockVariants(tx, input.workspaceId, variantIds);
     const changes = new Map<string, ItemChange>();
     const plans = lines.map((entry): LinePlan => {
       const before = held.get(entry.externalId) ?? NOTHING_HELD;
@@ -109,26 +113,57 @@ export class OrderWriter {
     return { plans, result };
   }
 
+  /**
+   * Moves the stock through the ledger: shipped units leave the stock on hand and are written
+   * as an entry for the order; reserving or releasing units only moves them between columns.
+   */
   private async applyChanges(
     tx: Transaction,
     input: OrderToStore,
-    items: LockedItem[],
+    items: LockedStock[],
     changes: ReadonlyMap<string, ItemChange>,
   ): Promise<StoredOrder> {
-    const changed: string[] = [];
-    const oversold: OversoldItem[] = [];
-    const context = { workspaceId: input.workspaceId, orderName: input.order.name };
-    for (const item of items) {
-      const change = changes.get(item.id);
-      if (!change || (change.availableDelta === 0 && change.reservedDelta === 0)) continue;
-      const available = await applyItemChange(tx, item, change, context);
-      changed.push(item.id);
-      if (available < 0 && change.availableDelta < 0) {
-        const { productId, productTitle } = item;
-        oversold.push({ inventoryItemId: item.id, productId, productTitle, available });
-      }
-    }
-    return { applied: true, changedInventoryItemIds: changed, oversold };
+    const entry = {
+      reason: InventoryMovementReason.ORDER_SHIPPED,
+      actor: Actor.system(),
+      note: input.order.name,
+    };
+    const movements = items.flatMap((stock): StockMovement[] => {
+      const change = changes.get(stock.id);
+      return change ? [{ stock, ...change, entry }] : [];
+    });
+    const after = await this.ledger.applyMovements(tx, input.workspaceId, movements);
+    const oversold = await this.findOversold(tx, input.workspaceId, movements, after);
+    return {
+      applied: true,
+      changedInventoryItemIds: after.map((item) => item.inventoryItemId),
+      oversold,
+    };
+  }
+
+  /** Items this order took below zero: the units were sold twice. */
+  private async findOversold(
+    tx: Transaction,
+    workspaceId: string,
+    movements: StockMovement[],
+    after: StockAfterMovement[],
+  ): Promise<OversoldItem[]> {
+    const availableById = new Map(after.map((item) => [item.inventoryItemId, item.available]));
+    const oversold = movements.flatMap(({ stock, availableDelta }) => {
+      const available = availableById.get(stock.id);
+      return available !== undefined && available < 0 && availableDelta < 0
+        ? [{ stock, available }]
+        : [];
+    });
+    const products = await findProductsOf(
+      tx,
+      workspaceId,
+      oversold.map(({ stock }) => stock.variantId),
+    );
+    return oversold.flatMap(({ stock, available }) => {
+      const product = products.get(stock.variantId);
+      return product ? [{ inventoryItemId: stock.id, available, ...product }] : [];
+    });
   }
 
   private async saveOrder(tx: Transaction, input: OrderToStore): Promise<string> {

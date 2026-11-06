@@ -136,10 +136,25 @@ export class AppConfigService {
     return { clientId, clientSecret, ruName, environment };
   }
 
+  /** The token of eBay's account deletion endpoint challenge, or null when it is not set. */
+  get ebayVerificationToken(): string | null {
+    return this.configService.get('EBAY_VERIFICATION_TOKEN', { infer: true }) || null;
+  }
+
   /** The Google Cloud OAuth app for Google Merchant Center, or null without one. */
   get googleApp(): OAuthAppCredentials | null {
     const clientId = this.configService.get('GOOGLE_CLIENT_ID', { infer: true });
     const clientSecret = this.configService.get('GOOGLE_CLIENT_SECRET', { infer: true });
+    return clientId && clientSecret ? { clientId, clientSecret } : null;
+  }
+
+  /**
+   * The Etsy app, or null unless its keystring and shared secret are both set. The keystring
+   * is the OAuth client id; Etsy's OAuth uses PKCE, so the secret only signs API calls.
+   */
+  get etsyApp(): OAuthAppCredentials | null {
+    const clientId = this.configService.get('ETSY_API_KEY', { infer: true });
+    const clientSecret = this.configService.get('ETSY_SHARED_SECRET', { infer: true });
     return clientId && clientSecret ? { clientId, clientSecret } : null;
   }
 

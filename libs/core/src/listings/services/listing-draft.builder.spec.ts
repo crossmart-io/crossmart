@@ -44,6 +44,18 @@ describe('ListingDraftBuilder', () => {
     });
   });
 
+  it('carries the item specifics the merchant set on the listing', () => {
+    const itemSpecifics = [{ name: 'Material', values: ['Stoneware'] }];
+    const listing = listingRecord({ itemSpecifics });
+
+    const { draft } = builder.build({ product: productDetail(), listing, pricing: USD });
+
+    expect(draft.itemSpecifics).toEqual(itemSpecifics);
+    expect(
+      builder.build({ product: productDetail(), listing: null, pricing: USD }).draft.itemSpecifics,
+    ).toEqual([]);
+  });
+
   it('sends the product as it is in the catalog when the listing has no overrides', () => {
     const { draft, mediaDigest: digest } = builder.build({
       product: productDetail(),
@@ -92,6 +104,19 @@ describe('ListingDraftBuilder', () => {
       'https://cdn.example.com/2.jpg',
     ]);
     expect(draft.variants[0]?.available).toBe(8);
+  });
+
+  it('strips scripts and event handlers from a stored description override at publish', () => {
+    const listing = listingRecord({
+      override: overrideRecord({
+        descriptionHtml:
+          '<p onclick="steal()">Hi</p><script>steal()</script><img src=x onerror=steal()>',
+      }),
+    });
+
+    const { draft } = builder.build({ product: productDetail(), listing, pricing: USD });
+
+    expect(draft.product.descriptionHtml).toBe('<p>Hi</p>');
   });
 
   it('shows a draft product when the merchant makes it visible on the channel', () => {

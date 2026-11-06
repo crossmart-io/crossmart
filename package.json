@@ -48,7 +48,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "oxlint --fix",
+      "oxlint --fix --no-error-on-unmatched-pattern",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [
@@ -68,6 +68,7 @@
     "@nestjs/platform-express": "^12.0.1",
     "@nestjs/swagger": "^12.0.5",
     "@nestjs/terminus": "^12.1.0",
+    "@nestjs/throttler": "^6.7.1",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "better-auth": "^1.7.17",

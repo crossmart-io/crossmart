@@ -12,6 +12,7 @@ interface CurrentApiKey {
 
 interface ApiErrorBody {
   message?: string | string[];
+  code?: string;
 }
 
 /**
@@ -70,6 +71,6 @@ export class CrossmartApiClient {
   private async toError(response: Response): Promise<CrossmartApiError> {
     const body = (await response.json().catch(() => ({}))) as ApiErrorBody;
     const message = Array.isArray(body.message) ? body.message.join('; ') : body.message;
-    return new CrossmartApiError(response.status, message ?? response.statusText);
+    return new CrossmartApiError(response.status, message ?? response.statusText, body.code);
   }
 }

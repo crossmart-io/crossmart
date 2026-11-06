@@ -55,16 +55,21 @@ export class CustomRoleRepository {
     });
   }
 
-  update(customRoleId: string, record: CustomRoleRecord): Promise<CustomRoleWithCount> {
+  /** Throws when the role is not in the workspace. */
+  update(
+    workspaceId: string,
+    customRoleId: string,
+    record: CustomRoleRecord,
+  ): Promise<CustomRoleWithCount> {
     return this.prisma.customRole.update({
-      where: { id: customRoleId },
+      where: { id: customRoleId, workspaceId },
       data: record,
       include: MEMBER_COUNT,
     });
   }
 
-  async delete(customRoleId: string): Promise<void> {
-    await this.prisma.customRole.delete({ where: { id: customRoleId } });
+  async delete(workspaceId: string, customRoleId: string): Promise<void> {
+    await this.prisma.customRole.deleteMany({ where: { id: customRoleId, workspaceId } });
   }
 
   async usage(customRoleId: string, now: Date): Promise<CustomRoleUsage> {

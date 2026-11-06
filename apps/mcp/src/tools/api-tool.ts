@@ -5,7 +5,7 @@ import type { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.j
 import type { ApiCall } from '../api/api-call.js';
 import type { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { CrossmartApiError } from '../api/crossmart-api.error.js';
-import { JSON_INDENTATION } from '../mcp.constants.js';
+import { JSON_INDENTATION, type RefusalStatus } from '../mcp.constants.js';
 
 /**
  * One MCP tool as data: its name, what it is for, its input, and the API call it makes.
@@ -22,6 +22,8 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   destructive?: boolean;
   /** The scope an agent needs to see the tool; absent for tools every connection may use. */
   scope?: AgentScope;
+  /** What the agent should do next when the API refuses the call with one of these statuses. */
+  refusalHints?: Partial<Record<RefusalStatus, string>>;
   toCall: (input: z.infer<z.ZodObject<Shape>>) => ApiCall;
 }
 
@@ -32,6 +34,14 @@ export function defineTool<Shape extends z.ZodRawShape>(spec: ApiToolSpec<Shape>
 
 function toText(value: unknown): string {
   return JSON.stringify(value, null, JSON_INDENTATION);
+}
+
+/** The refusal as the agent reads it: status, the API's code and message, and a next step. */
+function toRefusalText(spec: ApiToolSpec, error: CrossmartApiError): string {
+  const reason = error.code ? `${error.status} ${error.code}` : String(error.status);
+  const hint = spec.refusalHints?.[error.status as RefusalStatus];
+  const refusal = `Crossmart refused (${reason}): ${error.message}`;
+  return hint ? `${refusal}\n${hint}` : refusal;
 }
 
 async function run(
@@ -46,7 +56,7 @@ async function run(
     if (!(error instanceof CrossmartApiError)) throw error;
     return {
       isError: true,
-      content: [{ type: 'text', text: `Crossmart refused (${error.status}): ${error.message}` }],
+      content: [{ type: 'text', text: toRefusalText(spec, error) }],
     };
   }
 }

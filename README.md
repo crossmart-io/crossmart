@@ -7,7 +7,7 @@
 Manage listings, inventory and orders across Amazon, eBay, Shopify, Etsy and more,
 from one dashboard or straight from Claude & ChatGPT.
 
-[Website](https://crossmart.io) · [Docs](https://docs.crossmart.io) · [Architecture](docs/architecture.md)
+[Website](https://crossmart.io) · [Docs](https://docs.crossmart.io) · [Developers](docs/developers/README.md) · [Architecture](docs/architecture.md)
 
 </div>
 
@@ -33,6 +33,7 @@ from one dashboard or straight from Claude & ChatGPT.
 | `libs/common`     | Configuration, constants and shared utilities             |
 | `libs/database`   | Prisma schema, migrations and client                      |
 | `libs/connectors` | Marketplace connector SDK and connectors                  |
+| `sdks/typescript` | `@crossmart/sdk`, the TypeScript client of the REST API   |
 
 The web app lives in [crossmart-io/crossmart-web](https://github.com/crossmart-io/crossmart-web).
 
@@ -43,6 +44,8 @@ Requirements: Node.js 22+ (see `.nvmrc`), pnpm 10, Docker.
 ```bash
 pnpm install
 cp .env.example .env                  # then set BETTER_AUTH_SECRET: openssl rand -base64 32
+                                      # and POSTGRES_PASSWORD / REDIS_PASSWORD: openssl rand -hex 24,
+                                      # also in DATABASE_URL and REDIS_URL
 docker compose up -d postgres redis   # set POSTGRES_PORT / REDIS_PORT if 5432 / 6379 are taken
 pnpm db:migrate
 pnpm start:api                        # http://localhost:3000/api/docs
@@ -62,10 +65,27 @@ workspace already has products. Never run it against a server other people can r
 
 ```bash
 export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+export REDIS_PASSWORD="$(openssl rand -hex 24)"
 docker compose --profile app up -d --build
 ```
 
-This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
+This starts PostgreSQL, Redis, applies migrations, and runs the API and worker. Keep the three
+secrets (for example in `.env` next to `compose.yaml`): compose refuses to start without them.
+PostgreSQL and Redis require their passwords and publish their ports on `127.0.0.1` only, so
+they are not reachable from other machines.
+
+**Upgrading an existing stack:** PostgreSQL sets its password only when the data volume is first
+created. Keep the old one (`crossmart`) as `POSTGRES_PASSWORD`, or change it first with
+`ALTER USER crossmart PASSWORD '…'` and then set the new value. Redis picks up `REDIS_PASSWORD`
+when its container is recreated; add it to `REDIS_URL` (`redis://:<password>@host:6379`) for the
+API and worker you run outside compose.
+
+## Build on Crossmart
+
+The [developer guide](docs/developers/README.md) covers the REST API (authentication, errors,
+pagination), a [quickstart](docs/developers/quickstart.md) from product to store to order, the
+[TypeScript SDK](sdks/typescript/README.md) and the [MCP server](docs/developers/mcp.md) for AI agents.
 
 ## Authentication
 
@@ -78,7 +98,7 @@ This starts PostgreSQL, Redis, applies migrations, and runs the API and worker.
 - **Products** have base content (title, HTML description, vendor, type, tags, status), up to three options (Size, Color, Material) and up to 250 variants. Handles are unique per workspace, and so are SKUs. Prices are exact decimal strings (`"19.90"`) in the workspace currency.
 - **Stock** lives in an append-only ledger (`inventory_movements`). Each variant's `available` caches the sum of its movements.
 - **Edit** with `PUT /api/v1/workspaces/{workspaceId}/products/{productId}`. Variants sent with their `id` keep it, new ones are added, and missing ones are removed. A changed `quantity` is written to the ledger as an adjustment. Descriptions are sanitized on every write.
-- **Images** upload to `POST /api/v1/workspaces/{workspaceId}/media/product-images`, which returns a URL to use in `media`. The format is read from the file's bytes: JPEG, PNG, WebP or GIF, never SVG. With `STORAGE_DRIVER=local` the API stores files in `STORAGE_LOCAL_DIR` and serves them at `/media`.
+- **Images** upload to `POST /api/v1/workspaces/{workspaceId}/media/product-images`, which returns a URL to use in `media`. The format is read from the file's bytes: JPEG, PNG, WebP or GIF, never SVG. With `STORAGE_DRIVER=local` the API stores files in `STORAGE_LOCAL_DIR` and serves them at `/media`. Each file is at most 20 MB, and each workspace stores at most 5 GB of files (`413` past it); images a product no longer uses still count until orphan cleanup exists.
 - **Import** a Shopify product export with `POST /api/v1/workspaces/{workspaceId}/product-imports` (multipart: `format=shopify_csv`, `file`). Products whose handle is already in the catalog are skipped, never overwritten. Invalid rows are reported with their spreadsheet row number. To add another format, implement `CatalogFileParser` and register it in `CatalogModule`.
 
 ## Using Crossmart from Claude, ChatGPT or Cursor

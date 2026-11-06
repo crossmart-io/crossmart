@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { requireEnumValue } from '@crossmart/common';
+import { describeError, requireEnumValue } from '@crossmart/common';
 import {
   type ChannelConnector,
   ChannelConnectorRegistry,
@@ -9,7 +9,6 @@ import {
 import { ChannelConnectionStatus } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { CONNECTION_NOT_FOUND } from '../channels.constants.js';
 import type { ChannelConnectionView } from '../entities/channel-connection-view.js';
@@ -17,6 +16,7 @@ import { toChannelConnectionView } from '../mappers/channel-connection.mapper.js
 import type { ChannelConnectionRecord } from '../repositories/channel-connection.queries.js';
 import { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { ChannelSessionFactory } from './channel-session.factory.js';
+import { connectionSubject } from '../rules/connection-subject.js';
 
 /** A workspace's channel connections: listing them, and disconnecting them. */
 @Injectable()
@@ -53,14 +53,14 @@ export class ChannelConnectionsService {
       return this.toView(connection);
     }
     await this.revokeIfLastConnection(connection);
-    const disconnected = await this.connections.markDisconnected(connectionId, new Date());
+    const disconnected = await this.connections.markDisconnected(
+      workspaceId,
+      connectionId,
+      new Date(),
+    );
     await this.activity.record(workspaceId, actor, {
       action: ActivityAction.ChannelDisconnected,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connectionId,
-        label: connection.displayName,
-      },
+      subject: connectionSubject(connection),
       detail: this.connectorOf(connection).displayName,
     });
     return this.toView(disconnected);
@@ -75,7 +75,7 @@ export class ChannelConnectionsService {
     try {
       await connector.revokeAccess(await this.sessions.open(connection.workspaceId, connection.id));
     } catch (error) {
-      const reason = error instanceof Error ? error.name : typeof error;
+      const reason = describeError(error);
       this.logger.warn(`Could not revoke access of connection ${connection.id}: ${reason}`);
     }
   }

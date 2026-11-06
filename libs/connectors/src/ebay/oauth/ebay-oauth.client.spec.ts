@@ -53,8 +53,9 @@ describe('EbayOAuthClient', () => {
     const { oauth, http } = createEbayTestKit();
     http.expect(HttpMethod.Post, TOKEN_URL, fixtureResponse(FIXTURES, 'access-token.json'));
 
-    const credentials = await oauth.exchangeCode('v^1.1#code', NOW);
+    const { credentials, grantedScopes } = await oauth.exchangeCode('v^1.1#code', NOW);
 
+    expect(grantedScopes).toBeNull();
     expect(credentials).toEqual({
       accessToken: 'v^1.1#i^1#fixture_access_token',
       refreshToken: 'v^1.1#i^1#fixture_refresh_token',

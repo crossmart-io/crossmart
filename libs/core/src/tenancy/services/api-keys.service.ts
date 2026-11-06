@@ -25,6 +25,10 @@ import {
 } from '../tenancy.constants.js';
 import { RoleResolver } from './role-resolver.js';
 
+const API_KEY_NOT_FOUND = 'API key not found';
+const API_KEY_REVOKE_FORBIDDEN =
+  'You cannot revoke an API key with more access than you have, unless you created it';
+
 /**
  * Workspace API keys for the REST API and the MCP server. Only hashes are stored. Active keys
  * count toward the plan's `Feature.ApiKeys` limit, across the organization.
@@ -67,10 +71,24 @@ export class ApiKeysService {
     return apiKeys.map((apiKey) => this.toSummary(apiKey));
   }
 
-  async revoke(workspaceId: string, apiKeyId: string, actor: Actor): Promise<void> {
+  /**
+   * Like issuing, revoking needs the revoker's permissions to cover the key's, so a manager
+   * cannot cut off a more privileged member's integration. Anyone may revoke keys they created.
+   */
+  async revoke(
+    workspaceId: string,
+    apiKeyId: string,
+    revoker: MembershipManager,
+    actor: Actor,
+  ): Promise<void> {
+    const apiKey = await this.apiKeys.findActive(workspaceId, apiKeyId);
+    if (!apiKey) {
+      throw new NotFoundException(API_KEY_NOT_FOUND);
+    }
+    this.assertRevocable(revoker, apiKey);
     const revoked = await this.apiKeys.revoke(workspaceId, apiKeyId, new Date());
     if (!revoked) {
-      throw new NotFoundException('API key not found');
+      throw new NotFoundException(API_KEY_NOT_FOUND);
     }
     await this.recordChange(workspaceId, actor, ActivityAction.ApiKeyRevoked, revoked);
   }
@@ -107,6 +125,14 @@ export class ApiKeysService {
     }
   }
 
+  private assertRevocable(revoker: MembershipManager, apiKey: ApiKeyWithRole): void {
+    if (apiKey.createdById === revoker.userId) return;
+    const { permissions } = resolveRole(apiKey.role, apiKey.customRole);
+    if (!permissionsCover(revoker.permissions, permissions)) {
+      throw new ForbiddenException(API_KEY_REVOKE_FORBIDDEN);
+    }
+  }
+
   private isUsable(apiKey: ApiKey, now: Date): boolean {
     const isExpired = apiKey.expiresAt !== null && apiKey.expiresAt <= now;
     return apiKey.revokedAt === null && !isExpired;
@@ -115,7 +141,7 @@ export class ApiKeysService {
   private async recordUse(apiKey: ApiKey, now: Date): Promise<void> {
     const lastUsedAt = apiKey.lastUsedAt?.getTime() ?? 0;
     if (now.getTime() - lastUsedAt >= API_KEY_LAST_USED_THROTTLE_MS) {
-      await this.apiKeys.markUsed(apiKey.id, now);
+      await this.apiKeys.markUsed(apiKey.workspaceId, apiKey.id, now);
     }
   }
 

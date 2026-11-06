@@ -46,6 +46,7 @@ crossmart/
 │   ├── core/                # domain modules (shared by api + worker)
 │   │   ├── activity/        # activity log: who changed what, ActivityRecorder
 │   │   ├── catalog/         # products, variants, listings, channel content
+│   │   ├── media/           # product image uploads, storage quota, orphan cleanup
 │   │   ├── inventory/       # ledger, reservations, policies
 │   │   ├── orders/
 │   │   ├── channels/        # channel connections, sync orchestration
@@ -91,23 +92,28 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   of the default plan; existing ones keep the version they are on until moved explicitly.
 - **Features.** `Feature` names every limit and flag; `FEATURE_KINDS` says which is which. A feature
   a version does not list is not included, so a migration adding a feature gives every version a row.
-- **Seeded plans** (a starting point, to validate with design partners; Enterprise is custom):
+- **Seeded plans:** the Crossmart Cloud lineup of ADR [0020](decisions/0020-plan-lineup.md), each
+  plan's latest version. New organizations start on Starter (`isDefault`). Free and Agency are legacy
+  (`active` false): not offered, kept by the organizations on them. Enterprise is sold by contract,
+  and its version 1 is the floor a contract starts from. Prices are not stored here; billing owns them.
 
-  | Feature               | Free | Starter | Growth | Agency |
-  | --------------------- | ---: | ------: | -----: | -----: |
-  | `active_listings`     |   50 |   1,000 | 10,000 | 50,000 |
-  | `channel_connections` |    2 |       ∞ |      ∞ |      ∞ |
-  | `workspaces`          |    1 |       1 |      1 |     25 |
-  | `members`             |    2 |       5 |     15 |      ∞ |
-  | `api_keys`            |    2 |      10 |     25 |    100 |
-  | `ai_credits` / month  |  100 |   1,000 |  5,000 | 20,000 |
-  | `autonomous_agents`   |    — |       — |      ✓ |      ✓ |
-  | `bring_your_own_key`  |    — |       — |      — |      ✓ |
+  | Feature               | Starter |   Pro | Growth |  Scale | Enterprise |
+  | --------------------- | ------: | ----: | -----: | -----: | ---------: |
+  | `active_listings`     |   1,000 | 3,000 | 10,000 | 50,000 |    100,000 |
+  | `channel_connections` |       3 |     5 |     10 |      ∞ |          ∞ |
+  | `workspaces`          |       1 |     1 |      2 |      5 |          ∞ |
+  | `members`             |       2 |     5 |     10 |     25 |          ∞ |
+  | `api_keys`            |       5 |    10 |     25 |    100 |          ∞ |
+  | `ai_credits` / month  |     300 | 1,500 |  5,000 | 20,000 |     20,000 |
+  | `autonomous_agents`   |       ✓ |     ✓ |      ✓ |      ✓ |          ✓ |
+  | `bring_your_own_key`  |       — |     — |      — |      ✓ |          ✓ |
 
 - **Usage** is counted from the data across the organization's workspaces, one aggregate query per
   feature: listings with status `ACTIVE`, connections not `DISCONNECTED`, workspaces, distinct
-  members, API keys neither revoked nor expired. `ai_credits` reports 0 until AI calls record usage:
-  connect it in `UsageMeter` (sum the period's credits from the AI usage table).
+  members, API keys neither revoked nor expired. `ai_credits` counts the organization's `ai_usage` rows
+  in the current UTC calendar month times `AI_CREDITS_PER_CALL` (1: every call is one credit, whatever its
+  size). Pricing per token may replace it later from the same rows, and the period may follow the billing
+  period once billing is connected.
 - **`EntitlementService`** offers `limit`, `usage`, `check` (always truthful) and `assert` (throws
   `EntitlementExceededException`, HTTP 402 with `code`, `feature`, `limit`, `usage`, `requested`, only
   while `ENTITLEMENTS_ENFORCED=true`; default false until billing exists).
@@ -118,8 +124,9 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   before writing anything when the products that would go live do not fit (`ActiveListingsGate`),
   and the worker checks each listing it is about to make live: a blocked one is not sent and is
   marked `ERROR` with the reason.
-- `GET /api/v1/organizations/{id}/subscription` returns the plan, `enforced`, and every feature
-  with its limit and usage, for members holding `billing:view` (owners and admins).
+- `GET /api/v1/organizations/{id}/subscription` returns the plan (`offered` is false on a legacy
+  plan), `enforced`, and every feature with its limit and usage, for members holding `billing:view`
+  (owners and admins).
 
 ## 3. Core domain model (initial)
 
@@ -164,6 +171,7 @@ interface ChannelConnector {
   readonly channel: ChannelType;
   readonly capabilities: ReadonlySet<ChannelCapability>;
   readonly auth: ChannelAuthStrategy;          // OAuth app | seller-provided credentials
+  readonly contentLimits?: ChannelContentLimits; // title/description limits, for generated content
 }
 interface ListingPublisher   { publish(...); update(...); delist(...); updatePrices(...); }
 interface TaxonomyProvider   { suggestCategories(...); }
@@ -174,7 +182,24 @@ interface CatalogImporter    { importProducts(cursor): ...; }
 interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categoryId); }
 ```
 
-- **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`, `TaxonomyProvider`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md), eBay in [channels/ebay.md](channels/ebay.md) and Google Merchant Center in [channels/google-merchant.md](channels/google-merchant.md) ([ADR 0017](decisions/0017-google-merchant-connector.md)). Sessions also carry the connection's stored account settings (`ChannelSession.settings`) for channels that address listings through them (Google's data source). A `ListingDraft` carries the connection's account settings and the listing's channel category for channels that need them (eBay), and `delist` receives a `ListingReference` (product id and variant ids on the channel).
+- **Code:** `libs/connectors/src/sdk` holds the interfaces (`ChannelConnector`, `OAuthAppConnector`, `SellerCredentialsConnector`, and the capability interfaces `WebhookReceiver`, `CatalogSource`, `ListingPublisher`, `InventorySync`, `OrderSource`, `TaxonomyProvider`), the `ChannelConnectorRegistry`, the `HttpTransport` abstraction and the test kit (`FakeHttpTransport`, fixtures, `describeConnectorContract`). `supportsCapability(connector, capability)` narrows a connector to the capability's interface. Core services open authenticated `ChannelSession`s with `ChannelSessionFactory`, which refreshes expiring tokens under a Postgres advisory lock. Shopify is documented in [channels/shopify.md](channels/shopify.md), eBay in [channels/ebay.md](channels/ebay.md), Google Merchant Center in [channels/google-merchant.md](channels/google-merchant.md) ([ADR 0017](decisions/0017-google-merchant-connector.md)) and Etsy in [channels/etsy.md](channels/etsy.md) ([ADR 0021](decisions/0021-etsy-connector.md)). The SDK also has PKCE (`pkceS256Challenge`; core derives each connection's verifier from its OAuth state nonce), form and multipart bodies on `JsonApiClient`, and `ImageFetcher` for channels that take image files rather than links (`HttpsImageFetcher` downloads only `https` images from public addresses). Sessions also carry the connection's stored account settings (`ChannelSession.settings`) for channels that address listings through them (Google's data source). A `ListingDraft` carries the connection's account settings and the listing's channel category for channels that need them (eBay), and `delist` receives a `ListingReference` (product id and variant ids on the channel).
+- **Shared building blocks:** connectors build on the SDK instead of copying each other.
+  - `OAuthTokenEndpoint` (`sdk/oauth`) is an RFC 6749 token endpoint: the code exchange, the refresh and other grants
+    (eBay's client credentials), with client authentication as HTTP Basic (eBay) or in the form body (Google). A 5xx
+    is `ChannelUnavailable`, an `invalid_grant` on a refresh is `CredentialsRejected`, and any other refusal is
+    `RequestRejected` naming only the OAuth `error` code. A code exchange answers an `OAuthTokenGrant`
+    (`ChannelCredentials` plus the scopes the response lists, or null when it lists none); a refresh answers
+    `ChannelCredentials` and keeps the stored refresh token, since eBay and Google do not rotate them. `OAuthParam`,
+    `OAuthGrantType` and the OAuth constants live there too. Shopify's OAuth is shop-scoped, HMAC-verified and rotates
+    refresh tokens, so it keeps its own client.
+  - `JsonApiClient` (`sdk/http`) calls a JSON API with a user's bearer token and validates each response with a zod
+    schema. A connector extends it with where a request goes (`url`), how its error body reads (`describeFailure`:
+    the `ChannelErrorCode` and a safe detail, or an exact message) and a merchant-readable message per code;
+    transport failures and unexpected bodies are `ChannelUnavailable`. eBay adds its language headers, and Google
+    reads `google.rpc.Status`.
+  - `contentLimits` (`ChannelContentLimits`, optional on `ChannelConnector`) declares the title limit, the hard
+    description limit, the description length worth writing (eBay: 500,000 hard, 4,000 written), the
+    `DescriptionFormat` and whether links are allowed. Core's AI content rules take their numbers from here.
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
 - **Priority queues:** `inventory` > `orders` > `price` > `content` > `import` > `ai`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish, and AI agents never hold up a sync.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
@@ -238,7 +263,11 @@ the listing `ERROR` with the channel's message in `lastError`.
 Triggers:
 
 - **Publish / Sync now** (`POST …/channel-connections/:id/sync`): every selected product gets a pending listing and a
-  content job; every listing the channel holds for a product no longer selected gets a delist job.
+  content job; every listing the channel holds for a product no longer selected gets a delist job. `SyncRequestQueue`
+  stamps each queued listing's `syncRequestedAt` before its job is queued, and `ListingSyncRunner` clears it when the
+  content or delist job finishes or the queue gives up, so a selected listing shows `publishing` meanwhile and
+  `GET …/sync` counts what is left. A per-listing mark, not a sync run id: jobs coalesce per listing (a later edit
+  replaces a queued job), so only the listing knows whether its latest job ran. A retry marks its listing the same way.
 - **Catalog changes** go through the in-process `CatalogEventBus`, so the catalog does not depend on channels: a
   product edit queues content and stock, a bulk status or tag change queues content, a bulk price change and a CSV
   update import queue content or prices. Only listings the channel already holds are synced; new products wait for
@@ -269,13 +298,20 @@ See [ADR 0016](decisions/0016-ai-layer.md).
   uses `@anthropic-ai/sdk` with `AI_MODEL` (default `claude-sonnet-5-5`) and `ANTHROPIC_API_KEY`. Without the key
   the app boots, `GET …/ai/status` reports `configured: false`, and AI endpoints answer `503 AI is not configured`.
   OpenAI, Gemini, Ollama and per-workspace BYOK keys are later adapters behind the same interface.
-- **Gateway.** Agents call the model only through `AiGateway.generate(context, request)`. It meters the call, then
+- **Gateway.** Agents call the model only through `AiGateway.generate(context, request)`. It first asserts the
+  plan has an AI credit left (`EntitlementService`, `Feature.AiCredits`; HTTP 402 `plan_limit_reached` while
+  `ENTITLEMENTS_ENFORCED` is on), so no provider call is made past the limit. It meters the call, then
   validates the answer against the request's zod schema (also sent as the structured-output format). A refused,
   truncated, non-JSON or off-schema answer throws `AiOutputRejectedError` and nothing from it is stored. Prompts and
   answers are never logged; rejections log only which fields failed.
 - **Metering.** Every call writes an `ai_usage` row: workspace, `AiFeature`, provider, model, input and output tokens.
   Rejected answers are metered too. `AiUsageService.report(workspaceId, period?)` sums calls and tokens per feature and
-  model (`GET …/ai/usage`, the current UTC month by default). Nothing is enforced here: plans and credits read it.
+  model (`GET …/ai/usage`, the current UTC month by default). Plans read the same rows to meter `ai_credits`.
+- **Rate limits.** The AI routes (`content-drafts`: 30, `content-generations`: 10 requests a minute) are limited per
+  workspace and caller (person or API key) with `@nestjs/throttler`, opt-in per route through
+  `WorkspacePrincipalThrottlerGuard`. The windows live in Redis (`RedisThrottlerStorage`), so every API instance
+  shares them. Past the limit the API answers 429 with `Retry-After`. Content generations also check, before
+  queueing, that the credits cover one call per product.
 - **Prompts** are versioned files in `libs/core/src/ai/prompts` (`content-generator.v1.prompt.ts`), never inline
   strings. Product data goes in a fenced data block and the model is told to ignore instructions inside it.
 - **Suggestions** (`libs/core/src/suggestions`). A `Suggestion` targets a product and optionally a connection, has a
@@ -290,8 +326,9 @@ See [ADR 0016](decisions/0016-ai-layer.md).
   one store) validates the store and products, queues one job per product on the `ai` queue in one `addBulk`
   (deduplicated per product and store while waiting), and logs the request. The worker's `ContentGenerationRunner`
   reads the product and what its listing shows, asks for a title and description within the channel's rules
-  (`CHANNEL_CONTENT_RULES`: eBay titles ≤ 80 characters, plain text, basic HTML without links; Shopify titles ≤ 255,
-  rich HTML), strips markup the channel does not take, and stores the changed fields as pending suggestions. Unusable
+  (`ChannelContentRulesResolver`: core's writing guidance per channel in `CHANNEL_CONTENT_GUIDANCE`, and the limits
+  the connector declares in `contentLimits`, such as eBay titles ≤ 80 characters and basic HTML without links, and
+  Shopify titles ≤ 255 in rich HTML; descriptions aim for the channel's target length), strips markup the channel does not take, and stores the changed fields as pending suggestions. Unusable
   answers and a missing key are final; outages are retried and logged after the last attempt.
 - **Credentials:** a platform key in the cloud today; BYOK per workspace later (encrypted like channel credentials).
 
@@ -300,7 +337,68 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 - REST, versioned at `/api/v1`, with OpenAPI generated from `@nestjs/swagger` decorators.
 - `openapi.json` is published per release, and `crossmart-web` generates its typed client from it. The web CI fails on breaking changes.
 - Auth uses Better Auth sessions (web) or workspace API keys (API/MCP). Rate limited per key.
-- Errors use one consistent shape (RFC 9457 problem+json) with typed error codes from an enum.
+- Errors use NestJS's JSON shape, `application/json` (not RFC 9457 problem+json):
+  `{ "statusCode": 404, "error": "Not Found", "message": "Product not found" }`. On a validation
+  failure (400), `message` is a list with one entry per problem. Plan refusals (402) add a typed
+  `code` (`plan_limit_reached` or `plan_feature_not_included`) with the `feature`, `plan`, `limit`,
+  `usage` and `requested` counts. See [developers/](developers/README.md#errors) for the public description.
+- `sdks/typescript` is the official TypeScript SDK (`@crossmart/sdk`). Its types are generated from `openapi.json`
+  and CI fails when they drift from the API. The public, developer-facing documentation lives in
+  [developers/](developers/README.md).
+
+## Media storage
+
+Product images are uploaded with `POST /api/v1/workspaces/:workspaceId/media/product-images`. `MediaService` reads
+the format from the bytes (JPEG, PNG, WebP or GIF; never SVG), names the file itself
+(`workspaces/<workspaceId>/products/<uuid>.<ext>`) and stores it through `FileStorage` (`libs/common/src/storage`).
+The only driver today is `local`: files on the API's disk (`STORAGE_LOCAL_DIR`, a volume in the cloud), served at
+`MEDIA_PUBLIC_URL`. Products reference images by URL in `product_media`; images imported from channels keep their
+external URLs and are never stored or deleted by Crossmart.
+
+**Uploads table.** Every stored file has a row in `uploads`: workspace, storage key, URL, byte size, content type,
+`created_at` and a nullable `orphaned_at`. A row is written right after the file; if the write fails the file is
+deleted, so no file escapes tracking. There is deliberately no foreign key to `workspaces`: when a workspace is
+deleted its rows remain, become orphans, and the cleanup deletes the files.
+
+**Quota.** A workspace stores at most `WORKSPACE_STORAGE_MAX_BYTES` (5 GB), a guard against filling the disk, not a
+plan limit. Usage is `SUM(byte_size)` over the workspace's `uploads` rows (indexed by `(workspace_id, url)`), never
+a storage listing. Orphans count until they are deleted. An upload past the cap gets `413`.
+
+**Orphan cleanup.** An upload is orphaned when no `product_media` row of its own workspace has its URL. Removing an
+image from a product or deleting the product only makes it an orphan; nothing is deleted synchronously.
+
+1. The scheduled `clean-up-uploads` job (BullMQ `storage` queue, every hour, one job scheduler for all instances)
+   finds up to `UPLOAD_CLEANUP_WORKSPACES_PER_RUN` workspaces with work to do, and for each, in batches of
+   `UPLOAD_CLEANUP_BATCH_SIZE`:
+   - clears `orphaned_at` on uploads a product uses again;
+   - sets `orphaned_at = now` on uploads no product uses;
+   - deletes uploads orphaned for longer than `UPLOAD_ORPHAN_GRACE_MS` (7 days). The row is deleted only if it is
+     still an orphan and still unused at that moment, then the file, in one transaction: if the file cannot be
+     deleted the row stays and the next run retries. A file that is already gone counts as deleted.
+2. The grace period protects an image uploaded now and attached later, edits in flight, and a removal undone
+   within the week. Attaching an image clears its mark at once: the `product_media_reclaims_uploads` trigger runs
+   on every insert into `product_media`, whatever wrote it (an edit, a bulk change, an import), so the grace period
+   restarts the next time it is detached.
+3. The job logs counts only (reclaimed, orphaned, deleted, failed), never keys or URLs.
+
+The job runs in the **API**, not the worker, because the local driver's files are on the API's disk
+(`MediaMaintenanceModule`). When an object storage driver (S3, R2) is added, it can move to the worker.
+
+**Backfill.** Files stored before `uploads` existed are not counted or cleaned up until they are recorded. The
+backfill lists the storage under `workspaces/`, records each product image it does not know yet, and skips other
+files. A file a product uses is recorded under the URL the product uses (so a changed `MEDIA_PUBLIC_URL` never makes
+a used file look orphaned). It is idempotent and never deletes anything, but files no product uses become orphans
+and are deleted 7 days later, as intended. Run it once after the deploy that adds the `uploads` table, in the API
+service, since it needs the storage volume:
+
+```bash
+# Railway: open a shell in the production api service (railway ssh --service api), then
+node dist/apps/api/main.js --backfill-uploads
+# Self-hosted Docker Compose
+docker compose --profile app exec api node dist/apps/api/main.js --backfill-uploads
+```
+
+It logs `Recorded N files; M were already recorded, K skipped` and exits. Running it again records nothing new.
 
 ## 8. Security
 
@@ -313,7 +411,7 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 
 ## 9. Deployment
 
-- **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out.
+- **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out. PostgreSQL and Redis require `POSTGRES_PASSWORD` and `REDIS_PASSWORD` (Redis runs with `--requirepass`) and publish their ports on 127.0.0.1 only.
 - **Cloud:** Railway (US East), using the same Docker images, with `staging` and `production` environments, a static egress IP, managed Postgres with PITR plus a daily off-site dump to S3/R2.
 - **CI (GitHub Actions):** lint, typecheck, unit + contract tests, build and push images to GHCR, publish `openapi.json` on release.
 

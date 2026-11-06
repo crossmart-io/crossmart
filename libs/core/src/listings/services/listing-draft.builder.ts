@@ -1,12 +1,12 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import type {
-  ChannelCategory,
   ChannelSettings,
   ExternalImage,
   ListingDraft,
   ListingDraftVariant,
   PriceUpdate,
 } from '@crossmart/connectors';
+import { sanitizeDescriptionHtml } from '@crossmart/common';
 import { OutOfStockPolicy } from '@crossmart/database';
 import type { ProductDetail, VariantView } from '../../catalog/entities/product-views.js';
 import type {
@@ -16,6 +16,7 @@ import type {
 } from '../entities/price-resolution.js';
 import { PriceWarning } from '../enums/price-warning.enum.js';
 import { toPriceOverrides } from '../mappers/listing.mapper.js';
+import { listingCategory, listingItemSpecifics } from '../rules/listing-category.js';
 import type { ListingSyncRecord } from '../repositories/listing-sync.queries.js';
 import { effectiveQuantity } from '../rules/effective-quantity.js';
 import { isShownOnChannel } from '../rules/listing-visibility.js';
@@ -35,12 +36,6 @@ export interface BuiltListingDraft {
   draft: ListingDraft;
   /** Digest of the images sent, stored once the publish succeeds. */
   mediaDigest: string;
-}
-
-/** The channel category the listing is in, once chosen or picked. */
-function listingCategory(listing: ListingSyncRecord | null): ChannelCategory | null {
-  if (!listing?.channelCategoryId) return null;
-  return { id: listing.channelCategoryId, name: listing.channelCategoryName ?? '' };
 }
 
 /**
@@ -65,12 +60,16 @@ export class ListingDraftBuilder {
         imagesChanged: digest !== listing?.mediaDigest,
         accountSettings: account ?? null,
         category: listingCategory(listing),
+        itemSpecifics: listingItemSpecifics(listing),
       },
       mediaDigest: digest,
     };
   }
 
-  /** The product's content with the listing's overrides applied. */
+  /**
+   * The product's content with the listing's overrides applied. The description is sanitized
+   * again on the way out, so nothing stored before sanitizing covered overrides is published.
+   */
   private content(
     product: ProductDetail,
     listing: ListingSyncRecord | null,
@@ -80,7 +79,9 @@ export class ListingDraftBuilder {
     return {
       handle: product.handle,
       title: override?.title ?? product.title,
-      descriptionHtml: override?.descriptionHtml ?? product.descriptionHtml,
+      descriptionHtml: sanitizeDescriptionHtml(
+        override?.descriptionHtml ?? product.descriptionHtml,
+      ),
       vendor: product.vendor,
       productType: product.productType,
       tags: override?.tagsOverridden ? override.tags : product.tags,

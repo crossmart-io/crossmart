@@ -1,11 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { PublishRequirement } from '@crossmart/connectors';
 import { ActivityOutcome, ListingStatus } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
-import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
-import { isRetryableSyncError, syncFailureReason } from '../rules/sync-failure-reason.js';
+import { type ListingRef, ListingSyncRepository } from '../repositories/listing-sync.repository.js';
+import {
+  isRetryableSyncError,
+  syncFailureReason,
+  syncFailureRequirement,
+} from '../rules/sync-failure-reason.js';
 
 /** A product on a store, named for the activity log. */
 export interface StoreProduct {
@@ -37,16 +42,23 @@ export class ListingSyncFailures {
   async handle(listing: FailedListing, error: unknown): Promise<void> {
     const reason = syncFailureReason(error);
     if (isRetryableSyncError(error)) {
-      await this.listings.recordFailure(listing.listingId, reason);
+      await this.listings.recordFailure(listing, reason);
       throw error;
     }
-    await this.reject(listing, reason);
+    await this.reject(listing, reason, syncFailureRequirement(error));
   }
 
-  /** A failure that will not go away by retrying: the listing is in error, logged once. */
-  async reject(listing: FailedListing, reason: string): Promise<void> {
+  /**
+   * A failure that will not go away by retrying: the listing is in error, logged once. A
+   * `requirement` says the merchant must add something first.
+   */
+  async reject(
+    listing: FailedListing,
+    reason: string,
+    requirement: PublishRequirement | null = null,
+  ): Promise<void> {
     this.logger.warn(`Sync of listing ${listing.listingId} was rejected: ${reason}`);
-    await this.listings.recordFailure(listing.listingId, reason, ListingStatus.ERROR);
+    await this.listings.recordFailure(listing, reason, ListingStatus.ERROR, requirement);
     await this.recordFailed(listing, reason);
   }
 
@@ -76,7 +88,7 @@ export class ListingSyncFailures {
   }
 
   /** The queue gave up retrying: the listing is now in error. */
-  async exhausted(listingId: string, error: unknown): Promise<void> {
-    await this.listings.recordFailure(listingId, syncFailureReason(error), ListingStatus.ERROR);
+  async exhausted(listing: ListingRef, error: unknown): Promise<void> {
+    await this.listings.recordFailure(listing, syncFailureReason(error), ListingStatus.ERROR);
   }
 }

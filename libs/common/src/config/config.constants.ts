@@ -20,3 +20,5 @@ export const ENV_TRUE = 'true';
 export const DEFAULT_ENTITLEMENTS_ENFORCED = false;
 /** The model the AI agents use unless `AI_MODEL` names another. */
 export const DEFAULT_AI_MODEL = 'claude-sonnet-5-5';
+/** eBay's rule for the account deletion endpoint's verification token. */
+export const EBAY_VERIFICATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,80}$/;

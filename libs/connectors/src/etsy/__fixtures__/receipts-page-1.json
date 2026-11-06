@@ -1,0 +1,308 @@
+{
+  "count": 3,
+  "results": [
+    {
+      "receipt_id": 3301001,
+      "receipt_type": 0,
+      "seller_user_id": 12345678,
+      "seller_email": "fixture-seller@example.com",
+      "buyer_user_id": 99887766,
+      "buyer_email": "fixture-buyer@example.com",
+      "name": "Fixture Buyer",
+      "first_line": "1 Fixture Street",
+      "second_line": null,
+      "city": "Brooklyn",
+      "state": "NY",
+      "zip": "11211",
+      "status": "paid",
+      "formatted_address": "Fixture Buyer\n1 Fixture Street\nBrooklyn, NY 11211",
+      "country_iso": "US",
+      "payment_method": "cc",
+      "payment_email": "fixture-buyer@example.com",
+      "message_from_seller": null,
+      "message_from_buyer": "Please gift wrap, it is for my mother",
+      "message_from_payment": null,
+      "is_paid": true,
+      "is_shipped": false,
+      "create_timestamp": 1794036000,
+      "created_timestamp": 1794036000,
+      "update_timestamp": 1794036100,
+      "updated_timestamp": 1794036100,
+      "is_gift": false,
+      "gift_message": "",
+      "gift_sender": "",
+      "grandtotal": {
+        "amount": 6500,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "subtotal": {
+        "amount": 6000,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_price": {
+        "amount": 6000,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_shipping_cost": {
+        "amount": 500,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_tax_cost": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_vat_cost": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "discount_amt": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "gift_wrap_price": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "shipments": [],
+      "transactions": [
+        {
+          "transaction_id": 4401001,
+          "title": "Speckled stoneware mug",
+          "description": "Wheel-thrown stoneware mug.",
+          "seller_user_id": 12345678,
+          "buyer_user_id": 99887766,
+          "create_timestamp": 1794036000,
+          "created_timestamp": 1794036000,
+          "paid_timestamp": 1794036000,
+          "shipped_timestamp": null,
+          "quantity": 2,
+          "listing_image_id": 4400001,
+          "receipt_id": 3301001,
+          "is_digital": false,
+          "file_data": "",
+          "listing_id": 1801234567,
+          "transaction_type": "listing",
+          "product_id": 5550001,
+          "sku": "MUG-S",
+          "price": {
+            "amount": 2800,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "shipping_cost": {
+            "amount": 0,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "variations": [
+            {
+              "property_id": 513,
+              "value_id": 1234567001,
+              "formatted_name": "Size",
+              "formatted_value": "Small"
+            }
+          ],
+          "product_data": [],
+          "shipping_profile_id": 6722757781,
+          "min_processing_days": 1,
+          "max_processing_days": 3,
+          "shipping_method": null,
+          "shipping_upgrade": null,
+          "expected_ship_date": 1794295200,
+          "buyer_coupon": 0,
+          "shop_coupon": 0
+        },
+        {
+          "transaction_id": 4401002,
+          "title": "Gift wrap ribbon",
+          "description": "Wheel-thrown stoneware mug.",
+          "seller_user_id": 12345678,
+          "buyer_user_id": 99887766,
+          "create_timestamp": 1794036000,
+          "created_timestamp": 1794036000,
+          "paid_timestamp": 1794036000,
+          "shipped_timestamp": null,
+          "quantity": 1,
+          "listing_image_id": 4400001,
+          "receipt_id": 3301001,
+          "is_digital": false,
+          "file_data": "",
+          "listing_id": 1801234567,
+          "transaction_type": "listing",
+          "product_id": 5550001,
+          "sku": "",
+          "price": {
+            "amount": 400,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "shipping_cost": {
+            "amount": 0,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "variations": [
+            {
+              "property_id": 513,
+              "value_id": 1234567001,
+              "formatted_name": "Size",
+              "formatted_value": "Small"
+            }
+          ],
+          "product_data": [],
+          "shipping_profile_id": 6722757781,
+          "min_processing_days": 1,
+          "max_processing_days": 3,
+          "shipping_method": null,
+          "shipping_upgrade": null,
+          "expected_ship_date": 1794295200,
+          "buyer_coupon": 0,
+          "shop_coupon": 0
+        }
+      ],
+      "refunds": []
+    },
+    {
+      "receipt_id": 3301002,
+      "receipt_type": 0,
+      "seller_user_id": 12345678,
+      "seller_email": "fixture-seller@example.com",
+      "buyer_user_id": 99887766,
+      "buyer_email": "fixture-buyer@example.com",
+      "name": "Fixture Buyer",
+      "first_line": "1 Fixture Street",
+      "second_line": null,
+      "city": "Brooklyn",
+      "state": "NY",
+      "zip": "11211",
+      "status": "partially refunded",
+      "formatted_address": "Fixture Buyer\n1 Fixture Street\nBrooklyn, NY 11211",
+      "country_iso": "US",
+      "payment_method": "cc",
+      "payment_email": "fixture-buyer@example.com",
+      "message_from_seller": null,
+      "message_from_buyer": "Please gift wrap, it is for my mother",
+      "message_from_payment": null,
+      "is_paid": true,
+      "is_shipped": false,
+      "create_timestamp": 1794036200,
+      "created_timestamp": 1794036200,
+      "update_timestamp": 1794036300,
+      "updated_timestamp": 1794036300,
+      "is_gift": false,
+      "gift_message": "",
+      "gift_sender": "",
+      "grandtotal": {
+        "amount": 3700,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "subtotal": {
+        "amount": 3200,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_price": {
+        "amount": 3200,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_shipping_cost": {
+        "amount": 500,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_tax_cost": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "total_vat_cost": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "discount_amt": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "gift_wrap_price": {
+        "amount": 0,
+        "divisor": 100,
+        "currency_code": "USD"
+      },
+      "shipments": [],
+      "transactions": [
+        {
+          "transaction_id": 4401003,
+          "title": "Speckled stoneware mug",
+          "description": "Wheel-thrown stoneware mug.",
+          "seller_user_id": 12345678,
+          "buyer_user_id": 99887766,
+          "create_timestamp": 1794036000,
+          "created_timestamp": 1794036000,
+          "paid_timestamp": 1794036000,
+          "shipped_timestamp": 1794036250,
+          "quantity": 1,
+          "listing_image_id": 4400001,
+          "receipt_id": 3301002,
+          "is_digital": false,
+          "file_data": "",
+          "listing_id": 1801234567,
+          "transaction_type": "listing",
+          "product_id": 5550001,
+          "sku": "MUG-L",
+          "price": {
+            "amount": 3200,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "shipping_cost": {
+            "amount": 0,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "variations": [
+            {
+              "property_id": 513,
+              "value_id": 1234567001,
+              "formatted_name": "Size",
+              "formatted_value": "Small"
+            }
+          ],
+          "product_data": [],
+          "shipping_profile_id": 6722757781,
+          "min_processing_days": 1,
+          "max_processing_days": 3,
+          "shipping_method": null,
+          "shipping_upgrade": null,
+          "expected_ship_date": 1794295200,
+          "buyer_coupon": 0,
+          "shop_coupon": 0
+        }
+      ],
+      "refunds": [
+        {
+          "amount": {
+            "amount": 1000,
+            "divisor": 100,
+            "currency_code": "USD"
+          },
+          "created_timestamp": 1794036300,
+          "reason": "damaged",
+          "note_from_issuer": "Sorry",
+          "status": "COMPLETED"
+        }
+      ]
+    }
+  ]
+}

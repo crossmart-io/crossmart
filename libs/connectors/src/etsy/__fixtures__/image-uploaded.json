@@ -1,0 +1,22 @@
+{
+  "listing_id": 1801234567,
+  "listing_image_id": 4400010,
+  "hex_code": null,
+  "red": null,
+  "green": null,
+  "blue": null,
+  "hue": null,
+  "saturation": null,
+  "brightness": null,
+  "is_black_and_white": null,
+  "creation_tsz": 1762387300,
+  "created_timestamp": 1762387300,
+  "rank": 1,
+  "url_75x75": "https://i.etsystatic.com/fixture/new75.jpg",
+  "url_170x135": "https://i.etsystatic.com/fixture/new170.jpg",
+  "url_570xN": "https://i.etsystatic.com/fixture/new570.jpg",
+  "url_fullxfull": "https://i.etsystatic.com/fixture/newfull.jpg",
+  "full_height": null,
+  "full_width": null,
+  "alt_text": "Front"
+}

@@ -1,12 +1,12 @@
 import { ChannelType } from '@crossmart/connectors';
-import { CHANNEL_CONTENT_RULES } from '../../content-generation/rules/channel-content-rules.js';
+import { contentRulesOf } from '../../content-generation/testing/content-target.fixtures.js';
 import {
   contentGeneratorSystemPrompt,
   contentGeneratorUserPrompt,
 } from './content-generator.v1.prompt.js';
 
-const SHOPIFY = CHANNEL_CONTENT_RULES[ChannelType.Shopify];
-const EBAY = CHANNEL_CONTENT_RULES[ChannelType.Ebay];
+const SHOPIFY = contentRulesOf(ChannelType.Shopify);
+const EBAY = contentRulesOf(ChannelType.Ebay);
 
 describe('Content Generator prompt v1', () => {
   it('states each channel’s limits and markup', () => {

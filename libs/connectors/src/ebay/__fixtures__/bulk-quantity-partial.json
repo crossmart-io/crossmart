@@ -1,0 +1,18 @@
+{
+  "responses": [
+    { "statusCode": 200, "sku": "SHIRT-S", "offerId": "9000000001", "warnings": [] },
+    {
+      "statusCode": 400,
+      "sku": "SHIRT-M",
+      "offerId": "9000000002",
+      "errors": [
+        {
+          "errorId": 25002,
+          "domain": "API_INVENTORY",
+          "category": "REQUEST",
+          "message": "A user error has occurred. Invalid value for availableQuantity."
+        }
+      ]
+    }
+  ]
+}

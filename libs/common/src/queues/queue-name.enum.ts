@@ -10,6 +10,11 @@ export enum QueueName {
   Import = 'import',
   /** AI agent jobs, such as content generation. Slow and metered, so they come last. */
   Ai = 'ai',
+  /**
+   * Upload cleanup. Processed by the app that can reach the files: the API while storage is its
+   * local disk (`StorageDriver.Local`).
+   */
+  Storage = 'storage',
   /** Housekeeping on a schedule, such as deleting unused agent registrations. */
   Maintenance = 'maintenance',
 }

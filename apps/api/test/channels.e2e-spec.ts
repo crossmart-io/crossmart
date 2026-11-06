@@ -13,13 +13,16 @@ import {
 } from '@crossmart/connectors';
 import { ActivityAction, ConnectFailure, OAuthStateSigner } from '@crossmart/core';
 import { ChannelConnectionStatus, PrismaService, WorkspaceRole } from '@crossmart/database';
-import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
+import { browserCookies, createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
 const env = vi.hoisted(() => {
   const values = {
     SHOPIFY_CLIENT_ID: 'e2e-client-id',
     SHOPIFY_CLIENT_SECRET: 'e2e-client-secret',
+    // No Etsy app on this instance: Etsy cannot be connected.
+    ETSY_API_KEY: '',
+    ETSY_SHARED_SECRET: '',
     API_PUBLIC_URL: 'http://localhost:3004',
     WEB_APP_URL: 'http://localhost:5177',
     CREDENTIALS_MASTER_KEY: Buffer.from(Array.from({ length: 32 }, (_, index) => index)).toString(
@@ -124,7 +127,7 @@ describe('Channels (e2e)', () => {
     expectShopifyCalls(shop);
     const response = await callback(
       signQuery({ code: 'code', shop, state, timestamp: '1762164000' }),
-      user.cookie,
+      browserCookies(user, started),
     );
     expect(response.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=shopify`);
     const list = await request(app.getHttpServer())
@@ -157,6 +160,18 @@ describe('Channels (e2e)', () => {
       'http://localhost:3004/api/v1/channels/shopify/oauth/callback',
     );
     expect(url.searchParams.get('state')).toBeTruthy();
+  });
+
+  it('answers 503 for Etsy until the instance has an Etsy app', async () => {
+    const owner = await signUp(app, 'No Etsy App');
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${owner.workspaceId}/channel-connections/authorizations`)
+      .set('Cookie', owner.cookie)
+      .send({ channel: ChannelType.Etsy, accountHandle: 'ClayAndKiln' });
+
+    expect(response.status).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+    expect(response.body.message).toBe('Etsy is not configured on this Crossmart instance');
   });
 
   it('rejects invalid shop domains and callers who cannot manage the workspace', async () => {
@@ -248,7 +263,7 @@ describe('Channels (e2e)', () => {
 
     const response = await callback(
       signQuery({ code: 'code', shop, state, timestamp: '1' }, 'wrong-secret'),
-      owner.cookie,
+      browserCookies(owner, started),
     );
 
     expect(response.status).toBe(HttpStatus.FOUND);
@@ -269,7 +284,7 @@ describe('Channels (e2e)', () => {
 
     const response = await callback(
       signQuery({ code: 'code', shop: newShop(), state, timestamp: '1' }),
-      owner.cookie,
+      browserCookies(owner, started),
     );
 
     expect(response.headers.location).toBe(errorRedirect(ConnectFailure.InvalidAccount));
@@ -306,26 +321,109 @@ describe('Channels (e2e)', () => {
     http.assertDone();
   });
 
+  describe('browser binding', () => {
+    async function started(owner: SignedUpUser, shop: string) {
+      const response = await startAuthorization(owner, shop);
+      const state = new URL(response.body.authorizationUrl).searchParams.get('state') ?? '';
+      return { response, query: signQuery({ code: 'code', shop, state, timestamp: '1' }) };
+    }
+
+    it('sets an HttpOnly, SameSite=Lax nonce cookie for the callback only', async () => {
+      const owner = await signUp(app, 'Cookie Merchant');
+      const { response } = await started(owner, newShop());
+
+      const [cookie] = [response.headers['set-cookie'] ?? []].flat() as string[];
+      expect(cookie).toMatch(/^crossmart_oauth_nonce=[\w-]+;/);
+      expect(cookie).toContain('Path=/api/v1/channels/shopify/oauth/callback');
+      expect(cookie).toContain('HttpOnly');
+      expect(cookie).toContain('SameSite=Lax');
+      expect(cookie).toContain('Max-Age=600');
+      expect(response.body).not.toHaveProperty('browserNonce');
+    });
+
+    it('refuses a callback without a session, even with the nonce cookie', async () => {
+      const owner = await signUp(app, 'Victim Merchant');
+      const shop = newShop();
+      const { response, query } = await started(owner, shop);
+      const nonceOnly = browserCookies({ ...owner, cookie: '' }, response);
+
+      const callbackResponse = await callback(query, nonceOnly);
+
+      expect(callbackResponse.headers.location).toBe(errorRedirect(ConnectFailure.SessionRequired));
+      http.assertDone();
+    });
+
+    it('refuses a callback without the nonce cookie or with another browser’s', async () => {
+      const owner = await signUp(app, 'Attacker');
+      const shop = newShop();
+      const { query } = await started(owner, shop);
+      const other = await started(owner, shop);
+
+      for (const cookie of [owner.cookie, browserCookies(owner, other.response)]) {
+        expect((await callback(query, cookie)).headers.location).toBe(
+          errorRedirect(ConnectFailure.InvalidState),
+        );
+      }
+      http.assertDone();
+    });
+
+    it('connects the same browser once, clears the cookie, and refuses a replay', async () => {
+      const owner = await signUp(app, 'Single Use');
+      const shop = newShop();
+      const { response, query } = await started(owner, shop);
+      const cookies = browserCookies(owner, response);
+      expectShopifyCalls(shop);
+
+      const first = await callback(query, cookies);
+      const replay = await callback(query, cookies);
+
+      expect(first.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=shopify`);
+      expect([first.headers['set-cookie']].flat().join()).toMatch(
+        /^crossmart_oauth_nonce=;.*Expires=Thu, 01 Jan 1970/,
+      );
+      expect(replay.headers.location).toBe(errorRedirect(ConnectFailure.InvalidState));
+      http.assertDone();
+    });
+  });
+
   describe('webhooks', () => {
-    function deliver(
-      topic: string,
-      shop: string,
-      body: object,
-      secret = env.SHOPIFY_CLIENT_SECRET,
-    ) {
+    interface Delivery {
+      secret?: string;
+      webhookId?: string;
+      triggeredAt?: Date;
+    }
+
+    function deliver(topic: string, shop: string, body: object, delivery: Delivery = {}) {
+      const {
+        secret = env.SHOPIFY_CLIENT_SECRET,
+        webhookId = randomUUID(),
+        triggeredAt = new Date(),
+      } = delivery;
       const raw = JSON.stringify(body);
       return request(app.getHttpServer())
         .post('/api/v1/webhooks/shopify')
         .set('Content-Type', 'application/json')
         .set('X-Shopify-Topic', topic)
         .set('X-Shopify-Shop-Domain', shop)
-        .set('X-Shopify-Webhook-Id', randomUUID())
+        .set('X-Shopify-Webhook-Id', webhookId)
+        .set('X-Shopify-Triggered-At', triggeredAt.toISOString())
         .set('X-Shopify-Hmac-Sha256', createHmac('sha256', secret).update(raw).digest('base64'))
         .send(raw);
     }
 
+    async function stored(connectionId: string) {
+      return app
+        .get(PrismaService)
+        .channelConnection.findUniqueOrThrow({ where: { id: connectionId } });
+    }
+
     it('401s a delivery with a bad HMAC', async () => {
-      const response = await deliver('app/uninstalled', newShop(), { id: 1 }, 'wrong-secret');
+      const response = await deliver(
+        'app/uninstalled',
+        newShop(),
+        { id: 1 },
+        { secret: 'wrong-secret' },
+      );
 
       expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
     });
@@ -334,7 +432,10 @@ describe('Channels (e2e)', () => {
       const owner = await signUp(app, 'Uninstaller');
       const connection = await connect(owner);
 
-      const response = await deliver('app/uninstalled', connection.externalAccountId, { id: 1 });
+      const response = await deliver('app/uninstalled', connection.externalAccountId, {
+        id: 1,
+        myshopify_domain: connection.externalAccountId,
+      });
 
       expect(response.status).toBe(HttpStatus.OK);
       const stored = await app
@@ -361,6 +462,57 @@ describe('Channels (e2e)', () => {
         .get(PrismaService)
         .channelConnection.findUniqueOrThrow({ where: { id: connection.id } });
       expect(stored).toMatchObject({ credentials: null, settings: {}, grantedScopes: [] });
+    });
+
+    it('401s a store-wide topic whose signed body names another store', async () => {
+      const owner = await signUp(app, 'Header Spoofed');
+      const victim = await connect(owner);
+      const attackerShop = newShop();
+
+      const uninstall = await deliver('app/uninstalled', victim.externalAccountId, {
+        id: 1,
+        myshopify_domain: attackerShop,
+      });
+      const redact = await deliver('shop/redact', victim.externalAccountId, {
+        shop_domain: attackerShop,
+      });
+
+      expect(uninstall.status).toBe(HttpStatus.UNAUTHORIZED);
+      expect(redact.status).toBe(HttpStatus.UNAUTHORIZED);
+      expect((await stored(victim.id)).status).toBe(ChannelConnectionStatus.CONNECTED);
+    });
+
+    it('401s a delivery triggered more than the replay window ago', async () => {
+      const owner = await signUp(app, 'Stale Delivery');
+      const connection = await connect(owner);
+      const shop = connection.externalAccountId;
+
+      const response = await deliver(
+        'app/uninstalled',
+        shop,
+        { id: 1, myshopify_domain: shop },
+        { triggeredAt: new Date(Date.now() - 7 * 60 * 60 * 1000) },
+      );
+
+      expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
+      expect((await stored(connection.id)).status).toBe(ChannelConnectionStatus.CONNECTED);
+    });
+
+    it('acknowledges a repeated delivery id without handling it again', async () => {
+      const owner = await signUp(app, 'Replayed');
+      const connection = await connect(owner);
+      const shop = connection.externalAccountId;
+      const webhookId = randomUUID();
+      const uninstall = { id: 1, myshopify_domain: shop };
+
+      expect((await deliver('app/uninstalled', shop, uninstall, { webhookId })).status).toBe(
+        HttpStatus.OK,
+      );
+      await connect(owner, shop);
+      const replay = await deliver('app/uninstalled', shop, uninstall, { webhookId });
+
+      expect(replay.status).toBe(HttpStatus.OK);
+      expect((await stored(connection.id)).status).toBe(ChannelConnectionStatus.CONNECTED);
     });
   });
 

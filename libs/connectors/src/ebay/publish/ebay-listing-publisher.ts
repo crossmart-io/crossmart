@@ -7,13 +7,15 @@ import type {
   PublishedListing,
 } from '../../sdk/capabilities/listing-publisher.js';
 import type { ChannelCategory } from '../../sdk/capabilities/taxonomy-provider.js';
+import { ChannelType } from '../../sdk/channel-type.enum.js';
+import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
 import { type EbayAccountContext, ebayAccountContext } from '../api/ebay-account-context.js';
 import { EbayApp } from '../ebay-app.js';
 import { ebayError } from '../ebay-errors.js';
-import { EbayTaxonomyReader } from '../taxonomy/ebay-taxonomy.reader.js';
 import { assignSkus, inventoryGroupKey } from './ebay-keys.js';
 import { EbayInventoryClient } from './ebay-inventory.client.js';
+import { EbayListingCategory } from './ebay-listing-category.js';
 import { listingTermsOf } from './ebay-listing-terms.js';
 import { ebayListingUrl } from './ebay-listing-url.js';
 import { EbayOfferClient } from './ebay-offer.client.js';
@@ -21,16 +23,14 @@ import { toOfferDetails } from './ebay-offer.mapper.js';
 import type { EbayOfferTerms } from './ebay-offer.types.js';
 import { listingImageUrls, toInventoryItem, toInventoryItemGroup } from './ebay-product.mapper.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
+import {
+  EBAY_INACTIVE_PRODUCT,
+  EBAY_NO_IMAGES,
+  EBAY_UNNAMED_OPTIONS,
+} from './ebay-publish-prerequisites.js';
 
-export const NO_CATEGORY =
-  'eBay suggested no category for this product. Choose an eBay category for it.';
-export const NOT_ACTIVE =
-  'eBay listings cannot be hidden. Make the product active, or set it visible on this store.';
+export { NO_OPTIONS, NOT_ACTIVE } from './ebay-publish-prerequisites.js';
 export const NO_REFERENCE = 'Crossmart cannot find this listing’s items on eBay. End it on eBay.';
-export const NO_IMAGES =
-  'eBay needs at least one photo. Add an image to this product (eBay takes only https links).';
-export const NO_OPTIONS =
-  'Give this product’s options names (such as Size) to list its variants on eBay.';
 
 /** Everything one listing write needs, resolved before the first call to eBay. */
 interface ListingPlan {
@@ -62,12 +62,12 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
     private readonly app: EbayApp,
     private readonly inventory: EbayInventoryClient,
     private readonly offers: EbayOfferClient,
-    private readonly taxonomy: EbayTaxonomyReader,
+    private readonly categories: EbayListingCategory,
   ) {}
 
   async publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     if (!draft.product.active) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NOT_ACTIVE);
+      throw ChannelError.unmet(ChannelType.Ebay, EBAY_INACTIVE_PRODUCT);
     }
     return this.list(session, draft);
   }
@@ -128,10 +128,11 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
   private async plan(session: ChannelSession, draft: ListingDraft): Promise<ListingPlan> {
     const terms = listingTermsOf(draft);
     if (listingImageUrls(draft).length === 0) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_IMAGES);
+      throw ChannelError.unmet(ChannelType.Ebay, EBAY_NO_IMAGES);
     }
     const account = await ebayAccountContext(session);
-    const category = draft.category ?? (await this.suggestedCategory(account, draft));
+    const category = await this.categories.resolve(account, draft);
+    await this.categories.assertRequiredAspects(account, draft, category);
     return {
       account,
       draft,
@@ -147,23 +148,11 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
     };
   }
 
-  /** eBay's best category for the title; stored by Crossmart so updates stay in it. */
-  private async suggestedCategory(
-    account: EbayAccountContext,
-    draft: ListingDraft,
-  ): Promise<ChannelCategory> {
-    const [best] = await this.taxonomy.suggest(account, draft.product.title);
-    if (!best) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_CATEGORY);
-    }
-    return best;
-  }
-
   private async listSingle(plan: ListingPlan): Promise<string> {
     const [variant] = plan.draft.variants;
     const sku = variant ? plan.skus.get(variant.variantId) : undefined;
     if (!variant || !sku) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_OPTIONS);
+      throw ChannelError.unmet(ChannelType.Ebay, EBAY_UNNAMED_OPTIONS);
     }
     await this.inventory.putItem(
       plan.account,
@@ -179,7 +168,7 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
   private async listGroup(plan: ListingPlan): Promise<string> {
     const { account, draft, skus } = plan;
     if (draft.product.optionNames.length === 0) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_OPTIONS);
+      throw ChannelError.unmet(ChannelType.Ebay, EBAY_UNNAMED_OPTIONS);
     }
     for (const variant of draft.variants) {
       const sku = skus.get(variant.variantId) ?? '';
@@ -205,11 +194,11 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
       externalId: outcome.listingId,
       externalUrl: ebayListingUrl(outcome.listingId, account.marketplace, environment),
       active: outcome.active,
-      variants: draft.variants.map((variant) => ({
-        variantId: variant.variantId,
-        externalId: skus.get(variant.variantId) ?? variant.variantId,
-        externalInventoryId: null,
-      })),
+      variants: draft.variants.map((variant) => {
+        const sku = skus.get(variant.variantId) ?? variant.variantId;
+        // Stock is set per SKU, so the SKU is the variant's inventory id too.
+        return { variantId: variant.variantId, externalId: sku, externalInventoryId: sku };
+      }),
       category: outcome.category,
     };
   }

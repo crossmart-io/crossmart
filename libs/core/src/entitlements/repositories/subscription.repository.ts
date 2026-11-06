@@ -5,7 +5,7 @@ const PLAN_VERSION_INCLUDE = {
   planVersion: {
     select: {
       version: true,
-      plan: { select: { code: true, name: true } },
+      plan: { select: { code: true, name: true, active: true } },
       features: { select: { feature: true, enabled: true, limit: true } },
     },
   },

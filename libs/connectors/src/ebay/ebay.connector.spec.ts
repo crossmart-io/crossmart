@@ -42,6 +42,8 @@ describe('EbayConnector', () => {
       ChannelCapability.PublishListings,
       ChannelCapability.UpdatePrice,
       ChannelCapability.ProvideTaxonomy,
+      ChannelCapability.FetchOrders,
+      ChannelCapability.UpdateInventory,
     ]);
   });
 

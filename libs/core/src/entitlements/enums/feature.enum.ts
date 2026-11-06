@@ -14,7 +14,7 @@ export enum Feature {
   Members = 'members',
   /** API keys that are neither revoked nor expired, across the organization. */
   ApiKeys = 'api_keys',
-  /** AI credits per month. Metered by the AI usage records once they exist. */
+  /** AI credits per UTC month, metered from the AI usage records (`AI_CREDITS_PER_CALL`). */
   AiCredits = 'ai_credits',
   /** Agents that act on their own instead of asking for approval. */
   AutonomousAgents = 'autonomous_agents',

@@ -11,14 +11,14 @@ import {
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { type Actor, ApiKeysService, WorkspacePermission } from '@crossmart/core';
+import { ApiKeysService, WorkspacePermission } from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
-import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import {
   type ActingManager,
   CurrentManager,
@@ -57,13 +57,18 @@ export class ApiKeysController {
 
   @Delete(`:${API_KEY_ID_PARAM}`)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Revoke an API key' })
+  @ApiOperation({
+    summary: 'Revoke an API key',
+    description:
+      'Answers 403 unless the caller created the key or has every permission the key has.',
+  })
   @ApiNoContentResponse()
+  @ApiForbiddenResponse({ description: 'The key has more access than the caller' })
   revoke(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(API_KEY_ID_PARAM, ParseUUIDPipe) apiKeyId: string,
-    @CurrentActor() actor: Actor,
+    @CurrentManager() { manager, actor }: ActingManager,
   ): Promise<void> {
-    return this.apiKeys.revoke(workspaceId, apiKeyId, actor);
+    return this.apiKeys.revoke(workspaceId, apiKeyId, manager, actor);
   }
 }

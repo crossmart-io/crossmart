@@ -6,7 +6,7 @@ import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { ChannelConnectionRepository } from '../../channels/repositories/channel-connection.repository.js';
-import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
+import { type ListingRef, ListingSyncRepository } from '../repositories/listing-sync.repository.js';
 import {
   type FailedListing,
   ListingSyncFailures,
@@ -32,7 +32,7 @@ export class ListingSyncOutcomes {
     mediaDigest: string,
   ): Promise<void> {
     const syncedAt = new Date();
-    await this.listings.recordPublished(listing.listingId, {
+    await this.listings.recordPublished(listing, {
       externalId: published.externalId,
       externalUrl: published.externalUrl,
       status: published.active ? ListingStatus.ACTIVE : ListingStatus.INACTIVE,
@@ -54,7 +54,7 @@ export class ListingSyncOutcomes {
   }
 
   async delisted(listing: SyncedListing): Promise<void> {
-    await this.listings.markDelisted(listing.listingId, new Date());
+    await this.listings.markDelisted(listing, new Date());
     await this.record(listing, ActivityAction.ListingDelisted);
   }
 
@@ -68,13 +68,13 @@ export class ListingSyncOutcomes {
   }
 
   /** A price or stock sync went through. */
-  async synced(listingId: string): Promise<void> {
-    await this.listings.recordSynced(listingId, new Date());
+  async synced(listing: ListingRef): Promise<void> {
+    await this.listings.recordSynced(listing, new Date());
   }
 
   /** Some items were rejected; the listing shows the first reason. */
-  async partlyFailed(listingId: string, reason: string): Promise<void> {
-    await this.listings.recordFailure(listingId, reason);
+  async partlyFailed(listing: ListingRef, reason: string): Promise<void> {
+    await this.listings.recordFailure(listing, reason);
   }
 
   /** Crossmart itself refused the sync (the plan's limit); nothing was sent to the channel. */

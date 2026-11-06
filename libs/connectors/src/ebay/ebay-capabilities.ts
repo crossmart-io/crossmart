@@ -3,8 +3,11 @@ import { EbayBusinessPoliciesReader } from './account/ebay-business-policies.rea
 import { EbayBusinessPoliciesWriter } from './account/ebay-business-policies.writer.js';
 import { EbayIdentityReader } from './account/ebay-identity.reader.js';
 import { EbayLocationWriter } from './account/ebay-location.writer.js';
+import { EbayInventorySync } from './inventory/ebay-inventory-sync.js';
+import { EbayOrderSource } from './orders/ebay-order-source.js';
 import { EbayListingPublisher } from './publish/ebay-listing-publisher.js';
 import { EbayPriceUpdater } from './publish/ebay-price-updater.js';
+import { EbayCategoryAspectsReader } from './taxonomy/ebay-category-aspects.reader.js';
 import { EbayTaxonomyReader } from './taxonomy/ebay-taxonomy.reader.js';
 
 /**
@@ -21,12 +24,28 @@ export class EbayAccountServices {
   ) {}
 }
 
-/** What the connector sells through: listings, their prices, and the categories they go in. */
+/**
+ * What the connector sells through: listings, their prices, the categories they go in and
+ * those categories' item specifics.
+ */
 @Injectable()
 export class EbaySellingServices {
   constructor(
     readonly publisher: EbayListingPublisher,
     readonly prices: EbayPriceUpdater,
     readonly taxonomy: EbayTaxonomyReader,
+    readonly aspects: EbayCategoryAspectsReader,
+  ) {}
+}
+
+/**
+ * What keeps the account two-way: the orders sold on eBay, read to move Crossmart's stock, and
+ * the stock Crossmart sends back to the account's listings.
+ */
+@Injectable()
+export class EbaySyncServices {
+  constructor(
+    readonly orders: EbayOrderSource,
+    readonly stock: EbayInventorySync,
   ) {}
 }

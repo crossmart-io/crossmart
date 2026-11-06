@@ -37,6 +37,32 @@ describe('AppConfigService', () => {
     );
   });
 
+  describe('etsyApp', () => {
+    const ETSY_VARIABLES = { ETSY_API_KEY: 'test-keystring', ETSY_SHARED_SECRET: 'test-secret' };
+
+    it('returns the keystring and shared secret when both are set', () => {
+      expect(appConfig(ETSY_VARIABLES).etsyApp).toEqual({
+        clientId: 'test-keystring',
+        clientSecret: 'test-secret',
+      });
+    });
+
+    it.each(['ETSY_API_KEY', 'ETSY_SHARED_SECRET'] as const)('is null without %s', (missing) => {
+      expect(appConfig({ ...ETSY_VARIABLES, [missing]: undefined }).etsyApp).toBeNull();
+      expect(appConfig({ ...ETSY_VARIABLES, [missing]: '' }).etsyApp).toBeNull();
+    });
+  });
+
+  describe('ebayVerificationToken', () => {
+    it('returns the token, and null when it is unset or empty', () => {
+      const token = 'Crossmart_verification-token_0123456789abcdef';
+
+      expect(appConfig({ EBAY_VERIFICATION_TOKEN: token }).ebayVerificationToken).toBe(token);
+      expect(appConfig({ EBAY_VERIFICATION_TOKEN: '' }).ebayVerificationToken).toBeNull();
+      expect(appConfig({}).ebayVerificationToken).toBeNull();
+    });
+  });
+
   describe('aiSettings', () => {
     it('has no key and the default model when nothing is set', () => {
       expect(appConfig({}).aiSettings).toEqual({ anthropicApiKey: null, model: DEFAULT_AI_MODEL });

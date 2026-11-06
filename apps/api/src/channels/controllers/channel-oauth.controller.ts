@@ -7,11 +7,12 @@ import {
   Query,
   Redirect,
   Req,
+  Res,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import type { Request } from 'express';
-import { AppConfigService } from '@crossmart/common';
-import { ChannelError, ChannelType } from '@crossmart/connectors';
+import type { Request, Response } from 'express';
+import { AppConfigService, describeError } from '@crossmart/common';
+import { ChannelType } from '@crossmart/connectors';
 import { ChannelAuthorizationService, ChannelConnectError } from '@crossmart/core';
 import { Public } from '../../auth/decorators/public.decorator.js';
 import { AuthService } from '../../auth/services/auth.service.js';
@@ -22,6 +23,7 @@ import {
   WEB_CHANNELS_PATH,
 } from '../channels.constants.js';
 import { toQueryRecord } from '../query-record.js';
+import { OAuthNonceCookie } from '../services/oauth-nonce.cookie.js';
 
 interface RedirectTarget {
   url: string;
@@ -29,7 +31,9 @@ interface RedirectTarget {
 
 /**
  * Where channels send the merchant after they approve the app. Public, because the channel
- * makes the browser call it; the signed state proves who started the connection.
+ * makes the browser call it; the signed state proves who started the connection, and the
+ * session and nonce cookie prove this is the same browser and user. The nonce cookie is
+ * cleared whatever the outcome, as each state is good for one callback.
  */
 @ApiExcludeController()
 @Controller(OAUTH_CALLBACK_ROUTE)
@@ -40,6 +44,7 @@ export class ChannelOAuthController {
     private readonly authorizations: ChannelAuthorizationService,
     private readonly authService: AuthService,
     private readonly appConfig: AppConfigService,
+    private readonly nonceCookie: OAuthNonceCookie,
   ) {}
 
   @Get()
@@ -49,12 +54,15 @@ export class ChannelOAuthController {
     @Param(CHANNEL_PARAM, new ParseEnumPipe(ChannelType)) channel: ChannelType,
     @Query() query: Record<string, unknown>,
     @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<RedirectTarget> {
     const sessionUser = await this.authService.findUserBySession(request.headers);
+    const nonce = this.nonceCookie.read(request);
+    this.nonceCookie.clear(response, channel);
     try {
       await this.authorizations.complete(channel, {
         query: toQueryRecord(query),
-        sessionUserId: sessionUser?.userId ?? null,
+        browser: { sessionUserId: sessionUser?.userId ?? null, nonce },
       });
       return { url: this.channelsPage({ [ChannelsPageQuery.Connected]: channel }) };
     } catch (error) {
@@ -70,12 +78,11 @@ export class ChannelOAuthController {
   }
 
   /**
-   * Why the connection failed, for operators. Channel errors carry a code and a message that
-   * never holds tokens or response bodies; anything else is named by its type only.
+   * Why the connection failed, for operators. Connect errors carry a message written for them;
+   * anything else is described without tokens or response bodies (`describeError`).
    */
   private describe(error: unknown): string {
-    if (error instanceof ChannelError) return `${error.code}: ${error.message}`;
-    return error instanceof Error ? error.name : typeof error;
+    return error instanceof ChannelConnectError ? error.message : describeError(error);
   }
 
   private channelsPage(params: Partial<Record<ChannelsPageQuery, string>>): string {

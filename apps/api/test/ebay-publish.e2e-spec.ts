@@ -1,9 +1,20 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { FakeHttpTransport, HttpMethod, HttpTransport, jsonResponse } from '@crossmart/connectors';
-import { ActivityAction, ListingSyncRunner, SyncJobQueue } from '@crossmart/core';
-import { ListingStatus, ProductStatus } from '@crossmart/database';
+import {
+  FakeHttpTransport,
+  HttpMethod,
+  HttpTransport,
+  jsonResponse,
+  PublishRequirement,
+} from '@crossmart/connectors';
+import {
+  ActivityAction,
+  ListingDisplayState,
+  ListingSyncRunner,
+  SyncJobQueue,
+} from '@crossmart/core';
+import { ListingStatus, ListingVisibility, ProductStatus } from '@crossmart/database';
 import {
   connectEbayAccount,
   EBAY_API,
@@ -73,11 +84,17 @@ const CATEGORY = { id: '20625', name: 'Home & Garden > Kitchen > Mugs' };
 
 interface ProductChannelBody {
   connection: { id: string };
+  displayState: ListingDisplayState;
+  displayReason: string | null;
+  /** A `PublishRequirement`, or null. */
+  displayRequirement: string | null;
   listing: {
     status: ListingStatus;
     externalId: string | null;
     externalUrl: string | null;
     lastError: string | null;
+    /** A `PublishRequirement`, or null. */
+    missingRequirement: string | null;
     category: { id: string; name: string } | null;
   } | null;
 }
@@ -206,6 +223,14 @@ describe('eBay publishing (e2e)', () => {
         HttpMethod.Post,
         `${EBAY_INVENTORY}/offer/o-1/publish`,
         jsonResponse({ listingId: LISTING_ID }),
+      )
+      // Adding a product sends its stock too; the new listing shows it already, so no write.
+      .expect(
+        HttpMethod.Get,
+        new RegExp(`/offer\\?sku=${sku}&`),
+        jsonResponse({
+          offers: [{ offerId: 'o-1', sku, status: 'PUBLISHED', availableQuantity: 4 }],
+        }),
       );
 
     expect((await addToStore(owner, productId, connectionId)).status).toBe(HttpStatus.CREATED);
@@ -302,6 +327,66 @@ describe('eBay publishing (e2e)', () => {
     );
   });
 
+  it('names what a product lacks for eBay before it is published, on every view', async () => {
+    const owner = await signUp(app, 'eBay Blockers');
+    const connectionId = await connectEbayAccount(app, http, owner, {
+      userId: 'e2eBlockers',
+      withPolicies: true,
+    });
+    http.expect(HttpMethod.Post, `${EBAY_INVENTORY}/location/crossmart-default`, NO_CONTENT);
+    await request(server())
+      .put(`${base(owner)}/channel-connections/${connectionId}/ebay/listing-defaults`)
+      .set('Cookie', owner.cookie)
+      .send({
+        fulfillmentPolicyId: null,
+        paymentPolicyId: 'p-1',
+        returnPolicyId: null,
+        condition: 'NEW',
+        location: { postalCode: '95125', country: 'US', city: null },
+      });
+    const draft = await request(server())
+      .post(`${base(owner)}/products`)
+      .set('Cookie', owner.cookie)
+      .send({
+        title: 'Draft mug',
+        status: ProductStatus.DRAFT,
+        media: [{ url: 'https://cdn.example.com/mug.jpg' }],
+        variants: [{ sku: `DRAFT-${Date.now()}`, price: '12.00', quantity: 4 }],
+      });
+    const productId = (draft.body as { id: string }).id;
+    await addToStore(owner, productId, connectionId);
+    queue.drain();
+    const inactive = {
+      displayState: ListingDisplayState.NeedsDetails,
+      displayRequirement: PublishRequirement.ActiveProduct,
+    };
+
+    const view = await productChannel(owner, productId, connectionId);
+    const editor = await request(server())
+      .get(`${base(owner)}/products/${productId}/channels/${connectionId}/listing`)
+      .set('Cookie', owner.cookie);
+    const products = await request(server())
+      .get(`${base(owner)}/products`)
+      .set('Cookie', owner.cookie);
+    const visible = await request(server())
+      .patch(`${base(owner)}/products/${productId}/channels/${connectionId}/override`)
+      .set('Cookie', owner.cookie)
+      .send({ visibility: ListingVisibility.VISIBLE });
+
+    expect(view).toMatchObject(inactive);
+    expect(editor.body).toMatchObject({
+      ...inactive,
+      category: { supported: true, value: null },
+      itemSpecifics: { supported: true, count: 0, names: [] },
+    });
+    expect(products.body.items[0].stores).toMatchObject([{ connectionId, ...inactive }]);
+    expect(visible.status).toBe(HttpStatus.OK);
+    expect(visible.body).toMatchObject({
+      displayState: ListingDisplayState.Publishing,
+      displayRequirement: null,
+    });
+  });
+
   it('fails a listing without policies, then opts in and reads them', async () => {
     const owner = await signUp(app, 'eBay Newcomer');
     const connectionId = await connectEbayAccount(app, http, owner, {
@@ -315,9 +400,28 @@ describe('eBay publishing (e2e)', () => {
 
     expect(http.requests.at(-1)?.url).not.toContain('/sell/inventory/');
     const failed = await productChannel(owner, productId, connectionId);
+    const missingPolicy = 'Choose a shipping policy in this eBay connection’s listing defaults.';
     expect(failed.listing).toMatchObject({
       status: ListingStatus.ERROR,
-      lastError: 'Choose shipping, payment and return policies for this eBay connection.',
+      lastError: missingPolicy,
+      missingRequirement: PublishRequirement.ShippingPolicy,
+    });
+    expect(failed).toMatchObject({
+      displayState: ListingDisplayState.NeedsDetails,
+      displayReason: missingPolicy,
+      displayRequirement: PublishRequirement.ShippingPolicy,
+    });
+    const store = await request(server())
+      .get(`${base(owner)}/channel-connections/${connectionId}`)
+      .set('Cookie', owner.cookie);
+    expect(store.body.publishReadiness).toEqual({
+      ready: false,
+      missing: [
+        PublishRequirement.ShippingPolicy,
+        PublishRequirement.PaymentPolicy,
+        PublishRequirement.ReturnPolicy,
+        PublishRequirement.ShipFromLocation,
+      ],
     });
 
     http.expect(HttpMethod.Post, `${EBAY_API}/sell/account/v1/program/opt_in`, jsonResponse({}));

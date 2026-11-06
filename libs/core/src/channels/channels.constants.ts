@@ -3,8 +3,23 @@ export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 /** HKDF info that derives the state-signing key from the auth secret. */
 export const OAUTH_STATE_KEY_INFO = 'crossmart:channel-oauth-state';
 export const OAUTH_STATE_KEY_BYTES = 32;
+/**
+ * HKDF info that derives the key of PKCE verifiers from the auth secret. A connection's
+ * verifier is the HMAC of its state's nonce, so it never travels in the state.
+ */
+export const OAUTH_PKCE_KEY_INFO = 'crossmart:channel-oauth-pkce';
 export const OAUTH_STATE_NONCE_BYTES = 16;
 export const OAUTH_STATE_SEPARATOR = '.';
+/** Prefix of the replay keys that make each OAuth state single use. */
+export const OAUTH_STATE_REPLAY_KEY_PREFIX = 'channel-oauth-state:';
+
+/** Prefix of the replay keys that remember channel webhook deliveries by id. */
+export const WEBHOOK_DELIVERY_REPLAY_KEY_PREFIX = 'channel-webhook:';
+/**
+ * How long a webhook delivery id is remembered, so a repeat is acknowledged without being
+ * handled again. Longer than any connector accepts a delivery for (Shopify: 6 hours).
+ */
+export const WEBHOOK_DELIVERY_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** Tokens are refreshed this long before they expire, so a call never starts with a dead token. */
 export const CREDENTIALS_REFRESH_MARGIN_MS = 5 * 60 * 1000;
@@ -16,6 +31,14 @@ export const CREDENTIALS_CONTEXT_SEPARATOR = ':';
 /** Where channels send the merchant back to, under the API's public URL. */
 export const CHANNEL_OAUTH_CALLBACK_PATH = '/api/v1/channels/:channel/oauth/callback';
 export const CHANNEL_PATH_PARAM = ':channel';
+
+/**
+ * eBay's marketplace account deletion endpoint, under the API's public URL. eBay hashes this
+ * exact URL into its challenge, so it must match the one registered in the developer portal.
+ */
+export const EBAY_ACCOUNT_DELETION_PATH = '/api/v1/webhooks/ebay/account-deletion';
+/** Names a connection whose eBay user deleted their account; the username is erased. */
+export const EBAY_DELETED_ACCOUNT_NAME = 'Deleted eBay account';
 
 export const CONNECTION_NOT_FOUND = 'Channel connection not found';
 export const STATUS_REASON_MAX_LENGTH = 500;
@@ -32,3 +55,6 @@ export const PRICING_MAX_MARGIN_PERCENT = 1000;
 export const PRICE_MAX_FRACTION_DIGITS = 2;
 /** The currency of a connection whose channel does not report one. */
 export const DEFAULT_CURRENCY_CODE = 'USD';
+
+/** Why a store that is not connected cannot publish: the merchant must connect it again. */
+export const RECONNECT_TO_PUBLISH = 'Connect this store again to publish to it.';

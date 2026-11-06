@@ -9,6 +9,12 @@ import { ListingPriceSync } from './listing-price.sync.js';
 import { ListingSyncFailures } from './listing-sync-failures.js';
 import { SyncConnectionLoader } from './sync-connection.loader.js';
 
+/** Jobs that publish, update or delist a listing: the ones a sync or retry waits for. */
+const SETTLING_JOB_KINDS: ReadonlySet<ListingSyncJob['kind']> = new Set([
+  SyncJobKind.Content,
+  SyncJobKind.Delist,
+]);
+
 /** The executors of each job kind, grouped so the runner stays small. */
 @Injectable()
 export class ListingSyncExecutors {
@@ -29,7 +35,16 @@ export class ListingSyncRunner {
     private readonly failures: ListingSyncFailures,
   ) {}
 
-  run(job: ListingSyncJob): Promise<void> {
+  /**
+   * Runs the job. A content or delist job that finished settles what a sync or retry queued for
+   * its listing; one that throws is retried, and settles once it finishes or gives up.
+   */
+  async run(job: ListingSyncJob): Promise<void> {
+    await this.execute(job);
+    await this.settle(job);
+  }
+
+  private execute(job: ListingSyncJob): Promise<void> {
     switch (job.kind) {
       case SyncJobKind.Content:
         return this.executors.content.publish(job);
@@ -40,6 +55,13 @@ export class ListingSyncRunner {
       case SyncJobKind.Inventory:
         return this.executors.inventory.run(job);
     }
+  }
+
+  /** Clears the listing's sync request once a job that publishes or delists it is over. */
+  private async settle(job: ListingSyncJob): Promise<void> {
+    if (!SETTLING_JOB_KINDS.has(job.kind)) return;
+    const { workspaceId, connectionId, productId } = job;
+    await this.listings.clearSyncRequest({ workspaceId, connectionId }, productId);
   }
 
   /** The rate-limit buckets of the job's connection, so the worker can pace its calls. */
@@ -56,7 +78,8 @@ export class ListingSyncRunner {
       job.productId,
     );
     if (listing) {
-      await this.failures.exhausted(listing.id, error);
+      await this.failures.exhausted({ workspaceId: job.workspaceId, listingId: listing.id }, error);
     }
+    await this.settle(job);
   }
 }

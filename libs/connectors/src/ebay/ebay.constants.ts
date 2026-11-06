@@ -21,7 +21,6 @@ export const EBAY_REQUIRED_SCOPES: readonly EbayScope[] = [
   EbayScope.SellFulfillment,
   EbayScope.IdentityReadonly,
 ];
-export const EBAY_SCOPE_SEPARATOR = ' ';
 
 /** Where each eBay environment lives: sign-in, the REST APIs, and the identity API. */
 export interface EbayHosts {
@@ -51,30 +50,10 @@ export const EBAY_PAYMENT_POLICY_PATH = '/sell/account/v1/payment_policy';
 export const EBAY_RETURN_POLICY_PATH = '/sell/account/v1/return_policy';
 export const EBAY_MARKETPLACE_ID_PARAM = 'marketplace_id';
 
-/** OAuth request, callback and token parameters. */
-export enum EbayOAuthParam {
-  ClientId = 'client_id',
-  ResponseType = 'response_type',
-  RedirectUri = 'redirect_uri',
-  Scope = 'scope',
-  State = 'state',
-  Code = 'code',
-  GrantType = 'grant_type',
-  RefreshToken = 'refresh_token',
-}
-
-export enum EbayGrantType {
-  AuthorizationCode = 'authorization_code',
-  RefreshToken = 'refresh_token',
-}
-
-export const EBAY_CODE_RESPONSE_TYPE = 'code';
-/** The OAuth error eBay answers when a refresh token expired or was revoked. */
-export const EBAY_INVALID_GRANT_ERROR = 'invalid_grant';
-
-export const BASIC_AUTH_SCHEME = 'Basic';
-export const BEARER_AUTH_SCHEME = 'Bearer';
-export const BASIC_CREDENTIALS_SEPARATOR = ':';
+/** The only scope an application token needs to read the Notification API's public keys. */
+export const EBAY_APPLICATION_TOKEN_SCOPES: readonly EbayScope[] = [EbayScope.Api];
+/** An application token is requested again this long before it expires. */
+export const EBAY_APPLICATION_TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 /**
  * Error ids the Account API answers when the seller has not opted in to business policies
@@ -120,6 +99,15 @@ export const EBAY_DEFAULT_CATEGORY_TREE_PATH = '/commerce/taxonomy/v1/get_defaul
 export const EBAY_CATEGORY_TREE_PATH = '/commerce/taxonomy/v1/category_tree/';
 export const EBAY_CATEGORY_SUGGESTIONS_SUFFIX = '/get_category_suggestions';
 export const EBAY_QUERY_PARAM = 'q';
+export const EBAY_ITEM_ASPECTS_SUFFIX = '/get_item_aspects_for_category';
+export const EBAY_CATEGORY_ID_PARAM = 'category_id';
+/**
+ * Values kept per aspect. Some (Brand, Model) list thousands; the editor offers the first
+ * ones as suggestions, and free-text aspects take any value.
+ */
+export const EBAY_ASPECT_VALUES_MAX = 200;
+/** eBay changes a category's aspects rarely; a process reads each one at most this often. */
+export const EBAY_ASPECTS_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 /** Joins a category's ancestors and its name, as eBay's site shows the path. */
 export const EBAY_CATEGORY_PATH_SEPARATOR = ' > ';
 
@@ -134,6 +122,11 @@ export const EBAY_DEFAULT_LANGUAGE = 'en-US';
 /** Inventory API limits, from eBay's reference. */
 export const EBAY_TITLE_MAX_LENGTH = 80;
 export const EBAY_DESCRIPTION_MAX_LENGTH = 500_000;
+/**
+ * The longest description worth writing: eBay's 500,000 is a hard limit for templated HTML,
+ * far beyond what buyers read on a phone, so generated descriptions aim for this.
+ */
+export const EBAY_DESCRIPTION_TARGET_LENGTH = 4_000;
 export const EBAY_MAX_IMAGES = 24;
 export const EBAY_SKU_MAX_LENGTH = 50;
 export const EBAY_BULK_PRICE_MAX_SKUS = 25;
@@ -207,3 +200,38 @@ export const EBAY_FIRST_SORT_ORDER = 1;
 export const EBAY_DUPLICATE_POLICY_ERROR_IDS: ReadonlySet<number> = new Set([20400]);
 export const EBAY_DUPLICATE_POLICY_ID_PARAM = 'DuplicateProfileId';
 export const EBAY_DUPLICATE_POLICY_NAME_PARAM = 'DuplicateProfileName';
+
+/**
+ * Notification API: the public keys eBay signs push notifications with, such as the marketplace
+ * account deletion notice. Read with an application token.
+ */
+export const EBAY_PUBLIC_KEY_PATH = '/commerce/notification/v1/public_key/';
+/** eBay asks for each public key to be cached for about an hour rather than read per notice. */
+export const EBAY_PUBLIC_KEY_CACHE_TTL_MS = 60 * 60 * 1000;
+/** Bounds the key ids kept in memory, so random ids cannot grow the cache without limit. */
+export const EBAY_PUBLIC_KEY_CACHE_MAX_ENTRIES = 100;
+/** A key id eBay can have issued: it goes into a URL path, so anything else is refused. */
+export const EBAY_PUBLIC_KEY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+/** The header of a push notification: base64 JSON with the key id and the signature. */
+export const EBAY_SIGNATURE_HEADER = 'x-ebay-signature';
+/** The PEM armor eBay sends the key in, on one line without line breaks. */
+export const PEM_PUBLIC_KEY_ARMOR = /-----(BEGIN|END) PUBLIC KEY-----/g;
+export const WHITESPACE_PATTERN = /\s+/g;
+
+/**
+ * Fulfillment API: the seller's orders. `GET /order` filters on the last modification time
+ * (`lastmodifieddate:[{from}..]`) and pages with `limit` (at most 200) and `offset`.
+ */
+export const EBAY_ORDER_PATH = '/sell/fulfillment/v1/order';
+export const EBAY_ORDER_FILTER_PARAM = 'filter';
+export const EBAY_ORDER_LIMIT_PARAM = 'limit';
+export const EBAY_ORDER_OFFSET_PARAM = 'offset';
+export const EBAY_ORDER_MODIFIED_FILTER_PREFIX = 'lastmodifieddate:[';
+export const EBAY_ORDER_MODIFIED_FILTER_SUFFIX = '..]';
+export const EBAY_ORDERS_PAGE_SIZE = 200;
+
+/**
+ * Inventory API stock writes: `bulk_update_price_quantity` takes up to 25 SKUs per call. Each
+ * call revises the live listings, and eBay allows 250 revisions per listing per day.
+ */
+export const EBAY_BULK_QUANTITY_MAX_SKUS = EBAY_BULK_PRICE_MAX_SKUS;

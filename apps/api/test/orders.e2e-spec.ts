@@ -137,6 +137,7 @@ describe('Orders (e2e)', () => {
         'x-shopify-topic': topic,
         'x-shopify-shop-domain': shop,
         'x-shopify-webhook-id': randomUUID(),
+        'x-shopify-triggered-at': new Date().toISOString(),
         'x-shopify-hmac-sha256': createHmac('sha256', SHOPIFY_TEST_ENV.SHOPIFY_CLIENT_SECRET)
           .update(rawBody)
           .digest('base64'),
@@ -216,6 +217,7 @@ describe('Orders (e2e)', () => {
       .set('X-Shopify-Topic', 'orders/create')
       .set('X-Shopify-Shop-Domain', shop)
       .set('X-Shopify-Webhook-Id', randomUUID())
+      .set('X-Shopify-Triggered-At', new Date().toISOString())
       .set(
         'X-Shopify-Hmac-Sha256',
         createHmac('sha256', SHOPIFY_TEST_ENV.SHOPIFY_CLIENT_SECRET).update(raw).digest('base64'),
@@ -291,7 +293,10 @@ describe('Orders (e2e)', () => {
 
     await app
       .get(ChannelWebhooksService)
-      .handle(ChannelType.Shopify, signedWebhook('shop/redact', seller.shop, {}));
+      .handle(
+        ChannelType.Shopify,
+        signedWebhook('shop/redact', seller.shop, { shop_domain: seller.shop }),
+      );
     expect(await prisma.order.count({ where: { workspaceId: user.workspaceId } })).toBe(0);
     expect(await stock(user, sku)).toEqual({ onHand: 9, reserved: 0, available: 9 });
   });

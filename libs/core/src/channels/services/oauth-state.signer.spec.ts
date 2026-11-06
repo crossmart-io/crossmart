@@ -36,6 +36,28 @@ describe('OAuthStateSigner', () => {
     expect(states.sign(CLAIMS, NOW)).not.toBe(first);
   });
 
+  it('signs the nonce it is given, so the browser cookie can carry the same one', () => {
+    const states = signer();
+
+    expect(states.verify(states.sign(CLAIMS, NOW, 'browser-nonce'), NOW).nonce).toBe(
+      'browser-nonce',
+    );
+  });
+
+  it('derives a PKCE verifier from the nonce that the state never carries', () => {
+    const states = signer();
+    const state = states.sign(CLAIMS, NOW, 'browser-nonce');
+    const verifier = states.codeVerifier('browser-nonce');
+
+    expect(verifier).toMatch(/^[\w-]{43}$/);
+    expect(states.codeVerifier('browser-nonce')).toBe(verifier);
+    expect(states.codeVerifier('another-nonce')).not.toBe(verifier);
+    expect(
+      signer('another-auth-secret-of-at-least-32-chars').codeVerifier('browser-nonce'),
+    ).not.toBe(verifier);
+    expect(Buffer.from(state.split('.')[0] ?? '', 'base64url').toString()).not.toContain(verifier);
+  });
+
   it('rejects a state once it has expired', () => {
     const states = signer();
     const state = states.sign(CLAIMS, NOW);

@@ -1,3 +1,4 @@
+import { ListingStatus } from '@crossmart/database';
 import { SyncJobKind } from './enums/sync-job-kind.enum.js';
 import { PriceRounding } from '../channels/enums/price-rounding.enum.js';
 
@@ -66,9 +67,28 @@ export const SYNC_JOB_COST: Record<SyncJobKind, number> = {
 /** Why a listing's sync failed, when the error is not one written for merchants. */
 export const UNEXPECTED_SYNC_FAILURE = 'The channel sync failed unexpectedly. It will be retried.';
 export const CONNECTION_NOT_SYNCABLE = 'Connect this channel again before syncing it';
+/** The `error` of a 409 body, as NestJS names the status. */
+export const CONFLICT_ERROR = 'Conflict';
+export const RETRY_NEEDS_CONNECTION = 'Connect this store again before publishing to it';
+export const RETRY_NEEDS_SELECTION =
+  'This product is not in this store. Add it to the store to publish it there.';
+/** The listing statuses a retry puts back in the queue as pending. */
+export const RETRYABLE_LISTING_STATUSES = [ListingStatus.ERROR, ListingStatus.DELISTED] as const;
 export const LISTING_FAILURE_MAX_LENGTH = 500;
 
 /** Products added to or removed from a store in one request. */
 export const STORE_MEMBERSHIP_MAX_PRODUCTS = 250;
 export const PRODUCT_NOT_FOUND_IN_WORKSPACE =
   'Some of these products do not exist in this workspace';
+
+export const LISTING_NOT_FOUND = 'Listing not found';
+export const LISTING_PRODUCT_NOT_FOUND = 'Product not found';
+
+/**
+ * Item specifics a merchant may set on one listing, and their sizes. eBay takes aspect names of
+ * up to 40 characters, values of up to 50 (Inventory API) and up to 30 values per aspect.
+ */
+export const ITEM_SPECIFICS_MAX = 60;
+export const ITEM_SPECIFIC_NAME_MAX_LENGTH = 40;
+export const ITEM_SPECIFIC_VALUES_MAX = 30;
+export const ITEM_SPECIFIC_VALUE_MAX_LENGTH = 50;

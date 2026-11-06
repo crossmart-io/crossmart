@@ -1,14 +1,14 @@
-import type { ProductSummary } from '../../catalog/entities/product-views.js';
 import type { SortDirection } from '@crossmart/common';
 import type {
   ChannelProductSort,
   ChannelProductState,
 } from '../enums/channel-product-state.enum.js';
-import type { ListingSummary } from './listing-views.js';
+import type { ListingDisplayFields, ListingSummary } from './listing-views.js';
+import type { DisplayedProductSummary } from './store-badge-display.js';
 
 /** A catalog product as one connection sees it: should it be there, and is it. */
-export interface ChannelProductRow {
-  product: ProductSummary;
+export interface ChannelProductRow extends ListingDisplayFields {
+  product: DisplayedProductSummary;
   state: ChannelProductState;
   /** The product's listing on the connection, once one exists. */
   listing: ListingSummary | null;

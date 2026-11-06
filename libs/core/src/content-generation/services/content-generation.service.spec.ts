@@ -7,6 +7,7 @@ import { AiNotConfiguredError } from '../../ai/errors/ai.errors.js';
 import { AiGateway } from '../../ai/services/ai-gateway.service.js';
 import type { AiUsageService } from '../../ai/services/ai-usage.service.js';
 import { FakeAiProvider } from '../../ai/testing/fake-ai.provider.js';
+import { unlimitedEntitlements } from '../../ai/testing/unlimited-entitlements.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import type { ContentGenerationJob } from '../entities/content-generation.js';
 import { ContentGenerationQueue } from '../queue/content-generation.queue.js';
@@ -30,7 +31,11 @@ class RecordingQueue extends ContentGenerationQueue {
 }
 
 function setup(configured = true) {
-  const ai = new AiGateway(new FakeAiProvider(configured), {} as AiUsageService);
+  const ai = new AiGateway(
+    new FakeAiProvider(configured),
+    {} as AiUsageService,
+    unlimitedEntitlements(),
+  );
   const store = { id: CONNECTION_ID, channel: ChannelType.Shopify, displayName: 'Demo Store' };
   const validator = {
     validate: vi.fn<ContentRequestValidator['validate']>().mockResolvedValue({

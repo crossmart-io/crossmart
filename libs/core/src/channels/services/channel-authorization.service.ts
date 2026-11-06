@@ -10,20 +10,27 @@ import type {
   ChannelConnectionView,
   StartedAuthorization,
 } from '../entities/channel-connection-view.js';
-import type { OAuthStatePayload } from '../entities/oauth-state.js';
+import type { OAuthCallbackBrowser, OAuthStatePayload } from '../entities/oauth-state.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 import { ChannelConnectError } from '../errors/channel-connect.error.js';
 import { ConnectedAccountWriter } from './connected-account.writer.js';
 import { OAuthConnectorResolver } from './oauth-connector.resolver.js';
 import { OAuthStateService } from './oauth-state.service.js';
+import { connectionSubject } from '../rules/connection-subject.js';
 
 const STATE_PARAM = 'state';
 const ERROR_PARAM = 'error';
 
 export interface OAuthCallbackInput {
   query: Readonly<Record<string, string>>;
-  /** The signed-in user whose browser followed the redirect, when the session cookie came along. */
-  sessionUserId: string | null;
+  /** Who followed the redirect: their session and the nonce cookie set at the start. */
+  browser: OAuthCallbackBrowser;
+}
+
+/** A started connection, and the nonce the API sets as a cookie in the merchant's browser. */
+export interface AuthorizationStart {
+  started: StartedAuthorization;
+  browserNonce: string;
 }
 
 /**
@@ -44,13 +51,13 @@ export class ChannelAuthorizationService {
     workspaceId: string,
     userId: string,
     request: AuthorizationRequest,
-  ): Promise<StartedAuthorization> {
+  ): Promise<AuthorizationStart> {
     const connector = this.connectors.requireReady(request.channel);
     const accountHandle = connector.normalizeAccountHandle(request.accountHandle);
     if (!accountHandle) {
       throw new BadRequestException(`That is not a valid ${connector.displayName} account`);
     }
-    const state = await this.states.issue({
+    const { state, nonce, codeVerifier } = await this.states.issue({
       workspaceId,
       userId,
       channel: request.channel,
@@ -60,13 +67,21 @@ export class ChannelAuthorizationService {
       accountHandle,
       state,
       redirectUri: this.connectors.redirectUri(request.channel),
+      codeVerifier,
     });
-    return { authorizationUrl: url.toString(), accountHandle, externalAccountId: accountHandle };
+    return {
+      started: {
+        authorizationUrl: url.toString(),
+        accountHandle,
+        externalAccountId: accountHandle,
+      },
+      browserNonce: nonce,
+    };
   }
 
   /** Throws `ChannelConnectError`, whose `failure` the API passes back to the web app. */
   async complete(channel: ChannelType, input: OAuthCallbackInput): Promise<ChannelConnectionView> {
-    const state = this.states.verify(channel, input.query[STATE_PARAM], input.sessionUserId);
+    const state = await this.states.verify(channel, input.query[STATE_PARAM], input.browser);
     try {
       await this.states.assertCanManage(state);
       return await this.connect(state, input.query);
@@ -90,6 +105,7 @@ export class ChannelAuthorizationService {
       query,
       redirectUri: this.connectors.redirectUri(state.channel),
       accountHandle: state.accountHandle,
+      codeVerifier: this.states.codeVerifierOf(state),
     });
     const view = await this.accounts.save(state, connector, authorization);
     await this.recordConnected(state, connector, view);
@@ -103,11 +119,7 @@ export class ChannelAuthorizationService {
   ): Promise<void> {
     return this.activity.record(state.workspaceId, Actor.user(state.userId), {
       action: ActivityAction.ChannelConnected,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: view.id,
-        label: view.displayName,
-      },
+      subject: connectionSubject(view),
       detail: connector.displayName,
     });
   }

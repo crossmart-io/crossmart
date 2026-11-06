@@ -1,0 +1,73 @@
+{
+  "count": 2,
+  "results": [
+    {
+      "id": 891,
+      "level": 0,
+      "name": "Home & Living",
+      "parent_id": null,
+      "children": [
+        {
+          "id": 1002,
+          "level": 1,
+          "name": "Kitchen & Dining",
+          "parent_id": 891,
+          "children": [
+            {
+              "id": 1063,
+              "level": 2,
+              "name": "Drink & Barware",
+              "parent_id": 1002,
+              "children": [
+                {
+                  "id": 1076,
+                  "level": 3,
+                  "name": "Mugs",
+                  "parent_id": 1063,
+                  "children": [],
+                  "full_path_taxonomy_ids": [891, 1002, 1063, 1076]
+                },
+                {
+                  "id": 1078,
+                  "level": 3,
+                  "name": "Tumblers & Water Glasses",
+                  "parent_id": 1063,
+                  "children": [],
+                  "full_path_taxonomy_ids": [891, 1002, 1063, 1078]
+                }
+              ],
+              "full_path_taxonomy_ids": [891, 1002, 1063]
+            },
+            {
+              "id": 1101,
+              "level": 2,
+              "name": "Dinnerware",
+              "parent_id": 1002,
+              "children": [],
+              "full_path_taxonomy_ids": [891, 1002, 1101]
+            }
+          ],
+          "full_path_taxonomy_ids": [891, 1002]
+        }
+      ],
+      "full_path_taxonomy_ids": [891]
+    },
+    {
+      "id": 562,
+      "level": 0,
+      "name": "Craft Supplies & Tools",
+      "parent_id": null,
+      "children": [
+        {
+          "id": 6205,
+          "level": 1,
+          "name": "Pottery & Ceramics Supplies",
+          "parent_id": 562,
+          "children": [],
+          "full_path_taxonomy_ids": [562, 6205]
+        }
+      ],
+      "full_path_taxonomy_ids": [562]
+    }
+  ]
+}

@@ -1,15 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { chunk } from '@crossmart/common';
 import { ChannelConnectionStatus } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type { SyncRequestResult } from '../entities/listing-sync-job.js';
-import { CONNECTION_NOT_SYNCABLE, SELECTION_BATCH_SIZE } from '../listings.constants.js';
+import { CONNECTION_NOT_SYNCABLE } from '../listings.constants.js';
 import { SyncConnectionLoader } from './sync-connection.loader.js';
-import { SyncJobQueue } from './sync-job.queue.js';
 import { SyncPlanner } from './sync-planner.js';
+import { SyncRequestQueue } from './sync-request.queue.js';
+import { connectionSubject } from '../../channels/rules/connection-subject.js';
 
 const pluralRules = new Intl.PluralRules('en');
 
@@ -23,11 +22,15 @@ export class ChannelSyncService {
   constructor(
     private readonly connections: SyncConnectionLoader,
     private readonly planner: SyncPlanner,
-    private readonly queue: SyncJobQueue,
+    private readonly requests: SyncRequestQueue,
     private readonly activity: ActivityRecorder,
   ) {}
 
-  /** Queues every selected product to be published or updated, and the rest to be delisted. */
+  /**
+   * Queues every selected product to be published or updated, and the rest to be delisted. Each
+   * listing it queues is marked until its job finishes, so the store shows it publishing and
+   * `SyncProgressService` can tell when the sync is done.
+   */
   async requestSync(
     workspaceId: string,
     connectionId: string,
@@ -38,16 +41,10 @@ export class ChannelSyncService {
       throw new BadRequestException(CONNECTION_NOT_SYNCABLE);
     }
     const plan = await this.planner.plan(workspaceId, connection);
-    for (const batch of chunk([...plan.publish, ...plan.delist], SELECTION_BATCH_SIZE)) {
-      await this.queue.enqueue(batch);
-    }
+    await this.requests.enqueue({ workspaceId, connectionId }, [...plan.publish, ...plan.delist]);
     await this.activity.record(workspaceId, actor, {
       action: ActivityAction.ChannelSyncRequested,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connectionId,
-        label: connection.view.displayName,
-      },
+      subject: connectionSubject(connection.view),
       itemCount: plan.publish.length,
       detail: productsQueued(plan.publish.length),
     });

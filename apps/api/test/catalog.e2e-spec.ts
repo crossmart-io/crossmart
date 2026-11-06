@@ -210,6 +210,73 @@ describe('Catalog (e2e)', () => {
     );
   });
 
+  it('keeps a variant’s stock when an edit leaves its quantity out', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Stock Keeper');
+    const productsUrl = `/api/v1/workspaces/${workspaceId}/products`;
+    const created = await request(app.getHttpServer())
+      .post(productsUrl)
+      .set('Cookie', cookie)
+      .send({
+        title: 'Wool Socks',
+        optionNames: ['Size'],
+        variants: [{ sku: 'WS-1', optionValues: ['M'], price: '12', quantity: 9 }],
+      });
+    const [variant] = created.body.variants;
+
+    const updated = await request(app.getHttpServer())
+      .put(`${productsUrl}/${created.body.id}`)
+      .set('Cookie', cookie)
+      .send({
+        handle: created.body.handle,
+        title: 'Wool Socks',
+        optionNames: ['Size'],
+        variants: [
+          { id: variant.id, sku: 'WS-1', optionValues: ['M'], price: '14' },
+          { sku: 'WS-2', optionValues: ['L'], price: '14' },
+        ],
+      });
+
+    expect(updated.status).toBe(HttpStatus.OK);
+    expect(updated.body.variants[0]).toMatchObject({
+      id: variant.id,
+      price: '14.00',
+      available: 9,
+    });
+    expect(updated.body.variants[1]).toMatchObject({ sku: 'WS-2', available: 0 });
+  });
+
+  it('gives a product with a non-Latin title a stable handle of its own', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Hebrew Titles');
+    const productsUrl = `/api/v1/workspaces/${workspaceId}/products`;
+    const product = { title: 'צמיד כסף בעבודת יד', variants: [{ price: '120' }] };
+
+    const first = await request(app.getHttpServer())
+      .post(productsUrl)
+      .set('Cookie', cookie)
+      .send(product);
+    const second = await request(app.getHttpServer())
+      .post(productsUrl)
+      .set('Cookie', cookie)
+      .send(product);
+
+    expect(first.status).toBe(HttpStatus.CREATED);
+    expect(second.status).toBe(HttpStatus.CREATED);
+    expect(first.body.title).toBe(product.title);
+    expect(first.body.handle).toMatch(/^product-[0-9a-f]{12}$/);
+    expect(second.body.handle).not.toBe(first.body.handle);
+  });
+
+  it('refuses a title longer than channels accept', async () => {
+    const { cookie, workspaceId } = await signUp(app, 'Long Titles');
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${workspaceId}/products`)
+      .set('Cookie', cookie)
+      .send({ title: 'x'.repeat(256), variants: [{ price: '1' }] });
+
+    expect(response.status).toBe(HttpStatus.BAD_REQUEST);
+  });
+
   it('uploads a product image and serves it to other origins', async () => {
     const { cookie, workspaceId } = await signUp(app, 'Photographer');
     const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');

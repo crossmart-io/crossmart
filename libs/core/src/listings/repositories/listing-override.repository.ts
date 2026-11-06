@@ -24,11 +24,11 @@ export class ListingOverrideRepository {
     const prices = variantPrices.filter((entry) => entry.price || entry.compareAtPrice);
     await this.prisma.$transaction(async (tx) => {
       await tx.listingOverride.upsert({
-        where: { listingId },
+        where: { listingId, workspaceId },
         create: { workspaceId, listingId, ...content },
         update: content,
       });
-      await tx.listingVariantOverride.deleteMany({ where: { listingId } });
+      await tx.listingVariantOverride.deleteMany({ where: { listingId, workspaceId } });
       if (prices.length > 0) {
         await tx.listingVariantOverride.createMany({
           data: prices.map((entry) => ({ workspaceId, listingId, ...entry })),

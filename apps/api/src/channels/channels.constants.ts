@@ -8,6 +8,13 @@ export const DISCONNECT_PATH = `:${CONNECTION_ID_PARAM}/disconnect`;
 export const CHANNEL_PARAM = 'channel';
 export const OAUTH_CALLBACK_ROUTE = `channels/:${CHANNEL_PARAM}/oauth/callback`;
 export const WEBHOOKS_ROUTE = `webhooks/:${CHANNEL_PARAM}`;
+/**
+ * eBay's marketplace account deletion endpoint. It must stay in step with core's
+ * `EBAY_ACCOUNT_DELETION_PATH`, the URL eBay hashes into its challenge.
+ */
+export const EBAY_ACCOUNT_DELETION_ROUTE = 'webhooks/ebay/account-deletion';
+/** Longer challenge codes than this are refused; eBay's are short random strings. */
+export const EBAY_CHALLENGE_CODE_MAX_LENGTH = 512;
 
 /** Where the OAuth callback sends the merchant: the web app's Channels page. */
 export const WEB_CHANNELS_PATH = '/channels';
@@ -26,6 +33,7 @@ export const ACCOUNT_HANDLE_MAX_LENGTH = 255;
 export const CHANNEL_TYPE_SCHEMA_NAME = 'ChannelType';
 export const CHANNEL_FEATURE_SCHEMA_NAME = 'ChannelFeature';
 export const CHANNEL_CONNECTION_STATUS_SCHEMA_NAME = 'ChannelConnectionStatus';
+export const PUBLISH_REQUIREMENT_SCHEMA_NAME = 'PublishRequirement';
 export const CONNECT_FAILURE_SCHEMA_NAME = 'ConnectFailure';
 export const EBAY_MARKETPLACE_ID_SCHEMA_NAME = 'EbayMarketplaceId';
 /** Imports of a connection's catalog, under the connection. */
@@ -43,5 +51,20 @@ export const POLICY_ID_MAX_LENGTH = 64;
 /** Google Merchant Center setup of a connection, under the connection. */
 export const GOOGLE_LISTING_SETUP_PATH = `:${CONNECTION_ID_PARAM}/google-merchant/listing-setup`;
 export const GOOGLE_TARGET_COUNTRY_SCHEMA_NAME = 'GoogleTargetCountry';
+/** Etsy setup of a connection, under the connection. */
+export const ETSY_LISTING_SETUP_PATH = `:${CONNECTION_ID_PARAM}/etsy/listing-setup`;
+export const ETSY_SHOP_REFRESH_PATH = `:${CONNECTION_ID_PARAM}/etsy/shop/refresh`;
+export const ETSY_WHO_MADE_SCHEMA_NAME = 'EtsyWhoMade';
+export const ETSY_WHEN_MADE_SCHEMA_NAME = 'EtsyWhenMade';
+/** Etsy profile ids are positive integers, sent as strings. */
+export const ETSY_PROFILE_ID_PATTERN = /^[1-9]\d{0,19}$/;
 /** Longest product page address template accepted. */
 export const PRODUCT_URL_TEMPLATE_MAX_LENGTH = 2_000;
+
+/**
+ * The cookie that binds a channel connection to the browser that started it. It holds the nonce
+ * signed into the OAuth state, is sent only to that channel's callback, and lives as long as
+ * the state.
+ */
+export const OAUTH_NONCE_COOKIE = 'crossmart_oauth_nonce';
+export const HTTPS_PROTOCOL = 'https:';

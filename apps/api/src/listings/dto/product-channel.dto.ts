@@ -1,12 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChannelType } from '@crossmart/connectors';
-import type { ChannelVariantView, ConnectionSummary, ProductChannelView } from '@crossmart/core';
+import { ChannelType, PublishRequirement } from '@crossmart/connectors';
+import {
+  type ChannelVariantView,
+  type ConnectionSummary,
+  ListingDisplayState,
+  type ProductChannelView,
+} from '@crossmart/core';
 import { ChannelConnectionStatus } from '@crossmart/database';
 import {
   CHANNEL_CONNECTION_STATUS_SCHEMA_NAME,
   CHANNEL_TYPE_SCHEMA_NAME,
 } from '../../channels/channels.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
+import {
+  DisplayReasonProperty,
+  DisplayRequirementProperty,
+  DisplayStateProperty,
+} from './listing-display.decorators.js';
 import { ListingOverrideViewDto } from './listing-override.dto.js';
 import { ResolvedPriceDto } from './price-resolution.dto.js';
 
@@ -53,6 +63,15 @@ export class ProductChannelDto implements ProductChannelView {
   @ApiProperty({ description: 'Whether the connection’s product selection includes it' })
   selected: boolean;
 
+  @DisplayStateProperty()
+  displayState: ListingDisplayState;
+
+  @DisplayReasonProperty()
+  displayReason: string | null;
+
+  @DisplayRequirementProperty()
+  displayRequirement: PublishRequirement | null;
+
   @ApiProperty({ type: ListingSummaryDto, nullable: true })
   listing: ListingSummaryDto | null;
 
@@ -66,6 +85,9 @@ export class ProductChannelDto implements ProductChannelView {
     return Object.assign(new ProductChannelDto(), {
       connection: Object.assign(new ConnectionSummaryDto(), view.connection),
       selected: view.selected,
+      displayState: view.displayState,
+      displayReason: view.displayReason,
+      displayRequirement: view.displayRequirement,
       listing: view.listing ? ListingSummaryDto.from(view.listing) : null,
       override: view.override ? ListingOverrideViewDto.from(view.override) : null,
       variants: view.variants.map((variant) =>

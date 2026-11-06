@@ -2,11 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
+import { API_KEY_HEADER } from '@crossmart/common';
+import { FakeHttpTransport, HttpTransport, PublishRequirement } from '@crossmart/connectors';
 import {
   ActivityAction,
   ChannelProductState,
   CompareAtMode,
+  ListingDisplayState,
+  ListingRetryErrorCode,
   ListingSyncRunner,
   PriceRounding,
   PriceSource,
@@ -15,10 +18,13 @@ import {
   SyncJobQueue,
 } from '@crossmart/core';
 import {
+  ChannelConnectionStatus,
   InventoryMovementReason,
   ListingSource,
   ListingStatus,
+  PrismaService,
   ProductStatus,
+  WorkspaceRole,
 } from '@crossmart/database';
 import { RecordingSyncJobQueue } from './support/recording-sync-job.queue.js';
 import {
@@ -26,6 +32,7 @@ import {
   connectShopifyStore,
   type GraphqlCall,
   newShop,
+  TEST_LOCATION,
 } from './support/shopify-store.js';
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
@@ -368,6 +375,88 @@ describe('Listings (e2e)', () => {
       expect(cleared.body.override).toBeNull();
       expect(cleared.body.variants[0].price.source).toBe(PriceSource.Base);
     });
+
+    it('shows each field with what it inherits, and reverts one field at a time', async () => {
+      const owner = await signUp(app, 'Listing Editor');
+      const connectionId = await connectShopifyStore(app, http, owner);
+      const product = await createProduct(owner, { title: 'Editor Mug', tags: ['kitchen'] });
+      const productChannel = `${base(owner)}/products/${product.id}/channels/${connectionId}`;
+      const [variant] = product.variants;
+      await request(server())
+        .put(`${productChannel}/override`)
+        .set('Cookie', owner.cookie)
+        .send({
+          title: 'Editor Mug – Shopify',
+          tags: ['shopify-only'],
+          variantPrices: [{ variantId: variant.id, price: '79.00', compareAtPrice: '99.00' }],
+        });
+      const editorOf = async () =>
+        (await request(server()).get(`${productChannel}/listing`).set('Cookie', owner.cookie)).body;
+
+      const before = await editorOf();
+      const patched = await request(server())
+        .patch(`${productChannel}/override`)
+        .set('Cookie', owner.cookie)
+        .send({
+          title: null,
+          variantPrices: [{ variantId: variant.id, price: '79.00', compareAtPrice: null }],
+        });
+      const after = await editorOf();
+      const badField = await request(server())
+        .patch(`${productChannel}/override`)
+        .set('Cookie', owner.cookie)
+        .send({ maxQuantity: -1 });
+      const missing = await request(server())
+        .get(`${base(owner)}/products/${randomUUID()}/channels/${connectionId}/listing`)
+        .set('Cookie', owner.cookie);
+
+      expect(before).toMatchObject({
+        productId: product.id,
+        connection: { id: connectionId, currencyCode: 'USD' },
+        selected: false,
+        displayState: ListingDisplayState.Draft,
+        displayRequirement: null,
+        title: {
+          product: 'Editor Mug',
+          override: 'Editor Mug – Shopify',
+          effective: 'Editor Mug – Shopify',
+          overridden: true,
+        },
+        descriptionHtml: { override: null, overridden: false },
+        tags: { product: ['kitchen'], override: ['shopify-only'], effective: ['shopify-only'] },
+        images: {
+          override: null,
+          effective: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+        },
+        visibility: { product: 'VISIBLE', override: null, effective: 'VISIBLE' },
+        stock: { inventoryBuffer: null, maxQuantity: null },
+        category: { supported: false, value: null },
+        itemSpecifics: { supported: false, count: 0, names: [] },
+        variants: [
+          {
+            variantId: variant.id,
+            price: { product: '89.00', override: '79.00', effective: '79.00', overridden: true },
+            compareAtPrice: { product: null, override: '99.00', effective: '99.00' },
+            resolvedPrice: { source: PriceSource.Override },
+            quantity: 10,
+          },
+        ],
+      });
+      expect(before.overrideUpdatedAt).not.toBeNull();
+      expect(patched.status).toBe(HttpStatus.OK);
+      expect(after).toMatchObject({
+        title: { override: null, effective: 'Editor Mug', overridden: false },
+        tags: { override: ['shopify-only'], overridden: true },
+        variants: [
+          {
+            price: { override: '79.00', effective: '79.00' },
+            compareAtPrice: { override: null, overridden: false },
+          },
+        ],
+      });
+      expect(badField.status).toBe(HttpStatus.BAD_REQUEST);
+      expect(missing.status).toBe(HttpStatus.NOT_FOUND);
+    });
   });
 
   describe('publishing to Shopify', () => {
@@ -420,14 +509,23 @@ describe('Listings (e2e)', () => {
       const pending = await request(server())
         .get(connectionPath(owner, connectionId, 'listings'))
         .set('Cookie', owner.cookie);
+      const progress = await request(server())
+        .get(connectionPath(owner, connectionId, 'sync'))
+        .set('Cookie', owner.cookie);
       expectCalls(2);
       expect(await runQueued()).toEqual([SyncJobKind.Content]);
 
       expect(sync.status).toBe(HttpStatus.ACCEPTED);
       expect(sync.body).toEqual({ queued: 1, delisting: 0 });
       expect(pending.body.items).toMatchObject([
-        { productId: mug.id, status: ListingStatus.PENDING },
+        {
+          productId: mug.id,
+          status: ListingStatus.PENDING,
+          displayState: ListingDisplayState.Publishing,
+        },
       ]);
+      expect(pending.body.items[0].syncRequestedAt).not.toBeNull();
+      expect(progress.body).toEqual({ pending: 1, failed: 0, done: false });
       const created = lastCall('productSet');
       expect(created?.variables.identifier).toBeUndefined();
       expect(created?.variables.input).toMatchObject({
@@ -535,6 +633,48 @@ describe('Listings (e2e)', () => {
           ActivityAction.ChannelSyncRequested,
         ]),
       );
+    });
+
+    it('strips scripts and event handlers from a description override, on save and at publish', async () => {
+      const owner = await signUp(app, 'Sanitized');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const product = await createProduct(owner, { title: 'Script Mug', tags: ['xss'] });
+      await request(server())
+        .put(connectionPath(owner, connectionId, 'product-selection'))
+        .set('Cookie', owner.cookie)
+        .send({
+          rule: { filter: { tags: ['xss'] }, includeProductIds: [], excludeProductIds: [] },
+        });
+
+      const saved = await request(server())
+        .put(`${base(owner)}/products/${product.id}/channels/${connectionId}/override`)
+        .set('Cookie', owner.cookie)
+        .send({
+          descriptionHtml:
+            '<p onclick="steal()">Mug</p><script>steal()</script><img src=x onerror="steal()">',
+        });
+      queue.drain();
+      const calls: GraphqlCall[] = [];
+      answerGraphql(
+        http,
+        shop,
+        (call) => {
+          calls.push(call);
+          return shopifyReply(call, 'gid://shopify/Product/990002');
+        },
+        2,
+      );
+      await request(server())
+        .post(connectionPath(owner, connectionId, 'sync'))
+        .set('Cookie', owner.cookie);
+      await runQueued();
+
+      expect(saved.status).toBe(HttpStatus.OK);
+      expect(saved.body.override.descriptionHtml).toBe('<p>Mug</p>');
+      const published = calls.find((call) => call.query.includes('productSet'));
+      expect(published?.variables.input).toMatchObject({ descriptionHtml: '<p>Mug</p>' });
+      http.assertDone();
     });
 
     it('archives a deleted product on the stores that hold it', async () => {
@@ -674,6 +814,9 @@ describe('Listings (e2e)', () => {
           storeName: 'E2E Store',
           status: ListingStatus.ACTIVE,
           source: ListingSource.MANUAL,
+          displayState: ListingDisplayState.Published,
+          displayReason: null,
+          displayRequirement: null,
         },
       ]);
       const live = await products({ state: ChannelProductState.Listed });
@@ -771,6 +914,232 @@ describe('Listings (e2e)', () => {
       expect(activity.body.items.map((entry: { action: string }) => entry.action)).toEqual(
         expect.arrayContaining([ActivityAction.ListingAdded, ActivityAction.ListingRemoved]),
       );
+    });
+  });
+
+  describe('display states and retry', () => {
+    const rejectTitle = () => ({
+      data: {
+        productSet: {
+          product: null,
+          userErrors: [{ field: ['input', 'title'], message: 'Title is invalid' }],
+        },
+      },
+    });
+
+    it('shows one state per store, and retries one failed listing in place', async () => {
+      const owner = await signUp(app, 'Retry Seller');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const product = await createProduct(owner, { title: 'Retry Mug' });
+      const productChannel = `${base(owner)}/products/${product.id}/channels/${connectionId}`;
+      const retryPath = `${productChannel}/retry`;
+      const channelOf = async () =>
+        (
+          await request(server())
+            .get(`${base(owner)}/products/${product.id}/channels`)
+            .set('Cookie', owner.cookie)
+        ).body[0];
+
+      // 1. A store that is set up, and a product it does not select: a draft, not retryable.
+      const store = await request(server())
+        .get(`${base(owner)}/channel-connections/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      expect(store.body.publishReadiness).toEqual({ ready: true, missing: [] });
+      expect(await channelOf()).toMatchObject({
+        displayState: ListingDisplayState.Draft,
+        displayReason: null,
+      });
+      const unselected = await request(server()).post(retryPath).set('Cookie', owner.cookie);
+      expect(unselected.status).toBe(HttpStatus.CONFLICT);
+      expect(unselected.body).toMatchObject({
+        statusCode: HttpStatus.CONFLICT,
+        code: ListingRetryErrorCode.ProductNotInStore,
+      });
+
+      // 2. Added, then refused by Shopify: failed, with Shopify's message, in every view.
+      await request(server()).post(productChannel).set('Cookie', owner.cookie);
+      expect((await channelOf()).displayState).toBe(ListingDisplayState.Publishing);
+      answerGraphql(http, shop, () => ({ data: { location: { id: TEST_LOCATION } } }));
+      answerGraphql(http, shop, rejectTitle);
+      await runQueued();
+      const failed = {
+        displayState: ListingDisplayState.Failed,
+        displayReason: 'Title is invalid',
+      };
+      expect(await channelOf()).toMatchObject(failed);
+      const rows = await request(server())
+        .get(connectionPath(owner, connectionId, 'products'))
+        .set('Cookie', owner.cookie);
+      expect(rows.body.items).toMatchObject([{ product: { id: product.id }, ...failed }]);
+      const listings = await request(server())
+        .get(connectionPath(owner, connectionId, 'listings'))
+        .set('Cookie', owner.cookie);
+      expect(listings.body.items).toMatchObject([{ productId: product.id, ...failed }]);
+
+      // 3. Retried: pending again at once, queued alone, and logged.
+      const retried = await request(server()).post(retryPath).set('Cookie', owner.cookie);
+      expect(retried.status).toBe(HttpStatus.ACCEPTED);
+      expect(retried.body).toMatchObject({
+        displayState: ListingDisplayState.Publishing,
+        displayReason: null,
+        listing: { status: ListingStatus.PENDING, lastError: null },
+      });
+      expect(retried.body.listing.syncRequestedAt).not.toBeNull();
+      const progressOf = async () =>
+        (
+          await request(server())
+            .get(connectionPath(owner, connectionId, 'sync'))
+            .set('Cookie', owner.cookie)
+        ).body;
+      expect(await progressOf()).toEqual({ pending: 1, failed: 0, done: false });
+      const requeued = queue.drain();
+      expect(requeued.map((job) => [job.productId, job.kind])).toEqual([
+        [product.id, SyncJobKind.Content],
+        [product.id, SyncJobKind.Inventory],
+      ]);
+      answerGraphql(http, shop, (call) => shopifyReply(call, 'gid://shopify/Product/990001'), 3);
+      for (const job of requeued) {
+        await runner.run(job);
+      }
+      expect(await channelOf()).toMatchObject({
+        displayState: ListingDisplayState.Published,
+        listing: { status: ListingStatus.ACTIVE, syncRequestedAt: null },
+      });
+      expect(await progressOf()).toEqual({ pending: 0, failed: 0, done: true });
+      const productList = await request(server())
+        .get(`${base(owner)}/products`)
+        .set('Cookie', owner.cookie);
+      expect(productList.body.items[0].stores).toEqual([
+        expect.objectContaining({
+          connectionId,
+          status: ListingStatus.ACTIVE,
+          displayState: ListingDisplayState.Published,
+          displayReason: null,
+          displayRequirement: null,
+        }),
+      ]);
+      const activity = await request(server())
+        .get(`${base(owner)}/activity`)
+        .query({ subjectType: 'product', subjectId: product.id })
+        .set('Cookie', owner.cookie);
+      expect(activity.body.items.map((entry: { action: string }) => entry.action)).toContain(
+        ActivityAction.ListingRetryRequested,
+      );
+    });
+
+    it('refuses a retry on a store that needs re-auth, a missing product, or a viewer', async () => {
+      const owner = await signUp(app, 'Retry Refusals');
+      const connectionId = await connectShopifyStore(app, http, owner);
+      const product = await createProduct(owner, { title: 'Refused Mug' });
+      const productChannel = `${base(owner)}/products/${product.id}/channels/${connectionId}`;
+      await request(server()).post(productChannel).set('Cookie', owner.cookie);
+      queue.drain();
+      const viewerKey = await request(server())
+        .post(`${base(owner)}/api-keys`)
+        .set('Cookie', owner.cookie)
+        .send({ name: 'Read only', role: WorkspaceRole.VIEWER });
+
+      const byViewer = await request(server())
+        .post(`${productChannel}/retry`)
+        .set(API_KEY_HEADER, viewerKey.body.secret);
+      const missing = await request(server())
+        .post(`${base(owner)}/products/${randomUUID()}/channels/${connectionId}/retry`)
+        .set('Cookie', owner.cookie);
+      await app.get(PrismaService).channelConnection.update({
+        where: { id: connectionId },
+        data: { status: ChannelConnectionStatus.NEEDS_REAUTH },
+      });
+      const needsReauth = await request(server())
+        .post(`${productChannel}/retry`)
+        .set('Cookie', owner.cookie);
+      const store = await request(server())
+        .get(`${base(owner)}/channel-connections/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      const channels = await request(server())
+        .get(`${base(owner)}/products/${product.id}/channels`)
+        .set('Cookie', owner.cookie);
+
+      expect(byViewer.status).toBe(HttpStatus.FORBIDDEN);
+      expect(missing.status).toBe(HttpStatus.NOT_FOUND);
+      expect(needsReauth.status).toBe(HttpStatus.CONFLICT);
+      expect(needsReauth.body).toEqual({
+        statusCode: HttpStatus.CONFLICT,
+        error: 'Conflict',
+        code: ListingRetryErrorCode.StoreNotConnected,
+        message: 'Connect this store again before publishing to it',
+      });
+      expect(queue.drain()).toEqual([]);
+      expect(store.body.publishReadiness).toEqual({
+        ready: false,
+        missing: [PublishRequirement.Reconnect],
+      });
+      expect(channels.body[0]).toMatchObject({
+        displayState: ListingDisplayState.NeedsDetails,
+        displayReason: 'Connect this store again to publish to it.',
+        displayRequirement: PublishRequirement.Reconnect,
+      });
+    });
+  });
+
+  describe('sync progress', () => {
+    it('shows a published listing publishing while a sync updates it, until its job is done', async () => {
+      const owner = await signUp(app, 'Sync Progress');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const product = await createProduct(owner, { title: 'Progress Mug' });
+      await request(server())
+        .post(`${base(owner)}/products/${product.id}/channels/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      answerGraphql(http, shop, (call) => shopifyReply(call, 'gid://shopify/Product/990002'), 3);
+      await runQueued();
+      const stateOf = async () =>
+        (
+          await request(server())
+            .get(connectionPath(owner, connectionId, 'products'))
+            .set('Cookie', owner.cookie)
+        ).body.items[0];
+      const progressOf = async () =>
+        (
+          await request(server())
+            .get(connectionPath(owner, connectionId, 'sync'))
+            .set('Cookie', owner.cookie)
+        ).body;
+      expect((await stateOf()).displayState).toBe(ListingDisplayState.Published);
+      expect(await progressOf()).toEqual({ pending: 0, failed: 0, done: true });
+
+      const sync = await request(server())
+        .post(connectionPath(owner, connectionId, 'sync'))
+        .set('Cookie', owner.cookie);
+      const queued = await stateOf();
+      const midway = await progressOf();
+      answerGraphql(http, shop, (call) => shopifyReply(call, 'gid://shopify/Product/990002'), 3);
+      await runQueued();
+
+      expect(sync.body).toEqual({ queued: 1, delisting: 0 });
+      expect(queued).toMatchObject({
+        displayState: ListingDisplayState.Publishing,
+        listing: { status: ListingStatus.ACTIVE },
+        product: { stores: [{ connectionId, displayState: ListingDisplayState.Publishing }] },
+      });
+      expect(midway).toEqual({ pending: 1, failed: 0, done: false });
+      expect(await stateOf()).toMatchObject({
+        displayState: ListingDisplayState.Published,
+        listing: { syncRequestedAt: null },
+      });
+      expect(await progressOf()).toEqual({ pending: 0, failed: 0, done: true });
+    });
+
+    it('is not found for another workspace’s store', async () => {
+      const owner = await signUp(app, 'Progress Owner');
+      const intruder = await signUp(app, 'Progress Intruder');
+      const connectionId = await connectShopifyStore(app, http, owner);
+
+      const response = await request(server())
+        .get(connectionPath(intruder, connectionId, 'sync'))
+        .set('Cookie', intruder.cookie);
+
+      expect(response.status).toBe(HttpStatus.NOT_FOUND);
     });
   });
 

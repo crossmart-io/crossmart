@@ -10,7 +10,7 @@ import {
 } from '@crossmart/connectors';
 import { ActivityAction, ConnectFailure } from '@crossmart/core';
 import { ChannelConnectionStatus, PrismaService } from '@crossmart/database';
-import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
+import { browserCookies, createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
 const env = vi.hoisted(() => {
@@ -135,7 +135,7 @@ describe('eBay channel (e2e)', () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/channels/ebay/oauth/callback')
       .query({ code: 'v^1.1#code', state, expires_in: '299' })
-      .set('Cookie', owner.cookie);
+      .set('Cookie', browserCookies(owner, started));
 
     expect(response.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=ebay`);
     http.assertDone();
@@ -176,7 +176,7 @@ describe('eBay channel (e2e)', () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/channels/ebay/oauth/callback')
       .query({ state })
-      .set('Cookie', owner.cookie);
+      .set('Cookie', browserCookies(owner, started));
 
     expect(response.headers.location).toBe(
       `${env.WEB_APP_URL}/channels?error=${ConnectFailure.AccessDenied}&channel=ebay`,

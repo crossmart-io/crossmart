@@ -1,8 +1,28 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+} from '@nestjs/common';
+import {
+  ApiAcceptedResponse,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   type Actor,
   ListingOverridesService,
+  ListingRetryService,
   ProductChannelsService,
   type StoreMembershipChange,
   StoreMembershipService,
@@ -17,8 +37,11 @@ import {
   PRODUCT_CHANNEL_PATH,
   PRODUCT_CHANNELS_ROUTE,
   PRODUCT_ID_PARAM,
+  RETRY_PATH,
 } from '../listings.constants.js';
-import { ListingOverrideDto } from '../dto/listing-override.dto.js';
+import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ListingOverrideDto, ListingOverridePatchDto } from '../dto/listing-override.dto.js';
+import { ListingRetryErrorDto } from '../dto/listing-retry-error.dto.js';
 import { ProductChannelParamsDto } from '../dto/product-channel-params.dto.js';
 import { ProductChannelDto } from '../dto/product-channel.dto.js';
 
@@ -30,6 +53,7 @@ export class ProductChannelsController {
     private readonly channels: ProductChannelsService,
     private readonly overrides: ListingOverridesService,
     private readonly membership: StoreMembershipService,
+    private readonly retries: ListingRetryService,
   ) {}
 
   @Get()
@@ -80,6 +104,36 @@ export class ProductChannelsController {
     return this.channelView(target);
   }
 
+  @Post(RETRY_PATH)
+  @HttpCode(HttpStatus.ACCEPTED)
+  @RequirePermission(WorkspacePermission.EditListings)
+  @ApiOperation({
+    summary: 'Publish the product to one store again',
+    description:
+      'Re-queues this product’s publish (or update) to this store only, unlike `POST …/sync`, ' +
+      'which resyncs the whole store. A failed or delisted listing becomes pending at once, so ' +
+      'the answer shows `displayState: publishing`; the job runs in the background. Refused ' +
+      '(409) when the store is not connected (`code: store_not_connected`: it needs re-auth ' +
+      'or was disconnected) or does not select the product (`code: product_not_in_store`), ' +
+      'and (402) when the plan has no room for another active listing.',
+  })
+  @ApiAcceptedResponse({ type: ProductChannelDto })
+  @ApiNotFoundResponse({ description: 'The product or the store is not in the workspace' })
+  @ApiConflictResponse({
+    type: ListingRetryErrorDto,
+    description:
+      'The store is not connected (`store_not_connected`), or the product is not selected ' +
+      'for it (`product_not_in_store`)',
+  })
+  @ApiPlanLimitResponse()
+  async retry(
+    @Param() target: ProductChannelParamsDto,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductChannelDto> {
+    await this.retries.retry(target, actor);
+    return this.channelView(target);
+  }
+
   @Put(OVERRIDE_PATH)
   @RequirePermission(WorkspacePermission.EditListings)
   @ApiOperation({
@@ -95,6 +149,26 @@ export class ProductChannelsController {
     @CurrentActor() actor: Actor,
   ): Promise<ProductChannelDto> {
     await this.overrides.save(target, body.toInput(), actor);
+    return this.channelView(target);
+  }
+
+  @Patch(OVERRIDE_PATH)
+  @RequirePermission(WorkspacePermission.EditListings)
+  @ApiOperation({
+    summary: 'Change some of the product’s overrides on one channel',
+    description:
+      'Absent fields keep their override; null reverts a field to the product’s value. Each ' +
+      '`variantPrices` entry replaces that variant’s prices only, and both prices null revert ' +
+      'the variant to the pricing rule. When the channel already lists the product, an update ' +
+      'is queued.',
+  })
+  @ApiOkResponse({ type: ProductChannelDto })
+  async patchOverride(
+    @Param() target: ProductChannelParamsDto,
+    @Body() body: ListingOverridePatchDto,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductChannelDto> {
+    await this.overrides.patch(target, body.toPatch(), actor);
     return this.channelView(target);
   }
 

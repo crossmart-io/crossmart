@@ -75,6 +75,38 @@ describe('ListingOverridesService', () => {
     });
   });
 
+  it('sanitizes the description before saving it, and keeps a cleared one null', async () => {
+    const { service, writer } = setup();
+
+    await service.save(
+      TARGET,
+      {
+        ...EMPTY,
+        descriptionHtml: '<p>Hi<img src=x onerror="steal()"></p><script>steal()</script>',
+      },
+      ACTOR,
+    );
+    await service.save(TARGET, EMPTY, ACTOR);
+
+    expect(writer.save.mock.calls[0][1].descriptionHtml).toBe('<p>Hi</p>');
+    expect(writer.save.mock.calls[1][1].descriptionHtml).toBeNull();
+  });
+
+  it('sanitizes content an approved suggestion writes', async () => {
+    const { service, writer } = setup();
+
+    await service.saveContent(
+      TARGET,
+      { descriptionHtml: '<p onmouseover="steal()">New</p>' },
+      ACTOR,
+    );
+
+    expect(writer.save).toHaveBeenCalledWith(
+      TARGET,
+      expect.objectContaining({ descriptionHtml: '<p>New</p>', inventoryBuffer: 2 }),
+    );
+  });
+
   it.each([
     [
       'a variant of another product',
@@ -118,5 +150,26 @@ describe('ListingOverridesService', () => {
       inventoryBuffer: 2,
     });
     expect(activity.entries[0].action).toBe(ActivityAction.ListingOverrideUpdated);
+  });
+
+  it('reverts one field to the product with a patch, keeping every other override', async () => {
+    const { service, writer } = setup();
+
+    await service.patch(TARGET, { descriptionHtml: null }, ACTOR);
+
+    expect(writer.save).toHaveBeenCalledWith(TARGET, { ...EMPTY, inventoryBuffer: 2 });
+  });
+
+  it('validates a patched variant price against the product', async () => {
+    const { service, writer } = setup();
+
+    await expect(
+      service.patch(
+        TARGET,
+        { variantPrices: [{ variantId: 'foreign', price: '1.00', compareAtPrice: null }] },
+        ACTOR,
+      ),
+    ).rejects.toThrow(BadRequestException);
+    expect(writer.save).not.toHaveBeenCalled();
   });
 });

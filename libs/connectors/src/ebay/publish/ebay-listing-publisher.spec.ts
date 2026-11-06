@@ -1,5 +1,6 @@
 import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
+import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import { HttpMethod } from '../../sdk/http/http-method.enum.js';
 import type { HttpRequest } from '../../sdk/http/http-transport.js';
 import { fakeChannelSession } from '../../sdk/testing/fake-channel-session.js';
@@ -18,12 +19,18 @@ import {
   VARIANT_M,
   VARIANT_S,
 } from './ebay-listing.fixtures.js';
-import { MISSING_LOCATION, MISSING_POLICIES } from './ebay-listing-terms.js';
-import { NO_IMAGES, NOT_ACTIVE, NO_REFERENCE } from './ebay-listing-publisher.js';
+import { NOT_ACTIVE, NO_REFERENCE } from './ebay-listing-publisher.js';
+import {
+  MISSING_LOCATION,
+  MISSING_SHIPPING_POLICY,
+  NO_IMAGES,
+} from './ebay-publish-prerequisites.js';
+import { missingAspectsMessage } from './ebay-listing-category.js';
 
 const SHIRT_M_SKU = 'CM22222222222242228222222222222222';
 const NO_CONTENT = { status: 204, headers: {}, body: '' };
 const session = fakeChannelSession(ACCOUNT_ID);
+const SHIRT_ASPECTS_URL = `${API}/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id=57990`;
 
 function bodyOf(request: HttpRequest | undefined): Record<string, unknown> {
   return JSON.parse(request?.body ?? '{}') as Record<string, unknown>;
@@ -75,7 +82,7 @@ describe('EbayListingPublisher', () => {
         {
           variantId: '55555555-5555-4555-8555-555555555555',
           externalId: MUG_SKU,
-          externalInventoryId: null,
+          externalInventoryId: MUG_SKU,
         },
       ],
       category: {
@@ -347,7 +354,10 @@ describe('EbayListingPublisher', () => {
 
       const publishing = connector.publish(session, shirtDraft({ accountSettings: settings }));
 
-      await expect(publishing).rejects.toThrow(MISSING_POLICIES);
+      await expect(publishing).rejects.toMatchObject({
+        message: MISSING_SHIPPING_POLICY,
+        requirement: PublishRequirement.ShippingPolicy,
+      });
       expect(http.requests).toEqual([]);
     });
 
@@ -359,7 +369,10 @@ describe('EbayListingPublisher', () => {
       const draft = mugDraft();
       draft.product.images = images;
 
-      await expect(connector.publish(session, draft)).rejects.toThrow(NO_IMAGES);
+      await expect(connector.publish(session, draft)).rejects.toMatchObject({
+        message: NO_IMAGES,
+        requirement: PublishRequirement.Images,
+      });
       expect(http.requests).toEqual([]);
     });
 
@@ -375,8 +388,77 @@ describe('EbayListingPublisher', () => {
 
       expect(error).toBeInstanceOf(ChannelError);
       expect((error as ChannelError).message).toBe(MISSING_LOCATION);
+      expect((error as ChannelError).requirement).toBe(PublishRequirement.ShipFromLocation);
       expect((error as ChannelError).code).toBe(ChannelErrorCode.RequestRejected);
       expect((error as ChannelError).retryable).toBe(false);
+    });
+  });
+
+  describe('item specifics', () => {
+    function expectShirtAspects(http: ReturnType<typeof createEbayTestKit>['http']): void {
+      http
+        .expect(
+          HttpMethod.Get,
+          `${API}/commerce/taxonomy/v1/get_default_category_tree_id?marketplace_id=EBAY_US`,
+          fixtureResponse(FIXTURES, 'category-tree.json'),
+        )
+        .expect(HttpMethod.Get, SHIRT_ASPECTS_URL, fixtureResponse(FIXTURES, 'item-aspects.json'));
+    }
+
+    it('fails before writing to eBay when required item specifics are missing', async () => {
+      const { connector, http } = createEbayTestKit();
+      expectShirtAspects(http);
+
+      const error: unknown = await connector
+        .publish(session, shirtDraft())
+        .catch((caught: unknown) => caught);
+
+      http.assertDone();
+      expect(error).toBeInstanceOf(ChannelError);
+      // Brand comes from the vendor and Size from the options; Department has no value.
+      expect((error as ChannelError).message).toBe(missingAspectsMessage(['Department']));
+      expect((error as ChannelError).retryable).toBe(false);
+      expect(http.requests.some((request) => request.url.includes('/sell/inventory/'))).toBe(false);
+    });
+
+    it('sends the merchant’s item specifics on the group and every item', async () => {
+      const { connector, http } = createEbayTestKit();
+      expectShirtAspects(http);
+      http
+        .expect(HttpMethod.Put, /inventory_item\/SHIRT-S$/, NO_CONTENT)
+        .expect(HttpMethod.Put, /inventory_item\/CM2/, NO_CONTENT)
+        .expect(HttpMethod.Put, /inventory_item_group\//, NO_CONTENT)
+        .expect(HttpMethod.Get, offersUrl('SHIRT-S'), jsonResponse({}, 404))
+        .expect(HttpMethod.Post, `${INVENTORY}/offer`, jsonResponse({ offerId: '1' }, 201))
+        .expect(HttpMethod.Get, offersUrl(SHIRT_M_SKU), jsonResponse({}, 404))
+        .expect(HttpMethod.Post, `${INVENTORY}/offer`, jsonResponse({ offerId: '2' }, 201))
+        .expect(
+          HttpMethod.Post,
+          /publish_by_inventory_item_group$/,
+          fixtureResponse(FIXTURES, 'offer-published.json'),
+        );
+      const itemSpecifics = [
+        { name: 'Department', values: ['Men'] },
+        { name: 'Brand', values: ['Linen Co'] },
+        { name: 'size', values: ['XL'] },
+      ];
+
+      await connector.publish(session, shirtDraft({ itemSpecifics }));
+
+      http.assertDone();
+      const group = requestTo(
+        http.requests,
+        HttpMethod.Put,
+        `${INVENTORY}/inventory_item_group/${SHIRT_GROUP}`,
+      );
+      expect(bodyOf(group).aspects).toEqual({ Brand: ['Linen Co'], Department: ['Men'] });
+      const small = requestTo(http.requests, HttpMethod.Put, `${INVENTORY}/inventory_item/SHIRT-S`);
+      expect(bodyOf(small)).toMatchObject({
+        product: {
+          aspects: { Brand: ['Linen Co'], Department: ['Men'], Size: ['S'] },
+          brand: 'Linen Co',
+        },
+      });
     });
   });
 

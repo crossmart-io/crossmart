@@ -10,7 +10,7 @@ import {
   ContentProductRepository,
   type ProductTitle,
 } from '../repositories/content-product.repository.js';
-import { contentRulesFor } from '../rules/channel-content-rules.js';
+import { ChannelContentRulesResolver } from './channel-content-rules.resolver.js';
 
 /** A request whose store and products all exist in the workspace. */
 export interface ValidatedContentRequest {
@@ -24,11 +24,12 @@ export class ContentRequestValidator {
   constructor(
     private readonly connections: ChannelConnectionsService,
     private readonly products: ContentProductRepository,
+    private readonly rules: ChannelContentRulesResolver,
   ) {}
 
   async validate(request: ContentGenerationRequest): Promise<ValidatedContentRequest> {
     const store = await this.connections.get(request.workspaceId, request.connectionId);
-    if (!contentRulesFor(store.channel)) {
+    if (!this.rules.rulesFor(store.channel)) {
       throw new BadRequestException(CONTENT_GENERATION_UNSUPPORTED_CHANNEL);
     }
     const productIds = [...new Set(request.productIds)];

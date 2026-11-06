@@ -60,10 +60,7 @@ export class EbayTaxonomyReader {
   async suggest(account: EbayAccountContext, query: string): Promise<ChannelCategory[]> {
     const keywords = query.trim();
     if (!keywords) return [];
-    const treeId = await this.treeId(account);
-    const url = this.url(
-      `${EBAY_CATEGORY_TREE_PATH}${encodeURIComponent(treeId)}${EBAY_CATEGORY_SUGGESTIONS_SUFFIX}`,
-    );
+    const url = await this.treeUrl(account, EBAY_CATEGORY_SUGGESTIONS_SUFFIX);
     url.searchParams.set(EBAY_QUERY_PARAM, keywords);
     const response = await this.api.send(url, account.accessToken);
     if (response.status === HTTP_STATUS_NO_CONTENT) return [];
@@ -71,7 +68,8 @@ export class EbayTaxonomyReader {
     return categorySuggestions.map(toCategory);
   }
 
-  private async treeId(account: EbayAccountContext): Promise<string> {
+  /** The id of the marketplace's default category tree. */
+  async treeId(account: EbayAccountContext): Promise<string> {
     const known = this.treeIds.get(account.marketplaceId);
     if (known) return known;
     const url = this.url(EBAY_DEFAULT_CATEGORY_TREE_PATH);
@@ -79,6 +77,12 @@ export class EbayTaxonomyReader {
     const { categoryTreeId } = await this.api.get(url, account.accessToken, categoryTreeSchema);
     this.treeIds.set(account.marketplaceId, categoryTreeId);
     return categoryTreeId;
+  }
+
+  /** A Taxonomy API URL under the category tree: `…/category_tree/{treeId}{suffix}`. */
+  async treeUrl(account: EbayAccountContext, suffix: string): Promise<URL> {
+    const treeId = await this.treeId(account);
+    return this.url(`${EBAY_CATEGORY_TREE_PATH}${encodeURIComponent(treeId)}${suffix}`);
   }
 
   private url(path: string): URL {

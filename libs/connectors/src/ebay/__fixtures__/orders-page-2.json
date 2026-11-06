@@ -1,0 +1,75 @@
+{
+  "href": "https://api.sandbox.ebay.com/sell/fulfillment/v1/order?filter=lastmodifieddate:%5B2026-11-05T09:55:00.000Z..%5D&limit=200&offset=200",
+  "total": 201,
+  "prev": "https://api.sandbox.ebay.com/sell/fulfillment/v1/order?filter=lastmodifieddate:%5B2026-11-05T09:55:00.000Z..%5D&limit=200&offset=0",
+  "limit": 200,
+  "offset": 200,
+  "orders": [
+    {
+      "orderId": "12-11111-00003",
+      "creationDate": "2026-11-05T09:00:00.000Z",
+      "lastModifiedDate": "2026-11-05T12:30:00.000Z",
+      "orderFulfillmentStatus": "NOT_STARTED",
+      "orderPaymentStatus": "FULLY_REFUNDED",
+      "sellerId": "demo_seller",
+      "buyer": { "username": "fixture_buyer_3" },
+      "pricingSummary": {
+        "priceSubtotal": { "value": "12.00", "currency": "USD" },
+        "total": { "value": "12.00", "currency": "USD" }
+      },
+      "cancelStatus": {
+        "cancelState": "CANCELED",
+        "cancelledDate": "2026-11-05T12:29:00.000Z",
+        "cancelRequests": []
+      },
+      "paymentSummary": {
+        "refunds": [
+          {
+            "refundId": "FIXTURE-REFUND-1",
+            "refundDate": "2026-11-05T12:29:30.000Z",
+            "amount": { "value": "12.00", "currency": "USD" },
+            "refundStatus": "REFUNDED"
+          }
+        ],
+        "payments": []
+      },
+      "lineItems": [
+        {
+          "lineItemId": "10000000000004",
+          "sku": "MUG-1",
+          "title": "Stoneware mug",
+          "lineItemCost": { "value": "12.00", "currency": "USD" },
+          "quantity": 1,
+          "listingMarketplaceId": "EBAY_US",
+          "lineItemFulfillmentStatus": "NOT_STARTED",
+          "refunds": []
+        }
+      ]
+    },
+    {
+      "orderId": "03-11111-00004",
+      "creationDate": "2026-11-05T10:10:00.000Z",
+      "lastModifiedDate": "2026-11-05T10:11:00.000Z",
+      "orderFulfillmentStatus": "NOT_STARTED",
+      "orderPaymentStatus": "PAID",
+      "sellerId": "demo_seller",
+      "buyer": { "username": "fixture_buyer_4" },
+      "pricingSummary": { "total": { "value": "10.00", "currency": "GBP" } },
+      "cancelStatus": { "cancelState": "NONE_REQUESTED", "cancelRequests": [] },
+      "paymentSummary": { "refunds": [], "payments": [] },
+      "lineItems": [
+        {
+          "lineItemId": "10000000000005",
+          "sku": "MUG-1",
+          "title": "Stoneware mug",
+          "lineItemCost": { "value": "10.00", "currency": "GBP" },
+          "quantity": 1,
+          "listingMarketplaceId": "EBAY_GB",
+          "lineItemFulfillmentStatus": "NOT_STARTED",
+          "refunds": []
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

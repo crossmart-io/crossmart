@@ -1,0 +1,90 @@
+{
+  "categoryId": "57990",
+  "categoryTreeId": "0",
+  "aspects": [
+    {
+      "localizedAspectName": "Color",
+      "aspectConstraint": {
+        "aspectDataType": "STRING",
+        "itemToAspectCardinality": "MULTI",
+        "aspectMode": "FREE_TEXT",
+        "aspectRequired": false,
+        "aspectUsage": "RECOMMENDED",
+        "aspectEnabledForVariations": true,
+        "aspectApplicableTo": ["PRODUCT"]
+      },
+      "aspectValues": [
+        { "localizedValue": "Black" },
+        { "localizedValue": "Blue" },
+        { "localizedValue": "White" }
+      ]
+    },
+    {
+      "localizedAspectName": "Brand",
+      "aspectConstraint": {
+        "aspectDataType": "STRING",
+        "itemToAspectCardinality": "SINGLE",
+        "aspectMode": "FREE_TEXT",
+        "aspectRequired": true,
+        "aspectUsage": "RECOMMENDED",
+        "aspectEnabledForVariations": false,
+        "aspectApplicableTo": ["PRODUCT"]
+      },
+      "aspectValues": [{ "localizedValue": "Acme" }, { "localizedValue": "Unbranded" }]
+    },
+    {
+      "localizedAspectName": "Features",
+      "aspectConstraint": {
+        "aspectDataType": "STRING",
+        "itemToAspectCardinality": "MULTI",
+        "aspectMode": "FREE_TEXT",
+        "aspectRequired": false,
+        "aspectUsage": "OPTIONAL",
+        "aspectEnabledForVariations": false,
+        "aspectApplicableTo": ["PRODUCT"]
+      }
+    },
+    {
+      "localizedAspectName": "Department",
+      "aspectConstraint": {
+        "aspectDataType": "STRING",
+        "itemToAspectCardinality": "SINGLE",
+        "aspectMode": "SELECTION_ONLY",
+        "aspectRequired": true,
+        "aspectUsage": "RECOMMENDED",
+        "aspectEnabledForVariations": true,
+        "aspectApplicableTo": ["PRODUCT"]
+      },
+      "aspectValues": [
+        { "localizedValue": "Men" },
+        { "localizedValue": "Women" },
+        { "localizedValue": "Unisex Adults" }
+      ]
+    },
+    {
+      "localizedAspectName": "Size",
+      "aspectConstraint": {
+        "aspectDataType": "STRING",
+        "itemToAspectCardinality": "SINGLE",
+        "aspectMode": "FREE_TEXT",
+        "aspectRequired": true,
+        "aspectUsage": "RECOMMENDED",
+        "aspectEnabledForVariations": true,
+        "aspectApplicableTo": ["PRODUCT"]
+      },
+      "aspectValues": [{ "localizedValue": "S" }, { "localizedValue": "M" }]
+    },
+    {
+      "localizedAspectName": "Theme",
+      "aspectConstraint": {
+        "aspectDataType": "STRING",
+        "itemToAspectCardinality": "SINGLE",
+        "aspectMode": "FREE_TEXT",
+        "aspectRequired": false,
+        "aspectUsage": "SUGGESTED_LATER",
+        "aspectEnabledForVariations": false,
+        "aspectApplicableTo": ["PRODUCT"]
+      }
+    }
+  ]
+}

@@ -1,10 +1,14 @@
 import { ListingStatus, type Prisma } from '@crossmart/database';
 
-/** A listing with everything a sync reads: its variant ids on the channel and its overrides. */
+/**
+ * A listing with everything a sync reads: its variant ids on the channel, its overrides and its
+ * item specifics.
+ */
 export const LISTING_SYNC_INCLUDE = {
   variants: true,
   override: true,
   variantOverrides: true,
+  itemSpecifics: { select: { name: true, values: true }, orderBy: { name: 'asc' } },
 } satisfies Prisma.ListingInclude;
 
 export type ListingSyncRecord = Prisma.ListingGetPayload<{ include: typeof LISTING_SYNC_INCLUDE }>;
@@ -28,10 +32,13 @@ export const LISTING_ROW_INCLUDE = {
   product: {
     select: {
       title: true,
+      status: true,
+      optionNames: true,
       media: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
       _count: { select: { variants: true } },
     },
   },
+  override: { select: { visibility: true } },
 } satisfies Prisma.ListingInclude;
 
 export type ListingRowRecord = Prisma.ListingGetPayload<{ include: typeof LISTING_ROW_INCLUDE }>;

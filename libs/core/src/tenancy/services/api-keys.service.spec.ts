@@ -41,6 +41,7 @@ function createService() {
     create: vi.fn((record) => Promise.resolve(storedKey(record))),
     findByHash: vi.fn(),
     listActive: vi.fn(),
+    findActive: vi.fn().mockResolvedValue(storedKey()),
     revoke: vi.fn(),
     markUsed: vi.fn(),
   };
@@ -112,7 +113,7 @@ describe('ApiKeysService.authenticate', () => {
       permissions: builtInPermissions(WorkspaceRole.EDITOR),
       createdById: 'user-1',
     });
-    expect(repository.markUsed).toHaveBeenCalledWith('key-1', NOW);
+    expect(repository.markUsed).toHaveBeenCalledWith('ws-1', 'key-1', NOW);
   });
 
   it('skips the lookup for tokens without the key prefix', async () => {
@@ -147,21 +148,50 @@ describe('ApiKeysService.authenticate', () => {
 describe('ApiKeysService.revoke', () => {
   it('reports a key that is not in the workspace as not found', async () => {
     const { service, repository } = createService();
-    repository.revoke.mockResolvedValue(null);
+    repository.findActive.mockResolvedValue(null);
 
-    await expect(service.revoke('ws-1', 'key-404', ACTOR)).rejects.toThrow(NotFoundException);
+    await expect(service.revoke('ws-1', 'key-404', ADMIN, ACTOR)).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repository.revoke).not.toHaveBeenCalled();
   });
 
   it('records the revoked key by name', async () => {
     const { service, repository, activity } = createService();
     repository.revoke.mockResolvedValue({ id: 'key-1', name: 'MCP' });
 
-    await service.revoke('ws-1', 'key-1', ACTOR);
+    await service.revoke('ws-1', 'key-1', ADMIN, ACTOR);
 
+    expect(repository.findActive).toHaveBeenCalledWith('ws-1', 'key-1');
     expect(activity.entries[0]).toMatchObject({
       action: ActivityAction.ApiKeyRevoked,
       subject: { id: 'key-1', label: 'MCP' },
     });
+  });
+
+  it('refuses to revoke another member’s key with more access than the revoker', async () => {
+    const { service, repository } = createService();
+    repository.findActive.mockResolvedValue(
+      storedKey({ role: WorkspaceRole.ADMIN, createdById: 'owner-1' }),
+    );
+    const editor = managerWith(WorkspaceRole.EDITOR, 'user-2');
+
+    await expect(service.revoke('ws-1', 'key-1', editor, ACTOR)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.revoke).not.toHaveBeenCalled();
+  });
+
+  it('lets a member revoke keys they created, even after losing access', async () => {
+    const { service, repository } = createService();
+    repository.findActive.mockResolvedValue(
+      storedKey({ role: WorkspaceRole.ADMIN, createdById: 'user-2' }),
+    );
+    repository.revoke.mockResolvedValue({ id: 'key-1', name: 'MCP' });
+
+    await service.revoke('ws-1', 'key-1', managerWith(WorkspaceRole.EDITOR, 'user-2'), ACTOR);
+
+    expect(repository.revoke).toHaveBeenCalled();
   });
 });
 

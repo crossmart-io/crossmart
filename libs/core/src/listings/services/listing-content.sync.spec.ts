@@ -5,6 +5,7 @@ import {
   ChannelType,
   type ListingPublisher,
   type PublishedListing,
+  PublishRequirement,
 } from '@crossmart/connectors';
 import { ActivityOutcome, ListingStatus } from '@crossmart/database';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -23,6 +24,7 @@ import {
   syncConnection,
   syncJob,
   VARIANT_ID,
+  WORKSPACE_ID,
 } from '../testing/listing.fixtures.js';
 import { ChannelPriceResolver } from './channel-price-resolver.js';
 import { ListingContentSync } from './listing-content.sync.js';
@@ -31,6 +33,9 @@ import { ListingSyncFailures } from './listing-sync-failures.js';
 import { ListingSyncOutcomes } from './listing-sync-outcomes.js';
 import type { ListingTarget, ListingTargetResolver } from './listing-target.resolver.js';
 import type { SyncConnectionLoader } from './sync-connection.loader.js';
+
+/** The listing the repository is asked to write to, always with its workspace. */
+const LISTING_REF = expect.objectContaining({ workspaceId: WORKSPACE_ID, listingId: LISTING_ID });
 
 const PUBLISHED: PublishedListing = {
   externalId: 'gid://shopify/Product/1',
@@ -102,7 +107,12 @@ describe('ListingContentSync', () => {
 
     expect(publisher.publish).not.toHaveBeenCalled();
     expect(connections.openSession).not.toHaveBeenCalled();
-    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_ID, reason, ListingStatus.ERROR);
+    expect(listings.recordFailure).toHaveBeenCalledWith(
+      LISTING_REF,
+      reason,
+      ListingStatus.ERROR,
+      null,
+    );
     expect(activity.entries[0]).toMatchObject({
       action: ActivityAction.ListingSyncFailed,
       outcome: ActivityOutcome.FAILED,
@@ -122,7 +132,7 @@ describe('ListingContentSync', () => {
     expect(publisher.publish).toHaveBeenCalledTimes(1);
     expect(publisher.update).not.toHaveBeenCalled();
     expect(listings.recordPublished).toHaveBeenCalledWith(
-      LISTING_ID,
+      LISTING_REF,
       expect.objectContaining({
         externalId: PUBLISHED.externalId,
         status: ListingStatus.ACTIVE,
@@ -168,8 +178,31 @@ describe('ListingContentSync', () => {
       productId: PRODUCT_ID,
       variantExternalIds: ['gid://shopify/ProductVariant/1'],
     });
-    expect(listings.markDelisted).toHaveBeenCalledWith(LISTING_ID, expect.any(Date));
+    expect(listings.markDelisted).toHaveBeenCalledWith(LISTING_REF, expect.any(Date));
     expect(activity.entries[0]?.action).toBe(ActivityAction.ListingDelisted);
+  });
+
+  it('keeps what a refused publish lacked, so the merchant is asked for it', async () => {
+    const { sync, publisher, listings } = setup({
+      action: ListingTargetAction.Publish,
+      product: productDetail(),
+      listing: listingRecord(),
+    });
+    publisher.publish.mockRejectedValue(
+      ChannelError.unmet(ChannelType.Ebay, {
+        requirement: PublishRequirement.ItemSpecifics,
+        reason: 'Add Brand',
+      }),
+    );
+
+    await sync.publish(syncJob());
+
+    expect(listings.recordFailure).toHaveBeenCalledWith(
+      LISTING_REF,
+      'Add Brand',
+      ListingStatus.ERROR,
+      PublishRequirement.ItemSpecifics,
+    );
   });
 
   it('marks the listing in error for a rejected publish, and logs it once', async () => {
@@ -185,9 +218,10 @@ describe('ListingContentSync', () => {
     await expect(sync.publish(syncJob())).resolves.toBeUndefined();
 
     expect(listings.recordFailure).toHaveBeenCalledWith(
-      LISTING_ID,
+      LISTING_REF,
       'Title is invalid',
       ListingStatus.ERROR,
+      null,
     );
     expect(activity.entries).toEqual([
       expect.objectContaining({
@@ -209,7 +243,7 @@ describe('ListingContentSync', () => {
 
     await expect(sync.publish(syncJob())).rejects.toBe(outage);
 
-    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_ID, 'Slow down');
+    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_REF, 'Slow down');
     expect(activity.entries).toEqual([]);
   });
 

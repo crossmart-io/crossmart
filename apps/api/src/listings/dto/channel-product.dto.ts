@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { PublishRequirement } from '@crossmart/connectors';
 import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 import {
   CHANNEL_LISTINGS_DEFAULT_LIMIT,
@@ -10,6 +11,7 @@ import {
   type ChannelProductRow,
   ChannelProductSort,
   ChannelProductState,
+  ListingDisplayState,
 } from '@crossmart/core';
 import { SortDirection } from '@crossmart/common';
 import { ProductSummaryDto } from '../../catalog/dto/product-summary.dto.js';
@@ -20,6 +22,11 @@ import {
   CHANNEL_PRODUCT_STATE_SCHEMA_NAME,
 } from '../listings.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
+import {
+  DisplayReasonProperty,
+  DisplayRequirementProperty,
+  DisplayStateProperty,
+} from './listing-display.decorators.js';
 import { PageNumberProperty } from '../../common/page-number.decorator.js';
 
 export class ChannelProductCountsDto implements ChannelProductCounts {
@@ -49,6 +56,15 @@ export class ChannelProductDto implements ChannelProductRow {
   @ApiProperty({ enum: ChannelProductState, enumName: CHANNEL_PRODUCT_STATE_SCHEMA_NAME })
   state: ChannelProductState;
 
+  @DisplayStateProperty()
+  displayState: ListingDisplayState;
+
+  @DisplayReasonProperty()
+  displayReason: string | null;
+
+  @DisplayRequirementProperty()
+  displayRequirement: PublishRequirement | null;
+
   @ApiProperty({ type: ListingSummaryDto, nullable: true })
   listing: ListingSummaryDto | null;
 
@@ -56,6 +72,9 @@ export class ChannelProductDto implements ChannelProductRow {
     return Object.assign(new ChannelProductDto(), {
       product: ProductSummaryDto.from(row.product),
       state: row.state,
+      displayState: row.displayState,
+      displayReason: row.displayReason,
+      displayRequirement: row.displayRequirement,
       listing: row.listing ? ListingSummaryDto.from(row.listing) : null,
     });
   }

@@ -1,3 +1,4 @@
+import { describeError } from '@crossmart/common';
 import { Injectable, Logger } from '@nestjs/common';
 import type { ActivityEntry } from '../entities/activity-entry.js';
 import type { Actor } from '../entities/actor.js';
@@ -18,7 +19,7 @@ export class ActivityLogRecorder extends ActivityRecorder {
     try {
       await this.events.create(toActivityEventInput(workspaceId, actor, entry));
     } catch (error) {
-      const reason = error instanceof Error ? error.name : typeof error;
+      const reason = describeError(error);
       this.logger.error(`Could not record ${entry.action} in workspace ${workspaceId}: ${reason}`);
     }
   }

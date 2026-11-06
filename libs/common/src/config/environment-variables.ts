@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -25,6 +26,7 @@ import {
   DEFAULT_WEB_APP_URL,
   DEFAULT_MCP_PUBLIC_URL,
   DEFAULT_STORAGE_LOCAL_DIR,
+  EBAY_VERIFICATION_TOKEN_PATTERN,
   ENV_TRUE,
   MAX_PORT,
   MIN_AUTH_SECRET_LENGTH,
@@ -155,6 +157,14 @@ export class EnvironmentVariables {
   @IsEnum(EbayEnvironment)
   EBAY_ENVIRONMENT: EbayEnvironment = EbayEnvironment.Sandbox;
 
+  /**
+   * The verification token entered with the marketplace account deletion endpoint in the eBay
+   * developer portal: 32 to 80 letters, digits, `_` or `-`. Answers eBay's endpoint challenge.
+   */
+  @ValidateIf((environment: EnvironmentVariables) => Boolean(environment.EBAY_VERIFICATION_TOKEN))
+  @Matches(EBAY_VERIFICATION_TOKEN_PATTERN)
+  EBAY_VERIFICATION_TOKEN?: string;
+
   /** OAuth client ID of the Crossmart Google Cloud app, for Google Merchant Center. */
   @IsOptional()
   @IsString()
@@ -164,6 +174,16 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   GOOGLE_CLIENT_SECRET?: string;
+
+  /** The keystring of the Crossmart Etsy app: its OAuth client id and the first half of `x-api-key`. */
+  @IsOptional()
+  @IsString()
+  ETSY_API_KEY?: string;
+
+  /** The shared secret of the Etsy app: the second half of `x-api-key`; never logged. */
+  @IsOptional()
+  @IsString()
+  ETSY_SHARED_SECRET?: string;
 
   /**
    * Whether plan limits block actions (`true`) or are only reported (default). Usage and limits

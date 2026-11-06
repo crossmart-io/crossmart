@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   GOOGLE_COUNTRY_MARKETS,
   type GoogleMerchantSettings,
@@ -8,16 +8,24 @@ import {
 } from '@crossmart/connectors';
 import type { Actor } from '../../../activity/entities/actor.js';
 import { ActivityAction } from '../../../activity/enums/activity-action.enum.js';
-import { ActivitySubjectType } from '../../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../../activity/services/activity-recorder.js';
 import type { ChannelConnectionView } from '../../entities/channel-connection-view.js';
 import { callChannel } from '../../rules/channel-http-error.js';
+import {
+  type ConnectionAccount,
+  type ConnectionAccountKind,
+  loadConnectionAccount,
+  recordConnectionChange,
+} from '../../rules/connection-account.js';
 import { ChannelSessionFactory } from '../../services/channel-session.factory.js';
 import { ConnectionAccountStore } from '../../services/connection-account.store.js';
 import type { GoogleListingSetupInput } from '../entities/google-listing-setup-input.js';
 
-const NOT_GOOGLE =
-  'This is not a Google Merchant Center connection, or its account has not been read yet';
+const GOOGLE_MERCHANT_ACCOUNT: ConnectionAccountKind<GoogleMerchantSettings> = {
+  isAccount: isGoogleMerchantSettings,
+  notThisChannel:
+    'This is not a Google Merchant Center connection, or its account has not been read yet',
+};
 
 /**
  * What a Google Merchant Center connection needs before it can list: the country it sells in
@@ -50,7 +58,10 @@ export class GoogleMerchantSetupService {
       listingSetup: googleListingSetupSchema.parse({ ...input, dataSourceId }),
     };
     const saved = await this.store.saveAccount(workspaceId, connection, account);
-    await this.record(workspaceId, saved, actor);
+    await recordConnectionChange(this.activity, workspaceId, actor, {
+      action: ActivityAction.ChannelListingDefaultsUpdated,
+      connection: saved,
+    });
     return saved;
   }
 
@@ -67,30 +78,10 @@ export class GoogleMerchantSetupService {
     return callChannel(() => this.google.createDataSource(session, input.country));
   }
 
-  private async load(
+  private load(
     workspaceId: string,
     connectionId: string,
-  ): Promise<{ connection: ChannelConnectionView; settings: GoogleMerchantSettings }> {
-    const connection = await this.store.get(workspaceId, connectionId);
-    const { account } = connection.settings;
-    if (!account || !isGoogleMerchantSettings(account)) {
-      throw new BadRequestException(NOT_GOOGLE);
-    }
-    return { connection, settings: account };
-  }
-
-  private record(
-    workspaceId: string,
-    connection: ChannelConnectionView,
-    actor: Actor,
-  ): Promise<void> {
-    return this.activity.record(workspaceId, actor, {
-      action: ActivityAction.ChannelListingDefaultsUpdated,
-      subject: {
-        type: ActivitySubjectType.ChannelConnection,
-        id: connection.id,
-        label: connection.displayName,
-      },
-    });
+  ): Promise<ConnectionAccount<GoogleMerchantSettings>> {
+    return loadConnectionAccount(this.store, workspaceId, connectionId, GOOGLE_MERCHANT_ACCOUNT);
   }
 }

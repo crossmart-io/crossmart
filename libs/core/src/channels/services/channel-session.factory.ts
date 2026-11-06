@@ -79,7 +79,7 @@ export class ChannelSessionFactory {
     }
     const refreshed = await this.refresh(record, credentials);
     await this.connections.saveCredentials(
-      connectionId,
+      { workspaceId: record.workspaceId, connectionId },
       await this.vault.seal(record, refreshed),
       credentialsExpiry(refreshed),
       client,
@@ -100,7 +100,7 @@ export class ChannelSessionFactory {
     } catch (error) {
       if (error instanceof ChannelError && error.code === ChannelErrorCode.CredentialsRejected) {
         this.logger.warn(`Refresh rejected for connection ${record.id}; it needs re-authorization`);
-        await this.connections.markNeedsReauth(record.id, error.message);
+        await this.connections.markNeedsReauth(record.workspaceId, record.id, error.message);
       }
       throw error;
     }

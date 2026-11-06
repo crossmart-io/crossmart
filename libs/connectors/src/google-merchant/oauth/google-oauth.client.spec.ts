@@ -42,9 +42,10 @@ describe('GoogleOAuthClient', () => {
     const { oauth, http } = setup();
     http.expect(HttpMethod.Post, TOKEN_URL, fixtureResponse(FIXTURES, 'access-token.json'));
 
-    const token = await oauth.exchangeCode('4/code', REDIRECT);
+    const grant = await oauth.exchangeCode('4/code', REDIRECT);
 
-    expect(token.refresh_token).toBe('1//fixture_refresh_token');
+    expect(grant.credentials.refreshToken).toBe('1//fixture_refresh_token');
+    expect(grant.grantedScopes).toEqual(['https://www.googleapis.com/auth/content']);
     expect(formOf(http)).toEqual({
       grant_type: 'authorization_code',
       code: '4/code',
@@ -54,13 +55,16 @@ describe('GoogleOAuthClient', () => {
     });
   });
 
-  it('refreshes with the stored refresh token', async () => {
+  it('refreshes with the stored refresh token, and keeps it', async () => {
     const { oauth, http } = setup();
     http.expect(HttpMethod.Post, TOKEN_URL, fixtureResponse(FIXTURES, 'refreshed-token.json'));
 
-    const token = await oauth.refresh({ accessToken: 'old', refreshToken: '1//stored' });
+    const refreshed = await oauth.refresh({ accessToken: 'old', refreshToken: '1//stored' });
 
-    expect(token.access_token).toBe('ya29.fixture_refreshed_token');
+    expect(refreshed).toMatchObject({
+      accessToken: 'ya29.fixture_refreshed_token',
+      refreshToken: '1//stored',
+    });
     expect(formOf(http)).toMatchObject({ grant_type: 'refresh_token', refresh_token: '1//stored' });
   });
 

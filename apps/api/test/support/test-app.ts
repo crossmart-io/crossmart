@@ -42,3 +42,15 @@ export async function signUp(app: INestApplication<App>, name: string): Promise<
   expect(meResponse.status).toBe(HttpStatus.OK);
   return { email, cookie, workspaceId: meResponse.body.workspaces[0].id };
 }
+
+const COOKIE_ATTRIBUTES_SEPARATOR = ';';
+
+/**
+ * The user's session cookie plus the cookies `response` set, as their browser would send them
+ * next, such as the OAuth nonce cookie set when a channel connection starts.
+ */
+export function browserCookies(user: SignedUpUser, response: request.Response): string {
+  const set = [response.headers[SET_COOKIE_HEADER] ?? []].flat() as string[];
+  const pairs = set.map((cookie) => cookie.split(COOKIE_ATTRIBUTES_SEPARATOR)[0]);
+  return [user.cookie, ...pairs].join('; ');
+}

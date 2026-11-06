@@ -26,6 +26,27 @@ describe('toInventoryItem', () => {
     });
   });
 
+  it('lets the merchant’s item specifics replace the derived brand', () => {
+    const draft = mugDraft({
+      itemSpecifics: [
+        { name: 'Brand', values: ['Potter & Co'] },
+        { name: 'Material', values: ['Stoneware'] },
+        { name: 'Features', values: ['Dishwasher Safe', 'Microwave Safe'] },
+        { name: 'Empty', values: [] },
+      ],
+    });
+    const [variant] = draft.variants;
+
+    const { product } = toInventoryItem(draft, variant, EbayCondition.New);
+
+    expect(product.aspects).toEqual({
+      Brand: ['Potter & Co'],
+      Material: ['Stoneware'],
+      Features: ['Dishwasher Safe', 'Microwave Safe'],
+    });
+    expect(product.brand).toBe('Potter & Co');
+  });
+
   it('sends a fixed quantity for untracked variants and never a negative one', () => {
     const draft = mugDraft();
     const [variant] = draft.variants;

@@ -11,7 +11,7 @@ import {
   type HttpResponse,
   jsonResponse,
 } from '@crossmart/connectors';
-import type { SignedUpUser } from './test-app.js';
+import { browserCookies, type SignedUpUser } from './test-app.js';
 
 /** Fake app settings, set before the app module reads its configuration. */
 export const SHOPIFY_TEST_ENV = {
@@ -135,7 +135,7 @@ export async function connectShopifyStore(
   await request(server)
     .get('/api/v1/channels/shopify/oauth/callback')
     .query(signQuery({ code: 'code', shop, state, timestamp: '1762164000' }))
-    .set('Cookie', user.cookie);
+    .set('Cookie', browserCookies(user, started));
   const list = await request(server)
     .get(`/api/v1/workspaces/${user.workspaceId}/channel-connections`)
     .set('Cookie', user.cookie);

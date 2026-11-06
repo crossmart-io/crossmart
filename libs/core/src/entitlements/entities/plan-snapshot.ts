@@ -7,6 +7,11 @@ export interface PlanReference {
   code: string;
   name: string;
   version: number;
+  /**
+   * Whether new organizations can choose the plan. False for legacy plans, which organizations
+   * already on them keep.
+   */
+  offered: boolean;
 }
 
 /**

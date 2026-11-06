@@ -31,3 +31,10 @@ export const CATALOG_IMPORT_STRATEGIES = Symbol('CATALOG_IMPORT_STRATEGIES');
 export const IMPORT_FILE_NAME_MAX_LENGTH = 255;
 export const IMPORT_JOB_PAGE_DEFAULT_LIMIT = 20;
 export const IMPORT_JOB_PAGE_MAX_LIMIT = 100;
+/** The stock a new variant opens with when none is given. */
+export const NO_OPENING_STOCK = 0;
+/** A product whose title gives no slug gets `product-<id>` as its handle. */
+export const FALLBACK_HANDLE_PREFIX = 'product';
+/** Random bytes in a fallback handle's id: 12 hex characters, 2^48 values. */
+export const FALLBACK_HANDLE_ID_BYTES = 6;
+export const FALLBACK_HANDLE_SEPARATOR = '-';
