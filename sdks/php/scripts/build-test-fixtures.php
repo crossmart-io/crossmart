@@ -32,7 +32,20 @@ const FIXTURE_SCHEMAS = [
 ];
 const DEFAULT_SPEC_PATH = __DIR__ . '/../../../openapi.json';
 const FIXTURES_DIRECTORY = __DIR__ . '/../tests/Fixtures';
-const JSON_FLAGS = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
+const PHP_INDENT_WIDTH = 4;
+const PRETTIER_INDENT_WIDTH = 2;
+
+/**
+ * JSON_PRETTY_PRINT indents with four spaces; the repository's Prettier style uses two.
+ */
+function toPrettierIndent(string $json): string
+{
+    return (string) preg_replace_callback(
+        '/^ +/m',
+        static fn (array $match): string => str_repeat(' ', intdiv(strlen($match[0]), PHP_INDENT_WIDTH) * PRETTIER_INDENT_WIDTH),
+        $json,
+    );
+}
 
 $commandLine = $_SERVER['argv'] ?? [];
 $specPath = is_array($commandLine) && is_string($commandLine[1] ?? null) ? $commandLine[1] : DEFAULT_SPEC_PATH;
@@ -41,5 +54,5 @@ $builder = new SampleBuilder($schemas);
 
 foreach (FIXTURE_SCHEMAS as $name) {
     $sample = $builder->build($schemas[$name] ?? throw new UnexpectedValueException(sprintf('Unknown schema "%s".', $name)));
-    file_put_contents(sprintf('%s/%s.json', FIXTURES_DIRECTORY, $name), json_encode($sample, JSON_FLAGS) . "\n");
+    file_put_contents(sprintf('%s/%s.json', FIXTURES_DIRECTORY, $name), toPrettierIndent(json_encode($sample, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)) . "\n");
 }
