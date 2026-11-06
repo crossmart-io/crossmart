@@ -1,0 +1,69 @@
+{
+	"name": "n8n-nodes-crossmart",
+	"version": "0.1.0",
+	"description": "n8n nodes for Crossmart, the open-source multichannel platform for sellers and their AI agents: products, stock, listings, orders and stores, plus a polling trigger.",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"crossmart",
+		"multichannel",
+		"ecommerce",
+		"inventory",
+		"listings"
+	],
+	"license": "AGPL-3.0-only",
+	"homepage": "https://github.com/crossmart-io/crossmart/tree/main/integrations/n8n#readme",
+	"author": {
+		"name": "Crossmart",
+		"email": "hello@crossmart.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/crossmart-io/crossmart.git",
+		"directory": "integrations/n8n"
+	},
+	"bugs": {
+		"url": "https://github.com/crossmart-io/crossmart/issues"
+	},
+	"packageManager": "pnpm@10.18.3",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"typecheck": "tsc --noEmit -p tsconfig.test.json",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": false,
+		"credentials": [
+			"dist/credentials/CrossmartApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Crossmart/Crossmart.node.js",
+			"dist/nodes/CrossmartTrigger/CrossmartTrigger.node.js"
+		]
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "0.55.5",
+		"eslint": "9.39.4",
+		"n8n-workflow": "2.16.0",
+		"prettier": "3.8.3",
+		"typescript": "5.9.3",
+		"vitest": "4.1.2"
+	}
+}
