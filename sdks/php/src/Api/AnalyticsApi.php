@@ -12,6 +12,7 @@ use Crossmart\Http\ApiRequest;
 use Crossmart\Http\HttpMethod;
 use Crossmart\Http\TransportInterface;
 use Crossmart\Model\InventoryReportDto;
+use Crossmart\Model\ListingHealthReportDto;
 use Crossmart\Model\SalesReportDto;
 
 /**
@@ -64,5 +65,24 @@ final class AnalyticsApi
         ));
 
         return InventoryReportDto::fromArray($response->object());
+    }
+
+    /**
+     * Each store’s products by display state, and the latest failed listings, as of now
+     *
+     * Counts follow the same rule as each store’s product list. Each failed listing carries `displayState`, `displayReason` and `displayRequirement`, so a client can link to the fix.
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function listingHealthReportControllerGetV1(
+        string $workspaceId,
+    ): ListingHealthReportDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Get,
+            pathTemplate: '/api/v1/workspaces/{workspaceId}/analytics/listings',
+            pathParameters: ['workspaceId' => $workspaceId],
+        ));
+
+        return ListingHealthReportDto::fromArray($response->object());
     }
 }
