@@ -42,6 +42,7 @@ export const SYNC_DEBOUNCE_MS: Record<SyncJobKind, number> = {
   [SyncJobKind.Content]: 10_000,
   [SyncJobKind.Delist]: 10_000,
   [SyncJobKind.ReconcileInventory]: 0,
+  [SyncJobKind.SweepSyncRequests]: 0,
 };
 /** Retries for outages and rate limits, with exponential backoff from the base delay. */
 export const SYNC_JOB_ATTEMPTS = 5;
@@ -52,6 +53,16 @@ export const SYNC_JOBS_KEPT_FAILED = 5_000;
 /** ADR 0007: stock is reconciled every 15 minutes. */
 export const INVENTORY_RECONCILIATION_INTERVAL_MS = 15 * 60 * 1000;
 export const INVENTORY_RECONCILIATION_SCHEDULER_ID = 'inventory-reconciliation';
+/**
+ * A sync request older than this never ran: its job was lost (a dropped catalog event, a
+ * flushed queue), since a job settles its request when it finishes or gives up, and its retries
+ * are over within minutes. The sweep queues such listings again.
+ */
+export const SYNC_REQUEST_STALE_AFTER_MS = 60 * 60 * 1000;
+export const SYNC_REQUEST_SWEEP_INTERVAL_MS = 15 * 60 * 1000;
+export const SYNC_REQUEST_SWEEP_SCHEDULER_ID = 'sync-request-sweep';
+/** Listings the sweep queues again per query and queue write. */
+export const SYNC_REQUEST_SWEEP_BATCH_SIZE = 500;
 /** Separates the parts of a job's coalescing key: `content:<connection>:<product>`. */
 export const SYNC_JOB_KEY_SEPARATOR = ':';
 
@@ -62,6 +73,7 @@ export const SYNC_JOB_COST: Record<SyncJobKind, number> = {
   [SyncJobKind.Content]: 30,
   [SyncJobKind.Delist]: 10,
   [SyncJobKind.ReconcileInventory]: 0,
+  [SyncJobKind.SweepSyncRequests]: 0,
 };
 
 /** Why a listing's sync failed, when the error is not one written for merchants. */

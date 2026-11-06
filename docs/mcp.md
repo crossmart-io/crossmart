@@ -37,9 +37,12 @@ in exactly one workspace; the server finds it with `GET /api/v1/api-key`.
 | `list_stores`, `get_store`  | Connected stores with their status and publish readiness               |        |
 | `add_product_to_store`      | Lists a product on a store                                             | Yes    |
 | `remove_product_from_store` | Archives a product on a store                                          | Yes    |
-| `list_store_products`       | A store's products by state, with display state and reason             |        |
+| `list_store_products`       | A store's products by state or display state, with the reason          |        |
 | `get_product_stores`        | One product on every store                                             |        |
 | `retry_store_listing`       | Publishes one product to one store again                               | Yes    |
+| `get_sync_progress`         | A store's sync: listings still pending, failed, and whether it is done |        |
+| `get_listing`               | One listing field by field: product value, override, result            |        |
+| `update_listing`            | Overrides fields of one listing, or reverts them with `null`           | Yes    |
 | `suggest_store_categories`  | eBay categories that fit a product                                     |        |
 | `set_store_category`        | Chooses a product's eBay category                                      | Yes    |
 | `get_item_specifics`        | A listing's eBay item specifics and the category's aspects             |        |

@@ -13,6 +13,7 @@ from ..models.publish_requirement import PublishRequirement
 
 if TYPE_CHECKING:
     from ..models.connection_summary_dto import ConnectionSummaryDto
+    from ..models.inherited_optional_text_dto import InheritedOptionalTextDto
     from ..models.inherited_text_dto import InheritedTextDto
     from ..models.inherited_text_list_dto import InheritedTextListDto
     from ..models.inherited_visibility_dto import InheritedVisibilityDto
@@ -51,6 +52,7 @@ class ListingEditorDto:
         listing (ListingSummaryDto | None):
         title (InheritedTextDto):
         description_html (InheritedTextDto):
+        vendor (InheritedOptionalTextDto):
         tags (InheritedTextListDto):
         images (InheritedTextListDto):
         visibility (InheritedVisibilityDto):
@@ -70,6 +72,7 @@ class ListingEditorDto:
     listing: ListingSummaryDto | None
     title: InheritedTextDto
     description_html: InheritedTextDto
+    vendor: InheritedOptionalTextDto
     tags: InheritedTextListDto
     images: InheritedTextListDto
     visibility: InheritedVisibilityDto
@@ -110,6 +113,8 @@ class ListingEditorDto:
 
         description_html = self.description_html.to_dict()
 
+        vendor = self.vendor.to_dict()
+
         tags = self.tags.to_dict()
 
         images = self.images.to_dict()
@@ -146,6 +151,7 @@ class ListingEditorDto:
                 "listing": listing,
                 "title": title,
                 "descriptionHtml": description_html,
+                "vendor": vendor,
                 "tags": tags,
                 "images": images,
                 "visibility": visibility,
@@ -162,6 +168,7 @@ class ListingEditorDto:
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         from ..models.connection_summary_dto import ConnectionSummaryDto
+        from ..models.inherited_optional_text_dto import InheritedOptionalTextDto
         from ..models.inherited_text_dto import InheritedTextDto
         from ..models.inherited_text_list_dto import InheritedTextListDto
         from ..models.inherited_visibility_dto import InheritedVisibilityDto
@@ -223,6 +230,8 @@ class ListingEditorDto:
 
         description_html = InheritedTextDto.from_dict(d.pop("descriptionHtml"))
 
+        vendor = InheritedOptionalTextDto.from_dict(d.pop("vendor"))
+
         tags = InheritedTextListDto.from_dict(d.pop("tags"))
 
         images = InheritedTextListDto.from_dict(d.pop("images"))
@@ -269,6 +278,7 @@ class ListingEditorDto:
             listing=listing,
             title=title,
             description_html=description_html,
+            vendor=vendor,
             tags=tags,
             images=images,
             visibility=visibility,

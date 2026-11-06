@@ -46,6 +46,12 @@ export const CATEGORY_ID_MAX_LENGTH = 64;
 export const CATEGORY_NAME_MAX_LENGTH = 500;
 export const CATEGORY_QUERY_MAX_LENGTH = 255;
 
+/** Listing override limits; the API's own. */
+export const OVERRIDE_TEXT_MAX_LENGTH = 255;
+export const OVERRIDE_DESCRIPTION_MAX_LENGTH = 65_535;
+export const OVERRIDE_MAX_ITEMS = 250;
+export const MAX_SHOWN_QUANTITY = 1_000_000;
+
 /** HTTP statuses some tools explain to the agent when the API refuses with them. */
 export enum RefusalStatus {
   PaymentRequired = 402,

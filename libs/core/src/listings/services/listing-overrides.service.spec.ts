@@ -22,6 +22,7 @@ const ACTOR = Actor.user('user-1');
 const EMPTY: ListingOverrideInput = {
   title: null,
   descriptionHtml: null,
+  vendor: null,
   tags: null,
   mediaUrls: null,
   visibility: null,
