@@ -21,6 +21,7 @@ final class ListingOverrideViewDto implements JsonSerializable
     public function __construct(
         public readonly ?string $title,
         public readonly ?string $descriptionHtml,
+        public readonly ?string $vendor,
         public readonly ?array $tags,
         public readonly ?array $mediaUrls,
         public readonly ListingVisibility|string|null $visibility,
@@ -43,6 +44,7 @@ final class ListingOverrideViewDto implements JsonSerializable
         return new self(
             title: $payload->isNull('title') ? null : $payload->string('title'),
             descriptionHtml: $payload->isNull('descriptionHtml') ? null : $payload->string('descriptionHtml'),
+            vendor: $payload->isNull('vendor') ? null : $payload->string('vendor'),
             tags: $payload->isNull('tags') ? null : $payload->stringList('tags'),
             mediaUrls: $payload->isNull('mediaUrls') ? null : $payload->stringList('mediaUrls'),
             visibility: $payload->isNull('visibility') ? null : $payload->enum('visibility', ListingVisibility::class),
@@ -63,6 +65,7 @@ final class ListingOverrideViewDto implements JsonSerializable
         return [
             'title' => $this->title,
             'descriptionHtml' => $this->descriptionHtml,
+            'vendor' => $this->vendor,
             'tags' => $this->tags,
             'mediaUrls' => $this->mediaUrls,
             'visibility' => Payload::enumValue($this->visibility),

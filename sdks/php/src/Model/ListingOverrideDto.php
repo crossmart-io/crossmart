@@ -14,6 +14,7 @@ use JsonSerializable;
 final class ListingOverrideDto implements JsonSerializable
 {
     /**
+     * @param string|Undefined|null $vendor The brand this channel shows instead of the product’s vendor
      * @param list<string>|Undefined|null $tags Replaces the product’s tags
      * @param list<string>|Undefined|null $mediaUrls The product’s image URLs to show, in order
      * @param ListingVisibility|string|Undefined|null $visibility Show or hide on this channel, whatever the product’s status
@@ -24,6 +25,7 @@ final class ListingOverrideDto implements JsonSerializable
     public function __construct(
         public readonly string|Undefined|null $title = Undefined::Value,
         public readonly string|Undefined|null $descriptionHtml = Undefined::Value,
+        public readonly string|Undefined|null $vendor = Undefined::Value,
         public readonly array|Undefined|null $tags = Undefined::Value,
         public readonly array|Undefined|null $mediaUrls = Undefined::Value,
         public readonly ListingVisibility|string|Undefined|null $visibility = Undefined::Value,
@@ -45,6 +47,7 @@ final class ListingOverrideDto implements JsonSerializable
         return new self(
             title: !$payload->has('title') ? Undefined::Value : ($payload->isNull('title') ? null : $payload->string('title')),
             descriptionHtml: !$payload->has('descriptionHtml') ? Undefined::Value : ($payload->isNull('descriptionHtml') ? null : $payload->string('descriptionHtml')),
+            vendor: !$payload->has('vendor') ? Undefined::Value : ($payload->isNull('vendor') ? null : $payload->string('vendor')),
             tags: !$payload->has('tags') ? Undefined::Value : ($payload->isNull('tags') ? null : $payload->stringList('tags')),
             mediaUrls: !$payload->has('mediaUrls') ? Undefined::Value : ($payload->isNull('mediaUrls') ? null : $payload->stringList('mediaUrls')),
             visibility: !$payload->has('visibility') ? Undefined::Value : ($payload->isNull('visibility') ? null : $payload->enum('visibility', ListingVisibility::class)),
@@ -67,6 +70,9 @@ final class ListingOverrideDto implements JsonSerializable
         }
         if (!$this->descriptionHtml instanceof Undefined) {
             $data['descriptionHtml'] = $this->descriptionHtml;
+        }
+        if (!$this->vendor instanceof Undefined) {
+            $data['vendor'] = $this->vendor;
         }
         if (!$this->tags instanceof Undefined) {
             $data['tags'] = $this->tags;
