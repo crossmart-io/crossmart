@@ -142,6 +142,22 @@ export class ChannelProductsRepository {
   }
 
   /**
+   * One batch of the products of `where`, in id order after `afterId`, with only what their
+   * display state reads, so a whole store can be counted without holding it all in memory.
+   */
+  listDisplayCandidateBatch(
+    where: Prisma.ProductWhereInput,
+    batch: { afterId: string | null; size: number },
+  ): Promise<DisplayCandidateRecord[]> {
+    return this.prisma.product.findMany({
+      where: batch.afterId ? { AND: [where, { id: { gt: batch.afterId } }] } : where,
+      select: DISPLAY_CANDIDATE_SELECT,
+      orderBy: { id: 'asc' },
+      take: batch.size,
+    });
+  }
+
+  /**
    * Every product of `where` in the list's order, with only what its display state reads, so a
    * filter on display state can run over a whole store in one query.
    */

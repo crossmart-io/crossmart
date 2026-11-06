@@ -3,7 +3,7 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
-import { SalesInterval, SalesRange } from '@crossmart/core';
+import { ListingDisplayState, SalesInterval, SalesRange } from '@crossmart/core';
 import {
   ChannelConnectionStatus,
   ListingStatus,
@@ -223,6 +223,59 @@ describe('Analytics (e2e)', () => {
     const [store] = response.body.stores;
     expect(store).toMatchObject({ connectionId, status: ChannelConnectionStatus.CONNECTED });
     expect(store.listings).toContainEqual({ status: ListingStatus.ERROR, count: 1 });
+    expect(
+      response.body.lowestStock.map((row: { sku: string; available: number }) => [
+        row.sku,
+        row.available,
+      ]),
+    ).toEqual([
+      [`SC-${stamp}`, 0],
+      [`SB-${stamp}`, 2],
+    ]);
+  });
+
+  it('counts each store’s products by display state and lists the latest failures', async () => {
+    const seller = await sellerWithStore();
+    const { user, connectionId } = seller;
+    const failed = await request(server())
+      .post(`/api/v1/workspaces/${user.workspaceId}/products`)
+      .set('Cookie', user.cookie)
+      .send({ title: 'Refused Mug', variants: [{ sku: `RF-${randomUUID()}`, price: '12' }] });
+    await prisma.listing.create({
+      data: {
+        workspaceId: user.workspaceId,
+        connectionId,
+        productId: failed.body.id,
+        status: ListingStatus.ERROR,
+        lastError: 'Shopify rejected the title',
+      },
+    });
+
+    const response = await request(server())
+      .get(`/api/v1/workspaces/${user.workspaceId}/analytics/listings`)
+      .set('Cookie', user.cookie);
+
+    expect(response.status).toBe(HttpStatus.OK);
+    const [store] = response.body.stores;
+    expect(store).toMatchObject({ connectionId, failedListings: 1 });
+    expect(store.states).toContainEqual({ state: ListingDisplayState.Draft, count: 1 });
+    expect(store.states).toContainEqual({ state: ListingDisplayState.Failed, count: 1 });
+    expect(response.body.failedListings).toBe(1);
+    expect(response.body.recentFailures).toEqual([
+      expect.objectContaining({
+        connectionId,
+        productId: failed.body.id,
+        productTitle: 'Refused Mug',
+        displayState: ListingDisplayState.Failed,
+        displayReason: 'Shopify rejected the title',
+      }),
+    ]);
+
+    const stranger = await signUp(app, 'Listing Stranger');
+    const outsider = await request(server())
+      .get(`/api/v1/workspaces/${user.workspaceId}/analytics/listings`)
+      .set('Cookie', stranger.cookie);
+    expect(outsider.status).toBe(HttpStatus.NOT_FOUND);
   });
 
   it('keeps other workspaces out', async () => {

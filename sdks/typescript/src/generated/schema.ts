@@ -1288,6 +1288,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/analytics/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Each store’s products by display state, and the latest failed listings, as of now
+         * @description Counts follow the same rule as each store’s product list. Each failed listing carries `displayState`, `displayReason` and `displayRequirement`, so a client can link to the fix.
+         */
+        get: operations["ListingHealthReportController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/suggestions": {
         parameters: {
             query?: never;
@@ -3414,8 +3434,82 @@ export interface components {
             stockLevels: components["schemas"]["StockLevelCountsDto"];
             /** @description Available units at or below which stock counts as low */
             lowStockThreshold: number;
+            /** @description Tracked variants out of stock or low, fewest available first (oversold before sold out), at most a few: the ones to restock first */
+            lowestStock: components["schemas"]["InventoryItemDto"][];
             /** @description Every store, oldest first */
             stores: components["schemas"]["StoreHealthDto"][];
+        };
+        ListingStateCountDto: {
+            state: components["schemas"]["ListingDisplayState"];
+            /** @description Products of the catalog in this state on the store */
+            count: number;
+        };
+        StoreListingHealthDto: {
+            /** Format: uuid */
+            connectionId: string;
+            channel: components["schemas"]["ChannelType"];
+            /** @example Demo Store */
+            displayName: string;
+            status: components["schemas"]["ChannelConnectionStatus"];
+            /** @description Why the store needs reconnecting or is in error; null otherwise */
+            statusReason: string | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            /** @description Every display state, in order, with how many products are in it: the same states and rule as the store’s product list (`draft` counts the catalog products not in the store) */
+            states: components["schemas"]["ListingStateCountDto"][];
+            /** @description Listings the channel refused on their last sync */
+            failedListings: number;
+        };
+        StoreListingFailureDto: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["ListingStatus"];
+            /** @description How the product joined the store: by hand, by an import, or by the automatic rule */
+            source: components["schemas"]["ListingSource"];
+            /** @description The product’s id on the channel */
+            externalId: string | null;
+            /** @description Where to see it on the channel */
+            externalUrl: string | null;
+            /** @description Why the last sync failed */
+            lastError: string | null;
+            /** @description What the channel refused the last publish for lacking (such as `item_specifics`), when the merchant can add it; null otherwise */
+            missingRequirement: components["schemas"]["PublishRequirement"] | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When a sync or retry queued its publish, update or delist; null once that job finished or gave up. While set, a selected listing shows `displayState: publishing`.
+             */
+            syncRequestedAt: string | null;
+            /** @description The channel category it is listed in, on channels with categories (eBay) */
+            category: components["schemas"]["ChannelCategoryDto"] | null;
+            /** Format: uuid */
+            productId: string;
+            productTitle: string;
+            imageUrl: string | null;
+            variantCount: number;
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            displayState: components["schemas"]["ListingDisplayState"];
+            /**
+             * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
+             * @example Choose a shipping policy in this eBay connection’s listing defaults.
+             */
+            displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
+            /**
+             * Format: uuid
+             * @description The store the listing is on
+             */
+            connectionId: string;
+        };
+        ListingHealthReportDto: {
+            /** @description Every store, oldest first */
+            stores: components["schemas"]["StoreListingHealthDto"][];
+            /** @description The latest listings a channel refused, latest first, each with its display state and requirement so a client can link to the fix */
+            recentFailures: components["schemas"]["StoreListingFailureDto"][];
+            /** @description Failed listings in all, across the stores */
+            failedListings: number;
         };
         /** @enum {string} */
         SuggestionStatus: SuggestionStatus;
@@ -5846,6 +5940,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InventoryReportDto"];
+                };
+            };
+        };
+    };
+    ListingHealthReportController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingHealthReportDto"];
                 };
             };
         };

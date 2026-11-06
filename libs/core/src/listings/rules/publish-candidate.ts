@@ -26,3 +26,27 @@ export function publishCandidateOf(
     active: isShownOnChannel(product, listing),
   };
 }
+
+/** A product as a listing query selects it: its first images and how many variants it has. */
+export interface CandidateProductRecord {
+  status: ProductStatus;
+  optionNames: string[];
+  media: readonly { url: string }[];
+  _count: { variants: number };
+}
+
+/** The publish candidate of a product record loaded with its listing on the store. */
+export function publishCandidateOfRecord(
+  product: CandidateProductRecord,
+  listing: VisibleListing | null,
+): PublishCandidate {
+  return publishCandidateOf(
+    {
+      status: product.status,
+      optionNames: product.optionNames,
+      variantCount: product._count.variants,
+      imageUrls: product.media.map((media) => media.url),
+    },
+    listing,
+  );
+}

@@ -42,6 +42,11 @@ export interface ChannelListingRow extends ListingSummary, ListingDisplayFields 
   variantCount: number;
 }
 
+/** A listing row with the store it is on, for lists that span the workspace's stores. */
+export interface StoreListingRow extends ChannelListingRow {
+  connectionId: string;
+}
+
 export interface ChannelListingPage {
   items: ChannelListingRow[];
   nextCursor: string | null;

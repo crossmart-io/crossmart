@@ -8,6 +8,7 @@ import type {
 } from '@crossmart/core';
 import { ChannelConnectionStatus, ListingStatus } from '@crossmart/database';
 import { CHANNEL_CONNECTION_STATUS_SCHEMA_NAME } from '../../channels/channels.constants.js';
+import { InventoryItemDto } from '../../inventory/dto/inventory-item.dto.js';
 import { LISTING_STATUS_SCHEMA_NAME } from '../../listings/listings.constants.js';
 
 export class InventoryValueDto implements InventoryValue {
@@ -82,10 +83,21 @@ export class InventoryReportDto implements InventoryReport {
   @ApiProperty({ description: 'Available units at or below which stock counts as low' })
   lowStockThreshold: number;
 
+  @ApiProperty({
+    type: [InventoryItemDto],
+    description:
+      'Tracked variants out of stock or low, fewest available first (oversold before sold out), ' +
+      'at most a few: the ones to restock first',
+  })
+  lowestStock: InventoryItemDto[];
+
   @ApiProperty({ type: [StoreHealthDto], description: 'Every store, oldest first' })
   stores: StoreHealthDto[];
 
   static from(report: InventoryReport): InventoryReportDto {
-    return Object.assign(new InventoryReportDto(), report);
+    return Object.assign(new InventoryReportDto(), {
+      ...report,
+      lowestStock: report.lowestStock.map((row) => InventoryItemDto.from(row)),
+    });
   }
 }

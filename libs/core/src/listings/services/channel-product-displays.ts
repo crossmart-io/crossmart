@@ -49,7 +49,7 @@ function displaySubjectOf(
   };
 }
 
-function toDisplayedStoreProduct(
+export function toDisplayedStoreProduct(
   record: DisplayCandidateRecord,
   connectionId: string,
 ): DisplayedStoreProduct {

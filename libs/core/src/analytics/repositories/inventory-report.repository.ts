@@ -6,6 +6,10 @@ import {
   type Prisma,
 } from '@crossmart/database';
 import { StockLevel } from '../../inventory/enums/stock-level.enum.js';
+import {
+  INVENTORY_ROW_INCLUDE,
+  type InventoryRowRecord,
+} from '../../inventory/repositories/inventory.queries.js';
 import { STOCK_LEVEL_FILTERS } from '../../inventory/repositories/stock-level.filters.js';
 
 export interface InventoryValueRow {
@@ -53,6 +57,22 @@ export class InventoryReportRepository {
   stockLevelCount(workspaceId: string, level: StockLevel): Promise<number> {
     return this.prisma.inventoryItem.count({
       where: { workspaceId, ...STOCK_LEVEL_FILTERS[level] },
+    });
+  }
+
+  /**
+   * Tracked variants out of stock or low, fewest available first (oversold before sold out),
+   * then by id so the order is stable. Served by the `(workspace_id, tracked, available)` index.
+   */
+  lowestStock(workspaceId: string, limit: number): Promise<InventoryRowRecord[]> {
+    return this.prisma.inventoryItem.findMany({
+      where: {
+        workspaceId,
+        OR: [STOCK_LEVEL_FILTERS[StockLevel.OutOfStock], STOCK_LEVEL_FILTERS[StockLevel.LowStock]],
+      },
+      include: INVENTORY_ROW_INCLUDE,
+      orderBy: [{ available: 'asc' }, { id: 'asc' }],
+      take: limit,
     });
   }
 
