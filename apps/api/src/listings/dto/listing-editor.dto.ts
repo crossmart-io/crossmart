@@ -10,7 +10,7 @@ import {
   type ListingStockLimits,
 } from '@crossmart/core';
 import { ListingVisibility } from '@crossmart/database';
-import { LISTING_VISIBILITY_SCHEMA_NAME } from '../listings.constants.js';
+import { LISTING_VISIBILITY_SCHEMA_NAME, RULE_PRICE_DESCRIPTION } from '../listings.constants.js';
 import { ChannelCategoryDto } from './channel-category.dto.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
 import {
@@ -33,6 +33,21 @@ export class InheritedTextDto implements InheritedField<string> {
 
   @ApiProperty({ description: 'What the store gets' })
   effective: string;
+
+  @ApiProperty({ description: OVERRIDDEN_DESCRIPTION })
+  overridden: boolean;
+}
+
+/** A text field the product may leave empty (the vendor): null at every level means none. */
+export class InheritedOptionalTextDto implements InheritedField<string | null> {
+  @ApiProperty({ type: String, nullable: true, description: 'The product’s value' })
+  product: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'Null when it follows the product' })
+  override: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: 'What the store gets' })
+  effective: string | null;
 
   @ApiProperty({ description: OVERRIDDEN_DESCRIPTION })
   overridden: boolean;
@@ -122,6 +137,9 @@ export class ListingEditorVariantDto implements ListingEditorVariant {
   @ApiProperty({ type: InheritedPriceDto })
   price: InheritedPriceDto;
 
+  @ApiProperty({ example: '102.99', description: RULE_PRICE_DESCRIPTION })
+  rulePrice: string;
+
   @ApiProperty({ type: InheritedCompareAtPriceDto })
   compareAtPrice: InheritedCompareAtPriceDto;
 
@@ -205,6 +223,9 @@ export class ListingEditorDto implements ListingEditorView {
   @ApiProperty({ type: InheritedTextDto })
   descriptionHtml: InheritedTextDto;
 
+  @ApiProperty({ type: InheritedOptionalTextDto, description: 'The brand the store shows' })
+  vendor: InheritedOptionalTextDto;
+
   @ApiProperty({ type: InheritedTextListDto })
   tags: InheritedTextListDto;
 
@@ -243,6 +264,7 @@ export class ListingEditorDto implements ListingEditorView {
       listing: view.listing ? ListingSummaryDto.from(view.listing) : null,
       title: Object.assign(new InheritedTextDto(), view.title),
       descriptionHtml: Object.assign(new InheritedTextDto(), view.descriptionHtml),
+      vendor: Object.assign(new InheritedOptionalTextDto(), view.vendor),
       tags: Object.assign(new InheritedTextListDto(), view.tags),
       images: Object.assign(new InheritedTextListDto(), view.images),
       visibility: Object.assign(new InheritedVisibilityDto(), view.visibility),

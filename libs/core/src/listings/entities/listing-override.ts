@@ -14,6 +14,8 @@ export interface VariantPriceOverrideInput {
 export interface ListingOverrideInput {
   title: string | null;
   descriptionHtml: string | null;
+  /** The brand the channel shows instead of the product's vendor. */
+  vendor: string | null;
   /** Replaces the product's tags; an empty list sends none. */
   tags: string[] | null;
   /** The product's image URLs to show, in order. */

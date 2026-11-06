@@ -26,6 +26,11 @@ export interface ListingEditorVariant {
    * its currency: the override, else the pricing rule applied to the catalog price.
    */
   price: InheritedField<string>;
+  /**
+   * What the store's pricing rule gives (its currency), before the listing's fixed price; equal
+   * to `price.effective` when the price is not overridden.
+   */
+  rulePrice: string;
   compareAtPrice: InheritedField<string | null>;
   /** How the effective price was reached, step by step. */
   resolvedPrice: ResolvedPrice;
@@ -64,6 +69,8 @@ export interface ListingEditorView extends ListingDisplayFields {
   listing: ListingSummary | null;
   title: InheritedField<string>;
   descriptionHtml: InheritedField<string>;
+  /** The brand; the product's may be absent (null). */
+  vendor: InheritedField<string | null>;
   tags: InheritedField<string[]>;
   /** Image URLs in order; an override is a subset of the product's, in its own order. */
   images: InheritedField<string[]>;

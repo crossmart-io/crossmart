@@ -11,6 +11,7 @@ import {
   CHANNEL_CONNECTION_STATUS_SCHEMA_NAME,
   CHANNEL_TYPE_SCHEMA_NAME,
 } from '../../channels/channels.constants.js';
+import { RULE_PRICE_DESCRIPTION } from '../listings.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
 import {
   DisplayReasonProperty,
@@ -46,6 +47,9 @@ export class ChannelVariantDto implements ChannelVariantView {
 
   @ApiProperty({ type: ResolvedPriceDto })
   price: ResolvedPriceDto;
+
+  @ApiProperty({ example: '102.99', description: RULE_PRICE_DESCRIPTION })
+  rulePrice: string;
 
   @ApiProperty({
     type: Number,

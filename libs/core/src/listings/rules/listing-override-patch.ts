@@ -40,6 +40,7 @@ export function applyOverridePatch(
   return {
     title: patchedField(current, patch, 'title'),
     descriptionHtml: patchedField(current, patch, 'descriptionHtml'),
+    vendor: patchedField(current, patch, 'vendor'),
     tags: patchedField(current, patch, 'tags'),
     mediaUrls: patchedField(current, patch, 'mediaUrls'),
     visibility: patchedField(current, patch, 'visibility'),
