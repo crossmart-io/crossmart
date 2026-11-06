@@ -319,7 +319,11 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 - REST, versioned at `/api/v1`, with OpenAPI generated from `@nestjs/swagger` decorators.
 - `openapi.json` is published per release, and `crossmart-web` generates its typed client from it. The web CI fails on breaking changes.
 - Auth uses Better Auth sessions (web) or workspace API keys (API/MCP). Rate limited per key.
-- Errors use one consistent shape (RFC 9457 problem+json) with typed error codes from an enum.
+- Errors use NestJS's JSON shape, `application/json` (not RFC 9457 problem+json):
+  `{ "statusCode": 404, "error": "Not Found", "message": "Product not found" }`. On a validation
+  failure (400), `message` is a list with one entry per problem. Plan refusals (402) add a typed
+  `code` (`plan_limit_reached` or `plan_feature_not_included`) with the `feature`, `plan`, `limit`,
+  `usage` and `requested` counts. See [developers/](developers/README.md#errors) for the public description.
 - `sdks/typescript` is the official TypeScript SDK (`@crossmart/sdk`). Its types are generated from `openapi.json`
   and CI fails when they drift from the API. The public, developer-facing documentation lives in
   [developers/](developers/README.md).

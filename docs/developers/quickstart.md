@@ -54,6 +54,8 @@ The SDK does this lookup for you on the first call. With an OAuth access token, 
 
 A product has a title and at least one variant. Prices are decimal strings in the workspace's
 currency. `quantity` is the opening stock. Products are drafts unless you set `status: "ACTIVE"`.
+When you replace a product later (`PUT …/products/{productId}`), a variant sent without `quantity`
+keeps its current stock.
 
 ```bash
 curl -X POST "$CROSSMART_API/workspaces/$WORKSPACE_ID/products" \
@@ -220,6 +222,24 @@ Publishing runs in the background, so the listing starts as `PENDING`:
 Read the product's channels again to follow it. Usually it takes seconds; poll every few seconds,
 and back off if it stays `PENDING`.
 
+Each entry also has `displayState`, the one state to show a merchant, computed by the server from
+the store's selection, the listing and what publishing still needs. `displayReason` says why for
+`needs_details` and `failed`.
+
+| `displayState`  | Meaning                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| `draft`         | Not selected for the store                                                    |
+| `needs_details` | Selected, but the store setup or the product lacks something (see the reason) |
+| `ready`         | Selected and publishable, not sent yet                                        |
+| `publishing`    | Queued or being published                                                     |
+| `published`     | On the store                                                                  |
+| `failed`        | The store refused the last publish or update; `displayReason` has its message |
+| `removing`      | Being taken off the store                                                     |
+| `removed`       | Taken off the store, or removed from it by hand                               |
+
+A store's `publishReadiness` says whether it can publish at all, and lists what its setup lacks in
+`missing` (such as `shipping_policy` on eBay or `listing_setup` on Google).
+
 ```bash
 curl "$CROSSMART_API/workspaces/$WORKSPACE_ID/products/$PRODUCT_ID/channels" -H "x-api-key: $CROSSMART_API_KEY"
 ```
@@ -250,6 +270,18 @@ for await (const listing of crossmart.listings.listAll(store.id, { status: Listi
 ```
 
 Fix the product (for example with `PUT …/products/{productId}`) and the change is sent to the store automatically.
+To publish one product to one store again, without resyncing the whole store, retry it. The
+answer is `202` with the product on that store, now `publishing`. It is `409` when the store must
+be connected again or does not include the product.
+
+```bash
+curl -X POST "$CROSSMART_API/workspaces/$WORKSPACE_ID/products/$PRODUCT_ID/channels/$CONNECTION_ID/retry" \
+  -H "x-api-key: $CROSSMART_API_KEY"
+```
+
+```ts
+await crossmart.listings.retry(product.id, store.id);
+```
 
 ## 5. Override the title or price on one store
 
