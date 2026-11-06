@@ -59,7 +59,7 @@ so every consumer accepts it:
 | --------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------- |
 | `name`          | `crossmart`                                | 1–64 chars, `a-z0-9-`, matches the folder name; no reserved words (`claude`, `anthropic`) |
 | `description`   | What it does and when to use it            | 1–1024 chars, no XML tags                                                                 |
-| `license`       | `AGPL-3.0-only`                            | Optional; the repository's license                                                        |
+| `license`       | `MIT-0`                                    | Optional; see `skills/crossmart/LICENSE`                                                  |
 | `compatibility` | Needs the MCP server or network access     | Optional, ≤ 500 chars                                                                     |
 | `metadata`      | `homepage`, `source`, `version` as strings | Optional string-to-string map                                                             |
 
@@ -92,10 +92,10 @@ telemetry of `npx skills add` on public repositories
 
 ### ClawHub (OpenClaw)
 
-> **Licence decision first.** ClawHub releases every published skill under **MIT-0**
-> ([clawhub docs/cli.md](https://github.com/openclaw/clawhub/blob/main/docs/cli.md)); there is no
-> per-skill licence. The repository is AGPL-3.0, so publishing there means the owner (the LLC)
-> deliberately licenses this folder under MIT-0 too, and changes `license:` in `SKILL.md` to match.
+> **Licence.** ClawHub releases every published skill under **MIT-0**
+> ([clawhub docs/cli.md](https://github.com/openclaw/clawhub/blob/main/docs/cli.md)). The owner
+> chose to license this skill folder under MIT-0 (see `skills/crossmart/LICENSE`); the rest of the
+> repository stays AGPL-3.0.
 
 Requirements: a GitHub account at least 14 days old, and semver versions.
 

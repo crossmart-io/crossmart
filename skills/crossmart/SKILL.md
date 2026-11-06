@@ -7,7 +7,7 @@ description: >-
   specifics, retry a listing, adjust stock, check a store's setup, or read orders and sales, or
   mentions Crossmart. Works through the Crossmart MCP server (tools such as list_products,
   add_product_to_store, get_product_stores) and falls back to the Crossmart REST API.
-license: AGPL-3.0-only
+license: MIT-0
 compatibility: >-
   Needs the Crossmart MCP server (https://mcp.crossmart.io/mcp) connected with a workspace API key,
   or network access to https://api.crossmart.io for the REST fallback.
