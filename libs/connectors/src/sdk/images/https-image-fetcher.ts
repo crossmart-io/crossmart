@@ -5,8 +5,7 @@ import { isIP } from 'node:net';
 import { Injectable } from '@nestjs/common';
 import { ACCEPT_HEADER, CONTENT_TYPE_HEADER } from '../http/http.constants.js';
 import { isServerErrorStatus, isSuccessStatus } from '../http/http-status.js';
-import { guardedLookup, PrivateAddressError } from './guarded-lookup.js';
-import { isPublicAddress } from './public-address.js';
+import { guardedLookup, isPublicAddress, PrivateAddressError } from '@crossmart/common';
 import {
   type FetchedImage,
   ImageFetcher,

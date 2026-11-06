@@ -1,9 +1,5 @@
 import { BlockList, isIPv4, isIPv6 } from 'node:net';
-import {
-  BLOCKED_IPV4_SUBNETS,
-  BLOCKED_IPV6_SUBNETS,
-  IPV4_MAPPED_PREFIX,
-} from './image.constants.js';
+import { BLOCKED_IPV4_SUBNETS, BLOCKED_IPV6_SUBNETS, IPV4_MAPPED_PREFIX } from './net.constants.js';
 
 enum AddressFamily {
   Ipv4 = 'ipv4',
