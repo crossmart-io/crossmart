@@ -1,5 +1,6 @@
 import { InventoryMovementReason, type Prisma } from '@crossmart/database';
 import type { MediaDraft, ProductDraft, VariantDraft } from '../entities/product-draft.js';
+import { NO_OPENING_STOCK } from '../catalog.constants.js';
 
 type GeneratedColumns = 'id' | 'createdAt' | 'updatedAt';
 
@@ -50,7 +51,7 @@ export function toNewVariantInput(
   variant: VariantDraft,
   position: number,
 ): Prisma.VariantCreateWithoutProductInput {
-  const { tracked, quantity } = variant.inventory;
+  const { tracked, quantity = NO_OPENING_STOCK } = variant.inventory;
   return {
     ...toVariantFields(variant, position),
     workspaceId,

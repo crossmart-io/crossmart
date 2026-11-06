@@ -73,8 +73,8 @@ export const CATALOG_TOOLS = [
     description:
       'Save a product as given: fields and variants left out are removed. Read it with ' +
       'get_product first, change what you need, and send the whole product back, keeping each ' +
-      'variant’s id. A changed quantity is recorded as a stock adjustment; to give a reason, ' +
-      'such as a delivery, use adjust_stock instead.',
+      'variant’s id. A changed quantity is recorded as a stock adjustment, and a variant sent ' +
+      'without one keeps its stock; to give a reason, such as a delivery, use adjust_stock instead.',
     input: { productId: ID_INPUT, ...PRODUCT_INPUT, variants: z.array(SAVED_VARIANT_INPUT).min(1) },
     readOnly: false,
     destructive: true,

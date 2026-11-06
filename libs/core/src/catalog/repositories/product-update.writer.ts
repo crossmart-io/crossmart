@@ -114,7 +114,7 @@ export class ProductUpdateWriter {
     });
     await this.ledger.applyMovement(tx, workspaceId, {
       stock,
-      availableDelta: variant.inventory.quantity - stock.available,
+      availableDelta: (variant.inventory.quantity ?? stock.available) - stock.available,
       reservedDelta: 0,
       entry: { reason: InventoryMovementReason.ADJUSTMENT, actor },
     });

@@ -22,6 +22,7 @@ export * from './catalog/catalog.module.js';
 export * from './catalog/entities/catalog-import.js';
 export * from './catalog/entities/product-draft.js';
 export * from './catalog/entities/product-views.js';
+export * from './catalog/rules/product-handle.js';
 export * from './catalog/enums/catalog-import-format.enum.js';
 export * from './catalog/enums/catalog-import-mode.enum.js';
 export * from './catalog/entities/import-job.js';
