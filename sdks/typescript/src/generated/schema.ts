@@ -1462,6 +1462,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a question about Crossmart
+         * @description Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key or session, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
+         */
+        post: operations["AskController_ask_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3522,6 +3542,42 @@ export interface components {
             title: string | null;
             /** @description Null when not asked for */
             descriptionHtml: string | null;
+        };
+        AskQuestionDto: {
+            /**
+             * @description A question about Crossmart, in any language
+             * @example Can I publish the same product to Shopify and eBay?
+             */
+            question: string;
+        };
+        /**
+         * @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart
+         * @enum {string}
+         */
+        AskOutcome: AskOutcome;
+        AskCitationDto: {
+            /** @description The page and section, such as "Crossmart for developers › Rate limits" */
+            title: string;
+            /**
+             * Format: uri
+             * @description The public page the answer is based on
+             */
+            url: string;
+        };
+        /** @enum {string} */
+        AskConfidence: AskConfidence;
+        AskAnswerDto: {
+            /** @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart */
+            outcome: components["schemas"]["AskOutcome"];
+            /** @description The answer, in plain text or short Markdown */
+            answer: string;
+            /** @description Pages the answer is based on */
+            citations: components["schemas"]["AskCitationDto"][];
+            confidence: components["schemas"]["AskConfidence"];
+            /** @description True when a person should take over, at supportEmail */
+            handoff: boolean;
+            /** Format: email */
+            supportEmail: string;
         };
     };
     responses: never;
@@ -6019,6 +6075,43 @@ export interface operations {
             };
         };
     };
+    AskController_ask_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskQuestionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskAnswerDto"];
+                };
+            };
+            /** @description Too many questions from you. Wait a little and try again, or browse https://docs.crossmart.io. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured, Ask is turned off, or today’s questions are spent */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }
 export enum PathsApiV1HealthGetResponses200ContentApplicationJsonStatus {
     ok = "ok",
@@ -6520,9 +6613,20 @@ export enum SuggestionAgent {
 }
 export enum AiFeature {
     content_generation = "content_generation",
-    content_draft = "content_draft"
+    content_draft = "content_draft",
+    ask = "ask"
 }
 export enum ContentField {
     title = "title",
     description = "description"
+}
+export enum AskOutcome {
+    answered = "answered",
+    unknown = "unknown",
+    out_of_scope = "out_of_scope"
+}
+export enum AskConfidence {
+    high = "high",
+    medium = "medium",
+    low = "low"
 }
