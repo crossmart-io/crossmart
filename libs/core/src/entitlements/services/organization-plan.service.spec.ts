@@ -19,13 +19,13 @@ function record(): SubscriptionRecord {
     updatedAt: new Date(),
     planVersion: {
       version: 2,
-      plan: { code: 'growth', name: 'Growth' },
+      plan: { code: 'growth', name: 'Growth', active: true },
       features: [{ feature: Feature.ActiveListings, enabled: true, limit: 10_000 }],
     },
   };
 }
 
-function setup(subscribed: boolean, defaultVersion: string | null = 'pv-free-1') {
+function setup(subscribed: boolean, defaultVersion: string | null = 'pv-starter-2') {
   const subscriptions = {
     findForOrganization: vi
       .fn<SubscriptionRepository['findForOrganization']>()
@@ -43,15 +43,28 @@ describe('OrganizationPlanService', () => {
   it('reads the plan version the organization is on', async () => {
     const { service, subscriptions } = setup(true);
     const snapshot = await service.current('org-1');
-    expect(snapshot.plan).toEqual({ code: 'growth', name: 'Growth', version: 2 });
+    expect(snapshot.plan).toEqual({
+      code: 'growth',
+      name: 'Growth',
+      version: 2,
+      offered: true,
+    });
     expect(snapshot.grants.get(Feature.ActiveListings)?.limit).toBe(10_000);
     expect(subscriptions.subscribe).not.toHaveBeenCalled();
+  });
+
+  it('says when the plan is a legacy one that is no longer offered', async () => {
+    const { service, subscriptions } = setup(true);
+    const legacy = record();
+    legacy.planVersion.plan.active = false;
+    subscriptions.findForOrganization.mockResolvedValueOnce(legacy);
+    expect((await service.current('org-1')).plan.offered).toBe(false);
   });
 
   it('puts an organization without a subscription on the default plan', async () => {
     const { service, subscriptions } = setup(false);
     await service.current('org-1');
-    expect(subscriptions.subscribe).toHaveBeenCalledWith('org-1', 'pv-free-1');
+    expect(subscriptions.subscribe).toHaveBeenCalledWith('org-1', 'pv-starter-2');
   });
 
   it('fails loudly when no default plan was seeded', async () => {
