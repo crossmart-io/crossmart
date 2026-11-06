@@ -25,9 +25,18 @@ const OFFERED_PLAN = {
 
 const CHANNELS_URL = 'https://crossmart.io/#channels';
 const FAQ_URL = 'https://crossmart.io/#faq';
-const DEVELOPERS_URL = 'https://docs.crossmart.io/developers/';
+const DOCS_CHANNELS_URL = 'https://docs.crossmart.io/channels/';
+const SHOPIFY_PAGE_URL = 'https://docs.crossmart.io/channels/shopify/';
+const CONNECT_STORE_URL = 'https://docs.crossmart.io/sellers/connect-a-store/';
 const MCP_URL = 'https://docs.crossmart.io/developers/mcp/';
+const AGENTS_URL = 'https://docs.crossmart.io/agents/';
+const CLAUDE_CODE_URL = 'https://docs.crossmart.io/agents/claude-code/';
 const API_KEYS_URL = 'https://docs.crossmart.io/developers/#api-keys';
+const EBAY_FAILURES_URL = 'https://docs.crossmart.io/channels/ebay/#why-an-ebay-listing-fails';
+const LISTING_FAILS_URL = 'https://docs.crossmart.io/sellers/listing-states/#when-a-listing-fails';
+const STOCK_URL = 'https://docs.crossmart.io/sellers/stock/';
+/** Pages that list the channels and their status: the site's list, its FAQ, the docs' overview. */
+const CHANNEL_OVERVIEW_URLS = [CHANNELS_URL, FAQ_URL, DOCS_CHANNELS_URL];
 const TOP_SOURCES = 3;
 
 function knowledgeBase(): KnowledgeBaseService {
@@ -67,11 +76,10 @@ describe('retrieval for representative questions', () => {
     'Which marketplaces does Crossmart support?',
     'What channels can I sell on?',
     'Which platforms do you integrate with?',
-  ])('answers "%s" from the channel overview', async (question) => {
-    const urls = (await topSources(question, 2)).map((chunk) => chunk.url);
+  ])('answers "%s" from a channel overview', async (question) => {
+    const [first] = await topSources(question);
 
-    expect(urls).toContain(CHANNELS_URL);
-    expect(urls.every((url) => url === CHANNELS_URL || url === FAQ_URL)).toBe(true);
+    expect(CHANNEL_OVERVIEW_URLS).toContain(first.url);
   });
 
   it('answers pricing questions from the plans and the pricing FAQ', async () => {
@@ -81,17 +89,36 @@ describe('retrieval for representative questions', () => {
     expect(second.url).toBe(FAQ_URL);
   });
 
-  it('answers how to connect Shopify from the channel list and the developer docs', async () => {
+  it('answers how to connect Shopify from the Shopify page and the store connection guide', async () => {
     const urls = (await topSources('How do I connect my Shopify store?')).map((chunk) => chunk.url);
 
-    expect(urls).toContain(CHANNELS_URL);
-    expect(urls).toContain(DEVELOPERS_URL);
+    expect(urls[0].startsWith(SHOPIFY_PAGE_URL)).toBe(true);
+    expect(urls.some((url) => url.startsWith(CONNECT_STORE_URL))).toBe(true);
   });
 
-  it('answers MCP setup from the MCP page', async () => {
+  it('answers MCP setup from the MCP page and the agent guide', async () => {
     const sources = await topSources('How do I set up the MCP server?', 2);
 
-    expect(sources.every((chunk) => chunk.url.startsWith(MCP_URL))).toBe(true);
+    expect(sources.map((chunk) => chunk.url)).toEqual([MCP_URL, AGENTS_URL]);
+  });
+
+  it("answers agent setup from that agent's guide", async () => {
+    const [first] = await topSources('How do I connect Claude Code?');
+
+    expect(first.url.startsWith(CLAUDE_CODE_URL)).toBe(true);
+  });
+
+  it('answers listing failures from the channel and the listing states', async () => {
+    const urls = (await topSources('Why did my eBay listing fail?')).map((chunk) => chunk.url);
+
+    expect(urls[0]).toBe(EBAY_FAILURES_URL);
+    expect(urls).toContain(LISTING_FAILS_URL);
+  });
+
+  it('answers stock questions from the stock sync guide', async () => {
+    const [first] = await topSources('How does stock sync work?');
+
+    expect(first.url).toBe(STOCK_URL);
   });
 
   it('answers API key questions from the API keys section', async () => {
