@@ -6,6 +6,7 @@ import type { ChannelErrorMessages } from '../errors/channel-error-factory.js';
 import { FakeHttpTransport, jsonResponse } from '../testing/fake-http-transport.js';
 import { HttpMethod } from './http-method.enum.js';
 import type { HttpResponse, HttpTransport } from './http-transport.js';
+import { multipartBody } from './multipart-body.js';
 import { type JsonApiFailure, type JsonApiRequest, JsonApiClient } from './json-api.client.js';
 
 const BASE_URL = 'https://api.example.com';
@@ -70,6 +71,33 @@ describe('JsonApiClient', () => {
       },
       body: '{"name":"Mug"}',
     });
+  });
+
+  it('sends a form or a multipart body with its content type', async () => {
+    const { http, api } = setup();
+    http
+      .expect(HttpMethod.Patch, `${BASE_URL}/items/1`, jsonResponse({ id: '1' }))
+      .expect(HttpMethod.Post, `${BASE_URL}/items/1/images`, jsonResponse({ id: '1' }));
+    const upload = multipartBody({ rank: '1' }, 'BOUNDARY');
+
+    await api.call(
+      { method: HttpMethod.Patch, path: '/items/1', accessToken: 't', form: { tags: 'a,b c' } },
+      schema,
+    );
+    await api.call(
+      { method: HttpMethod.Post, path: '/items/1/images', accessToken: 't', multipart: upload },
+      schema,
+    );
+
+    expect(http.requests[0]).toMatchObject({
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'tags=a%2Cb%20c',
+    });
+    expect(http.requests[1]?.headers?.['content-type']).toBe(
+      'multipart/form-data; boundary=BOUNDARY',
+    );
+    expect(http.requests[1]?.bytes).toEqual(upload.bytes);
+    expect(http.requests[1]?.body).toBeUndefined();
   });
 
   it('sends no body or content type on a read', async () => {

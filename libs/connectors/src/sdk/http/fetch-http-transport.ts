@@ -9,7 +9,7 @@ export class FetchHttpTransport extends HttpTransport {
     const response = await fetch(request.url, {
       method: request.method,
       headers: request.headers,
-      body: request.body,
+      body: request.bytes ?? request.body,
       redirect: 'error',
       signal: AbortSignal.timeout(HTTP_REQUEST_TIMEOUT_MS),
     });

@@ -3,13 +3,16 @@ import type { ChannelError } from '../errors/channel-error.js';
 import { ChannelErrorCode } from '../errors/channel-error-code.enum.js';
 import type { ChannelErrorFactory, ChannelErrorMessages } from '../errors/channel-error-factory.js';
 import { bearerAuthorization } from './authorization.js';
+import { encodeParams } from './form-encoding.js';
 import {
   ACCEPT_HEADER,
   AUTHORIZATION_HEADER,
   CONTENT_TYPE_HEADER,
+  FORM_CONTENT_TYPE,
   JSON_CONTENT_TYPE,
 } from './http.constants.js';
 import type { HttpMethod } from './http-method.enum.js';
+import type { MultipartBody } from './multipart-body.js';
 import { isSuccessStatus } from './http-status.js';
 import type { HttpResponse, HttpTransport } from './http-transport.js';
 import { parseJsonBody } from './parse-json.js';
@@ -23,6 +26,30 @@ export interface JsonApiRequest {
   accessToken: string;
   /** Sent as JSON. */
   body?: unknown;
+  /** Sent form-encoded instead, for endpoints that take only forms (Etsy's listing writes). */
+  form?: Readonly<Record<string, string>>;
+  /** Sent as `multipart/form-data` instead, for uploads. */
+  multipart?: MultipartBody;
+}
+
+/** The encoded body of a request and its media type; empty for requests without one. */
+interface EncodedBody {
+  contentType?: string;
+  body?: string;
+  bytes?: Uint8Array<ArrayBuffer>;
+}
+
+function encodeBody(request: JsonApiRequest): EncodedBody {
+  if (request.multipart) {
+    return { contentType: request.multipart.contentType, bytes: request.multipart.bytes };
+  }
+  if (request.form) {
+    return { contentType: FORM_CONTENT_TYPE, body: encodeParams(request.form) };
+  }
+  if (request.body !== undefined) {
+    return { contentType: JSON_CONTENT_TYPE, body: JSON.stringify(request.body) };
+  }
+  return {};
 }
 
 /** What a failed response means, as a channel reads its error body. */
@@ -64,12 +91,17 @@ export abstract class JsonApiClient<TRequest extends JsonApiRequest> {
 
   /** The raw response, whatever its status. Rejects only when the channel could not be reached. */
   async request(request: TRequest): Promise<HttpResponse> {
+    const { contentType, body, bytes } = encodeBody(request);
     try {
       return await this.http.send({
         method: request.method,
         url: this.url(request).toString(),
-        headers: this.headers(request),
-        ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
+        headers: {
+          ...this.headers(request),
+          ...(contentType ? { [CONTENT_TYPE_HEADER]: contentType } : {}),
+        },
+        ...(body === undefined ? {} : { body }),
+        ...(bytes === undefined ? {} : { bytes }),
       });
     } catch {
       throw this.error({ code: ChannelErrorCode.ChannelUnavailable });
@@ -98,12 +130,14 @@ export abstract class JsonApiClient<TRequest extends JsonApiRequest> {
   /** What a failed response means: the code callers act on, and a safe detail. */
   protected abstract describeFailure(response: HttpResponse): JsonApiFailure;
 
-  /** The bearer token and JSON headers; channels may add their own. */
+  /**
+   * The bearer token and `accept: application/json`; channels may add their own. The body's
+   * `content-type` is set from how it is sent.
+   */
   protected headers(request: TRequest): Record<string, string> {
     return {
       [AUTHORIZATION_HEADER]: bearerAuthorization(request.accessToken),
       [ACCEPT_HEADER]: JSON_CONTENT_TYPE,
-      ...(request.body === undefined ? {} : { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE }),
     };
   }
 
