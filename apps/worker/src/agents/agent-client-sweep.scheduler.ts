@@ -8,7 +8,7 @@ import {
   AGENT_CLIENT_SWEEP_SCHEDULER_ID,
 } from '@crossmart/core';
 
-/** Schedules the unused agent registration sweep hourly; one schedule however many workers. */
+/** Schedules the unused agent client sweep hourly; one schedule however many workers. */
 @Injectable()
 export class AgentClientSweepScheduler implements OnApplicationBootstrap {
   constructor(@InjectQueue(QueueName.Maintenance) private readonly maintenance: Queue) {}

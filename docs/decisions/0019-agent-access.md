@@ -36,7 +36,8 @@ over, without the user filling in a form first.
   yet (see Context). It is open (no session) and restricted. It registers public clients only
   (`none`) with the authorization code grant, PKCE and the scopes below. It is rate-limited per
   IP (20 registrations an hour), and an hourly cleanup job deletes registrations that were never
-  used within 24 hours.
+  used within 24 hours. A self-registered client chooses its own name, so the consent page marks
+  that name as unverified (see Consequences).
   Remove it once those clients adopt CIMD.
 - The MCP server (`https://mcp.crossmart.io/mcp`, its own Railway service, set as
   `MCP_PUBLIC_URL` on both the API and the MCP server) is the protected resource. Without a token it
@@ -92,6 +93,42 @@ over, without the user filling in a form first.
 - Better Auth's OAuth tables join the schema through an additive migration.
 - Open DCR lets anyone register a client. Registrations are limited to public clients and
   rate-limited, and unused ones are deleted. Every grant still needs a signed-in user's consent.
+- **Rate limits are shared in Redis.** Better Auth's limits (OAuth authorize 30 a minute, token 20
+  a minute, registration 20 an hour, sign-in and its other defaults) count in the API's Redis
+  through a custom storage (`RedisAuthRateLimitStorage`, keys
+  `crossmart:auth-rate-limit:<client IP>|<path>`), so every instance shares one window and a
+  deploy does not reset them. The client IP is the `x-real-ip` header Railway's edge sets
+  (`CLIENT_IP_HEADERS`), the same address Ask's throttling uses. Better Auth enforces these
+  limits in production only.
+- **If Redis is down or slow** (a check waits at most 250 ms), the limits degrade by path:
+  - **Client registration fails closed.** Anyone can call it without signing in, and every success
+    leaves a lasting row. Refusing it for a while costs little, since agents retry and most use
+    CIMD anyway, while an unlimited burst would be cleaned up only a day later.
+  - **Everything else falls back to per-instance windows.** That covers sign-in, sign-up,
+    password reset, authorize and token. Failing these closed would lock every person and agent
+    out, and would break refresh-token rotation for connected agents, during a Redis outage.
+    Failing fully open would remove the brute-force limit on sign-in. Per-instance windows keep a
+    limit (at most the number of instances times the limit) without taking sign-in down.
+  - The API logs once when it loses Redis and once when it is back, never with the key, which holds
+    the caller's IP.
+- **Unused clients are deleted.** The hourly maintenance sweep also deletes clients of either kind
+  (CIMD or DCR, never one a user owns) that nobody has used for 90 days
+  (`STALE_AGENT_CLIENT_TTL_MS`). Unused means: no consent (a consent is a live connection), no
+  access or refresh token that is still valid or was issued in that time, no activity in that time,
+  and no change to the client record in that time. A client with a live consent or
+  an unexpired refresh token is never deleted. It works in batches of 200, checks the conditions
+  again in the delete itself, and running it twice deletes nothing more. A CIMD client that comes
+  back is simply fetched again. Before a client is deleted, its activity events keep its name
+  (`actor_agent_name`) so the history still names the agent. Each workspace it worked in gets one
+  `unused_agents_removed` event per sweep, naming the agents removed, and the worker logs the
+  totals.
+- **Unverified agent names are flagged.** Any self-registered client can call itself "Claude".
+  `GET /api/v1/oauth/client` tells the consent page how the client is known: `metadata_document`
+  with the `verifiedHost` its metadata came from, or `dynamic` with only a `claimedHost`. The page
+  shows a CIMD client's name with the host it was verified from. For a DCR client it shows the name
+  marked "unverified name", explains that the agent chose the name itself, and asks the user to
+  continue only if they started this connection. Connections under Settings carry the same marker
+  (`clientRegistration`, `clientVerifiedHost`).
 - Activity, audit and rate limits need an `agent` actor alongside users and API keys.
 - Sandbox accounts are a new abuse surface: account creation that sends email. The limits above,
   the 14-day expiry, sending no email for existing addresses, and the no-publish rule are the

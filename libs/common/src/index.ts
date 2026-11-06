@@ -1,4 +1,5 @@
 export * from './async/for-each-limited.js';
+export * from './async/with-timeout.js';
 export * from './config/app-config.module.js';
 export * from './config/app-config.service.js';
 export * from './config/environment.enum.js';

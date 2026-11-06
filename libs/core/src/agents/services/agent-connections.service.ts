@@ -10,6 +10,7 @@ import {
   type AgentConsentRecord,
 } from '../repositories/agent-connection.repository.js';
 import { agentClientName } from '../rules/agent-client-name.js';
+import { toAgentClientProfile } from '../rules/agent-client-profile.js';
 
 /**
  * The agents connected to a workspace. Members see and revoke their own; those who manage API
@@ -60,10 +61,13 @@ export class AgentConnectionsService {
   /** Null for a consent without a user, which agents never hold. */
   private toConnection(record: AgentConsentRecord): AgentConnection | null {
     if (!record.userId || !record.user) return null;
+    const profile = toAgentClientProfile({ clientId: record.clientId, ...record.client });
     return {
       id: record.id,
       clientId: record.clientId,
-      clientName: agentClientName(record.clientId, record.client.name),
+      clientName: profile.name,
+      clientRegistration: profile.registration,
+      clientVerifiedHost: profile.verifiedHost,
       clientUri: record.client.uri,
       clientIcon: record.client.icon,
       userId: record.userId,

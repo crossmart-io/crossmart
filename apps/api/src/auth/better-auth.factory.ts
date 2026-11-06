@@ -1,4 +1,4 @@
-import { betterAuth } from 'better-auth';
+import { type BetterAuthRateLimitStorage, betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import type { AppConfigService } from '@crossmart/common';
 import type { AccountEmailsService, NewUser } from '@crossmart/core';
@@ -25,6 +25,8 @@ export interface BetterAuthDependencies {
   onUserCreated: (user: NewUser) => Promise<void>;
   accountEmails: AccountEmailsService;
   isWorkspaceMember: WorkspaceMembershipCheck;
+  /** Where rate-limit windows are kept: Redis, shared by every API instance. */
+  rateLimitStorage: BetterAuthRateLimitStorage;
 }
 
 interface EmailUser {
@@ -69,6 +71,7 @@ export function createBetterAuth({
   onUserCreated,
   accountEmails,
   isWorkspaceMember,
+  rateLimitStorage,
 }: BetterAuthDependencies) {
   return betterAuth({
     appName: AUTH_APP_NAME,
@@ -81,7 +84,10 @@ export function createBetterAuth({
     session: { additionalFields: AGENT_OAUTH_SESSION_FIELDS },
     plugins: agentOAuthPlugins(appConfig, isWorkspaceMember),
     hooks: { before: publicClientRegistrationOnly },
-    rateLimit: { customRules: { [OAUTH_REGISTER_PATH]: OAUTH_REGISTER_RATE_LIMIT } },
+    rateLimit: {
+      customRules: { [OAUTH_REGISTER_PATH]: OAUTH_REGISTER_RATE_LIMIT },
+      customStorage: rateLimitStorage,
+    },
     advanced: {
       database: { generateId: 'uuid' },
       ipAddress: { ipAddressHeaders: CLIENT_IP_HEADERS },

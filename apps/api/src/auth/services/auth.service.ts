@@ -8,7 +8,6 @@ import type { Request } from 'express';
 import type { JSONWebKeySet } from 'jose';
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import { AppConfigService } from '@crossmart/common';
-import { AccountEmailsService } from '@crossmart/core';
 import { PrismaService } from '@crossmart/database';
 import { isPublicCorsPath } from '../../bootstrap/cors-policy.js';
 import { ORIGIN_HEADER } from '../../bootstrap/cors.constants.js';
@@ -16,6 +15,7 @@ import { type BetterAuthInstance, createBetterAuth } from '../better-auth.factor
 import { PrincipalKind } from '../enums/principal-kind.enum.js';
 import type { UserPrincipal } from '../entities/principal.js';
 import { AuthTenancyHooks } from './auth-tenancy.hooks.js';
+import { BetterAuthServices } from './better-auth-services.js';
 
 export type NodeHandler = (request: IncomingMessage, response: ServerResponse) => Promise<void>;
 
@@ -37,8 +37,8 @@ export class AuthService {
   constructor(
     appConfig: AppConfigService,
     private readonly prisma: PrismaService,
-    accountEmails: AccountEmailsService,
     tenancy: AuthTenancyHooks,
+    { accountEmails, rateLimitStorage }: BetterAuthServices,
   ) {
     this.trustedOrigins = new Set(appConfig.corsOrigins);
     this.auth = createBetterAuth({
@@ -47,6 +47,7 @@ export class AuthService {
       onUserCreated: (user) => tenancy.onUserCreated(user),
       accountEmails,
       isWorkspaceMember: (workspaceId, userId) => tenancy.isWorkspaceMember(workspaceId, userId),
+      rateLimitStorage,
     });
   }
 
