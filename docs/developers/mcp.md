@@ -88,11 +88,19 @@ clients above.
 | `replace_product`           | Saves a whole product; variants left out are removed                   |     Yes      |
 | `list_inventory`            | Stock per variant: on hand, held for orders, available                 |              |
 | `adjust_stock`              | Adds, removes or sets stock, with a reason                             |     Yes      |
-| `list_orders`               | Orders from every store, without buyer details                         |              |
+| `list_orders`               | Orders from every store (Shopify, eBay…), without buyer details        |              |
 | `get_order`                 | One order with its lines and the stock each line holds or has shipped  |              |
-| `list_stores`               | Connected stores with their status                                     |              |
+| `list_stores`               | Connected stores with their status and publish readiness               |              |
+| `get_store`                 | One store, with what its setup still needs before it can publish       |              |
 | `add_product_to_store`      | Lists a product on a store                                             |     Yes      |
 | `remove_product_from_store` | Takes a product off a store; it keeps its order history                |     Yes      |
+| `list_store_products`       | A store's products by state (`failed`, `pending`…), with counts        |              |
+| `get_product_stores`        | One product on every store, with its display state and reason          |              |
+| `retry_store_listing`       | Publishes one product to one store again                               |     Yes      |
+| `suggest_store_categories`  | eBay categories that fit a product                                     |              |
+| `set_store_category`        | Chooses a product's eBay category                                      |     Yes      |
+| `get_item_specifics`        | A listing's eBay item specifics: required, recommended, allowed values |              |
+| `save_item_specifics`       | Replaces a listing's eBay item specifics                               |     Yes      |
 | `get_sales_report`          | Sales, orders, average order value and units against the period before |              |
 | `get_inventory_report`      | Stock value, stock levels and listings per store                       |              |
 | `get_platform_health`       | Whether the API and its database are reachable                         |              |
@@ -100,10 +108,34 @@ clients above.
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |              |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   |     Yes      |
 
-Read-only tools are marked `readOnlyHint`, and `replace_product` and `remove_product_from_store`
-are marked `destructiveHint`, so clients can ask before running them. When the API refuses a call,
-the tool returns the API's message (for example `Crossmart refused (404): Product not found`)
-instead of failing the session.
+Read-only tools are marked `readOnlyHint`, and `replace_product`, `remove_product_from_store` and
+`save_item_specifics` are marked `destructiveHint`, so clients can ask before running them. When the
+API refuses a call, the tool returns the API's status, its `code` when it gives one, and its message
+(for example `Crossmart refused (404): Product not found`) instead of failing the session. Some
+tools add a next step: `retry_store_listing` explains a `409` (the store is not connected or does
+not select the product) and a `402` (no room on the plan).
+
+## Listing states and what to do next
+
+Every product on a store has one `displayState`: `draft`, `needs_details`, `ready`, `publishing`,
+`published`, `failed`, `removing` or `removed`, with a `displayReason` for `needs_details` and
+`failed`. `list_store_products`, `get_product_stores`, `add_product_to_store` and
+`retry_store_listing` return it, and their descriptions tell the agent how to act:
+
+| Missing                                                                                                  | Next step                                                                               |
+| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Store setup: `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup` | The merchant finishes it in the dashboard (`publishReadiness.missing` on `list_stores`) |
+| `reconnect`, `account_settings`                                                                          | The merchant connects the store again                                                   |
+| `category`                                                                                               | `suggest_store_categories`, then `set_store_category`                                   |
+| `item_specifics`                                                                                         | `get_item_specifics`, then `save_item_specifics`                                        |
+| `images`, `active_product`, `option_names`                                                               | Fix the product with `replace_product`                                                  |
+
+Then `retry_store_listing` sends the listing again. The agent reads the requirement from
+`displayRequirement` when the API returns it, otherwise from `listing.missingRequirement`, and
+otherwise shows the merchant `displayReason`.
+
+Orders from every channel, eBay included, share one API: `list_orders` returns them all, each with
+its `channel`, and `connectionId` narrows them to one store.
 
 ## What agents can't do
 
@@ -123,6 +155,8 @@ Once connected, ask the agent things like:
 - "Add every active mug to my Shopify store."
 - "How did sales in the last 7 days compare with the week before?"
 - "Write better titles for my 10 best sellers on eBay." (they arrive as suggestions to approve)
+- "Which of my eBay listings failed, and what do they need?"
+- "What does my eBay store still need before it can publish?"
 
 ## Self-hosting
 
