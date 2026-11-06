@@ -14,4 +14,6 @@ export const API_KEY_HEADER = 'x-api-key';
 export enum OpenApiSecurityScheme {
   ApiKey = 'api_key',
   SessionCookie = 'cookie',
+  /** An AI agent's OAuth access token (ADR 0019), sent as `Authorization: Bearer`. */
+  AgentToken = 'bearer',
 }
