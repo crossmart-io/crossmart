@@ -10,7 +10,9 @@ import { EbayLocationWriter } from './account/ebay-location.writer.js';
 import { EbayApiClient } from './api/ebay-api.client.js';
 import { EbayConnector } from './ebay.connector.js';
 import { EbayApp } from './ebay-app.js';
-import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
+import { EbayAccountServices, EbaySellingServices, EbaySyncServices } from './ebay-capabilities.js';
+import { EbayInventorySync } from './inventory/ebay-inventory-sync.js';
+import { EbayOrderSource } from './orders/ebay-order-source.js';
 import { EbayNotificationVerifier } from './notifications/ebay-notification.verifier.js';
 import { EbayPublicKeyClient } from './notifications/ebay-public-key.client.js';
 import { EbayApplicationTokens } from './oauth/ebay-application-tokens.js';
@@ -82,7 +84,11 @@ export function createEbayTestKit(app = new EbayApp(TEST_EBAY_APP)): EbayTestKit
     taxonomy,
     aspects,
   );
-  const connector = new EbayConnector(oauth, account, selling);
+  const sync = new EbaySyncServices(
+    new EbayOrderSource(app, api),
+    new EbayInventorySync(app, api, offers),
+  );
+  const connector = new EbayConnector(oauth, account, selling, sync);
   const publicKeys = new EbayPublicKeyClient(app, api, new EbayApplicationTokens(oauth));
   const notifications = new EbayNotificationVerifier(publicKeys);
   return { http, oauth, connector, publicKeys, notifications };

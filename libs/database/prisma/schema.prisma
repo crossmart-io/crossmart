@@ -769,7 +769,7 @@ model ListingVariant {
   variant             Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
   /// The variant's id on the channel (a Shopify ProductVariant GID, an eBay SKU).
   externalId          String   @map("external_id")
-  /// The id stock is set on, where the channel has one (a Shopify InventoryItem GID).
+  /// The id stock is set on, where the channel has one (a Shopify InventoryItem GID, an eBay SKU).
   externalInventoryId String?  @map("external_inventory_id")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")

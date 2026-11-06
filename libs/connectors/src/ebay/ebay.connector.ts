@@ -15,6 +15,13 @@ import type {
   PublishedListing,
 } from '../sdk/capabilities/listing-publisher.js';
 import type {
+  InventoryQuantityUpdate,
+  InventorySync,
+  InventoryUpdateFailure,
+} from '../sdk/capabilities/inventory-sync.js';
+import type { ChannelPage } from '../sdk/capabilities/catalog.types.js';
+import type { ExternalOrder, OrderSource } from '../sdk/capabilities/order-source.js';
+import type {
   CategoryAspect,
   ChannelCategory,
   TaxonomyProvider,
@@ -32,11 +39,12 @@ import type {
   EbayDefaultPolicyIds,
 } from './account/ebay-default-policies.js';
 import { ebayAccountContext } from './api/ebay-account-context.js';
-import { EbayAccountServices, EbaySellingServices } from './ebay-capabilities.js';
+import { EbayAccountServices, EbaySellingServices, EbaySyncServices } from './ebay-capabilities.js';
 import {
   EBAY_API_BUCKET_CAPACITY,
   EBAY_API_BUCKET_NAME,
   EBAY_API_RESTORE_PER_SECOND,
+  EBAY_BULK_QUANTITY_MAX_SKUS,
   EBAY_DISPLAY_NAME,
   EBAY_DISPLAY_NAME_SEPARATOR,
   EBAY_REQUIRED_SCOPES,
@@ -59,10 +67,13 @@ const NOT_APPROVED = 'The app was not approved on eBay';
 /**
  * The eBay connector: the merchant picks a marketplace and signs in with eBay; Crossmart
  * stores the account's name and business policies, and publishes listings through the Sell
- * Inventory API in the categories the Taxonomy API suggests. Stock sync and orders come later.
+ * Inventory API in the categories the Taxonomy API suggests. It reads the account's orders with
+ * the Fulfillment API and sends Crossmart's stock back to the listings.
  */
 @Injectable()
-export class EbayConnector implements OAuthAppConnector, ListingPublisher, TaxonomyProvider {
+export class EbayConnector
+  implements OAuthAppConnector, ListingPublisher, TaxonomyProvider, OrderSource, InventorySync
+{
   readonly channel = ChannelType.Ebay;
   readonly displayName = EBAY_DISPLAY_NAME;
   readonly authStrategy = ChannelAuthStrategy.OAuthApp;
@@ -70,8 +81,11 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
     ChannelCapability.PublishListings,
     ChannelCapability.UpdatePrice,
     ChannelCapability.ProvideTaxonomy,
+    ChannelCapability.FetchOrders,
+    ChannelCapability.UpdateInventory,
   ]);
   readonly requiredScopes = EBAY_REQUIRED_SCOPES;
+  readonly maxBatchSize = EBAY_BULK_QUANTITY_MAX_SKUS;
   readonly contentLimits = EBAY_CONTENT_LIMITS;
   readonly rateLimits: readonly RateLimitBucket[] = [
     {
@@ -86,6 +100,7 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
     private readonly oauth: EbayOAuthClient,
     private readonly account: EbayAccountServices,
     private readonly selling: EbaySellingServices,
+    private readonly sync: EbaySyncServices,
   ) {}
 
   isConfigured(): boolean {
@@ -177,6 +192,25 @@ export class EbayConnector implements OAuthAppConnector, ListingPublisher, Taxon
 
   updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void> {
     return this.selling.prices.update(session, updates);
+  }
+
+  fetchOrders(
+    session: ChannelSession,
+    updatedSince: Date,
+    cursor: string | null,
+  ): Promise<ChannelPage<ExternalOrder>> {
+    return this.sync.orders.fetchOrders(session, updatedSince, cursor);
+  }
+
+  fetchOrder(session: ChannelSession, externalId: string): Promise<ExternalOrder | null> {
+    return this.sync.orders.fetchOrder(session, externalId);
+  }
+
+  setQuantities(
+    session: ChannelSession,
+    updates: readonly InventoryQuantityUpdate[],
+  ): Promise<InventoryUpdateFailure[]> {
+    return this.sync.stock.setQuantities(session, updates);
   }
 
   async suggestCategories(session: ChannelSession, query: string): Promise<ChannelCategory[]> {

@@ -53,6 +53,8 @@ const offerSchema = z.object({
   offerId: z.string().min(1),
   sku: z.string(),
   status: z.string().optional(),
+  /** The quantity the offer's listing shows; absent until one is set. */
+  availableQuantity: z.number().int().optional(),
   listing: z.object({ listingId: z.string().optional() }).optional(),
 });
 
@@ -66,7 +68,7 @@ export const ebayCreatedOfferSchema = z.object({ offerId: z.string().min(1) });
 /** Publishing (one offer or a group) answers the listing's id. */
 export const ebayPublishedSchema = z.object({ listingId: z.string().min(1) });
 
-/** `POST /bulk_update_price_quantity`: one status per offer. */
+/** `POST /bulk_update_price_quantity`: one status per offer (or per SKU, for stock alone). */
 export const ebayBulkPriceResponseSchema = z.object({
   responses: z
     .array(
