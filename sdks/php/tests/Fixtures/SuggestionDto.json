@@ -1,0 +1,22 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "productId": "00000000-0000-4000-8000-000000000001",
+  "productTitle": "sample",
+  "imageUrl": "sample",
+  "connection": null,
+  "kind": "listing_title",
+  "status": "PENDING",
+  "currentValue": "sample",
+  "proposedValue": "sample",
+  "rationale": "sample",
+  "createdBy": {
+    "type": "AGENT",
+    "agent": null,
+    "userId": "00000000-0000-4000-8000-000000000001",
+    "apiKeyId": "00000000-0000-4000-8000-000000000001",
+    "name": "sample"
+  },
+  "review": null,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}
