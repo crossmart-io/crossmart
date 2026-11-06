@@ -7,6 +7,7 @@ import {
   OPENAPI_DOCS_PATH,
   OPENAPI_OUTPUT_FILE,
   OPENAPI_TITLE,
+  OpenApiSecurityScheme,
 } from '@crossmart/common';
 
 const JSON_INDENTATION = 2;
@@ -19,8 +20,11 @@ export function buildOpenApiDocument(app: INestApplication, version: string): Op
     .setDescription(OPENAPI_DESCRIPTION)
     .setVersion(version)
     .setLicense('AGPL-3.0', 'https://www.gnu.org/licenses/agpl-3.0.html')
-    .addApiKey({ type: 'apiKey', in: 'header', name: API_KEY_HEADER })
-    .addCookieAuth(SESSION_COOKIE_NAME)
+    .addApiKey({ type: 'apiKey', in: 'header', name: API_KEY_HEADER }, OpenApiSecurityScheme.ApiKey)
+    .addCookieAuth(SESSION_COOKIE_NAME, undefined, OpenApiSecurityScheme.SessionCookie)
+    // Either scheme authenticates a request, so clients and "Try it out" send the API key.
+    .addSecurityRequirements(OpenApiSecurityScheme.ApiKey)
+    .addSecurityRequirements(OpenApiSecurityScheme.SessionCookie)
     .build();
 
   return SwaggerModule.createDocument(app, config);
