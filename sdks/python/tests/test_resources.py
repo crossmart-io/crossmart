@@ -256,6 +256,15 @@ class TestOrdersAndReports:
         params = route.calls.last.request.url.params
         assert (params["range"], params["timeZone"]) == ("last_7_days", "Europe/London")
 
+    def test_listing_health_report(self, api: respx.MockRouter, client: Crossmart) -> None:
+        api.get(f"{WORKSPACE_PATH}/analytics/listings").respond(
+            json=fixture("ListingHealthReportDto")
+        )
+
+        report = client.reports.listing_health()
+
+        assert report.failed_listings == 1
+
 
 class TestAIAndSuggestions:
     def test_generate_content(self, api: respx.MockRouter, client: Crossmart) -> None:

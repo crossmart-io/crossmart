@@ -7,6 +7,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 if TYPE_CHECKING:
+    from ..models.inventory_item_dto import InventoryItemDto
     from ..models.inventory_value_dto import InventoryValueDto
     from ..models.stock_level_counts_dto import StockLevelCountsDto
     from ..models.store_health_dto import StoreHealthDto
@@ -23,6 +24,8 @@ class InventoryReportDto:
         value (InventoryValueDto):
         stock_levels (StockLevelCountsDto):
         low_stock_threshold (float): Available units at or below which stock counts as low
+        lowest_stock (list[InventoryItemDto]): Tracked variants out of stock or low, fewest available first (oversold
+            before sold out), at most a few: the ones to restock first
         stores (list[StoreHealthDto]): Every store, oldest first
     """
 
@@ -30,6 +33,7 @@ class InventoryReportDto:
     value: InventoryValueDto
     stock_levels: StockLevelCountsDto
     low_stock_threshold: float
+    lowest_stock: list[InventoryItemDto]
     stores: list[StoreHealthDto]
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -41,6 +45,11 @@ class InventoryReportDto:
         stock_levels = self.stock_levels.to_dict()
 
         low_stock_threshold = self.low_stock_threshold
+
+        lowest_stock = []
+        for lowest_stock_item_data in self.lowest_stock:
+            lowest_stock_item = lowest_stock_item_data.to_dict()
+            lowest_stock.append(lowest_stock_item)
 
         stores = []
         for stores_item_data in self.stores:
@@ -55,6 +64,7 @@ class InventoryReportDto:
                 "value": value,
                 "stockLevels": stock_levels,
                 "lowStockThreshold": low_stock_threshold,
+                "lowestStock": lowest_stock,
                 "stores": stores,
             }
         )
@@ -63,6 +73,7 @@ class InventoryReportDto:
 
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
+        from ..models.inventory_item_dto import InventoryItemDto
         from ..models.inventory_value_dto import InventoryValueDto
         from ..models.stock_level_counts_dto import StockLevelCountsDto
         from ..models.store_health_dto import StoreHealthDto
@@ -76,6 +87,13 @@ class InventoryReportDto:
 
         low_stock_threshold = d.pop("lowStockThreshold")
 
+        lowest_stock = []
+        _lowest_stock = d.pop("lowestStock")
+        for lowest_stock_item_data in _lowest_stock:
+            lowest_stock_item = InventoryItemDto.from_dict(lowest_stock_item_data)
+
+            lowest_stock.append(lowest_stock_item)
+
         stores = []
         _stores = d.pop("stores")
         for stores_item_data in _stores:
@@ -88,6 +106,7 @@ class InventoryReportDto:
             value=value,
             stock_levels=stock_levels,
             low_stock_threshold=low_stock_threshold,
+            lowest_stock=lowest_stock,
             stores=stores,
         )
 
