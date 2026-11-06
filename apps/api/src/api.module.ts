@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppConfigModule, MailModule, QueuesModule, StorageModule } from '@crossmart/common';
 import { DatabaseModule } from '@crossmart/database';
 import { ActivityApiModule } from './activity/activity.module.js';
+import { AgentsApiModule } from './agents/agents-api.module.js';
 import { AiApiModule } from './ai/ai.module.js';
 import { AskApiModule } from './ask/ask.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -39,6 +40,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     AnalyticsApiModule,
     SuggestionsApiModule,
     AiApiModule,
+    AgentsApiModule,
     AskApiModule,
   ],
 })

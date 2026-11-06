@@ -21,6 +21,7 @@ enum ActivityAction: string
     case ProductViewDeleted = 'product_view_deleted';
     case ApiKeyCreated = 'api_key_created';
     case ApiKeyRevoked = 'api_key_revoked';
+    case AgentDisconnected = 'agent_disconnected';
     case MemberInvited = 'member_invited';
     case InvitationRevoked = 'invitation_revoked';
     case MemberJoined = 'member_joined';

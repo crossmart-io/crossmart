@@ -20,6 +20,7 @@ import {
 } from '@crossmart/core/ask/testing/ask.fakes.js';
 import { PrismaService, WorkspaceRole } from '@crossmart/database';
 import { ASK_ANONYMOUS_PER_MINUTE, ASK_RATE_LIMITED_MESSAGE } from '../src/ask/ask.constants.js';
+import { connectAgent, registerAgent } from './support/agent-oauth.js';
 import { createTestApp, signUp } from './support/test-app.js';
 
 const CLIENT_IP_HEADER = 'x-real-ip';
@@ -158,6 +159,34 @@ describe('Ask Crossmart (e2e)', () => {
       .set(API_KEY_HEADER, key.body.secret)
       .send({ question: 'rate limits with a key' });
     expect(withKey.status).toBe(HttpStatus.OK);
+  });
+
+  it('refuses a wrong agent token instead of treating the caller as anonymous', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/ask')
+      .set({ Authorization: 'Bearer not.a.token' })
+      .send({ question: 'rate limits?' });
+
+    expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
+  });
+
+  it('answers a connected agent past the anonymous limit, as an identified caller', async () => {
+    const ip = randomIp();
+    for (let call = 0; call < ASK_ANONYMOUS_PER_MINUTE; call += 1) {
+      expect((await ask(`agent limits ${call}`, ip)).status).toBe(HttpStatus.OK);
+    }
+    const owner = await signUp(app, 'Agent Owner');
+    const tokens = await connectAgent(app, owner, {
+      clientId: await registerAgent(app, 'Asking Agent'),
+    });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/ask')
+      .set(CLIENT_IP_HEADER, ip)
+      .set({ Authorization: `Bearer ${tokens.accessToken}` })
+      .send({ question: 'rate limits for an agent' });
+
+    expect(response.status).toBe(HttpStatus.OK);
   });
 
   it('answers 503 once the platform’s daily questions are spent', async () => {

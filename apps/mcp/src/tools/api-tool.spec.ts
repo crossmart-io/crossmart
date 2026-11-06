@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { apiKeyCredential } from '../api/api-credential.js';
 import { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { CrossmartApiError } from '../api/crossmart-api.error.js';
 import { RefusalStatus } from '../mcp.constants.js';
@@ -23,7 +24,7 @@ async function connect(apiClient: CrossmartApiClient): Promise<Client> {
 }
 
 function refusingClient(error: CrossmartApiError): CrossmartApiClient {
-  const apiClient = new CrossmartApiClient('https://api.example.com', 'cm_key');
+  const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
   vi.spyOn(apiClient, 'call').mockRejectedValue(error);
   return apiClient;
 }
@@ -54,7 +55,7 @@ describe('API tools', () => {
   });
 
   it('lists every tool with its read-only hint', async () => {
-    const apiClient = new CrossmartApiClient('https://api.example.com', 'cm_key');
+    const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
     const { tools } = await (await connect(apiClient)).listTools();
 
     expect(tools.map((listed) => listed.name)).toEqual(ALL_TOOLS.map((spec) => spec.name));

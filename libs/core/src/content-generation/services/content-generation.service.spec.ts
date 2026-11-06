@@ -64,7 +64,12 @@ describe('ContentGenerationService', () => {
         workspaceId: WORKSPACE_ID,
         connectionId: CONNECTION_ID,
         productId: PRODUCT_ID,
-        requestedBy: { type: ActivityActorType.API_KEY, userId: null, apiKeyId: 'key-1' },
+        requestedBy: {
+          type: ActivityActorType.API_KEY,
+          userId: null,
+          apiKeyId: 'key-1',
+          agentClientId: null,
+        },
       },
     ]);
     expect(activity.entries[0]).toMatchObject({

@@ -6,8 +6,8 @@ export const ASK_OUTCOME_SCHEMA_NAME = 'AskOutcome';
 export const ASK_CONFIDENCE_SCHEMA_NAME = 'AskConfidence';
 
 /**
- * Ask's rate limits, per caller: anonymous callers by IP address, signed-in people and API
- * keys by identity, with more room. Crossmart pays for every answer; the daily cap across the
+ * Ask's rate limits, per caller: anonymous callers by IP address, signed-in people, API
+ * keys and agents by identity, with more room. Crossmart pays for every answer; the daily cap across the
  * platform (`ASK_DAILY_QUESTION_CAP`) bounds the total whatever these allow.
  */
 export const ASK_MINUTE_WINDOW_MS = 60_000;
@@ -23,6 +23,7 @@ export const ASK_DAY_THROTTLER = 'ask-day';
 export const ASK_RATE_LIMITED_MESSAGE =
   'Too many questions from you. Wait a little and try again, or browse https://docs.crossmart.io.';
 
-/** How a rate-limit tracker names the kind of caller: `ip:<address>`, `user:<id>`, `api-key:<id>`. */
+/** How a rate-limit tracker names the kind of caller: `ip:<address>`, `user:<id>`, `api-key:<id>`,
+ * `agent:<client id>:<user id>`. */
 export const IP_TRACKER_KIND = 'ip';
 export const UNKNOWN_CLIENT_IP = 'unknown';

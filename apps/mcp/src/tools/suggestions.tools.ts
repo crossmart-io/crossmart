@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { SuggestionStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
@@ -22,6 +23,7 @@ export const SUGGESTION_TOOLS = [
       productIds: z.array(ID_INPUT).min(1).max(CONTENT_GENERATION_MAX_PRODUCTS),
     },
     readOnly: false,
+    scope: AgentScope.SuggestionsWrite,
     toCall: (input) => ({
       method: HttpMethod.Post,
       path: CONTENT_GENERATIONS_PATH,
@@ -41,6 +43,7 @@ export const SUGGESTION_TOOLS = [
       ...PAGE_INPUT,
     },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: (input) => ({ method: HttpMethod.Get, path: SUGGESTIONS_PATH, query: input }),
   }),
   defineTool({
@@ -52,6 +55,7 @@ export const SUGGESTION_TOOLS = [
       'Needs the suggestions:approve permission; ask the merchant before approving.',
     input: { suggestionId: ID_INPUT.describe('From list_suggestions') },
     readOnly: false,
+    scope: AgentScope.SuggestionsWrite,
     toCall: ({ suggestionId }) => ({
       method: HttpMethod.Post,
       path: `${SUGGESTIONS_PATH}/${suggestionId}/approve`,

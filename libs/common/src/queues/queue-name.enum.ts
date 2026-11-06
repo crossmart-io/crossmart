@@ -15,4 +15,6 @@ export enum QueueName {
    * local disk (`StorageDriver.Local`).
    */
   Storage = 'storage',
+  /** Housekeeping on a schedule, such as deleting unused agent registrations. */
+  Maintenance = 'maintenance',
 }

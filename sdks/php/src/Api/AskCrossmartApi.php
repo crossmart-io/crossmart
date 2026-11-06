@@ -25,7 +25,7 @@ final class AskCrossmartApi
     /**
      * Ask a question about Crossmart
      *
-     * Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key or session, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
+     * Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
      *
      * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
      */

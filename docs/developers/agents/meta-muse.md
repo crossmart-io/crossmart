@@ -5,8 +5,8 @@
 [Muse for Small Business](https://about.fb.com/news/2026/09/introducing-muse-small-business/)) and
 its [help center](https://www.meta.com/help/artificial-intelligence/1687253048996149/) say Muse
 supports **custom connectors**, but don't document MCP URLs, headers or OAuth for them.
-**API key header:** no documented way. Treat Muse as needing Crossmart's
-[OAuth for agents](../README.md#oauth-for-ai-agents-coming-soon).
+**API key header:** no documented way. Use Crossmart's
+[OAuth for agents](../README.md#oauth-for-ai-agents).
 
 ## What is documented
 
@@ -25,8 +25,7 @@ supports **custom connectors**, but don't document MCP URLs, headers or OAuth fo
 
 ## Recommendation
 
-Wait for Crossmart's OAuth, then add `https://mcp.crossmart.io/mcp` as a custom connector and sign
-in. Don't give Muse a key in chat to "build a connector": it would sit in a conversation and the
+Add `https://mcp.crossmart.io/mcp` as a custom connector and sign in with OAuth. Don't give Muse a key in chat to "build a connector": it would sit in a conversation and the
 connector would be unreviewed. A directory listing on platform.muse.ai is a separate, later step
 for the Crossmart team.
 

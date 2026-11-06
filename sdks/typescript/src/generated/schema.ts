@@ -1482,6 +1482,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/oauth/workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pick the workspace for the agent being authorized
+         * @description Called by the web app before it continues the OAuth flow. The agent will only ever act in this workspace, within your role there.
+         */
+        post: operations["AgentAuthorizationController_pickWorkspace_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * AI agents connected to the workspace
+         * @description Your own connections, or every member’s if you may manage API keys. Signed-in users only.
+         */
+        get: operations["AgentConnectionsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-connections/{connectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect an agent
+         * @description Revokes its tokens at once. The agent must be authorized again to come back.
+         */
+        delete: operations["AgentConnectionsController_revoke_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ask": {
         parameters: {
             query?: never;
@@ -1493,7 +1553,7 @@ export interface paths {
         put?: never;
         /**
          * Ask a question about Crossmart
-         * @description Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key or session, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
+         * @description Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
          */
         post: operations["AskController_ask_v1"];
         delete?: never;
@@ -2261,10 +2321,14 @@ export interface components {
             userId: string | null;
             /** Format: uuid */
             apiKeyId: string | null;
-            /** @description User or API key name; null for system actions and deleted users or keys */
+            /** @description The OAuth client id of the connected agent, for agent actions */
+            agentClientId: string | null;
+            /** @description User or API key name; for an agent, the user it acted for. Null for system actions and deleted users or keys */
             name: string | null;
-            /** @description Set for users only */
+            /** @description Set for users, and for the user an agent acted for */
             email: string | null;
+            /** @description The agent's name, such as "Claude", for agent actions */
+            agentName: string | null;
         };
         ActivitySubjectDto: {
             type: components["schemas"]["ActivitySubjectType"];
@@ -3663,6 +3727,37 @@ export interface components {
             title: string | null;
             /** @description Null when not asked for */
             descriptionHtml: string | null;
+        };
+        PickAgentWorkspaceDto: {
+            /**
+             * Format: uuid
+             * @description A workspace the signed-in user belongs to
+             */
+            workspaceId: string;
+        };
+        /** @enum {string} */
+        AgentScope: AgentScope;
+        AgentConnectionDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description The OAuth client id: a Client ID Metadata Document URL, or a registered id */
+            clientId: string;
+            /** @description The name the agent gives, such as "Claude" */
+            clientName: string;
+            /** @description The agent’s home page */
+            clientUri: string | null;
+            /** @description The agent’s logo address, from its metadata. Crossmart never fetches it. */
+            clientIcon: string | null;
+            /**
+             * Format: uuid
+             * @description The member who connected the agent
+             */
+            userId: string;
+            userName: string;
+            userEmail: string;
+            scopes: components["schemas"]["AgentScope"][];
+            /** Format: date-time */
+            connectedAt: string;
         };
         AskQuestionDto: {
             /**
@@ -6219,6 +6314,68 @@ export interface operations {
             };
         };
     };
+    AgentAuthorizationController_pickWorkspace_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickAgentWorkspaceDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentConnectionsController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentConnectionDto"][];
+                };
+            };
+        };
+    };
+    AgentConnectionsController_revoke_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AskController_ask_v1: {
         parameters: {
             query?: never;
@@ -6487,6 +6644,7 @@ export enum ActivityAction {
     product_view_deleted = "product_view_deleted",
     api_key_created = "api_key_created",
     api_key_revoked = "api_key_revoked",
+    agent_disconnected = "agent_disconnected",
     member_invited = "member_invited",
     invitation_revoked = "invitation_revoked",
     member_joined = "member_joined",
@@ -6535,6 +6693,7 @@ export enum ActivitySubjectType {
     product_view = "product_view",
     import_job = "import_job",
     api_key = "api_key",
+    agent_connection = "agent_connection",
     member = "member",
     invitation = "invitation",
     workspace = "workspace",
@@ -6544,6 +6703,7 @@ export enum ActivitySubjectType {
 export enum ActivityActorType {
     USER = "USER",
     API_KEY = "API_KEY",
+    AGENT = "AGENT",
     SYSTEM = "SYSTEM"
 }
 export enum StockLevel {
@@ -6763,6 +6923,14 @@ export enum AiFeature {
 export enum ContentField {
     title = "title",
     description = "description"
+}
+export enum AgentScope {
+    catalog_read = "catalog:read",
+    catalog_write = "catalog:write",
+    orders_read = "orders:read",
+    stores_write = "stores:write",
+    reports_read = "reports:read",
+    suggestions_write = "suggestions:write"
 }
 export enum AskOutcome {
     answered = "answered",

@@ -41,7 +41,7 @@ describe('AskThrottlerGuard', () => {
     expect(clientIp(request({}))).toBe('10.0.0.9');
   });
 
-  it('tracks identified callers by person or API key, wherever they call from', async () => {
+  it('tracks identified callers by person, API key or agent, wherever they call from', async () => {
     const user = request(
       {},
       {
@@ -58,8 +58,20 @@ describe('AskThrottlerGuard', () => {
       },
     );
 
+    const agent = request(
+      {},
+      {
+        principal: {
+          kind: PrincipalKind.Agent,
+          clientId: 'https://agent.example/client.json',
+          userId: 'user-1',
+        } as AuthenticatedRequest['principal'],
+      },
+    );
+
     expect(await guard.tracker(user)).toBe('user:user-1');
     expect(await guard.tracker(key)).toBe('api-key:key-1');
+    expect(await guard.tracker(agent)).toBe('agent:https://agent.example/client.json:user-1');
   });
 
   it('gives identified callers higher limits, per minute and per day', () => {

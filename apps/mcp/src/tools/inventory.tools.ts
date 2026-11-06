@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { StockAdjustmentMode } from '@crossmart/core/inventory/enums/stock-adjustment-mode.enum.js';
 import { StockLevel } from '@crossmart/core/inventory/enums/stock-level.enum.js';
@@ -19,6 +20,7 @@ export const INVENTORY_TOOLS = [
       'stock level to find what is low or out.',
     input: { search: SEARCH_INPUT, stockLevel: z.enum(StockLevel).optional(), ...PAGE_INPUT },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: (input) => ({ method: HttpMethod.Get, path: INVENTORY_PATH, query: input }),
   }),
   defineTool({
@@ -35,6 +37,7 @@ export const INVENTORY_TOOLS = [
       note: z.string().max(NOTE_MAX_LENGTH).optional(),
     },
     readOnly: false,
+    scope: AgentScope.CatalogWrite,
     toCall: ({ inventoryItemId, ...adjustment }) => ({
       method: HttpMethod.Post,
       path: `${INVENTORY_PATH}/${inventoryItemId}/adjustments`,

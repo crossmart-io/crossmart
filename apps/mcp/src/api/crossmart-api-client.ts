@@ -1,4 +1,5 @@
-import { API_KEY_HEADER, CURRENT_API_KEY_PATH } from '../mcp.constants.js';
+import { CURRENT_API_KEY_PATH } from '../mcp.constants.js';
+import type { ApiCredential } from './api-credential.js';
 import { type ApiCall, HttpMethod, type QueryValue } from './api-call.js';
 import { CrossmartApiError } from './crossmart-api.error.js';
 
@@ -15,16 +16,16 @@ interface ApiErrorBody {
 }
 
 /**
- * The Crossmart REST API, called with one API key. The MCP server never touches the database:
- * every tool goes through the API, so agents meet the same validation, permissions and audit
- * log as the web app.
+ * The Crossmart REST API, called with one credential: an API key or an agent's access token. The
+ * MCP server never touches the database: every tool goes through the API, so agents meet the
+ * same validation, permissions and audit log as the web app.
  */
 export class CrossmartApiClient {
   private workspaceId: Promise<string> | undefined;
 
   constructor(
     private readonly baseUrl: string,
-    private readonly apiKey: string | undefined,
+    private readonly credential: ApiCredential | undefined,
   ) {}
 
   async call(call: ApiCall): Promise<unknown> {
@@ -34,8 +35,10 @@ export class CrossmartApiClient {
     return this.send(call.method, this.toUrl(path, call.query), call.body);
   }
 
-  /** The workspace the key works in, asked once per client. */
+  /** The workspace the credential works in: named by an agent token, else asked once per client. */
   private currentWorkspace(): Promise<string> {
+    const named = this.credential?.workspaceId;
+    if (named) return Promise.resolve(named);
     this.workspaceId ??= this.send(HttpMethod.Get, this.toUrl(CURRENT_API_KEY_PATH)).then(
       (key) => (key as CurrentApiKey).workspaceId,
     );
@@ -51,8 +54,10 @@ export class CrossmartApiClient {
   }
 
   private async send(method: HttpMethod, url: URL, body?: unknown): Promise<unknown> {
-    const headers: Record<string, string> = { accept: 'application/json' };
-    if (this.apiKey) headers[API_KEY_HEADER] = this.apiKey;
+    const headers: Record<string, string> = {
+      accept: 'application/json',
+      ...this.credential?.headers,
+    };
     if (body !== undefined) headers['content-type'] = 'application/json';
     const response = await fetch(url, {
       method,

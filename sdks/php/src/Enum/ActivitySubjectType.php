@@ -12,6 +12,7 @@ enum ActivitySubjectType: string
     case ProductView = 'product_view';
     case ImportJob = 'import_job';
     case ApiKey = 'api_key';
+    case AgentConnection = 'agent_connection';
     case Member = 'member';
     case Invitation = 'invitation';
     case Workspace = 'workspace';

@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { OrderStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
@@ -22,6 +23,7 @@ export const ORDER_TOOLS = [
       ...PAGE_INPUT,
     },
     readOnly: true,
+    scope: AgentScope.OrdersRead,
     toCall: (input) => ({ method: HttpMethod.Get, path: ORDERS_PATH, query: input }),
   }),
   defineTool({
@@ -30,6 +32,7 @@ export const ORDER_TOOLS = [
     description: 'One order with its lines and the stock each line holds or has shipped.',
     input: { orderId: ID_INPUT },
     readOnly: true,
+    scope: AgentScope.OrdersRead,
     toCall: ({ orderId }) => ({ method: HttpMethod.Get, path: `${ORDERS_PATH}/${orderId}` }),
   }),
 ];

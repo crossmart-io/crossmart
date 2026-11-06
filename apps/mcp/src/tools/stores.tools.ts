@@ -1,3 +1,4 @@
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { defineTool } from './api-tool.js';
 import { productStorePath, STORES_PATH, storePath } from './store-paths.js';
@@ -22,6 +23,7 @@ export const STORE_TOOLS = [
       'the merchant’s own approval in the Crossmart app.',
     input: {},
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: () => ({ method: HttpMethod.Get, path: STORES_PATH }),
   }),
   defineTool({
@@ -32,6 +34,7 @@ export const STORE_TOOLS = [
       `the merchant what setup a store still needs before it can publish. ${PUBLISH_READINESS_GUIDE}`,
     input: { connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: ({ connectionId }) => ({ method: HttpMethod.Get, path: storePath(connectionId) }),
   }),
   defineTool({
@@ -45,6 +48,7 @@ export const STORE_TOOLS = [
       'failed).',
     input: { connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: ({ connectionId }) => ({
       method: HttpMethod.Get,
       path: `${storePath(connectionId)}/${SYNC_PART}`,
@@ -58,6 +62,7 @@ export const STORE_TOOLS = [
       'answer shows its displayState there; on needs_details, see get_product_stores.',
     input: { productId: ID_INPUT, connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Post,
       path: productStorePath(productId, connectionId),
@@ -69,6 +74,7 @@ export const STORE_TOOLS = [
     description: 'Take a product off a store. It is archived there and keeps its order history.',
     input: { productId: ID_INPUT, connectionId: ID_INPUT },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     destructive: true,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Delete,

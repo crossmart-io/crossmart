@@ -2,7 +2,7 @@ import { type ExecutionContext, Injectable, type OnModuleInit } from '@nestjs/co
 import { ThrottlerGuard, type ThrottlerOptions } from '@nestjs/throttler';
 import { CLIENT_IP_HEADERS } from '../../auth/auth.constants.js';
 import type { AuthenticatedRequest } from '../../auth/entities/principal.js';
-import { PrincipalKind } from '../../auth/enums/principal-kind.enum.js';
+import { principalTracker } from '../../common/throttling/principal-tracker.js';
 import { TRACKER_SEPARATOR } from '../../common/throttling/throttling.constants.js';
 import {
   ASK_ANONYMOUS_PER_DAY,
@@ -52,7 +52,7 @@ export function clientIp(request: AuthenticatedRequest): string {
 
 /**
  * Rate limits for Ask Crossmart. Anonymous callers are tracked by IP address, identified ones
- * by person or API key (with higher limits). It uses its own throttlers, not the module's
+ * by person, API key or agent (with higher limits). It uses its own throttlers, not the module's
  * defaults, so Ask's windows never apply to other routes.
  */
 @Injectable()
@@ -66,7 +66,6 @@ export class AskThrottlerGuard extends ThrottlerGuard implements OnModuleInit {
     const { principal } = request;
     if (!principal)
       return Promise.resolve([IP_TRACKER_KIND, clientIp(request)].join(TRACKER_SEPARATOR));
-    const id = principal.kind === PrincipalKind.User ? principal.userId : principal.apiKeyId;
-    return Promise.resolve([principal.kind, id].join(TRACKER_SEPARATOR));
+    return Promise.resolve(principalTracker(principal));
   }
 }

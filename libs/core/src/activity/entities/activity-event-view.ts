@@ -7,10 +7,17 @@ export interface ActivityActorView {
   type: ActivityActorType;
   userId: string | null;
   apiKeyId: string | null;
-  /** The user's or key's name; null for system actions and for deleted users or keys. */
+  /** The connected agent's OAuth client id, for agent actions. */
+  agentClientId: string | null;
+  /**
+   * The user's or key's name; for an agent, the user it acted for. Null for system actions and
+   * for deleted users or keys.
+   */
   name: string | null;
-  /** Set for users only. */
+  /** Set for users, and for the user an agent acted for. */
   email: string | null;
+  /** The agent's name (such as "Claude"), for agent actions. */
+  agentName: string | null;
 }
 
 export interface ActivitySubjectView {

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ListingVisibility } from '@crossmart/database/generated/prisma/enums.js';
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import {
   MAX_SHOWN_QUANTITY,
@@ -83,6 +84,7 @@ export const LISTING_EDITOR_TOOLS = [
       'or revert fields with update_listing.',
     input: PRODUCT_ON_STORE_INPUT,
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Get,
       path: productStorePath(productId, connectionId, LISTING_PART),
@@ -98,6 +100,7 @@ export const LISTING_EDITOR_TOOLS = [
       'update is queued. Read the fields first with get_listing.',
     input: { ...PRODUCT_ON_STORE_INPUT, ...OVERRIDE_INPUT },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId, ...patch }) => ({
       method: HttpMethod.Patch,
       path: productStorePath(productId, connectionId, OVERRIDE_PART),

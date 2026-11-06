@@ -46,6 +46,14 @@ describe('MCP tools', () => {
     });
   });
 
+  it('need an agent scope for every workspace call', () => {
+    const unscoped = ALL_TOOLS.filter(
+      (spec) =>
+        spec.scope === undefined && spec.toCall({} as never).path.startsWith(WORKSPACE_PATH),
+    ).map((spec) => spec.name);
+    expect(unscoped).toEqual([]);
+  });
+
   it('sends a replaced product without its id in the body', () => {
     const call = tool('replace_product').toCall({
       productId: 'p-1',

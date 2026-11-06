@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { ApiKeyIdentity, ResolvedRole } from '@crossmart/core';
+import type { AgentIdentity, ApiKeyIdentity, ResolvedRole } from '@crossmart/core';
 import type { PrincipalKind } from '../enums/principal-kind.enum.js';
 
 /** A signed-in person, authenticated by a Better Auth session. */
@@ -18,7 +18,15 @@ export interface ApiKeyPrincipal extends ApiKeyIdentity {
   kind: PrincipalKind.ApiKey;
 }
 
-export type Principal = UserPrincipal | ApiKeyPrincipal;
+/**
+ * An AI agent with an OAuth access token (ADR 0019), acting for `userId` in one workspace. It
+ * may call workspace routes only, and its permissions are its scopes narrowed by the user's role.
+ */
+export interface AgentPrincipal extends AgentIdentity {
+  kind: PrincipalKind.Agent;
+}
+
+export type Principal = UserPrincipal | ApiKeyPrincipal | AgentPrincipal;
 
 export interface AuthenticatedRequest extends Request {
   principal?: Principal;

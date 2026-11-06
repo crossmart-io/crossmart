@@ -11,7 +11,7 @@ person in the dashboard.
 |                |                                                              |
 | -------------- | ------------------------------------------------------------ |
 | Hosted server  | `https://mcp.crossmart.io/mcp` (Streamable HTTP)             |
-| Authentication | A workspace API key today; OAuth for agents is coming        |
+| Authentication | OAuth sign-in, or a workspace API key                        |
 | Source         | [`apps/mcp`](../../apps/mcp) ([maintainer notes](../mcp.md)) |
 
 **Setup guides for each agent** (Claude, ChatGPT, Cursor, Windsurf, VS Code, Zed, Cline, Continue,
@@ -81,11 +81,11 @@ The local server talks to the API over stdio; `CROSSMART_API_URL` defaults to
 
 ### Claude.ai, ChatGPT and Meta Muse
 
-Their connectors sign in with OAuth rather than a pasted key (claude.ai accepts an `x-api-key`
-header only for organisations in its request-headers beta). Agent OAuth is being added: the seller
-will sign in, choose a workspace and approve what the agent may do (read the catalog, write it,
-read orders, manage store listings, read reports, propose suggestions). Until then, use one of the
-clients that send headers; the [agent guides](agents/README.md) say which do.
+Their connectors sign in with OAuth rather than a pasted key. Add the server's URL and choose
+sign-in: the seller signs in to Crossmart, chooses a workspace and approves what the agent may do
+(read the catalog, write it, read orders, manage store listings, read reports, propose
+suggestions). The agent is offered only the tools those scopes cover. The
+[agent guides](agents/README.md) have the steps for each client.
 
 ## Tools
 

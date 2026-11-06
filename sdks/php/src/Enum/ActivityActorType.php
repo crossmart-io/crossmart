@@ -10,5 +10,6 @@ enum ActivityActorType: string
 {
     case User = 'USER';
     case ApiKey = 'API_KEY';
+    case Agent = 'AGENT';
     case System = 'SYSTEM';
 }

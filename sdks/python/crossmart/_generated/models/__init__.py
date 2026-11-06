@@ -10,6 +10,8 @@ from .activity_page_dto import ActivityPageDto
 from .activity_subject_dto import ActivitySubjectDto
 from .activity_subject_type import ActivitySubjectType
 from .adjust_stock_dto import AdjustStockDto
+from .agent_connection_dto import AgentConnectionDto
+from .agent_scope import AgentScope
 from .ai_feature import AiFeature
 from .ai_status_dto import AiStatusDto
 from .ai_usage_line_dto import AiUsageLineDto
@@ -212,6 +214,7 @@ from .order_page_dto import OrderPageDto
 from .order_status import OrderStatus
 from .order_summary_dto import OrderSummaryDto
 from .out_of_stock_policy import OutOfStockPolicy
+from .pick_agent_workspace_dto import PickAgentWorkspaceDto
 from .plan_dto import PlanDto
 from .plan_limit_error_dto import PlanLimitErrorDto
 from .price_range_dto import PriceRangeDto
@@ -310,6 +313,8 @@ __all__ = (
     "ActivitySubjectDto",
     "ActivitySubjectType",
     "AdjustStockDto",
+    "AgentConnectionDto",
+    "AgentScope",
     "AiFeature",
     "AiStatusDto",
     "AiUsageLineDto",
@@ -472,6 +477,7 @@ __all__ = (
     "OrderStatus",
     "OrderSummaryDto",
     "OutOfStockPolicy",
+    "PickAgentWorkspaceDto",
     "PlanDto",
     "PlanLimitErrorDto",
     "PriceRangeDto",

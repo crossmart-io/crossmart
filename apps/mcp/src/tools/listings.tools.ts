@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { ChannelProductState } from '@crossmart/core/listings/enums/channel-product-state.enum.js';
 import { ListingDisplayState } from '@crossmart/core/listings/enums/listing-display-state.enum.js';
 import { HttpMethod } from '../api/api-call.js';
@@ -67,6 +68,7 @@ const STATE_TOOLS = [
       ...PAGE_INPUT,
     },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: ({ connectionId, ...query }) => ({
       method: HttpMethod.Get,
       path: `${storePath(connectionId)}/${STORE_PRODUCTS_PART}`,
@@ -82,6 +84,7 @@ const STATE_TOOLS = [
       LISTING_STATE_GUIDE,
     input: { productId: ID_INPUT },
     readOnly: true,
+    scope: AgentScope.CatalogRead,
     toCall: ({ productId }) => ({ method: HttpMethod.Get, path: productStoresPath(productId) }),
   }),
   defineTool({
@@ -93,6 +96,7 @@ const STATE_TOOLS = [
       'background, so check it later with get_product_stores. Only this listing is sent.',
     input: PRODUCT_ON_STORE_INPUT,
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     refusalHints: {
       [RefusalStatus.Conflict]:
         'The store is not connected or does not select the product: check list_stores, or add ' +
@@ -119,6 +123,7 @@ const CATEGORY_TOOLS = [
       search: z.string().max(CATEGORY_QUERY_MAX_LENGTH).optional().describe('Keywords'),
     },
     readOnly: true,
+    scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId, search }) => ({
       method: HttpMethod.Get,
       path: productStorePath(productId, connectionId, CATEGORY_SUGGESTIONS_PART),
@@ -134,6 +139,7 @@ const CATEGORY_TOOLS = [
       'decides which item specifics the listing needs: read them next with get_item_specifics.',
     input: { ...PRODUCT_ON_STORE_INPUT, category: CATEGORY_INPUT.nullable() },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId, category }) => ({
       method: HttpMethod.Put,
       path: productStorePath(productId, connectionId, CATEGORY_PART),
@@ -154,6 +160,7 @@ const ITEM_SPECIFICS_TOOLS = [
       'item_specifics.',
     input: PRODUCT_ON_STORE_INPUT,
     readOnly: true,
+    scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Get,
       path: productStorePath(productId, connectionId, ITEM_SPECIFICS_PART),
@@ -171,6 +178,7 @@ const ITEM_SPECIFICS_TOOLS = [
       itemSpecifics: z.array(ITEM_SPECIFIC_INPUT).max(ITEM_SPECIFICS_MAX),
     },
     readOnly: false,
+    scope: AgentScope.StoresWrite,
     destructive: true,
     toCall: ({ productId, connectionId, itemSpecifics }) => ({
       method: HttpMethod.Put,

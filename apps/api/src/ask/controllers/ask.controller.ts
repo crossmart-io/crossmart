@@ -40,6 +40,7 @@ export class AskController {
   @RateLimitMessage(ASK_RATE_LIMITED_MESSAGE)
   @ApiSecurity(OpenApiSecurityScheme.ApiKey)
   @ApiSecurity(OpenApiSecurityScheme.SessionCookie)
+  @ApiSecurity(OpenApiSecurityScheme.AgentToken)
   @ApiSecurity(ANONYMOUS_SECURITY)
   @ApiOperation({
     summary: 'Ask a question about Crossmart',
@@ -48,8 +49,8 @@ export class AskController {
       'it used. When they do not answer the question, `outcome` is `unknown` and the answer ' +
       'points to the support address. It never sees or changes any account or workspace data. ' +
       `No credentials are needed: anonymous callers may ask ${ASK_ANONYMOUS_PER_MINUTE} ` +
-      `questions a minute and ${ASK_ANONYMOUS_PER_DAY} a day per IP address; with an API key ` +
-      `or session, ${ASK_AUTHENTICATED_PER_MINUTE} a minute and ${ASK_AUTHENTICATED_PER_DAY} ` +
+      `questions a minute and ${ASK_ANONYMOUS_PER_DAY} a day per IP address; with an API key, ` +
+      `session or agent token, ${ASK_AUTHENTICATED_PER_MINUTE} a minute and ${ASK_AUTHENTICATED_PER_DAY} ` +
       'a day. Answers 429 past those, and 503 when AI is not configured or the platform’s ' +
       'daily question budget is spent.',
   })

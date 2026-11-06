@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { SalesRange } from '@crossmart/core/analytics/enums/sales-range.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { API_HEALTH_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
@@ -16,6 +17,7 @@ export const REPORT_TOOLS = [
       timeZone: z.string().optional().describe('IANA zone the days follow, such as Europe/Paris'),
     },
     readOnly: true,
+    scope: AgentScope.ReportsRead,
     toCall: (input) => ({
       method: HttpMethod.Get,
       path: `${WORKSPACE_PATH}/analytics/sales`,
@@ -30,6 +32,7 @@ export const REPORT_TOOLS = [
       'stock), and each store’s listings by status, as of now.',
     input: {},
     readOnly: true,
+    scope: AgentScope.ReportsRead,
     toCall: () => ({ method: HttpMethod.Get, path: `${WORKSPACE_PATH}/analytics/inventory` }),
   }),
   defineTool({
@@ -41,6 +44,7 @@ export const REPORT_TOOLS = [
       'with its reason and the requirement to fix, as of now.',
     input: {},
     readOnly: true,
+    scope: AgentScope.ReportsRead,
     toCall: () => ({ method: HttpMethod.Get, path: `${WORKSPACE_PATH}/analytics/listings` }),
   }),
   defineTool({

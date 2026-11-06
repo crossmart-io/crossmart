@@ -37,4 +37,16 @@ describe('WorkspacePrincipalThrottlerGuard', () => {
       }),
     ).toBe('ws-1:api-key:key-1');
   });
+
+  it('tracks each agent per user it acts for', async () => {
+    const principal = {
+      kind: PrincipalKind.Agent,
+      clientId: 'https://agent.example/client.json',
+      userId: 'user-1',
+    } as AuthenticatedRequest['principal'];
+
+    expect(await guard.tracker({ params: { workspaceId: 'ws-1' }, principal })).toBe(
+      `ws-1:${PrincipalKind.Agent}:https://agent.example/client.json:user-1`,
+    );
+  });
 });
