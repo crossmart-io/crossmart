@@ -29,7 +29,7 @@ private.
 
 ## Check
 
-Open Cascade's MCP panel and refresh: **crossmart** lists its 26 tools.
+Open Cascade's MCP panel and refresh: **crossmart** lists its tools.
 
 ## Install the skill
 

@@ -787,6 +787,8 @@ model Listing {
   @@index([workspaceId, productId])
   /// A store's listings with a sync job still outstanding, for its sync progress.
   @@index([connectionId, syncRequestedAt])
+  /// Sync requests left unsettled for too long, across stores, for the sweep that queues them again.
+  @@index([syncRequestedAt])
   /// Active listings are counted per organization for plan limits.
   @@index([workspaceId, status])
   @@map("listings")
@@ -849,6 +851,8 @@ model ListingOverride {
   listing         Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
   title           String?
   descriptionHtml String?            @map("description_html")
+  /// The brand this channel shows instead of the product's vendor.
+  vendor          String?
   /// Tags replace the product's when `tagsOverridden` is set (an empty list means no tags).
   tagsOverridden  Boolean            @default(false) @map("tags_overridden")
   tags            String[]

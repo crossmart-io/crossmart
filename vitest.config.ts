@@ -22,8 +22,8 @@ export const sharedConfig = defineConfig({
     globals: true,
     root: './',
     setupFiles: ['reflect-metadata'],
-    // SDKs are standalone packages with their own test runs (see sdks/*/package.json).
-    exclude: ['**/node_modules/**', 'dist/**', 'sdks/**', '.claude/**'],
+    // SDKs and integrations are standalone packages with their own test runs (see their package.json).
+    exclude: ['**/node_modules/**', 'dist/**', 'sdks/**', 'integrations/**', '.claude/**'],
   },
 });
 

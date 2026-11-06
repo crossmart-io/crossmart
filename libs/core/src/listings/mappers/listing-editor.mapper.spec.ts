@@ -26,6 +26,7 @@ const RULE_PRICE: ResolvedPrice = {
 const NO_OVERRIDES: ListingOverrideView = {
   title: null,
   descriptionHtml: null,
+  vendor: null,
   tags: null,
   mediaUrls: null,
   visibility: null,
@@ -53,7 +54,9 @@ function channelView(
     displayRequirement: null,
     listing: null,
     override,
-    variants: [{ variantId: VARIANT_ID, title: 'Blue', price, quantity: 12 }],
+    variants: [
+      { variantId: VARIANT_ID, title: 'Blue', price, rulePrice: RULE_PRICE.price, quantity: 12 },
+    ],
   };
 }
 
@@ -164,6 +167,7 @@ describe('toListingEditorView', () => {
       effective: '99.00',
       overridden: true,
     });
+    expect(variant?.rulePrice).toBe('102.99');
     expect(variant?.resolvedPrice).toBe(fixed);
     expect(variant?.quantity).toBe(12);
   });
@@ -181,6 +185,29 @@ describe('toListingEditorView', () => {
       override: null,
       effective: '102.99',
       overridden: false,
+    });
+  });
+
+  it('inherits the product’s vendor, which the store may replace or leave absent', () => {
+    const source = { listing: null, hasTaxonomy: false };
+
+    const inherited = toListingEditorView({
+      ...source,
+      channel: channelView(null),
+      product: productDetail({ vendor: null }),
+    });
+    const replaced = toListingEditorView({
+      ...source,
+      channel: channelView({ ...NO_OVERRIDES, vendor: 'Store brand' }),
+      product: productDetail(),
+    });
+
+    expect(inherited.vendor).toEqual(inheritedField(null, null));
+    expect(replaced.vendor).toEqual({
+      product: 'Acme',
+      override: 'Store brand',
+      effective: 'Store brand',
+      overridden: true,
     });
   });
 

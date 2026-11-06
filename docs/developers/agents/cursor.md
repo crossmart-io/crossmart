@@ -25,7 +25,7 @@ also paste the key in place of `${env:…}`, but then don't commit the file.
 
 ## Check
 
-**Cursor Settings → MCP** shows **crossmart** with a green dot and its 26 tools.
+**Cursor Settings → MCP** shows **crossmart** with a green dot and its tools.
 
 ## Install the skill
 

@@ -6,7 +6,7 @@ import type {
   ListingOverrideView,
   VariantPriceOverrideInput,
 } from '../entities/listing-override.js';
-import type { ListingDisplay } from '../entities/listing-display.js';
+import type { DisplayedListing, ListingDisplay } from '../entities/listing-display.js';
 import type {
   ChannelListingRow,
   ListingDisplayFields,
@@ -46,6 +46,18 @@ export function toListingSummary(record: ListingFields): ListingSummary {
   };
 }
 
+/** The parts of a stored listing its display state reads. */
+export function toDisplayedListing(
+  record: Pick<ListingFields, 'status' | 'lastError' | 'missingRequirement' | 'syncRequestedAt'>,
+): DisplayedListing {
+  return {
+    status: record.status,
+    lastError: record.lastError,
+    missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
+    syncRequestedAt: record.syncRequestedAt,
+  };
+}
+
 /** A display as the fields a view exposes. */
 export function toDisplayFields(display: ListingDisplay): ListingDisplayFields {
   return {
@@ -72,6 +84,7 @@ export function toChannelListingRow(
 const NO_CONTENT_OVERRIDES = {
   title: null,
   descriptionHtml: null,
+  vendor: null,
   tags: null,
   mediaUrls: null,
   visibility: null,
@@ -95,6 +108,7 @@ export function toListingOverrideView(record: ListingSyncRecord): ListingOverrid
     ? {
         title: override.title,
         descriptionHtml: override.descriptionHtml,
+        vendor: override.vendor,
         tags: override.tagsOverridden ? override.tags : null,
         mediaUrls: override.mediaOverridden ? override.mediaUrls : null,
         visibility: override.visibility,
@@ -113,6 +127,7 @@ export function toListingOverrideInput(record: ListingSyncRecord | null): Listin
   return {
     title: view.title,
     descriptionHtml: view.descriptionHtml,
+    vendor: view.vendor,
     tags: view.tags,
     mediaUrls: view.mediaUrls,
     visibility: view.visibility,

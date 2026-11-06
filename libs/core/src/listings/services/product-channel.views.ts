@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { ProductDetail } from '../../catalog/entities/product-views.js';
+import type { ProductDetail, VariantView } from '../../catalog/entities/product-views.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import type { ChannelVariantView, ProductChannelView } from '../entities/listing-views.js';
-import type { PricingContext } from '../entities/price-resolution.js';
+import type { PricingContext, ResolvedPrice } from '../entities/price-resolution.js';
+import { PriceSource } from '../enums/price-source.enum.js';
 import {
   toDisplayFields,
   toListingOverrideView,
@@ -71,13 +72,23 @@ export class ProductChannelViews {
     listing: ListingSyncRecord | null,
   ): ChannelVariantView[] {
     const priceOverrides = toPriceOverrides(listing);
-    return product.variants.map((variant) => ({
-      variantId: variant.id,
-      title: variantTitle(variant),
-      price: this.prices.resolve(variant, pricing, priceOverrides.get(variant.id)),
-      quantity: variant.tracked
-        ? effectiveQuantity(variant.available, listing?.override ?? null)
-        : null,
-    }));
+    return product.variants.map((variant) => {
+      const price = this.prices.resolve(variant, pricing, priceOverrides.get(variant.id));
+      return {
+        variantId: variant.id,
+        title: variantTitle(variant),
+        price,
+        rulePrice: this.rulePrice(variant, pricing, price),
+        quantity: variant.tracked
+          ? effectiveQuantity(variant.available, listing?.override ?? null)
+          : null,
+      };
+    });
+  }
+
+  /** The rule's price: the resolved one, unless a fixed price replaced it on the listing. */
+  private rulePrice(variant: VariantView, pricing: PricingContext, price: ResolvedPrice): string {
+    if (price.source !== PriceSource.Override) return price.price;
+    return this.prices.resolve(variant, pricing).price;
   }
 }

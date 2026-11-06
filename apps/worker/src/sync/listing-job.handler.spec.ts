@@ -4,6 +4,7 @@ import type {
   InventoryReconciliationService,
   ListingSyncJob,
   ListingSyncRunner,
+  SyncRequestSweeper,
 } from '@crossmart/core';
 import { SyncJobKind } from '@crossmart/core';
 import { ConnectionRateLimiter } from './connection-rate-limiter.js';
@@ -43,12 +44,14 @@ function setup(capacity = 100) {
   const reconciliation = {
     reconcile: vi.fn<InventoryReconciliationService['reconcile']>().mockResolvedValue(0),
   };
+  const sweeper = { sweep: vi.fn<SyncRequestSweeper['sweep']>().mockResolvedValue(2) };
   const handler = new ListingJobHandler(
     runner as unknown as ListingSyncRunner,
     reconciliation as unknown as InventoryReconciliationService,
+    sweeper as unknown as SyncRequestSweeper,
     new ConnectionRateLimiter(),
   );
-  return { handler, runner, reconciliation };
+  return { handler, runner, reconciliation, sweeper };
 }
 
 describe('ListingJobHandler', () => {
@@ -82,6 +85,27 @@ describe('ListingJobHandler', () => {
 
     expect(reconciliation.reconcile).toHaveBeenCalled();
     expect(runner.run).not.toHaveBeenCalled();
+  });
+
+  it('runs the sweep of lost sync requests, and nothing else', async () => {
+    const { handler, reconciliation, runner, sweeper } = setup();
+
+    await handler.handle(
+      job({ name: SyncJobKind.SweepSyncRequests, data: {} } as Partial<SyncQueueJob>),
+    );
+
+    expect(sweeper.sweep).toHaveBeenCalled();
+    expect(reconciliation.reconcile).not.toHaveBeenCalled();
+    expect(runner.run).not.toHaveBeenCalled();
+  });
+
+  it('never marks a listing in error for a failed upkeep job', async () => {
+    const { handler, runner } = setup();
+    const sweep = { name: SyncJobKind.SweepSyncRequests, data: {}, attemptsMade: 5 };
+
+    await handler.failed(job(sweep as Partial<SyncQueueJob>), new Error('down'));
+
+    expect(runner.exhausted).not.toHaveBeenCalled();
   });
 
   it('marks the listing in error only once retries are spent', async () => {

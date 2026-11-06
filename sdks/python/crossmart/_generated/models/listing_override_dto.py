@@ -22,6 +22,7 @@ class ListingOverrideDto:
     Attributes:
         title (None | str | Unset):
         description_html (None | str | Unset):
+        vendor (None | str | Unset): The brand this channel shows instead of the product’s vendor
         tags (list[str] | None | Unset): Replaces the product’s tags
         media_urls (list[str] | None | Unset): The product’s image URLs to show, in order
         visibility (ListingVisibility | None | Unset): Show or hide on this channel, whatever the product’s status
@@ -32,6 +33,7 @@ class ListingOverrideDto:
 
     title: None | str | Unset = UNSET
     description_html: None | str | Unset = UNSET
+    vendor: None | str | Unset = UNSET
     tags: list[str] | None | Unset = UNSET
     media_urls: list[str] | None | Unset = UNSET
     visibility: ListingVisibility | None | Unset = UNSET
@@ -52,6 +54,12 @@ class ListingOverrideDto:
             description_html = UNSET
         else:
             description_html = self.description_html
+
+        vendor: None | str | Unset
+        if isinstance(self.vendor, Unset):
+            vendor = UNSET
+        else:
+            vendor = self.vendor
 
         tags: list[str] | None | Unset
         if isinstance(self.tags, Unset):
@@ -105,6 +113,8 @@ class ListingOverrideDto:
             field_dict["title"] = title
         if description_html is not UNSET:
             field_dict["descriptionHtml"] = description_html
+        if vendor is not UNSET:
+            field_dict["vendor"] = vendor
         if tags is not UNSET:
             field_dict["tags"] = tags
         if media_urls is not UNSET:
@@ -143,6 +153,15 @@ class ListingOverrideDto:
             return cast(None | str | Unset, data)
 
         description_html = _parse_description_html(d.pop("descriptionHtml", UNSET))
+
+        def _parse_vendor(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        vendor = _parse_vendor(d.pop("vendor", UNSET))
 
         def _parse_tags(data: object) -> list[str] | None | Unset:
             if data is None:
@@ -227,6 +246,7 @@ class ListingOverrideDto:
         listing_override_dto = cls(
             title=title,
             description_html=description_html,
+            vendor=vendor,
             tags=tags,
             media_urls=media_urls,
             visibility=visibility,

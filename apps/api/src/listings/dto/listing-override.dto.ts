@@ -38,9 +38,9 @@ function amountOrNull(value: string | null | undefined): string | null {
   return value ? (normalizeAmount(value) ?? value) : null;
 }
 
-/** A blank title follows the product. */
-function normalizedTitle(title: string | null | undefined): string | null {
-  const trimmed = title?.trim();
+/** A blank text (a title or vendor) follows the product. */
+function normalizedText(text: string | null | undefined): string | null {
+  const trimmed = text?.trim();
   return trimmed ? trimmed : null;
 }
 
@@ -86,6 +86,17 @@ export class ListingOverrideDto {
   @IsString()
   @MaxLength(OVERRIDE_DESCRIPTION_MAX_LENGTH)
   descriptionHtml?: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: OVERRIDE_TEXT_MAX_LENGTH,
+    description: 'The brand this channel shows instead of the product’s vendor',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(OVERRIDE_TEXT_MAX_LENGTH)
+  vendor?: string | null;
 
   @ApiPropertyOptional({
     type: [String],
@@ -149,8 +160,9 @@ export class ListingOverrideDto {
 
   toInput(): ListingOverrideInput {
     return {
-      title: normalizedTitle(this.title),
+      title: normalizedText(this.title),
       descriptionHtml: this.descriptionHtml ?? null,
+      vendor: normalizedText(this.vendor),
       tags: normalizedTags(this.tags),
       mediaUrls: this.mediaUrls ?? null,
       visibility: this.visibility ?? null,
@@ -169,8 +181,9 @@ export class ListingOverrideDto {
 export class ListingOverridePatchDto extends ListingOverrideDto {
   toPatch(): ListingOverridePatch {
     const patch: ListingOverridePatch = {};
-    if (this.title !== undefined) patch.title = normalizedTitle(this.title);
+    if (this.title !== undefined) patch.title = normalizedText(this.title);
     if (this.descriptionHtml !== undefined) patch.descriptionHtml = this.descriptionHtml;
+    if (this.vendor !== undefined) patch.vendor = normalizedText(this.vendor);
     if (this.tags !== undefined) patch.tags = normalizedTags(this.tags);
     if (this.mediaUrls !== undefined) patch.mediaUrls = this.mediaUrls;
     if (this.visibility !== undefined) patch.visibility = this.visibility;
@@ -189,6 +202,9 @@ export class ListingOverrideViewDto implements ListingOverrideView {
 
   @ApiProperty({ type: String, nullable: true })
   descriptionHtml: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  vendor: string | null;
 
   @ApiProperty({ type: [String], nullable: true })
   tags: string[] | null;

@@ -13,12 +13,14 @@ describe('ListingOverridePatchDto', () => {
   it('normalizes what it sends like a full save', () => {
     const body = plainToInstance(ListingOverridePatchDto, {
       title: '  ',
+      vendor: ' Store brand ',
       tags: [' sale ', 'sale', ''],
       variantPrices: [{ variantId: VARIANT_ID, price: '10', compareAtPrice: null }],
     });
 
     expect(body.toPatch()).toEqual({
       title: null,
+      vendor: 'Store brand',
       tags: ['sale'],
       variantPrices: [{ variantId: VARIANT_ID, price: '10.00', compareAtPrice: null }],
     });
@@ -33,7 +35,7 @@ describe('ListingOverrideDto', () => {
   it('follows the product for every field a full save leaves out', () => {
     const input = plainToInstance(ListingOverrideDto, { title: 'Store mug' }).toInput();
 
-    expect(input).toMatchObject({ title: 'Store mug', tags: null, mediaUrls: null });
+    expect(input).toMatchObject({ title: 'Store mug', vendor: null, tags: null, mediaUrls: null });
     expect(input.variantPrices).toEqual([]);
   });
 });
