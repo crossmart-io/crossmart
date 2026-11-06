@@ -46,6 +46,7 @@ in exactly one workspace; the server finds it with `GET /api/v1/api-key`.
 | `save_item_specifics`       | Replaces a listing's eBay item specifics                               | Yes    |
 | `get_sales_report`          | Sales, orders, average order value and units against the period before |        |
 | `get_inventory_report`      | Stock value, stock levels and listings per store                       |        |
+| `get_listing_health_report` | Products by display state per store, and the latest failed listings    |        |
 | `get_platform_health`       | Whether the API and database are up                                    |        |
 | `generate_content`          | Queues AI titles and descriptions for products on a store              | Yes    |
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |        |

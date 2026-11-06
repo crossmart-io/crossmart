@@ -1,4 +1,5 @@
 import type { ChannelConnectionStatus, ListingStatus } from '@crossmart/database';
+import type { InventoryRow } from '../../inventory/entities/inventory-views.js';
 
 export interface StockLevelCounts {
   inStock: number;
@@ -40,6 +41,8 @@ export interface InventoryReport {
   value: InventoryValue;
   stockLevels: StockLevelCounts;
   lowStockThreshold: number;
+  /** Tracked variants out of stock or low, fewest available first, at most a few. */
+  lowestStock: InventoryRow[];
   /** Every store of the workspace, oldest first. */
   stores: StoreHealth[];
 }

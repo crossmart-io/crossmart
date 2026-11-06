@@ -3,6 +3,7 @@ import { ChannelConnectionStatus, ListingStatus, Prisma } from '@crossmart/datab
 import { StockLevel } from '../../inventory/enums/stock-level.enum.js';
 import { LOW_STOCK_THRESHOLD } from '../../inventory/inventory.constants.js';
 import type { InventoryReportRepository } from '../repositories/inventory-report.repository.js';
+import { LOW_STOCK_VARIANTS_LIMIT } from '../analytics.constants.js';
 import { InventoryReportService } from './inventory-report.service.js';
 
 const LEVEL_COUNTS: Record<StockLevel, number> = {
@@ -23,6 +24,23 @@ function setup() {
     stockLevelCount: vi
       .fn<InventoryReportRepository['stockLevelCount']>()
       .mockImplementation((_workspaceId, level) => Promise.resolve(LEVEL_COUNTS[level])),
+    lowestStock: vi.fn<InventoryReportRepository['lowestStock']>().mockResolvedValue([
+      {
+        id: 'item-1',
+        workspaceId: 'ws-1',
+        variantId: 'v-1',
+        tracked: true,
+        available: -2,
+        reserved: 3,
+        updatedAt: new Date('2026-11-01T00:00:00Z'),
+        variant: {
+          productId: 'p-1',
+          sku: 'MUG-BLUE',
+          optionValues: ['Blue'],
+          product: { title: 'Mug', media: [] },
+        },
+      },
+    ]),
     stores: vi.fn<InventoryReportRepository['stores']>().mockResolvedValue([
       {
         id: 'c-1',
@@ -53,7 +71,7 @@ function setup() {
     inventory as unknown as InventoryReportRepository,
     workspaces as unknown as WorkspaceSettingsRepository,
   );
-  return { service };
+  return { service, inventory };
 }
 
 describe('InventoryReportService', () => {
@@ -72,6 +90,21 @@ describe('InventoryReportService', () => {
     const report = await setup().service.report('ws-1');
     expect(report.stockLevels).toEqual({ inStock: 12, lowStock: 3, outOfStock: 2, untracked: 1 });
     expect(report.lowStockThreshold).toBe(LOW_STOCK_THRESHOLD);
+  });
+
+  it('lists the variants lowest on stock, oversold ones as out of stock', async () => {
+    const { service, inventory } = setup();
+    const report = await service.report('ws-1');
+    expect(inventory.lowestStock).toHaveBeenCalledWith('ws-1', LOW_STOCK_VARIANTS_LIMIT);
+    expect(report.lowestStock).toEqual([
+      expect.objectContaining({
+        variantId: 'v-1',
+        productTitle: 'Mug',
+        available: -2,
+        onHand: 1,
+        stockLevel: StockLevel.OutOfStock,
+      }),
+    ]);
   });
 
   it('gives every store every listing status, zero when it has none', async () => {

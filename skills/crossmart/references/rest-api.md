@@ -38,6 +38,7 @@ Paths below are under `/workspaces/{workspaceId}`.
 | `save_item_specifics`       | `PUT /products/{productId}/channels/{connectionId}/item-specifics`       |
 | `get_sales_report`          | `GET /analytics/sales`                                                   |
 | `get_inventory_report`      | `GET /analytics/inventory`                                               |
+| `get_listing_health_report` | `GET /analytics/listings`                                                |
 | `generate_content`          | `POST /ai/content-generations`                                           |
 | `list_suggestions`          | `GET /suggestions`                                                       |
 | `approve_suggestion`        | `POST /suggestions/{suggestionId}/approve`                               |

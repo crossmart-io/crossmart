@@ -4,6 +4,8 @@ import { ListingStatus } from '@crossmart/database';
 import { toAmount } from '../../catalog/mappers/decimal-amount.mapper.js';
 import { StockLevel } from '../../inventory/enums/stock-level.enum.js';
 import { LOW_STOCK_THRESHOLD } from '../../inventory/inventory.constants.js';
+import { toInventoryRow } from '../../inventory/mappers/inventory-view.mapper.js';
+import { LOW_STOCK_VARIANTS_LIMIT } from '../analytics.constants.js';
 import type {
   InventoryReport,
   StockLevelCounts,
@@ -35,7 +37,7 @@ function toStoreHealth(stores: StoreRecord[], counts: ListingCountRow[]): StoreH
 
 /**
  * The overview's inventory report: stock value at cost and at price, how many variants are low
- * or out, and each store's listings by status. A snapshot of now, in the workspace currency.
+ * or out and which run lowest, and each store's listings by status. A snapshot of now, in the workspace currency.
  */
 @Injectable()
 export class InventoryReportService {
@@ -45,13 +47,15 @@ export class InventoryReportService {
   ) {}
 
   async report(workspaceId: string): Promise<InventoryReport> {
-    const [currencyCode, value, stockLevels, stores, listingCounts] = await Promise.all([
-      this.workspaces.get(workspaceId).then((settings) => settings.currency),
-      this.inventory.value(workspaceId),
-      this.stockLevels(workspaceId),
-      this.inventory.stores(workspaceId),
-      this.inventory.listingCounts(workspaceId),
-    ]);
+    const [currencyCode, value, stockLevels, lowestStock, stores, listingCounts] =
+      await Promise.all([
+        this.workspaces.get(workspaceId).then((settings) => settings.currency),
+        this.inventory.value(workspaceId),
+        this.stockLevels(workspaceId),
+        this.inventory.lowestStock(workspaceId, LOW_STOCK_VARIANTS_LIMIT),
+        this.inventory.stores(workspaceId),
+        this.inventory.listingCounts(workspaceId),
+      ]);
     return {
       currencyCode,
       value: {
@@ -62,6 +66,7 @@ export class InventoryReportService {
       },
       stockLevels,
       lowStockThreshold: LOW_STOCK_THRESHOLD,
+      lowestStock: lowestStock.map(toInventoryRow),
       stores: toStoreHealth(stores, listingCounts),
     };
   }
