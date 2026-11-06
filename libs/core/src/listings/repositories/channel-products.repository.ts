@@ -65,9 +65,11 @@ export type StoreBadgeListingRecord = Prisma.ListingGetPayload<{
   select: typeof STORE_BADGE_LISTING_SELECT;
 }>;
 
+export type ChannelProductRecord = Prisma.ProductGetPayload<{ include: ChannelProductInclude }>;
+
 /**
- * What a product's display state on one store reads: the product as its connector checks it,
- * and its listings (narrowed to the store's when queried), latest change first.
+ * What a product's display state on a store reads, and nothing more, for a whole-store scan.
+ * Each listing names its store, so the store's are picked in code, as the page's rows do.
  */
 const DISPLAY_CANDIDATE_SELECT = {
   id: true,
@@ -77,6 +79,7 @@ const DISPLAY_CANDIDATE_SELECT = {
   _count: { select: { variants: true } },
   listings: {
     select: {
+      connectionId: true,
       status: true,
       lastError: true,
       missingRequirement: true,
@@ -90,8 +93,6 @@ const DISPLAY_CANDIDATE_SELECT = {
 export type DisplayCandidateRecord = Prisma.ProductGetPayload<{
   select: typeof DISPLAY_CANDIDATE_SELECT;
 }>;
-
-export type ChannelProductRecord = Prisma.ProductGetPayload<{ include: ChannelProductInclude }>;
 
 /** Reads catalog products with their listings. Every condition is workspace-scoped. */
 @Injectable()
@@ -141,22 +142,52 @@ export class ChannelProductsRepository {
   }
 
   /**
-   * One batch of the products of `where`, in id order after `afterId`, with their listings on
-   * the connection, for working out their display state there.
+   * One batch of the products of `where`, in id order after `afterId`, with only what their
+   * display state reads, so a whole store can be counted without holding it all in memory.
    */
-  listDisplayCandidates(
-    connectionId: string,
+  listDisplayCandidateBatch(
     where: Prisma.ProductWhereInput,
     batch: { afterId: string | null; size: number },
   ): Promise<DisplayCandidateRecord[]> {
     return this.prisma.product.findMany({
       where: batch.afterId ? { AND: [where, { id: { gt: batch.afterId } }] } : where,
-      select: {
-        ...DISPLAY_CANDIDATE_SELECT,
-        listings: { ...DISPLAY_CANDIDATE_SELECT.listings, where: { connectionId } },
-      },
+      select: DISPLAY_CANDIDATE_SELECT,
       orderBy: { id: 'asc' },
       take: batch.size,
+    });
+  }
+
+  /**
+   * Every product of `where` in the list's order, with only what its display state reads, so a
+   * filter on display state can run over a whole store in one query.
+   */
+  listDisplayCandidates(
+    where: Prisma.ProductWhereInput,
+    order: { sort: ChannelProductSort; direction: SortDirection },
+  ): Promise<DisplayCandidateRecord[]> {
+    return this.prisma.product.findMany({
+      where,
+      select: DISPLAY_CANDIDATE_SELECT,
+      orderBy: sortWithTiebreak(order.sort, order.direction),
+    });
+  }
+
+  /** The ids of every product of `where`. */
+  async listIds(where: Prisma.ProductWhereInput): Promise<Set<string>> {
+    const rows = await this.prisma.product.findMany({ where, select: { id: true } });
+    return new Set(rows.map((row) => row.id));
+  }
+
+  /** The products of one page by id, in the order of `productIds`. */
+  async findByIds(workspaceId: string, productIds: string[]): Promise<ChannelProductRecord[]> {
+    const records = await this.prisma.product.findMany({
+      where: { workspaceId, id: { in: productIds } },
+      include: CHANNEL_PRODUCT_INCLUDE,
+    });
+    const byId = new Map(records.map((record) => [record.id, record]));
+    return productIds.flatMap((productId) => {
+      const record = byId.get(productId);
+      return record ? [record] : [];
     });
   }
 

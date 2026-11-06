@@ -46,3 +46,13 @@ answer shows `publishing`; check later with `get_product_stores`.
 `list_store_products` with `connectionId` and `state: failed` (also `pending`, `listed`,
 `removing`, `removed_by_hand`, `excluded`). It returns counts per state too. Group the failures by
 requirement and propose one fix per group; confirm before fixing more than one product.
+
+To find products by what the seller sees instead, pass `displayState` (for example
+`needs_details` for everything to fix before publishing, or `ready`). Without `state` it covers
+the whole catalog, so `draft` finds products not in the store.
+
+## Follow a sync
+
+`get_sync_progress` (`connectionId`) returns `{ pending, failed, done }`. Poll it after a retry or a
+sync the seller started: the sync is over when `done` is true. If `failed` is above 0, list the
+failures as above.

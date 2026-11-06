@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { HttpMethod } from '../api/api-call.js';
 import { API_HEALTH_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
 import { ALL_TOOLS } from './index.js';
@@ -77,12 +78,42 @@ describe('MCP tools', () => {
     const call = tool('list_store_products').toCall({
       connectionId: 'c-1',
       state: 'failed',
+      displayState: 'needs_details',
       page: 2,
     } as never);
     expect(call).toEqual({
       method: HttpMethod.Get,
       path: `${WORKSPACE_PATH}/channel-connections/c-1/products`,
-      query: { state: 'failed', page: 2 },
+      query: { state: 'failed', displayState: 'needs_details', page: 2 },
+    });
+  });
+
+  it('takes only known display states when listing a store’s products', () => {
+    const input = z.object(tool('list_store_products').input);
+    const base = { connectionId: '3f1c2b7a-9e8d-4c6b-a5f4-e3d2c1b0a9f8' };
+    expect(input.safeParse({ ...base, displayState: 'ready' }).success).toBe(true);
+    expect(input.safeParse({ ...base, displayState: 'stuck' }).success).toBe(false);
+  });
+
+  it('reads a listing field by field, and patches its overrides with null reverting', () => {
+    const target = { productId: 'p-1', connectionId: 'c-1' };
+    expect(tool('get_listing').toCall(target as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/listing`,
+    });
+    const patch = { title: null, vendor: 'Store brand' };
+    expect(tool('update_listing').toCall({ ...target, ...patch } as never)).toEqual({
+      method: HttpMethod.Patch,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/override`,
+      body: patch,
+    });
+    expect(tool('update_listing').readOnly).toBe(false);
+  });
+
+  it('reads a store’s sync progress', () => {
+    expect(tool('get_sync_progress').toCall({ connectionId: 'c-1' } as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/channel-connections/c-1/sync`,
     });
   });
 

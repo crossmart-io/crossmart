@@ -136,6 +136,7 @@ export * from './listings/services/sync-progress.service.js';
 export * from './listings/services/listing-editor.service.js';
 export * from './listings/services/connection-rules.service.js';
 export * from './listings/services/inventory-reconciliation.service.js';
+export * from './listings/services/sync-request.sweeper.js';
 export * from './listings/services/listing-overrides.service.js';
 export * from './listings/services/listing-category.service.js';
 export * from './listings/services/listing-item-specifics.service.js';

@@ -46,12 +46,9 @@ export function toListingSummary(record: ListingFields): ListingSummary {
   };
 }
 
-/** The parts of a listing record its display state reads. */
+/** The parts of a stored listing its display state reads. */
 export function toDisplayedListing(
-  record: Pick<
-    ListingSyncRecord,
-    'status' | 'lastError' | 'missingRequirement' | 'syncRequestedAt'
-  >,
+  record: Pick<ListingFields, 'status' | 'lastError' | 'missingRequirement' | 'syncRequestedAt'>,
 ): DisplayedListing {
   return {
     status: record.status,
@@ -87,6 +84,7 @@ export function toChannelListingRow(
 const NO_CONTENT_OVERRIDES = {
   title: null,
   descriptionHtml: null,
+  vendor: null,
   tags: null,
   mediaUrls: null,
   visibility: null,
@@ -110,6 +108,7 @@ export function toListingOverrideView(record: ListingSyncRecord): ListingOverrid
     ? {
         title: override.title,
         descriptionHtml: override.descriptionHtml,
+        vendor: override.vendor,
         tags: override.tagsOverridden ? override.tags : null,
         mediaUrls: override.mediaOverridden ? override.mediaUrls : null,
         visibility: override.visibility,
@@ -128,6 +127,7 @@ export function toListingOverrideInput(record: ListingSyncRecord | null): Listin
   return {
     title: view.title,
     descriptionHtml: view.descriptionHtml,
+    vendor: view.vendor,
     tags: view.tags,
     mediaUrls: view.mediaUrls,
     visibility: view.visibility,

@@ -24,7 +24,8 @@ export class ChannelProductsController {
     description:
       'Products the store should have or still has: listed, pending (being published), failed ' +
       'or removing (being delisted). Pass `state=excluded` for the catalog products it does not ' +
-      'have. Counts per state follow `search`, so they can label filter tabs.',
+      'have. `displayState` narrows them to the state a merchant reads (`needs_details`, ' +
+      '`ready`, …). Counts per state follow `search`, so they can label filter tabs.',
   })
   @ApiOkResponse({ type: ChannelProductPageDto })
   async listProducts(

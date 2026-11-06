@@ -21,12 +21,15 @@ class ChannelVariantDto:
         variant_id (UUID):
         title (str):  Example: Blue / Large.
         price (ResolvedPriceDto):
+        rule_price (str): In the store’s currency: what its pricing rule gives, before a fixed price on the listing.
+            Equal to the effective price unless the price is overridden. Example: 102.99.
         quantity (float | None): The stock the channel shows; null when the variant does not track stock
     """
 
     variant_id: UUID
     title: str
     price: ResolvedPriceDto
+    rule_price: str
     quantity: float | None
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -36,6 +39,8 @@ class ChannelVariantDto:
         title = self.title
 
         price = self.price.to_dict()
+
+        rule_price = self.rule_price
 
         quantity: float | None
         quantity = self.quantity
@@ -47,6 +52,7 @@ class ChannelVariantDto:
                 "variantId": variant_id,
                 "title": title,
                 "price": price,
+                "rulePrice": rule_price,
                 "quantity": quantity,
             }
         )
@@ -64,6 +70,8 @@ class ChannelVariantDto:
 
         price = ResolvedPriceDto.from_dict(d.pop("price"))
 
+        rule_price = d.pop("rulePrice")
+
         def _parse_quantity(data: object) -> float | None:
             if data is None:
                 return data
@@ -75,6 +83,7 @@ class ChannelVariantDto:
             variant_id=variant_id,
             title=title,
             price=price,
+            rule_price=rule_price,
             quantity=quantity,
         )
 

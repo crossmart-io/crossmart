@@ -387,6 +387,7 @@ describe('Listings (e2e)', () => {
         .set('Cookie', owner.cookie)
         .send({
           title: 'Editor Mug – Shopify',
+          vendor: 'Shopify Brand',
           tags: ['shopify-only'],
           variantPrices: [{ variantId: variant.id, price: '79.00', compareAtPrice: '99.00' }],
         });
@@ -399,6 +400,7 @@ describe('Listings (e2e)', () => {
         .set('Cookie', owner.cookie)
         .send({
           title: null,
+          vendor: null,
           variantPrices: [{ variantId: variant.id, price: '79.00', compareAtPrice: null }],
         });
       const after = await editorOf();
@@ -423,6 +425,7 @@ describe('Listings (e2e)', () => {
           overridden: true,
         },
         descriptionHtml: { override: null, overridden: false },
+        vendor: { override: 'Shopify Brand', effective: 'Shopify Brand', overridden: true },
         tags: { product: ['kitchen'], override: ['shopify-only'], effective: ['shopify-only'] },
         images: {
           override: null,
@@ -436,6 +439,7 @@ describe('Listings (e2e)', () => {
           {
             variantId: variant.id,
             price: { product: '89.00', override: '79.00', effective: '79.00', overridden: true },
+            rulePrice: '89.00',
             compareAtPrice: { product: null, override: '99.00', effective: '99.00' },
             resolvedPrice: { source: PriceSource.Override },
             quantity: 10,
@@ -446,6 +450,7 @@ describe('Listings (e2e)', () => {
       expect(patched.status).toBe(HttpStatus.OK);
       expect(after).toMatchObject({
         title: { override: null, effective: 'Editor Mug', overridden: false },
+        vendor: { override: null, overridden: false },
         tags: { override: ['shopify-only'], overridden: true },
         variants: [
           {
@@ -940,6 +945,13 @@ describe('Listings (e2e)', () => {
             .get(`${base(owner)}/products/${product.id}/channels`)
             .set('Cookie', owner.cookie)
         ).body[0];
+      const byDisplayState = async (displayState: ListingDisplayState) =>
+        (
+          await request(server())
+            .get(connectionPath(owner, connectionId, 'products'))
+            .query({ displayState })
+            .set('Cookie', owner.cookie)
+        ).body;
 
       // 1. A store that is set up, and a product it does not select: a draft, not retryable.
       const store = await request(server())
@@ -949,6 +961,10 @@ describe('Listings (e2e)', () => {
       expect(await channelOf()).toMatchObject({
         displayState: ListingDisplayState.Draft,
         displayReason: null,
+      });
+      expect(await byDisplayState(ListingDisplayState.Draft)).toMatchObject({
+        items: [{ product: { id: product.id }, displayState: ListingDisplayState.Draft }],
+        total: 1,
       });
       const unselected = await request(server()).post(retryPath).set('Cookie', owner.cookie);
       expect(unselected.status).toBe(HttpStatus.CONFLICT);
@@ -976,6 +992,14 @@ describe('Listings (e2e)', () => {
         .get(connectionPath(owner, connectionId, 'listings'))
         .set('Cookie', owner.cookie);
       expect(listings.body.items).toMatchObject([{ productId: product.id, ...failed }]);
+      expect(await byDisplayState(ListingDisplayState.Failed)).toMatchObject({
+        items: [{ product: { id: product.id }, ...failed }],
+        total: 1,
+      });
+      expect(await byDisplayState(ListingDisplayState.Ready)).toMatchObject({
+        items: [],
+        total: 0,
+      });
 
       // 3. Retried: pending again at once, queued alone, and logged.
       const retried = await request(server()).post(retryPath).set('Cookie', owner.cookie);

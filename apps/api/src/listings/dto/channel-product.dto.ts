@@ -20,6 +20,7 @@ import { SORT_DIRECTION_SCHEMA_NAME } from '../../common/api.constants.js';
 import {
   CHANNEL_PRODUCT_SORT_SCHEMA_NAME,
   CHANNEL_PRODUCT_STATE_SCHEMA_NAME,
+  LISTING_DISPLAY_STATE_SCHEMA_NAME,
 } from '../listings.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
 import {
@@ -108,6 +109,17 @@ export class ListChannelProductsQueryDto implements ChannelProductQuery {
   @IsOptional()
   @IsEnum(ChannelProductState)
   state?: ChannelProductState;
+
+  @ApiPropertyOptional({
+    enum: ListingDisplayState,
+    enumName: LISTING_DISPLAY_STATE_SCHEMA_NAME,
+    description:
+      'Only products showing this display state. Without `state` it looks at every catalog ' +
+      'product, so `draft` and `removed` find those not in the store.',
+  })
+  @IsOptional()
+  @IsEnum(ListingDisplayState)
+  displayState?: ListingDisplayState;
 
   @ApiPropertyOptional({ description: 'Matches title, handle or SKU' })
   @IsOptional()

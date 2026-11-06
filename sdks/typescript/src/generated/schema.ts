@@ -869,7 +869,7 @@ export interface paths {
         };
         /**
          * The store’s products with their state on the channel
-         * @description Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. Counts per state follow `search`, so they can label filter tabs.
+         * @description Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState` narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow `search`, so they can label filter tabs.
          */
         get: operations["ChannelProductsController_listProducts_v1"];
         put?: never;
@@ -2922,6 +2922,7 @@ export interface components {
         ListingOverrideViewDto: {
             title: string | null;
             descriptionHtml: string | null;
+            vendor: string | null;
             tags: string[] | null;
             mediaUrls: string[] | null;
             visibility: components["schemas"]["ListingVisibility"] | null;
@@ -2937,6 +2938,11 @@ export interface components {
             /** @example Blue / Large */
             title: string;
             price: components["schemas"]["ResolvedPriceDto"];
+            /**
+             * @description In the store’s currency: what its pricing rule gives, before a fixed price on the listing. Equal to the effective price unless the price is overridden.
+             * @example 102.99
+             */
+            rulePrice: string;
             /** @description The stock the channel shows; null when the variant does not track stock */
             quantity: number | null;
         };
@@ -2975,6 +2981,8 @@ export interface components {
         ListingOverrideDto: {
             title?: string | null;
             descriptionHtml?: string | null;
+            /** @description The brand this channel shows instead of the product’s vendor */
+            vendor?: string | null;
             /** @description Replaces the product’s tags */
             tags?: string[] | null;
             /** @description The product’s image URLs to show, in order */
@@ -2990,6 +2998,8 @@ export interface components {
         ListingOverridePatchDto: {
             title?: string | null;
             descriptionHtml?: string | null;
+            /** @description The brand this channel shows instead of the product’s vendor */
+            vendor?: string | null;
             /** @description Replaces the product’s tags */
             tags?: string[] | null;
             /** @description The product’s image URLs to show, in order */
@@ -3009,6 +3019,16 @@ export interface components {
             override: string | null;
             /** @description What the store gets */
             effective: string;
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        InheritedOptionalTextDto: {
+            /** @description The product’s value */
+            product: string | null;
+            /** @description Null when it follows the product */
+            override: string | null;
+            /** @description What the store gets */
+            effective: string | null;
             /** @description Whether the store overrides it; reverting sets `override` to null */
             overridden: boolean;
         };
@@ -3066,6 +3086,11 @@ export interface components {
             title: string;
             sku: string | null;
             price: components["schemas"]["InheritedPriceDto"];
+            /**
+             * @description In the store’s currency: what its pricing rule gives, before a fixed price on the listing. Equal to the effective price unless the price is overridden.
+             * @example 102.99
+             */
+            rulePrice: string;
             compareAtPrice: components["schemas"]["InheritedCompareAtPriceDto"];
             /** @description How the effective price was reached */
             resolvedPrice: components["schemas"]["ResolvedPriceDto"];
@@ -3109,6 +3134,8 @@ export interface components {
             listing: components["schemas"]["ListingSummaryDto"] | null;
             title: components["schemas"]["InheritedTextDto"];
             descriptionHtml: components["schemas"]["InheritedTextDto"];
+            /** @description The brand the store shows */
+            vendor: components["schemas"]["InheritedOptionalTextDto"];
             tags: components["schemas"]["InheritedTextListDto"];
             /** @description Image URLs in order; an override is a subset of the product’s, in its order */
             images: components["schemas"]["InheritedTextListDto"];
@@ -5145,6 +5172,8 @@ export interface operations {
         parameters: {
             query?: {
                 state?: components["schemas"]["ChannelProductState"];
+                /** @description Only products showing this display state. Without `state` it looks at every catalog product, so `draft` and `removed` find those not in the store. */
+                displayState?: components["schemas"]["ListingDisplayState"];
                 /** @description Matches title, handle or SKU */
                 search?: string;
                 sort?: components["schemas"]["ChannelProductSort"];

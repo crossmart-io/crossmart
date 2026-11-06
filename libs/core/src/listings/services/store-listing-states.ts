@@ -4,15 +4,17 @@ import type { ChannelConnectionView } from '../../channels/entities/channel-conn
 import type { ListingStateCounts } from '../entities/listing-state-counts.js';
 import { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import { SELECTION_BATCH_SIZE } from '../listings.constants.js';
-import { toDisplayedListing } from '../mappers/listing.mapper.js';
 import {
   ChannelProductsRepository,
   type DisplayCandidateRecord,
 } from '../repositories/channel-products.repository.js';
-import { type ChannelProductScope, shownListing } from '../rules/channel-product-state-where.js';
+import type { ChannelProductScope } from '../rules/channel-product-state-where.js';
 import { settledStateConditions, unsettledWhere } from '../rules/listing-state-where.js';
-import { publishCandidateOfRecord } from '../rules/publish-candidate.js';
-import { ListingDisplayResolver } from './listing-display.resolver.js';
+import {
+  ChannelProductDisplays,
+  type StoreMembership,
+  toDisplayedStoreProduct,
+} from './channel-product-displays.js';
 
 const STATES = Object.values(ListingDisplayState);
 
@@ -34,7 +36,7 @@ function scopeOf(workspaceId: string, connection: ChannelConnectionView): Channe
 
 /**
  * How many of the catalog's products are in each display state on one store, by the same rule
- * as the store's own product list. SQL counts every state it can decide alone; only selected
+ * as the store's own product list (and its display-state filter). SQL counts every state it can decide alone; only selected
  * products off the channel, or refused, are read (in batches) and checked as the connector
  * would, and not even those when the store's own setup already blocks publishing.
  */
@@ -42,7 +44,7 @@ function scopeOf(workspaceId: string, connection: ChannelConnectionView): Channe
 export class StoreListingStates {
   constructor(
     private readonly products: ChannelProductsRepository,
-    private readonly displays: ListingDisplayResolver,
+    private readonly displays: ChannelProductDisplays,
   ) {}
 
   async count(workspaceId: string, connection: ChannelConnectionView): Promise<ListingStateCounts> {
@@ -89,28 +91,29 @@ export class StoreListingStates {
     const counts = emptyCounts();
     let afterId: string | null = null;
     for (;;) {
-      const batch: DisplayCandidateRecord[] = await this.products.listDisplayCandidates(
-        connection.id,
-        where,
-        { afterId, size: SELECTION_BATCH_SIZE },
-      );
+      const batch: DisplayCandidateRecord[] = await this.products.listDisplayCandidateBatch(where, {
+        afterId,
+        size: SELECTION_BATCH_SIZE,
+      });
       for (const record of batch) counts[this.stateOf(connection, record)] += 1;
       if (batch.length < SELECTION_BATCH_SIZE) return counts;
       afterId = batch[batch.length - 1]?.id ?? null;
     }
   }
 
-  /** A selected product's state; selected products are never removed by hand. */
+  /**
+   * A selected product's state, by the store list's own resolution. Every product read here is
+   * selected, and selected products are never removed by hand.
+   */
   private stateOf(
     connection: ChannelConnectionView,
     record: DisplayCandidateRecord,
   ): ListingDisplayState {
-    const shown = shownListing(record.listings);
-    return this.displays.resolve(connection, {
-      selected: true,
-      removedByHand: false,
-      listing: shown ? toDisplayedListing(shown) : null,
-      candidate: publishCandidateOfRecord(record, shown),
-    }).state;
+    const product = toDisplayedStoreProduct(record, connection.id);
+    const membership: StoreMembership = {
+      selected: new Set([record.id]),
+      removedByHand: new Set(),
+    };
+    return this.displays.resolve(connection, product, membership).state;
   }
 }

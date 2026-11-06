@@ -3,6 +3,7 @@ import type {
   ChannelProductSort,
   ChannelProductState,
 } from '../enums/channel-product-state.enum.js';
+import type { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import type { ListingDisplayFields, ListingSummary } from './listing-views.js';
 import type { DisplayedProductSummary } from './store-badge-display.js';
 
@@ -27,6 +28,8 @@ export interface ChannelProductPage {
 
 export interface ChannelProductQuery {
   state?: ChannelProductState;
+  /** Only products showing this display state; it may combine with `state`. */
+  displayState?: ListingDisplayState;
   /** Matches title, handle or SKU. */
   search?: string;
   sort: ChannelProductSort;

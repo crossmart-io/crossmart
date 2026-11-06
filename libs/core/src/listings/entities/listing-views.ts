@@ -68,6 +68,11 @@ export interface ChannelVariantView {
   /** Option values or SKU: "Blue / Large". */
   title: string;
   price: ResolvedPrice;
+  /**
+   * The price the store's pricing rule gives, before any fixed price on the listing; it equals
+   * `price.price` unless the listing overrides it.
+   */
+  rulePrice: string;
   /** Null when the variant does not track stock. */
   quantity: number | null;
 }

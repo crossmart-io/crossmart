@@ -27,3 +27,14 @@ export function toPageWindow({ limit, cursor, page }: PageRequest): PageWindow {
   if (page !== undefined) return { take, skip: (page - 1) * limit };
   return cursor ? { take, cursor: { id: cursor }, skip: 1 } : { take };
 }
+
+/**
+ * The same window as `toPageWindow`, taken from ids already in order in memory: the page's ids
+ * plus one more when another page exists. An unknown cursor gives an empty page, as Prisma does.
+ */
+export function slicePageWindow(ids: readonly string[], request: PageRequest): string[] {
+  const { take, skip = 0, cursor } = toPageWindow(request);
+  const start = cursor ? ids.indexOf(cursor.id) : 0;
+  if (start < 0) return [];
+  return ids.slice(start + skip, start + skip + take);
+}

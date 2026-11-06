@@ -1,4 +1,4 @@
-import { toPageWindow } from './page-window.js';
+import { slicePageWindow, toPageWindow } from './page-window.js';
 
 describe('toPageWindow', () => {
   it('reads one row more than the limit, from the start', () => {
@@ -16,5 +16,22 @@ describe('toPageWindow', () => {
       skip: 1,
     });
     expect(toPageWindow({ limit: 10, cursor: 'row-9', page: 1 })).toEqual({ take: 11, skip: 0 });
+  });
+});
+
+describe('slicePageWindow', () => {
+  const ids = ['a', 'b', 'c', 'd', 'e'];
+
+  it('takes one id more than the limit, from the start or a page', () => {
+    expect(slicePageWindow(ids, { limit: 2 })).toEqual(['a', 'b', 'c']);
+    expect(slicePageWindow(ids, { limit: 2, page: 3 })).toEqual(['e']);
+  });
+
+  it('reads on after the cursor id', () => {
+    expect(slicePageWindow(ids, { limit: 2, cursor: 'b' })).toEqual(['c', 'd', 'e']);
+  });
+
+  it('is empty for a cursor it does not know', () => {
+    expect(slicePageWindow(ids, { limit: 2, cursor: 'z' })).toEqual([]);
   });
 });
