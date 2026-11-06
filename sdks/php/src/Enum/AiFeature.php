@@ -10,4 +10,5 @@ enum AiFeature: string
 {
     case ContentGeneration = 'content_generation';
     case ContentDraft = 'content_draft';
+    case Ask = 'ask';
 }

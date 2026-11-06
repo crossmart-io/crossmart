@@ -28,6 +28,7 @@ final class ApiClients
     public readonly AnalyticsApi $analytics;
     public readonly SuggestionsApi $suggestions;
     public readonly AiApi $ai;
+    public readonly AskCrossmartApi $askCrossmart;
 
     public function __construct(TransportInterface $transport)
     {
@@ -46,5 +47,6 @@ final class ApiClients
         $this->analytics = new AnalyticsApi($transport);
         $this->suggestions = new SuggestionsApi($transport);
         $this->ai = new AiApi($transport);
+        $this->askCrossmart = new AskCrossmartApi($transport);
     }
 }
