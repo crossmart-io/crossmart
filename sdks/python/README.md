@@ -90,17 +90,17 @@ client.products.create({"title": "Linen apron", "variants": [{"price": "24.00"}]
 
 ## Resources
 
-| Attribute     | Methods                                                                                                                     |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `products`    | `list`, `iter`, `get`, `create`, `update` (replaces the product; a variant without `quantity` keeps its stock), `delete`    |
-| `inventory`   | `list`, `iter`, `adjust`, `movements`, `iter_movements`                                                                     |
-| `stores`      | `list`, `get`, `set_pricing`, `preview_pricing`, `sync`, `list_products`, `iter_products`, `list_listings`, `iter_listings` |
-| `listings`    | `for_product`, `publish`, `retry`, `remove`, `set_override`, `clear_override`, `publish_many`, `remove_many`                |
-| `orders`      | `list`, `iter`, `get`                                                                                                       |
-| `reports`     | `sales`, `inventory`                                                                                                        |
-| `ai`          | `status`, `usage`, `generate_content`, `draft_content`                                                                      |
-| `suggestions` | `list`, `iter`, `get`, `approve`, `reject`, `approve_many`                                                                  |
-| `workspaces`  | `get`, `update`, `current_api_key`                                                                                          |
+| Attribute     | Methods                                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `products`    | `list`, `iter`, `get`, `create`, `update` (replaces the product; a variant without `quantity` keeps its stock), `delete`                     |
+| `inventory`   | `list`, `iter`, `adjust`, `movements`, `iter_movements`                                                                                      |
+| `stores`      | `list`, `get`, `set_pricing`, `preview_pricing`, `sync`, `sync_progress`, `list_products`, `iter_products`, `list_listings`, `iter_listings` |
+| `listings`    | `for_product`, `editor`, `publish`, `retry`, `remove`, `set_override`, `patch_override`, `clear_override`, `publish_many`, `remove_many`     |
+| `orders`      | `list`, `iter`, `get`                                                                                                                        |
+| `reports`     | `sales`, `inventory`                                                                                                                         |
+| `ai`          | `status`, `usage`, `generate_content`, `draft_content`                                                                                       |
+| `suggestions` | `list`, `iter`, `get`, `approve`, `reject`, `approve_many`                                                                                   |
+| `workspaces`  | `get`, `update`, `current_api_key`                                                                                                           |
 
 Models and enums live in `crossmart.models`. A few more examples:
 

@@ -121,17 +121,17 @@ for await (const order of crossmart.orders.listAll({ status: OrderStatus.OPEN })
 
 ## Resources
 
-| Resource                | Methods                                                                                                                    |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `crossmart.products`    | `list`, `listAll`, `get`, `create`, `update`, `delete`                                                                     |
-| `crossmart.inventory`   | `list`, `listAll`, `adjust`, `listMovements`, `listAllMovements`                                                           |
-| `crossmart.stores`      | `list`, `get`, `updatePricing`, `previewPricing`, `sync`                                                                   |
-| `crossmart.listings`    | `forProduct`, `publish`, `retry`, `remove`, `publishMany`, `removeMany`, `setOverride`, `clearOverride`, `list`, `listAll` |
-| `crossmart.orders`      | `list`, `listAll`, `get`                                                                                                   |
-| `crossmart.reports`     | `sales`, `inventory`                                                                                                       |
-| `crossmart.ai`          | `status`, `usage`, `generateContent`, `draftContent`                                                                       |
-| `crossmart.suggestions` | `list`, `listAll`, `get`, `approve`, `reject`, `approveMany`                                                               |
-| `crossmart.workspaces`  | `get`, `update`, `currentApiKey`                                                                                           |
+| Resource                | Methods                                                                                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crossmart.products`    | `list`, `listAll`, `get`, `create`, `update`, `delete`                                                                                                |
+| `crossmart.inventory`   | `list`, `listAll`, `adjust`, `listMovements`, `listAllMovements`                                                                                      |
+| `crossmart.stores`      | `list`, `get`, `updatePricing`, `previewPricing`, `sync`, `syncProgress`                                                                              |
+| `crossmart.listings`    | `forProduct`, `editor`, `publish`, `retry`, `remove`, `publishMany`, `removeMany`, `setOverride`, `patchOverride`, `clearOverride`, `list`, `listAll` |
+| `crossmart.orders`      | `list`, `listAll`, `get`                                                                                                                              |
+| `crossmart.reports`     | `sales`, `inventory`                                                                                                                                  |
+| `crossmart.ai`          | `status`, `usage`, `generateContent`, `draftContent`                                                                                                  |
+| `crossmart.suggestions` | `list`, `listAll`, `get`, `approve`, `reject`, `approveMany`                                                                                          |
+| `crossmart.workspaces`  | `get`, `update`, `currentApiKey`                                                                                                                      |
 
 Each method has TSDoc with an example, so your editor shows it on hover. Request and response
 types are exported by name (`Product`, `CreateProductInput`, `Order`, `ListingOverrideInput`…),

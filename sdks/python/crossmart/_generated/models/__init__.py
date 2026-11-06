@@ -154,6 +154,11 @@ from .import_job_issue_dto import ImportJobIssueDto
 from .import_job_page_dto import ImportJobPageDto
 from .import_job_status import ImportJobStatus
 from .import_products_dto import ImportProductsDto
+from .inherited_compare_at_price_dto import InheritedCompareAtPriceDto
+from .inherited_price_dto import InheritedPriceDto
+from .inherited_text_dto import InheritedTextDto
+from .inherited_text_list_dto import InheritedTextListDto
+from .inherited_visibility_dto import InheritedVisibilityDto
 from .inventory_item_dto import InventoryItemDto
 from .inventory_movement_dto import InventoryMovementDto
 from .inventory_movement_page_dto import InventoryMovementPageDto
@@ -168,13 +173,21 @@ from .invitation_token_dto import InvitationTokenDto
 from .invite_member_dto import InviteMemberDto
 from .issued_api_key_dto import IssuedApiKeyDto
 from .item_specific_dto import ItemSpecificDto
+from .listing_category_field_dto import ListingCategoryFieldDto
 from .listing_display_state import ListingDisplayState
+from .listing_editor_dto import ListingEditorDto
+from .listing_editor_variant_dto import ListingEditorVariantDto
 from .listing_item_specifics_dto import ListingItemSpecificsDto
+from .listing_item_specifics_summary_dto import ListingItemSpecificsSummaryDto
 from .listing_override_dto import ListingOverrideDto
+from .listing_override_patch_dto import ListingOverridePatchDto
 from .listing_override_view_dto import ListingOverrideViewDto
+from .listing_retry_error_code import ListingRetryErrorCode
+from .listing_retry_error_dto import ListingRetryErrorDto
 from .listing_source import ListingSource
 from .listing_status import ListingStatus
 from .listing_status_count_dto import ListingStatusCountDto
+from .listing_stock_limits_dto import ListingStockLimitsDto
 from .listing_summary_dto import ListingSummaryDto
 from .listing_visibility import ListingVisibility
 from .me_dto import MeDto
@@ -250,6 +263,7 @@ from .suggestion_kind import SuggestionKind
 from .suggestion_page_dto import SuggestionPageDto
 from .suggestion_review_dto import SuggestionReviewDto
 from .suggestion_status import SuggestionStatus
+from .sync_progress_dto import SyncProgressDto
 from .sync_request_result_dto import SyncRequestResultDto
 from .top_product_dto import TopProductDto
 from .update_ebay_listing_defaults_dto import UpdateEbayListingDefaultsDto
@@ -383,6 +397,11 @@ __all__ = (
     "ImportJobPageDto",
     "ImportJobStatus",
     "ImportProductsDto",
+    "InheritedCompareAtPriceDto",
+    "InheritedPriceDto",
+    "InheritedTextDto",
+    "InheritedTextListDto",
+    "InheritedVisibilityDto",
     "InventoryItemDto",
     "InventoryMovementDto",
     "InventoryMovementPageDto",
@@ -397,13 +416,21 @@ __all__ = (
     "InviteMemberDto",
     "IssuedApiKeyDto",
     "ItemSpecificDto",
+    "ListingCategoryFieldDto",
     "ListingDisplayState",
+    "ListingEditorDto",
+    "ListingEditorVariantDto",
     "ListingItemSpecificsDto",
+    "ListingItemSpecificsSummaryDto",
     "ListingOverrideDto",
+    "ListingOverridePatchDto",
     "ListingOverrideViewDto",
+    "ListingRetryErrorCode",
+    "ListingRetryErrorDto",
     "ListingSource",
     "ListingStatus",
     "ListingStatusCountDto",
+    "ListingStockLimitsDto",
     "ListingSummaryDto",
     "ListingVisibility",
     "MeDto",
@@ -475,6 +502,7 @@ __all__ = (
     "SuggestionPageDto",
     "SuggestionReviewDto",
     "SuggestionStatus",
+    "SyncProgressDto",
     "SyncRequestResultDto",
     "TopProductDto",
     "UpdateEbayListingDefaultsDto",

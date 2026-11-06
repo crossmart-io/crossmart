@@ -6,7 +6,9 @@ import type {
   ListAllListingsQuery,
   ListListingsQuery,
   Listing,
+  ListingEditor,
   ListingOverrideInput,
+  ListingOverridePatch,
   ProductChannel,
   StoreProductsResult,
 } from '../types.js';
@@ -17,6 +19,8 @@ const PRODUCT_CHANNEL_PATH =
   '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}';
 const RETRY_PATH =
   '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/retry';
+const EDITOR_PATH =
+  '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/listing';
 const OVERRIDE_PATH =
   '/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/override';
 const STORE_LISTINGS_PATH =
@@ -105,7 +109,8 @@ export class ListingsResource extends Resource {
    * Publishes a product to one store again, such as after a failed publish, without resyncing
    * the whole store. The listing is pending at once (`displayState` is `publishing`) and the
    * store is updated in the background. Throws a `409` when the store needs to be connected
-   * again or does not include the product.
+   * again (`code: store_not_connected`) or does not include the product
+   * (`code: product_not_in_store`).
    *
    * @example
    * ```ts
@@ -197,6 +202,57 @@ export class ListingsResource extends Resource {
       this.http.PUT(OVERRIDE_PATH, {
         params: { path: { workspaceId, productId, connectionId } },
         body: override,
+        signal: options?.signal,
+      }),
+    );
+  }
+
+  /**
+   * Changes some of the product's overrides on one store and keeps the rest. `null` reverts a
+   * field to the product's value; a variant price entry with both prices `null` reverts that
+   * variant to the store's pricing rule. A listed product is updated.
+   *
+   * @example
+   * ```ts
+   * // Revert the title only; every other override stays.
+   * await crossmart.listings.patchOverride(productId, connectionId, { title: null });
+   * ```
+   */
+  async patchOverride(
+    productId: string,
+    connectionId: string,
+    patch: ListingOverridePatch,
+    options?: RequestOptions,
+  ): Promise<ProductChannel> {
+    const workspaceId = await this.workspaceId(options);
+    return unwrap(
+      this.http.PATCH(OVERRIDE_PATH, {
+        params: { path: { workspaceId, productId, connectionId } },
+        body: patch,
+        signal: options?.signal,
+      }),
+    );
+  }
+
+  /**
+   * The product's listing on one store for an editor: every field with the product's value, the
+   * store's override and the value the store gets, plus the display state and what to fix.
+   *
+   * @example
+   * ```ts
+   * const editor = await crossmart.listings.editor(productId, connectionId);
+   * if (editor.title.overridden) console.log('Inherits', editor.title.product);
+   * ```
+   */
+  async editor(
+    productId: string,
+    connectionId: string,
+    options?: RequestOptions,
+  ): Promise<ListingEditor> {
+    const workspaceId = await this.workspaceId(options);
+    return unwrap(
+      this.http.GET(EDITOR_PATH, {
+        params: { path: { workspaceId, productId, connectionId } },
         signal: options?.signal,
       }),
     );
