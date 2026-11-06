@@ -22,6 +22,11 @@ export enum ActivityAction {
   ApiKeyRevoked = 'api_key_revoked',
   /** An AI agent's OAuth connection to the workspace was revoked. */
   AgentDisconnected = 'agent_disconnected',
+  /**
+   * Agents that once worked in the workspace were deleted after going unused (ADR 0019): one
+   * event per sweep, counting them, with their names as the detail.
+   */
+  UnusedAgentsRemoved = 'unused_agents_removed',
   /** Someone was invited by email; the subject is the invitation, labelled with the address. */
   MemberInvited = 'member_invited',
   InvitationRevoked = 'invitation_revoked',

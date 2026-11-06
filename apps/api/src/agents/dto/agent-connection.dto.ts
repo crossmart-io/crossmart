@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { type AgentConnection, AgentScope } from '@crossmart/core';
-import { AGENT_SCOPE_SCHEMA_NAME } from '../agents.constants.js';
+import { AgentClientRegistration, type AgentConnection, AgentScope } from '@crossmart/core';
+import {
+  AGENT_CLIENT_REGISTRATION_SCHEMA_NAME,
+  AGENT_SCOPE_SCHEMA_NAME,
+} from '../agents.constants.js';
 
 export class AgentConnectionDto implements AgentConnection {
   @ApiProperty({ format: 'uuid' })
@@ -13,6 +16,22 @@ export class AgentConnectionDto implements AgentConnection {
 
   @ApiProperty({ description: 'The name the agent gives, such as "Claude"' })
   clientName: string;
+
+  @ApiProperty({
+    enum: AgentClientRegistration,
+    enumName: AGENT_CLIENT_REGISTRATION_SCHEMA_NAME,
+    description:
+      'Whether `clientName` came from a verified host (`metadata_document`) or is only what the ' +
+      'agent calls itself (`dynamic`)',
+  })
+  clientRegistration: AgentClientRegistration;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'For a `metadata_document` client: the host its metadata came from',
+  })
+  clientVerifiedHost: string | null;
 
   @ApiProperty({ type: String, nullable: true, description: 'The agent’s home page' })
   clientUri: string | null;

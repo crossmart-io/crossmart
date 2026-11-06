@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
+import { AgentClientRegistration } from '../enums/agent-client-registration.enum.js';
 import { AgentScope } from '../enums/agent-scope.enum.js';
 import type {
   AgentConnectionRepository,
@@ -20,7 +21,13 @@ function record(id: string, userId: string): AgentConsentRecord {
     referenceId: WORKSPACE_ID,
     scopes: ['catalog:read', 'offline_access'],
     createdAt: CONNECTED_AT,
-    client: { name: 'Claude', uri: 'https://claude.ai', icon: null, disabled: false },
+    client: {
+      name: 'Claude',
+      uri: 'https://claude.ai',
+      icon: null,
+      disabled: false,
+      clientDiscoveryId: 'cimd',
+    },
     user: { name: 'Dana', email: 'dana@example.com' },
   } as AgentConsentRecord;
 }
@@ -47,7 +54,12 @@ describe('AgentConnectionsService', () => {
     await service.list(WORKSPACE_ID, { userId: 'user-1', managesAll: true });
 
     expect(own).toEqual([
-      expect.objectContaining({ clientName: 'Claude', scopes: [AgentScope.CatalogRead] }),
+      expect.objectContaining({
+        clientName: 'Claude',
+        clientRegistration: AgentClientRegistration.MetadataDocument,
+        clientVerifiedHost: 'claude.ai',
+        scopes: [AgentScope.CatalogRead],
+      }),
     ]);
     expect(connections.list.mock.calls).toEqual([
       [WORKSPACE_ID, 'user-1'],

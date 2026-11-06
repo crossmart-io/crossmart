@@ -219,4 +219,133 @@ describe('Agents connected with OAuth (ADR 0019)', () => {
     });
     expect(remaining).toEqual([{ clientId: used }]);
   });
+
+  describe('clients nobody used for 90 days', () => {
+    const LONG_AGO = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000);
+    const IN_A_WEEK = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    /** Connects an agent that then acts once, and moves all of it 100 days into the past. */
+    async function agedAgent(user: SignedUpUser, name: string) {
+      const clientId = await registerAgent(app, name);
+      const tokens = await connectAgent(app, user, { clientId });
+      await createProduct(user.workspaceId, tokens, `${name} mug`);
+      const prisma = app.get(PrismaService);
+      const where = { clientId };
+      await prisma.$transaction([
+        prisma.oauthClient.updateMany({
+          where,
+          data: { createdAt: LONG_AGO, updatedAt: LONG_AGO },
+        }),
+        prisma.oauthAccessToken.updateMany({
+          where,
+          data: { createdAt: LONG_AGO, expiresAt: LONG_AGO },
+        }),
+        prisma.oauthRefreshToken.updateMany({
+          where,
+          data: { createdAt: LONG_AGO, expiresAt: LONG_AGO },
+        }),
+        prisma.activityEvent.updateMany({
+          where: { actorOAuthClientId: clientId },
+          data: { createdAt: LONG_AGO },
+        }),
+      ]);
+      return clientId;
+    }
+
+    async function disconnect(user: SignedUpUser) {
+      for (const connection of await connectionsOf(user)) {
+        await server()
+          .delete(`/api/v1/workspaces/${user.workspaceId}/agent-connections/${connection.id}`)
+          .set('Cookie', user.cookie);
+      }
+    }
+
+    async function activityOf({ cookie, workspaceId }: SignedUpUser) {
+      const response = await server()
+        .get(`/api/v1/workspaces/${workspaceId}/activity`)
+        .set('Cookie', cookie);
+      return response.body.items as {
+        summary: string;
+        actor: { type: string; agentName: string | null };
+      }[];
+    }
+
+    async function remainingOf(clientIds: string[]) {
+      const clients = await app.get(PrismaService).oauthClient.findMany({
+        where: { clientId: { in: clientIds } },
+        select: { clientId: true },
+      });
+      return clients.map(({ clientId }) => clientId);
+    }
+
+    it('deletes disconnected ones, keeps their name in the history, and logs the removal', async () => {
+      const user = await signUp(app, 'Rina');
+      const stale = await agedAgent(user, 'Old Helper');
+      await disconnect(user);
+      const sweeper = app.get(AgentClientSweeper, { strict: false });
+
+      const first = await sweeper.sweep();
+      const second = await sweeper.sweep();
+
+      expect(await remainingOf([stale])).toEqual([]);
+      expect(first.stale).toBeGreaterThanOrEqual(1);
+      expect(second.stale).toBe(0);
+      const activity = await activityOf(user);
+      expect(activity[0]?.summary).toBe('Removed 1 unused agent: Old Helper');
+      expect(activity.find((event) => event.actor.type === 'AGENT')?.actor.agentName).toBe(
+        'Old Helper',
+      );
+    });
+
+    it('keeps one still connected, and one holding a refresh token that has not expired', async () => {
+      const connected = await agedAgent(await signUp(app, 'Shai'), 'Still Connected');
+      const holder = await signUp(app, 'Yael');
+      const withToken = await agedAgent(holder, 'Token Holder');
+      await disconnect(holder);
+      await app.get(PrismaService).oauthRefreshToken.updateMany({
+        where: { clientId: withToken },
+        data: { expiresAt: IN_A_WEEK },
+      });
+
+      await app.get(AgentClientSweeper, { strict: false }).sweep();
+
+      expect((await remainingOf([connected, withToken])).sort()).toEqual(
+        [connected, withToken].sort(),
+      );
+    });
+  });
+
+  describe('the agent shown on the consent page', () => {
+    it('marks a self-registered agent’s name as unverified', async () => {
+      const user = await signUp(app, 'Omer');
+      const clientId = await registerAgent(app, 'Claude');
+
+      const response = await server()
+        .get('/api/v1/oauth/client')
+        .query({ clientId })
+        .set('Cookie', user.cookie);
+
+      expect(response.status).toBe(HttpStatus.OK);
+      expect(response.body).toEqual({
+        clientId,
+        name: 'Claude',
+        registration: 'dynamic',
+        verifiedHost: null,
+        claimedHost: null,
+      });
+    });
+
+    it('answers not found for an unknown agent, and refuses callers who are not signed in', async () => {
+      const user = await signUp(app, 'Hila');
+
+      const unknown = await server()
+        .get('/api/v1/oauth/client')
+        .query({ clientId: 'no-such-client' })
+        .set('Cookie', user.cookie);
+      const anonymous = await server().get('/api/v1/oauth/client').query({ clientId: 'x' });
+
+      expect(unknown.status).toBe(HttpStatus.NOT_FOUND);
+      expect(anonymous.status).toBe(HttpStatus.UNAUTHORIZED);
+    });
+  });
 });

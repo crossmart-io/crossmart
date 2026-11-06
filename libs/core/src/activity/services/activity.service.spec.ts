@@ -16,6 +16,7 @@ function record(id: string, overrides: Partial<ActivityEventRecord> = {}): Activ
     actorUserId: 'user-1',
     actorApiKeyId: null,
     actorOAuthClientId: null,
+    actorAgentName: null,
     actorUser: { name: 'Dana', email: 'dana@example.com' },
     actorApiKey: null,
     actorOAuthClient: null,

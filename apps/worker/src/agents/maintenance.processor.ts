@@ -18,7 +18,11 @@ export class MaintenanceProcessor extends WorkerHost {
       this.logger.warn(`Skipped unknown maintenance job ${job.name}`);
       return;
     }
-    const deleted = await this.agentClients.sweep();
-    if (deleted > 0) this.logger.log(`Deleted ${deleted} unused agent registrations`);
+    const { neverUsed, stale } = await this.agentClients.sweep();
+    if (neverUsed + stale > 0) {
+      this.logger.log(
+        `Deleted ${neverUsed} never-used agent registrations and ${stale} unused agent clients`,
+      );
+    }
   }
 }

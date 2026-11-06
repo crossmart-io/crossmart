@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService } from '@crossmart/database';
 
 const CONNECTION_INCLUDE = {
-  client: { select: { name: true, uri: true, icon: true, disabled: true } },
+  client: {
+    select: { name: true, uri: true, icon: true, disabled: true, clientDiscoveryId: true },
+  },
   user: { select: { name: true, email: true } },
 } satisfies Prisma.OauthConsentInclude;
 
@@ -67,24 +69,5 @@ export class AgentConnectionRepository {
         data: { revoked: now },
       }),
     ]);
-  }
-
-  /**
-   * Deletes clients that registered themselves (no metadata document, no owner) before `before`
-   * and were never used: no consent, no token, nothing in the activity log. Returns how many.
-   */
-  async deleteUnusedRegistrations(before: Date): Promise<number> {
-    const { count } = await this.prisma.oauthClient.deleteMany({
-      where: {
-        clientDiscoveryId: null,
-        userId: null,
-        createdAt: { lt: before },
-        consents: { none: {} },
-        refreshTokens: { none: {} },
-        accessTokens: { none: {} },
-        activity: { none: {} },
-      },
-    });
-    return count;
   }
 }

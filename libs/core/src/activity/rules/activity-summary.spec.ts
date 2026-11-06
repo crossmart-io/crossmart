@@ -26,6 +26,16 @@ describe('summarizeActivity', () => {
     );
   });
 
+  it('counts and names the unused agents removed', () => {
+    expect(
+      summarizeActivity({
+        action: ActivityAction.UnusedAgentsRemoved,
+        itemCount: 2,
+        detail: 'Claude, Cursor',
+      }),
+    ).toBe('Removed 2 unused agents: Claude, Cursor');
+  });
+
   it('names the operation that failed', () => {
     expect(
       summarizeActivity({
