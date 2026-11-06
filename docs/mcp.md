@@ -50,6 +50,7 @@ in exactly one workspace; the server finds it with `GET /api/v1/api-key`.
 | `generate_content`          | Queues AI titles and descriptions for products on a store              | Yes    |
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |        |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
+| `ask_crossmart`             | Answers a question about Crossmart from its public docs (ADR 0022)     |        |
 
 Tools that only read carry `readOnlyHint`; `replace_product`, `remove_product_from_store` and
 `save_item_specifics` carry `destructiveHint`, so clients can ask before running them. When the API refuses a call, the

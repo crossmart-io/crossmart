@@ -4,11 +4,11 @@ Crossmart works with any agent that speaks the [Model Context Protocol](https://
 Pick yours below. Each guide shows where the config goes, how to send your API key, and how to install
 the [Crossmart skill](../../../skills/README.md), which teaches the agent the seller workflows.
 
-|                |                                                                       |
-| -------------- | --------------------------------------------------------------------- |
-| Server URL     | `https://mcp.crossmart.io/mcp` (Streamable HTTP)                      |
-| Authentication | Header `x-api-key: <key>`, or `Authorization: Bearer <key>`           |
-| Tools          | 25: products, stock, stores, listings, eBay, orders, reports, content |
+|                |                                                                            |
+| -------------- | -------------------------------------------------------------------------- |
+| Server URL     | `https://mcp.crossmart.io/mcp` (Streamable HTTP)                           |
+| Authentication | Header `x-api-key: <key>`, or `Authorization: Bearer <key>`                |
+| Tools          | 26: products, stock, stores, listings, eBay, orders, reports, content, Ask |
 
 ## Before you start
 

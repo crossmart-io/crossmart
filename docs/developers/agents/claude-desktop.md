@@ -52,7 +52,7 @@ Build the server from this repository and let Claude Desktop start it; see
 
 ## Check
 
-Restart Claude Desktop. The tools menu in a new chat lists **crossmart** with its 25 tools.
+Restart Claude Desktop. The tools menu in a new chat lists **crossmart** with its 26 tools.
 
 ## Install the skill
 

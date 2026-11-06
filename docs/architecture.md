@@ -53,6 +53,7 @@ crossmart/
 │   │   ├── suggestions/     # suggestion engine (review, apply, stale check); autonomy policies later
 │   │   ├── ai/              # AiProvider abstraction, AiGateway, prompts, metering
 │   │   ├── content-generation/ # the Content Generator agent and its channel rules
+│   │   ├── ask/             # Ask Crossmart: docs knowledge index, retrieval, grounded answers
 │   │   ├── tenancy/         # organizations, workspaces, members, roles
 │   │   ├── entitlements/    # plans, limits, feature flags
 │   │   └── billing/         # BillingProvider abstraction (Stripe impl)

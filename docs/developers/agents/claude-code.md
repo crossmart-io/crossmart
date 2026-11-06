@@ -44,7 +44,7 @@ Use the name `CROSSMART_API_KEY`: Claude Code leaves some well-known credential 
 claude mcp list          # crossmart … ✓ Connected
 ```
 
-In a session, `/mcp` lists the server and its 25 tools.
+In a session, `/mcp` lists the server and its 26 tools.
 
 ## Install the skill
 

@@ -6,7 +6,7 @@ public REST API, so your scripts, integrations and AI agents can do it too.
 
 - **[Quickstart](quickstart.md):** create a product, publish it to a store, override it there, and read orders, with curl and the SDK.
 - **[TypeScript SDK](../../sdks/typescript/README.md):** `@crossmart/sdk`, typed from the OpenAPI spec.
-- **[MCP server](mcp.md):** what AI agents can do with Crossmart, and its 25 tools.
+- **[MCP server](mcp.md):** what AI agents can do with Crossmart, and its 26 tools.
 - **[Connect your AI agent](agents/README.md):** setup guides for Claude, Cursor, VS Code, Codex,
   Gemini CLI, OpenClaw and more, plus the [Crossmart agent skill](../../skills/README.md).
 
@@ -130,6 +130,22 @@ The `/api/v1` endpoints have no rate limit today; sign-in and sign-up under `/ap
 per key may be added later, answered with `429 Too Many Requests` and a `Retry-After` header.
 Handle them now (the SDK does), and batch your work: use `listAll()` with large pages, and the bulk
 endpoints such as `POST …/channel-connections/{connectionId}/products/add`.
+
+## Ask Crossmart
+
+`POST /api/v1/ask` answers a question about Crossmart itself (features, plans, the API, SDKs,
+MCP server and channels) from the public docs, and cites the pages it used. It needs no key:
+
+```bash
+curl https://api.crossmart.io/api/v1/ask -H 'content-type: application/json' \
+  -d '{"question":"Can I publish one product to Shopify and eBay?"}'
+```
+
+The answer has an `outcome` (`answered`, `unknown` or `out_of_scope`), the `answer`, its
+`citations` (`title`, `url`), a `confidence` and `handoff`, which is true when a person should take
+over at `supportEmail`. It never sees any workspace's data. Anonymous callers may ask 5 questions a
+minute and 50 a day per IP address; with an API key or a session, 20 and 500. AI agents can call it
+through the MCP tool `ask_crossmart`.
 
 ## Asynchronous work
 

@@ -116,6 +116,7 @@ clients that send headers; the [agent guides](agents/README.md) say which do.
 | `generate_content`          | Queues AI titles and descriptions for products on a store              |     Yes      |
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |              |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   |     Yes      |
+| `ask_crossmart`             | Answers questions about Crossmart itself from its docs, with sources   |              |
 
 Read-only tools are marked `readOnlyHint`, and `replace_product`, `remove_product_from_store` and
 `save_item_specifics` are marked `destructiveHint`, so clients can ask before running them. When the

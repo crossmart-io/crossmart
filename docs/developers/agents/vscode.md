@@ -43,7 +43,7 @@ VS Code is moving to a portable format (`~/.copilot/mcp-config.json`, top-level 
 ## Check
 
 **MCP: List Servers** shows **crossmart** running; in Copilot Chat's agent mode the tools picker
-lists its 25 tools.
+lists its 26 tools.
 
 ## Install the skill
 
