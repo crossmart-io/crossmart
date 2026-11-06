@@ -1656,6 +1656,8 @@ export interface components {
              * @example 1
              */
             version: number;
+            /** @description Whether new organizations can choose this plan. False for a legacy plan, which an organization already on it keeps */
+            offered: boolean;
         };
         /** @enum {string} */
         SubscriptionStatus: SubscriptionStatus;

@@ -10,6 +10,7 @@ export function toPlanSnapshot(record: SubscriptionRecord): PlanSnapshot {
       code: planVersion.plan.code,
       name: planVersion.plan.name,
       version: planVersion.version,
+      offered: planVersion.plan.active,
     },
     status: record.status,
     currentPeriodEnd: record.currentPeriodEnd,

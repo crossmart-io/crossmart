@@ -92,18 +92,21 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   of the default plan; existing ones keep the version they are on until moved explicitly.
 - **Features.** `Feature` names every limit and flag; `FEATURE_KINDS` says which is which. A feature
   a version does not list is not included, so a migration adding a feature gives every version a row.
-- **Seeded plans** (a starting point, to validate with design partners; Enterprise is custom):
+- **Seeded plans:** the Crossmart Cloud lineup of ADR [0020](decisions/0020-plan-lineup.md), each
+  plan's latest version. New organizations start on Starter (`isDefault`). Free and Agency are legacy
+  (`active` false): not offered, kept by the organizations on them. Enterprise is sold by contract,
+  and its version 1 is the floor a contract starts from. Prices are not stored here; billing owns them.
 
-  | Feature               | Free | Starter | Growth | Agency |
-  | --------------------- | ---: | ------: | -----: | -----: |
-  | `active_listings`     |   50 |   1,000 | 10,000 | 50,000 |
-  | `channel_connections` |    2 |       ∞ |      ∞ |      ∞ |
-  | `workspaces`          |    1 |       1 |      1 |     25 |
-  | `members`             |    2 |       5 |     15 |      ∞ |
-  | `api_keys`            |    2 |      10 |     25 |    100 |
-  | `ai_credits` / month  |  100 |   1,000 |  5,000 | 20,000 |
-  | `autonomous_agents`   |    — |       — |      ✓ |      ✓ |
-  | `bring_your_own_key`  |    — |       — |      — |      ✓ |
+  | Feature               | Starter |   Pro | Growth |  Scale | Enterprise |
+  | --------------------- | ------: | ----: | -----: | -----: | ---------: |
+  | `active_listings`     |   1,000 | 3,000 | 10,000 | 50,000 |    100,000 |
+  | `channel_connections` |       3 |     5 |     10 |      ∞ |          ∞ |
+  | `workspaces`          |       1 |     1 |      2 |      5 |          ∞ |
+  | `members`             |       2 |     5 |     10 |     25 |          ∞ |
+  | `api_keys`            |       5 |    10 |     25 |    100 |          ∞ |
+  | `ai_credits` / month  |     300 | 1,500 |  5,000 | 20,000 |     20,000 |
+  | `autonomous_agents`   |       ✓ |     ✓ |      ✓ |      ✓ |          ✓ |
+  | `bring_your_own_key`  |       — |     — |      — |      ✓ |          ✓ |
 
 - **Usage** is counted from the data across the organization's workspaces, one aggregate query per
   feature: listings with status `ACTIVE`, connections not `DISCONNECTED`, workspaces, distinct
@@ -121,8 +124,9 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   before writing anything when the products that would go live do not fit (`ActiveListingsGate`),
   and the worker checks each listing it is about to make live: a blocked one is not sent and is
   marked `ERROR` with the reason.
-- `GET /api/v1/organizations/{id}/subscription` returns the plan, `enforced`, and every feature
-  with its limit and usage, for members holding `billing:view` (owners and admins).
+- `GET /api/v1/organizations/{id}/subscription` returns the plan (`offered` is false on a legacy
+  plan), `enforced`, and every feature with its limit and usage, for members holding `billing:view`
+  (owners and admins).
 
 ## 3. Core domain model (initial)
 

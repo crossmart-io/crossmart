@@ -16,11 +16,14 @@ class PlanDto:
         code (str): Stable identifier of the plan Example: growth.
         name (str):  Example: Growth.
         version (float): The plan version the organization is on; later versions never change it Example: 1.
+        offered (bool): Whether new organizations can choose this plan. False for a legacy plan, which an organization
+            already on it keeps
     """
 
     code: str
     name: str
     version: float
+    offered: bool
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -30,6 +33,8 @@ class PlanDto:
 
         version = self.version
 
+        offered = self.offered
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -37,6 +42,7 @@ class PlanDto:
                 "code": code,
                 "name": name,
                 "version": version,
+                "offered": offered,
             }
         )
 
@@ -51,10 +57,13 @@ class PlanDto:
 
         version = d.pop("version")
 
+        offered = d.pop("offered")
+
         plan_dto = cls(
             code=code,
             name=name,
             version=version,
+            offered=offered,
         )
 
         plan_dto.additional_properties = d
