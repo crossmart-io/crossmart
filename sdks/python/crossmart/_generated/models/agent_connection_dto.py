@@ -8,6 +8,7 @@ from uuid import UUID
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.agent_client_registration import AgentClientRegistration
 from ..models.agent_scope import AgentScope
 
 T = TypeVar("T", bound="AgentConnectionDto")
@@ -20,6 +21,9 @@ class AgentConnectionDto:
         id (UUID):
         client_id (str): The OAuth client id: a Client ID Metadata Document URL, or a registered id
         client_name (str): The name the agent gives, such as "Claude"
+        client_registration (AgentClientRegistration): `metadata_document`: Crossmart fetched the agent’s metadata from
+            its HTTPS client id. `dynamic`: the agent registered itself, and its name and site are unverified.
+        client_verified_host (None | str): For a `metadata_document` client: the host its metadata came from
         client_uri (None | str): The agent’s home page
         client_icon (None | str): The agent’s logo address, from its metadata. Crossmart never fetches it.
         user_id (UUID): The member who connected the agent
@@ -32,6 +36,8 @@ class AgentConnectionDto:
     id: UUID
     client_id: str
     client_name: str
+    client_registration: AgentClientRegistration
+    client_verified_host: None | str
     client_uri: None | str
     client_icon: None | str
     user_id: UUID
@@ -47,6 +53,11 @@ class AgentConnectionDto:
         client_id = self.client_id
 
         client_name = self.client_name
+
+        client_registration = self.client_registration.value
+
+        client_verified_host: None | str
+        client_verified_host = self.client_verified_host
 
         client_uri: None | str
         client_uri = self.client_uri
@@ -74,6 +85,8 @@ class AgentConnectionDto:
                 "id": id,
                 "clientId": client_id,
                 "clientName": client_name,
+                "clientRegistration": client_registration,
+                "clientVerifiedHost": client_verified_host,
                 "clientUri": client_uri,
                 "clientIcon": client_icon,
                 "userId": user_id,
@@ -94,6 +107,15 @@ class AgentConnectionDto:
         client_id = d.pop("clientId")
 
         client_name = d.pop("clientName")
+
+        client_registration = AgentClientRegistration(d.pop("clientRegistration"))
+
+        def _parse_client_verified_host(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        client_verified_host = _parse_client_verified_host(d.pop("clientVerifiedHost"))
 
         def _parse_client_uri(data: object) -> None | str:
             if data is None:
@@ -128,6 +150,8 @@ class AgentConnectionDto:
             id=id,
             client_id=client_id,
             client_name=client_name,
+            client_registration=client_registration,
+            client_verified_host=client_verified_host,
             client_uri=client_uri,
             client_icon=client_icon,
             user_id=user_id,

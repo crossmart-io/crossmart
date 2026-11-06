@@ -74,7 +74,7 @@ export function toActivityEventView(record: ActivityEventRecord): ActivityEventV
       agentClientId: record.actorOAuthClientId,
       name: record.actorUser?.name ?? record.actorApiKey?.name ?? null,
       email: record.actorUser?.email ?? null,
-      agentName: record.actorOAuthClient?.name ?? null,
+      agentName: record.actorOAuthClient?.name ?? record.actorAgentName,
     },
     subject: toSubjectView(record),
     itemCount: record.itemCount,

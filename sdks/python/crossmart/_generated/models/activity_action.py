@@ -51,6 +51,7 @@ class ActivityAction(StrEnum):
     SUGGESTIONS_BULK_APPROVED = "suggestions_bulk_approved"
     SUGGESTION_APPROVED = "suggestion_approved"
     SUGGESTION_REJECTED = "suggestion_rejected"
+    UNUSED_AGENTS_REMOVED = "unused_agents_removed"
     WEBHOOK_ENDPOINT_CREATED = "webhook_endpoint_created"
     WEBHOOK_ENDPOINT_DELETED = "webhook_endpoint_deleted"
     WEBHOOK_ENDPOINT_DISABLED = "webhook_endpoint_disabled"

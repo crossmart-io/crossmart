@@ -741,6 +741,8 @@ model ActivityEvent {
   /// The connected agent (an OAuth client id) for an `AGENT` actor.
   actorOAuthClientId String?           @map("actor_oauth_client_id")
   actorOAuthClient   OauthClient?      @relation(fields: [actorOAuthClientId], references: [clientId], onDelete: SetNull)
+  /// The agent's name, kept when its unused registration is deleted, so its history still names it.
+  actorAgentName     String?           @map("actor_agent_name")
   /// An `ActivityAction` value; kept as text so features can add actions without a migration.
   action             String
   outcome            ActivityOutcome
@@ -761,6 +763,7 @@ model ActivityEvent {
   @@index([workspaceId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([workspaceId, subjectType, subjectId])
   @@index([subjectIds], type: Gin)
+  @@index([actorOAuthClientId, createdAt])
   @@map("activity_events")
 }
 

@@ -10,6 +10,7 @@ use Crossmart\Exception\CrossmartExceptionInterface;
 use Crossmart\Http\ApiRequest;
 use Crossmart\Http\HttpMethod;
 use Crossmart\Http\TransportInterface;
+use Crossmart\Model\AgentClientDto;
 use Crossmart\Model\AgentConnectionDto;
 use Crossmart\Model\PickAgentWorkspaceDto;
 
@@ -20,6 +21,27 @@ final class AgentsApi
 {
     public function __construct(private readonly TransportInterface $transport)
     {
+    }
+
+    /**
+     * The agent asking for access
+     *
+     * Its name, and what of it Crossmart could verify: the host of a Client ID Metadata Document, or nothing for an agent that registered itself. Signed-in users only.
+     *
+     * @param string $clientId The `client_id` of the authorization request
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function agentAuthorizationControllerFindClientV1(
+        string $clientId,
+    ): AgentClientDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Get,
+            pathTemplate: '/api/v1/oauth/client',
+            query: ['clientId' => $clientId],
+        ));
+
+        return AgentClientDto::fromArray($response->object());
     }
 
     /**

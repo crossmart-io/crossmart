@@ -27,6 +27,7 @@ enum ActivityAction: string
     case WebhookSecretRotated = 'webhook_secret_rotated';
     case WebhookEndpointDisabled = 'webhook_endpoint_disabled';
     case AgentDisconnected = 'agent_disconnected';
+    case UnusedAgentsRemoved = 'unused_agents_removed';
     case MemberInvited = 'member_invited';
     case InvitationRevoked = 'invitation_revoked';
     case MemberJoined = 'member_joined';

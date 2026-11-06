@@ -1482,6 +1482,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/oauth/client": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The agent asking for access
+         * @description Its name, and what of it Crossmart could verify: the host of a Client ID Metadata Document, or nothing for an agent that registered itself. Signed-in users only.
+         */
+        get: operations["AgentAuthorizationController_findClient_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/oauth/workspace": {
         parameters: {
             query?: never;
@@ -3868,6 +3888,26 @@ export interface components {
             /** @description Null when not asked for */
             descriptionHtml: string | null;
         };
+        /**
+         * @description `metadata_document`: Crossmart fetched the agent’s metadata from its HTTPS client id. `dynamic`: the agent registered itself, and its name and site are unverified.
+         * @enum {string}
+         */
+        AgentClientRegistration: AgentClientRegistration;
+        AgentClientDto: {
+            /** @description The OAuth client id: a Client ID Metadata Document URL, or a registered id */
+            clientId: string;
+            /** @description The name to show. Verified only for a `metadata_document` client, through `verifiedHost`; a `dynamic` client chose it itself, and any client can call itself "Claude". */
+            name: string;
+            /** @description `metadata_document`: Crossmart fetched the agent’s metadata from its HTTPS client id. `dynamic`: the agent registered itself, and its name and site are unverified. */
+            registration: components["schemas"]["AgentClientRegistration"];
+            /**
+             * @description For a `metadata_document` client: the host its metadata came from
+             * @example claude.ai
+             */
+            verifiedHost: string | null;
+            /** @description For a `dynamic` client: the HTTPS host of the site it claims. Not verified. */
+            claimedHost: string | null;
+        };
         PickAgentWorkspaceDto: {
             /**
              * Format: uuid
@@ -3884,6 +3924,10 @@ export interface components {
             clientId: string;
             /** @description The name the agent gives, such as "Claude" */
             clientName: string;
+            /** @description Whether `clientName` came from a verified host (`metadata_document`) or is only what the agent calls itself (`dynamic`) */
+            clientRegistration: components["schemas"]["AgentClientRegistration"];
+            /** @description For a `metadata_document` client: the host its metadata came from */
+            clientVerifiedHost: string | null;
             /** @description The agent’s home page */
             clientUri: string | null;
             /** @description The agent’s logo address, from its metadata. Crossmart never fetches it. */
@@ -6605,6 +6649,35 @@ export interface operations {
             };
         };
     };
+    AgentAuthorizationController_findClient_v1: {
+        parameters: {
+            query: {
+                /** @description The `client_id` of the authorization request */
+                clientId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentClientDto"];
+                };
+            };
+            /** @description No such agent, or it is disabled */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AgentAuthorizationController_pickWorkspace_v1: {
         parameters: {
             query?: never;
@@ -7215,6 +7288,7 @@ export enum ActivityAction {
     webhook_secret_rotated = "webhook_secret_rotated",
     webhook_endpoint_disabled = "webhook_endpoint_disabled",
     agent_disconnected = "agent_disconnected",
+    unused_agents_removed = "unused_agents_removed",
     member_invited = "member_invited",
     invitation_revoked = "invitation_revoked",
     member_joined = "member_joined",
@@ -7494,6 +7568,10 @@ export enum AiFeature {
 export enum ContentField {
     title = "title",
     description = "description"
+}
+export enum AgentClientRegistration {
+    metadata_document = "metadata_document",
+    dynamic = "dynamic"
 }
 export enum AgentScope {
     catalog_read = "catalog:read",

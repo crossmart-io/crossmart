@@ -16,6 +16,7 @@ interface Noun {
 const PRODUCT_NOUN: Noun = { one: 'product', other: 'products' };
 const VARIANT_NOUN: Noun = { one: 'variant', other: 'variants' };
 const SUGGESTION_NOUN: Noun = { one: 'suggestion', other: 'suggestions' };
+const UNUSED_AGENT_NOUN: Noun = { one: 'unused agent', other: 'unused agents' };
 const pluralRules = new Intl.PluralRules('en');
 
 function countOf(noun: Noun, entry: ActivityEntry): string {
@@ -134,6 +135,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.AgentDisconnected]: {
     operation: 'Disconnecting an agent',
     describe: (entry) => `Disconnected agent${named(entry)}`,
+  },
+  [ActivityAction.UnusedAgentsRemoved]: {
+    operation: 'Removing unused agents',
+    describe: (entry) => withDetail(`Removed ${countOf(UNUSED_AGENT_NOUN, entry)}`, entry),
   },
   [ActivityAction.MemberInvited]: {
     operation: 'Invitation',
