@@ -412,7 +412,32 @@ model ProductMedia {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([productId, position])
+  /// Finds the media that use an uploaded file (`Upload.url`), for the orphan cleanup.
+  @@index([workspaceId, url])
   @@map("product_media")
+}
+
+/// A file uploaded to Crossmart's storage. The workspace's storage use is the sum of `byteSize`.
+/// Only files we stored are recorded here, so images imported from a channel (external URLs)
+/// are never cleaned up. There is deliberately no foreign key to `Workspace`: when a workspace
+/// is deleted its rows stay, become orphans, and the cleanup deletes their files.
+model Upload {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  /// Where the file sits in `FileStorage`.
+  storageKey  String    @unique @map("storage_key")
+  /// The public URL product media reference the file by.
+  url         String
+  byteSize    BigInt    @map("byte_size")
+  contentType String    @map("content_type")
+  /// Set when no product media of the workspace uses the file, cleared when one does again.
+  /// The file is deleted once it has been an orphan for the grace period.
+  orphanedAt  DateTime? @map("orphaned_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([workspaceId, url])
+  @@index([orphanedAt, workspaceId])
+  @@map("uploads")
 }
 
 // ─── Inventory ────────────────────────────────────────────────────────────────

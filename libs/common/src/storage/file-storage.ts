@@ -4,6 +4,11 @@ export interface StoredFile {
   url: string;
 }
 
+/** A file found by listing the storage, such as when recording files stored before tracking. */
+export interface ListedFile extends StoredFile {
+  byteSize: number;
+}
+
 /**
  * Where uploaded files live. Implementations: `LocalFileStorage` now, S3-compatible
  * object storage (S3, R2) for the cloud.
@@ -12,8 +17,9 @@ export abstract class FileStorage {
   /** Stores the content under `key`, which must come from the server, never from a client. */
   abstract put(key: string, content: Buffer, contentType: string): Promise<StoredFile>;
 
+  /** Deletes the file; resolves as well when there is no file under `key`. */
   abstract delete(key: string): Promise<void>;
 
-  /** The total size in bytes of the files under the folder `prefix`; 0 when it is empty. */
-  abstract usedBytes(prefix: string): Promise<number>;
+  /** Every file under the folder `prefix`, nested ones included; none when it is empty. */
+  abstract list(prefix: string): AsyncIterable<ListedFile>;
 }

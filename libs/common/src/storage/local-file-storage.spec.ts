@@ -1,7 +1,14 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { ListedFile } from './file-storage.js';
 import { LocalFileStorage } from './local-file-storage.js';
+
+async function collect(files: AsyncIterable<ListedFile>): Promise<ListedFile[]> {
+  const listed: ListedFile[] = [];
+  for await (const file of files) listed.push(file);
+  return listed;
+}
 
 describe('LocalFileStorage', () => {
   let rootDir: string;
@@ -23,14 +30,36 @@ describe('LocalFileStorage', () => {
     expect(await readFile(join(rootDir, 'ws/a.png'), 'utf8')).toBe('png');
   });
 
-  it('sums the sizes of the files under a folder, nested ones included', async () => {
+  it('lists the files under a folder, nested ones included', async () => {
     await storage.put('workspaces/ws-1/products/a.png', Buffer.alloc(10), 'image/png');
     await storage.put('workspaces/ws-1/other/b.png', Buffer.alloc(5), 'image/png');
     await storage.put('workspaces/ws-2/products/c.png', Buffer.alloc(100), 'image/png');
 
-    expect(await storage.usedBytes('workspaces/ws-1')).toBe(15);
-    expect(await storage.usedBytes('workspaces/ws-3')).toBe(0);
-    await expect(storage.usedBytes('../')).rejects.toThrow(/escapes/);
+    const listed = await collect(storage.list('workspaces/ws-1'));
+
+    expect(listed.sort((left, right) => left.key.localeCompare(right.key))).toEqual([
+      {
+        key: 'workspaces/ws-1/other/b.png',
+        url: 'http://localhost:3000/media/workspaces/ws-1/other/b.png',
+        byteSize: 5,
+      },
+      {
+        key: 'workspaces/ws-1/products/a.png',
+        url: 'http://localhost:3000/media/workspaces/ws-1/products/a.png',
+        byteSize: 10,
+      },
+    ]);
+    expect(await collect(storage.list('workspaces/ws-3'))).toEqual([]);
+    await expect(collect(storage.list('../'))).rejects.toThrow(/escapes/);
+  });
+
+  it('deletes a file, and accepts one that is already gone', async () => {
+    await storage.put('ws/a.png', Buffer.from('png'), 'image/png');
+
+    await storage.delete('ws/a.png');
+    await storage.delete('ws/a.png');
+
+    expect(await collect(storage.list('ws'))).toEqual([]);
   });
 
   it('refuses keys that leave the storage folder', async () => {
