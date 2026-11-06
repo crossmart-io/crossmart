@@ -11,7 +11,7 @@ import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
 import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import { type EtsyShopContext, etsyShopContext } from '../api/etsy-shop-context.js';
-import { ETSY_CUSTOM_PROPERTY_IDS, ETSY_LISTING_URL_PREFIX } from '../etsy.constants.js';
+import { ETSY_LISTING_URL_PREFIX } from '../etsy.constants.js';
 import { EtsyListingState } from '../etsy.enums.js';
 import { etsyError } from '../etsy-errors.js';
 import { EtsyTaxonomyReader } from '../taxonomy/etsy-taxonomy.reader.js';
@@ -26,18 +26,18 @@ import {
   stateField,
 } from './etsy-listing.mapper.js';
 import { EtsyListingImages, listingImages } from './etsy-listing-images.js';
-import { ETSY_NO_IMAGES, requireListingSetup } from './etsy-publish-prerequisites.js';
+import {
+  ETSY_NO_IMAGES,
+  ETSY_UNNAMED_OPTIONS,
+  hasListableOptions,
+  requireListingSetup,
+} from './etsy-publish-prerequisites.js';
 
 export const LISTING_GONE =
   'This listing no longer exists on Etsy. Remove it and publish it again.';
 const NO_CATEGORY = {
   requirement: PublishRequirement.Category,
   reason: 'Choose an Etsy category for this listing: none matched its title.',
-};
-const UNNAMED_OPTIONS = {
-  requirement: PublishRequirement.OptionNames,
-  reason:
-    'Give this product’s options names (such as Size), at most three, to list its variants on Etsy.',
 };
 /** States Crossmart publishes a listing from; a sold-out one renews (and is charged) on Etsy only. */
 const ACTIVATABLE: ReadonlySet<string> = new Set([
@@ -117,11 +117,8 @@ export class EtsyListingPublisher implements Omit<ListingPublisher, 'updatePrice
     if (listingImages(draft).length === 0) {
       throw ChannelError.unmet(ChannelType.Etsy, ETSY_NO_IMAGES);
     }
-    const { optionNames } = draft.product;
-    const unnamed =
-      optionNames.length === 0 || optionNames.length > ETSY_CUSTOM_PROPERTY_IDS.length;
-    if (draft.variants.length > 1 && unnamed) {
-      throw ChannelError.unmet(ChannelType.Etsy, UNNAMED_OPTIONS);
+    if (!hasListableOptions(draft.variants.length, draft.product.optionNames)) {
+      throw ChannelError.unmet(ChannelType.Etsy, ETSY_UNNAMED_OPTIONS);
     }
     const shop = await etsyShopContext(session);
     const category = await this.categoryOf(shop, draft);

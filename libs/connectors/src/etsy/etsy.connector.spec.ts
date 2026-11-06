@@ -3,6 +3,7 @@ import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { HttpMethod } from '../sdk/http/http-method.enum.js';
 import { PublishRequirement } from '../sdk/publishing/publish-requirement.enum.js';
+import type { PublishCandidate } from '../sdk/publishing/unmet-publish-requirement.js';
 import { describeConnectorContract } from '../sdk/testing/connector-contract.js';
 import { jsonResponse } from '../sdk/testing/fake-http-transport.js';
 import { fixtureResponse } from '../sdk/testing/fixtures.js';
@@ -210,12 +211,26 @@ describe('EtsyConnector', () => {
       processing: [settings.profiles.processing[0]!],
     };
     expect(requirements({ ...settings, listingSetup: gone, profiles: onlyOne })).toEqual([]);
-    expect(connector.unmetProductRequirements({ imageUrls: ['http://cdn.example/a.jpg'] })).toEqual(
-      [expect.objectContaining({ requirement: PublishRequirement.Images })],
-    );
+  });
+
+  it('names what a product lacks: an https image, and option names for its variants', () => {
+    const { connector } = createEtsyTestKit();
+    const product: PublishCandidate = {
+      imageUrls: ['https://cdn.example/a.jpg'],
+      active: false,
+      optionNames: [],
+      variantCount: 1,
+    };
+    const requirements = (candidate: PublishCandidate) =>
+      connector.unmetProductRequirements(candidate).map(({ requirement }) => requirement);
+
+    expect(requirements(product)).toEqual([]);
     expect(
-      connector.unmetProductRequirements({ imageUrls: ['https://cdn.example/a.jpg'] }),
-    ).toEqual([]);
+      requirements({ ...product, imageUrls: ['http://cdn.example/a.jpg'], variantCount: 2 }),
+    ).toEqual([PublishRequirement.Images, PublishRequirement.OptionNames]);
+    expect(
+      requirements({ ...product, variantCount: 2, optionNames: ['A', 'B', 'C', 'D'] }),
+    ).toEqual([PublishRequirement.OptionNames]);
   });
 
   it('suggests seller taxonomy leaves by title words, best first, and reads the tree once', async () => {

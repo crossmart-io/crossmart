@@ -6,6 +6,7 @@ import type {
   PublishCandidate,
   UnmetPublishRequirement,
 } from '../../sdk/publishing/unmet-publish-requirement.js';
+import { ETSY_CUSTOM_PROPERTY_IDS } from '../etsy.constants.js';
 import { isEtsySettings } from '../etsy-settings.js';
 import {
   type CompleteEtsyListingSetup,
@@ -35,6 +36,19 @@ export const ETSY_NO_IMAGES: UnmetPublishRequirement = {
   requirement: PublishRequirement.Images,
   reason: 'Etsy needs at least one photo. Add an image to this product (an https link).',
 };
+export const ETSY_UNNAMED_OPTIONS: UnmetPublishRequirement = {
+  requirement: PublishRequirement.OptionNames,
+  reason:
+    'Give this product’s options names (such as Size), at most three, to list its variants on Etsy.',
+};
+
+/** Variants list as Etsy variations: one named option each, at most three. */
+export function hasListableOptions(variantCount: number, optionNames: readonly string[]): boolean {
+  return (
+    variantCount <= 1 ||
+    (optionNames.length > 0 && optionNames.length <= ETSY_CUSTOM_PROPERTY_IDS.length)
+  );
+}
 
 /**
  * What the connection's listing setup lacks: the item details, then a shipping and a
@@ -55,11 +69,19 @@ export function unmetEtsyAccountRequirements(
   ];
 }
 
-/** Etsy publishes a listing only with an image, and Crossmart uploads `https` ones. */
+/**
+ * Etsy publishes a listing only with an image (Crossmart uploads `https` ones), and lists
+ * variants by named options. An inactive product is listed as a draft, so it needs nothing.
+ */
 export function unmetEtsyProductRequirements(
   candidate: PublishCandidate,
 ): UnmetPublishRequirement[] {
-  return candidate.imageUrls.some(isHttpsImage) ? [] : [ETSY_NO_IMAGES];
+  return [
+    ...(candidate.imageUrls.some(isHttpsImage) ? [] : [ETSY_NO_IMAGES]),
+    ...(hasListableOptions(candidate.variantCount, candidate.optionNames)
+      ? []
+      : [ETSY_UNNAMED_OPTIONS]),
+  ];
 }
 
 /** The resolved listing setup; refuses the publish, naming what is missing, without one. */
