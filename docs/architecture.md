@@ -259,7 +259,11 @@ the listing `ERROR` with the channel's message in `lastError`.
 Triggers:
 
 - **Publish / Sync now** (`POST …/channel-connections/:id/sync`): every selected product gets a pending listing and a
-  content job; every listing the channel holds for a product no longer selected gets a delist job.
+  content job; every listing the channel holds for a product no longer selected gets a delist job. `SyncRequestQueue`
+  stamps each queued listing's `syncRequestedAt` before its job is queued, and `ListingSyncRunner` clears it when the
+  content or delist job finishes or the queue gives up, so a selected listing shows `publishing` meanwhile and
+  `GET …/sync` counts what is left. A per-listing mark, not a sync run id: jobs coalesce per listing (a later edit
+  replaces a queued job), so only the listing knows whether its latest job ran. A retry marks its listing the same way.
 - **Catalog changes** go through the in-process `CatalogEventBus`, so the catalog does not depend on channels: a
   product edit queues content and stock, a bulk status or tag change queues content, a bulk price change and a CSV
   update import queue content or prices. Only listings the channel already holds are synced; new products wait for
