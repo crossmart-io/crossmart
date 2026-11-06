@@ -7,7 +7,9 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiCreatedResponse,
   ApiExtraModels,
@@ -39,6 +41,7 @@ import { ChannelConnectRedirectDto } from '../dto/channel-connect-redirect.dto.j
 import { ChannelConnectionDto } from '../dto/channel-connection.dto.js';
 import { StartAuthorizationDto, StartedAuthorizationDto } from '../dto/start-authorization.dto.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { OAuthNonceCookie } from '../services/oauth-nonce.cookie.js';
 
 @ApiTags(CHANNELS_TAG)
 @ApiExtraModels(ChannelConnectRedirectDto)
@@ -48,6 +51,7 @@ export class ChannelConnectionsController {
     private readonly connections: ChannelConnectionsService,
     private readonly authorizations: ChannelAuthorizationService,
     private readonly listings: ChannelListingsService,
+    private readonly nonceCookie: OAuthNonceCookie,
   ) {}
 
   @Get()
@@ -69,7 +73,9 @@ export class ChannelConnectionsController {
     description:
       'Returns the URL to send the merchant to. After they approve the app, the channel ' +
       'redirects to the API, which stores the connection and sends them back to the web app’s ' +
-      'Channels page with the parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.',
+      'Channels page with the parameters of `ChannelConnectRedirectDto`. Needs a signed-in user, ' +
+      'and the browser must store the cookie this response sets (send it with credentials): ' +
+      'the callback only accepts the same browser and session that started the connection.',
   })
   @ApiCreatedResponse({ type: StartedAuthorizationDto })
   @ApiPlanLimitResponse()
@@ -77,9 +83,12 @@ export class ChannelConnectionsController {
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @CurrentPrincipal() principal: Principal,
     @Body() body: StartAuthorizationDto,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<StartedAuthorizationDto> {
     const { userId } = requireUser(principal);
-    return StartedAuthorizationDto.from(await this.authorizations.start(workspaceId, userId, body));
+    const { started, browserNonce } = await this.authorizations.start(workspaceId, userId, body);
+    this.nonceCookie.set(response, body.channel, browserNonce);
+    return StartedAuthorizationDto.from(started);
   }
 
   @Get(`:${CONNECTION_ID_PARAM}`)

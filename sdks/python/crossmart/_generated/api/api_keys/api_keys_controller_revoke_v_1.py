@@ -31,6 +31,9 @@ def _parse_response(
     if response.status_code == 204:
         return None
 
+    if response.status_code == 403:
+        return None
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -55,6 +58,8 @@ def sync_detailed(
     client: AuthenticatedClient | Client,
 ) -> Response[Any]:
     """Revoke an API key
+
+     Answers 403 unless the caller created the key or has every permission the key has.
 
     Args:
         workspace_id (str):
@@ -87,6 +92,8 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
 ) -> Response[Any]:
     """Revoke an API key
+
+     Answers 403 unless the caller created the key or has every permission the key has.
 
     Args:
         workspace_id (str):

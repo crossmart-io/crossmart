@@ -35,3 +35,9 @@ export const PAYMENT_REQUIRED_ERROR = 'Payment Required';
 export const UNLIMITED = null;
 /** The plans are seeded by a migration; without a default one, organizations cannot be created. */
 export const NO_DEFAULT_PLAN = 'No default plan is set up. Run the database migrations.';
+
+/**
+ * What one AI call costs in `Feature.AiCredits`. Every call is one credit for now, whatever its
+ * size; pricing by tokens may replace it later, metered from the same `ai_usage` records.
+ */
+export const AI_CREDITS_PER_CALL = 1;

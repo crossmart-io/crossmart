@@ -75,6 +75,38 @@ describe('ListingOverridesService', () => {
     });
   });
 
+  it('sanitizes the description before saving it, and keeps a cleared one null', async () => {
+    const { service, writer } = setup();
+
+    await service.save(
+      TARGET,
+      {
+        ...EMPTY,
+        descriptionHtml: '<p>Hi<img src=x onerror="steal()"></p><script>steal()</script>',
+      },
+      ACTOR,
+    );
+    await service.save(TARGET, EMPTY, ACTOR);
+
+    expect(writer.save.mock.calls[0][1].descriptionHtml).toBe('<p>Hi</p>');
+    expect(writer.save.mock.calls[1][1].descriptionHtml).toBeNull();
+  });
+
+  it('sanitizes content an approved suggestion writes', async () => {
+    const { service, writer } = setup();
+
+    await service.saveContent(
+      TARGET,
+      { descriptionHtml: '<p onmouseover="steal()">New</p>' },
+      ACTOR,
+    );
+
+    expect(writer.save).toHaveBeenCalledWith(
+      TARGET,
+      expect.objectContaining({ descriptionHtml: '<p>New</p>', inventoryBuffer: 2 }),
+    );
+  });
+
   it.each([
     [
       'a variant of another product',

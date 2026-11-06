@@ -10,6 +10,8 @@ const FAILURE_MESSAGES: Record<ConnectFailure, string> = {
   [ConnectFailure.AccessDenied]: 'The app was not approved on the channel',
   [ConnectFailure.MissingScopes]: 'The channel did not grant every permission Crossmart needs',
   [ConnectFailure.NotPermitted]: 'You can no longer manage this workspace',
+  [ConnectFailure.SessionRequired]:
+    'You were not signed in to Crossmart when the channel sent you back. Sign in and start again.',
   [ConnectFailure.ChannelUnavailable]: 'The channel is not responding. Try again in a moment.',
   [ConnectFailure.PlanLimitReached]: 'The plan has no room for another connected channel',
   [ConnectFailure.Unexpected]: 'The channel could not be connected',

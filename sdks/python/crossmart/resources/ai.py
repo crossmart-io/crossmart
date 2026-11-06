@@ -21,7 +21,7 @@ from .._generated.models import (
     CreateContentDraftDto,
     GenerateContentDto,
 )
-from .._response import translate_transport_errors, unwrap
+from .._response import translate_transport_errors, unwrap, unwrap_as
 from .._utils import Id, as_model, as_uuid, or_unset
 
 ContentDraftRequest = CreateContentDraftDto | Mapping[str, Any]
@@ -79,7 +79,7 @@ class AI(SyncResource):
             response = ai_controller_generate_content_v_1.sync_detailed(
                 self._workspace(), client=self._http, body=_generation(store_id, product_ids)
             )
-        return unwrap(response)
+        return unwrap_as(response, ContentGenerationReceiptDto)
 
     def draft_content(self, request: ContentDraftRequest) -> ContentDraftDto:
         """Rewrites a product's title or description right away, for the catalog or one store.
@@ -99,7 +99,7 @@ class AI(SyncResource):
             response = ai_controller_draft_content_v_1.sync_detailed(
                 self._workspace(), client=self._http, body=body
             )
-        return unwrap(response)
+        return unwrap_as(response, ContentDraftDto)
 
 
 class AsyncAI(AsyncResource):
@@ -131,7 +131,7 @@ class AsyncAI(AsyncResource):
             response = await ai_controller_generate_content_v_1.asyncio_detailed(
                 await self._workspace(), client=self._http, body=_generation(store_id, product_ids)
             )
-        return unwrap(response)
+        return unwrap_as(response, ContentGenerationReceiptDto)
 
     async def draft_content(self, request: ContentDraftRequest) -> ContentDraftDto:
         """Rewrites a product's title or description right away. See :meth:`AI.draft_content`."""
@@ -140,4 +140,4 @@ class AsyncAI(AsyncResource):
             response = await ai_controller_draft_content_v_1.asyncio_detailed(
                 await self._workspace(), client=self._http, body=body
             )
-        return unwrap(response)
+        return unwrap_as(response, ContentDraftDto)

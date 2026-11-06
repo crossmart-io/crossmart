@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any
+from typing import Any, cast
 from urllib.parse import quote
 
 import httpx
@@ -8,6 +8,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.content_draft_dto import ContentDraftDto
 from ...models.create_content_draft_dto import CreateContentDraftDto
+from ...models.plan_limit_error_dto import PlanLimitErrorDto
 from ...types import Response
 
 
@@ -35,11 +36,20 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> ContentDraftDto | None:
+) -> Any | ContentDraftDto | PlanLimitErrorDto | None:
     if response.status_code == 200:
         response_200 = ContentDraftDto.from_dict(response.json())
 
         return response_200
+
+    if response.status_code == 402:
+        response_402 = PlanLimitErrorDto.from_dict(response.json())
+
+        return response_402
+
+    if response.status_code == 429:
+        response_429 = cast(Any, None)
+        return response_429
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -49,7 +59,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[ContentDraftDto]:
+) -> Response[Any | ContentDraftDto | PlanLimitErrorDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -63,12 +73,13 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> Response[ContentDraftDto]:
+) -> Response[Any | ContentDraftDto | PlanLimitErrorDto]:
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
     instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it.
-    Answers 503 while AI is not configured.
+    Uses one AI credit: answers 402 when the plan has none left this month (while plans are enforced),
+    429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -79,7 +90,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ContentDraftDto]
+        Response[Any | ContentDraftDto | PlanLimitErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -99,12 +110,13 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> ContentDraftDto | None:
+) -> Any | ContentDraftDto | PlanLimitErrorDto | None:
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
     instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it.
-    Answers 503 while AI is not configured.
+    Uses one AI credit: answers 402 when the plan has none left this month (while plans are enforced),
+    429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -115,7 +127,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ContentDraftDto
+        Any | ContentDraftDto | PlanLimitErrorDto
     """
 
     return sync_detailed(
@@ -130,12 +142,13 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> Response[ContentDraftDto]:
+) -> Response[Any | ContentDraftDto | PlanLimitErrorDto]:
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
     instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it.
-    Answers 503 while AI is not configured.
+    Uses one AI credit: answers 402 when the plan has none left this month (while plans are enforced),
+    429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -146,7 +159,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ContentDraftDto]
+        Response[Any | ContentDraftDto | PlanLimitErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -164,12 +177,13 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> ContentDraftDto | None:
+) -> Any | ContentDraftDto | PlanLimitErrorDto | None:
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
     instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it.
-    Answers 503 while AI is not configured.
+    Uses one AI credit: answers 402 when the plan has none left this month (while plans are enforced),
+    429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -180,7 +194,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ContentDraftDto
+        Any | ContentDraftDto | PlanLimitErrorDto
     """
 
     return (

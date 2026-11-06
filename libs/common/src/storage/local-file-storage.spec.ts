@@ -23,6 +23,16 @@ describe('LocalFileStorage', () => {
     expect(await readFile(join(rootDir, 'ws/a.png'), 'utf8')).toBe('png');
   });
 
+  it('sums the sizes of the files under a folder, nested ones included', async () => {
+    await storage.put('workspaces/ws-1/products/a.png', Buffer.alloc(10), 'image/png');
+    await storage.put('workspaces/ws-1/other/b.png', Buffer.alloc(5), 'image/png');
+    await storage.put('workspaces/ws-2/products/c.png', Buffer.alloc(100), 'image/png');
+
+    expect(await storage.usedBytes('workspaces/ws-1')).toBe(15);
+    expect(await storage.usedBytes('workspaces/ws-3')).toBe(0);
+    await expect(storage.usedBytes('../')).rejects.toThrow(/escapes/);
+  });
+
   it('refuses keys that leave the storage folder', async () => {
     await expect(storage.put('../escape.png', Buffer.from(''), 'image/png')).rejects.toThrow(
       /escapes/,

@@ -126,6 +126,31 @@ describe('Custom roles (e2e)', () => {
     expect(deleted.status).toBe(HttpStatus.CONFLICT);
   });
 
+  it('revokes only keys the revoker created or whose access the revoker has', async () => {
+    const owner = await signUp(app, 'Owner');
+    const keyManager = await createRole(owner, [WorkspacePermission.ManageApiKeys], 'Key manager');
+    const manager = await joinWithRole(owner, keyManager.id);
+    const keysUrl = `/api/v1/workspaces/${owner.workspaceId}/api-keys`;
+    const ownersKey = await request(server())
+      .post(keysUrl)
+      .set('Cookie', owner.cookie)
+      .send({ name: 'Admin script', role: WorkspaceRole.ADMIN });
+    const managersKey = await request(server())
+      .post(keysUrl)
+      .set('Cookie', manager.cookie)
+      .send({ name: 'Own script', role: WorkspaceRole.CUSTOM, customRoleId: keyManager.id });
+    const revoke = (user: SignedUpUser, keyId: string) =>
+      request(server()).delete(`${keysUrl}/${keyId}`).set('Cookie', user.cookie);
+
+    const refused = await revoke(manager, ownersKey.body.apiKey.id);
+    const own = await revoke(manager, managersKey.body.apiKey.id);
+    const byOwner = await revoke(owner, ownersKey.body.apiKey.id);
+
+    expect(refused.status).toBe(HttpStatus.FORBIDDEN);
+    expect(own.status).toBe(HttpStatus.NO_CONTENT);
+    expect(byOwner.status).toBe(HttpStatus.NO_CONTENT);
+  });
+
   it('lists the built-in roles with their permissions next to the custom ones', async () => {
     const owner = await signUp(app, 'Owner');
     await createRole(owner, [WorkspacePermission.ViewOrders]);

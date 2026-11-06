@@ -106,6 +106,19 @@ describe('ListingDraftBuilder', () => {
     expect(draft.variants[0]?.available).toBe(8);
   });
 
+  it('strips scripts and event handlers from a stored description override at publish', () => {
+    const listing = listingRecord({
+      override: overrideRecord({
+        descriptionHtml:
+          '<p onclick="steal()">Hi</p><script>steal()</script><img src=x onerror=steal()>',
+      }),
+    });
+
+    const { draft } = builder.build({ product: productDetail(), listing, pricing: USD });
+
+    expect(draft.product.descriptionHtml).toBe('<p>Hi</p>');
+  });
+
   it('shows a draft product when the merchant makes it visible on the channel', () => {
     const listing = listingRecord({
       override: overrideRecord({ visibility: ListingVisibility.VISIBLE }),

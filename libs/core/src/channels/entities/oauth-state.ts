@@ -16,3 +16,17 @@ export const oauthStatePayloadSchema = z.object({
 export type OAuthStatePayload = z.infer<typeof oauthStatePayloadSchema>;
 
 export type OAuthStateClaims = Omit<OAuthStatePayload, 'nonce' | 'expiresAt'>;
+
+/** A new state, and the nonce in it that the API also gives the browser as a cookie. */
+export interface IssuedOAuthState {
+  state: string;
+  nonce: string;
+}
+
+/** The browser that followed the channel's redirect back to the API. */
+export interface OAuthCallbackBrowser {
+  /** The signed-in user, when the session cookie came along. */
+  sessionUserId: string | null;
+  /** The nonce cookie set when the connection started, when it came along. */
+  nonce: string | null;
+}

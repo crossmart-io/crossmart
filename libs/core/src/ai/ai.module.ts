@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EntitlementsModule } from '../entitlements/entitlements.module.js';
 import { AnthropicAiProvider } from './providers/anthropic/anthropic-ai.provider.js';
 import { AnthropicClientFactory } from './providers/anthropic/anthropic-client.factory.js';
 import { AiProvider } from './providers/ai-provider.js';
@@ -12,6 +13,7 @@ import { AiUsageService } from './services/ai-usage.service.js';
  * still loads and AI features report that AI is not configured.
  */
 @Module({
+  imports: [EntitlementsModule],
   providers: [
     AnthropicClientFactory,
     { provide: AiProvider, useClass: AnthropicAiProvider },

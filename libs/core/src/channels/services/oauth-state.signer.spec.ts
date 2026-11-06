@@ -36,6 +36,14 @@ describe('OAuthStateSigner', () => {
     expect(states.sign(CLAIMS, NOW)).not.toBe(first);
   });
 
+  it('signs the nonce it is given, so the browser cookie can carry the same one', () => {
+    const states = signer();
+
+    expect(states.verify(states.sign(CLAIMS, NOW, 'browser-nonce'), NOW).nonce).toBe(
+      'browser-nonce',
+    );
+  });
+
   it('rejects a state once it has expired', () => {
     const states = signer();
     const state = states.sign(CLAIMS, NOW);
