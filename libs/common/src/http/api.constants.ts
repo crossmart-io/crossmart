@@ -9,3 +9,9 @@ export const OPENAPI_OUTPUT_FILE = 'openapi.json';
 export const OPENAPI_ONLY_FLAG = '--openapi-only';
 
 export const API_KEY_HEADER = 'x-api-key';
+
+/** The names the OpenAPI document gives its security schemes (`@nestjs/swagger` defaults). */
+export enum OpenApiSecurityScheme {
+  ApiKey = 'api_key',
+  SessionCookie = 'cookie',
+}
