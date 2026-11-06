@@ -16,6 +16,11 @@ export interface ListingSummary {
   /** What the channel refused the last publish for lacking, when the merchant can add it. */
   missingRequirement: PublishRequirement | null;
   lastSyncedAt: Date | null;
+  /**
+   * When a sync or retry queued its publish, update or delist; null once that job finished (or
+   * gave up). While set, a selected listing shows `publishing`.
+   */
+  syncRequestedAt: Date | null;
   /** The channel category it is listed in, on channels that have categories (eBay). */
   category: ChannelCategory | null;
 }
@@ -25,6 +30,8 @@ export interface ListingDisplayFields {
   displayState: ListingDisplayState;
   /** For `needs_details` and `failed`: what to add, or the channel's message. */
   displayReason: string | null;
+  /** For `needs_details`: the requirement to fix first, so "Fix" opens the right place. */
+  displayRequirement: PublishRequirement | null;
 }
 
 /** One row of a connection's listings table. */

@@ -1,7 +1,9 @@
+import type { ProductSummary } from '../../catalog/entities/product-views.js';
 import type { ProductSummaryRecord } from '../../catalog/repositories/product.queries.js';
 import { SELECTION_BATCH_SIZE } from '../listings.constants.js';
 import type { ProductSelectionRepository } from '../repositories/product-selection.repository.js';
 import { ProductSelectionService } from './product-selection.service.js';
+import type { ProductStoreDisplays } from './product-store-displays.js';
 
 const WS = 'ws-1';
 
@@ -32,9 +34,18 @@ function setup() {
     listIds: vi.fn<ProductSelectionRepository['listIds']>(),
     matches: vi.fn<ProductSelectionRepository['matches']>().mockResolvedValue(true),
   };
+  const storeDisplays = {
+    display: vi.fn((_workspaceId: string, summaries: readonly ProductSummary[]) =>
+      Promise.resolve(summaries.map((summary) => ({ ...summary, stores: [] }))),
+    ),
+  };
   return {
     repository,
-    service: new ProductSelectionService(repository as unknown as ProductSelectionRepository),
+    storeDisplays,
+    service: new ProductSelectionService(
+      repository as unknown as ProductSelectionRepository,
+      storeDisplays as unknown as ProductStoreDisplays,
+    ),
   };
 }
 
@@ -42,7 +53,7 @@ const SCOPE = { workspaceId: WS, connectionId: 'conn-1', rule: null };
 
 describe('ProductSelectionService', () => {
   it('previews a page with each count, and a cursor when more exist', async () => {
-    const { service, repository } = setup();
+    const { service, repository, storeDisplays } = setup();
     repository.count
       .mockResolvedValueOnce(12)
       .mockResolvedValueOnce(11)
@@ -63,6 +74,8 @@ describe('ProductSelectionService', () => {
       nextCursor: 'b',
     });
     expect(preview.items.map((item) => item.id)).toEqual(['a', 'b']);
+    expect(storeDisplays.display).toHaveBeenCalledOnce();
+    expect(storeDisplays.display.mock.calls[0]?.[0]).toBe(WS);
   });
 
   it('counts products added by hand even without an automatic rule', async () => {

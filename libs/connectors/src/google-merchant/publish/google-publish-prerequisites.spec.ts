@@ -1,11 +1,23 @@
 import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import { googleSettings } from '../google-merchant.fixtures.js';
+import type { PublishCandidate } from '../../sdk/publishing/unmet-publish-requirement.js';
 import {
+  GOOGLE_INACTIVE_PRODUCT,
   GOOGLE_NO_IMAGE,
   GOOGLE_NO_SETUP,
   unmetGoogleAccountRequirements,
   unmetGoogleProductRequirements,
 } from './google-publish-prerequisites.js';
+
+function candidate(overrides: Partial<PublishCandidate> = {}): PublishCandidate {
+  return {
+    imageUrls: ['https://a.example/x.jpg'],
+    active: true,
+    optionNames: [],
+    variantCount: 1,
+    ...overrides,
+  };
+}
 
 describe('Google publish prerequisites', () => {
   it('is ready once the listing setup is saved', () => {
@@ -21,9 +33,15 @@ describe('Google publish prerequisites', () => {
   });
 
   it('needs an https image', () => {
-    expect(unmetGoogleProductRequirements({ imageUrls: ['http://a.example/x.jpg'] })).toEqual([
-      GOOGLE_NO_IMAGE,
-    ]);
-    expect(unmetGoogleProductRequirements({ imageUrls: ['https://a.example/x.jpg'] })).toEqual([]);
+    const httpOnly = candidate({ imageUrls: ['http://a.example/x.jpg'] });
+
+    expect(unmetGoogleProductRequirements(httpOnly)).toEqual([GOOGLE_NO_IMAGE]);
+    expect(unmetGoogleProductRequirements(candidate())).toEqual([]);
+  });
+
+  it('lists only shown products, whatever their options', () => {
+    const hidden = candidate({ active: false, variantCount: 2 });
+
+    expect(unmetGoogleProductRequirements(hidden)).toEqual([GOOGLE_INACTIVE_PRODUCT]);
   });
 });

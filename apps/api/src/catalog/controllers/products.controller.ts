@@ -18,7 +18,12 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { type Actor, ProductsService, WorkspacePermission } from '@crossmart/core';
+import {
+  type Actor,
+  ProductStoreDisplays,
+  ProductsService,
+  WorkspacePermission,
+} from '@crossmart/core';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
@@ -32,17 +37,27 @@ import { UpdateProductDto } from '../dto/update-product.dto.js';
 @ApiTags(CATALOG_TAG)
 @Controller(PRODUCTS_ROUTE)
 export class ProductsController {
-  constructor(private readonly products: ProductsService) {}
+  constructor(
+    private readonly products: ProductsService,
+    private readonly storeDisplays: ProductStoreDisplays,
+  ) {}
 
   @Get()
   @RequirePermission(WorkspacePermission.ViewProducts)
-  @ApiOperation({ summary: 'Products of a workspace, in title order' })
+  @ApiOperation({
+    summary: 'Products of a workspace, in title order',
+    description:
+      'Each row’s `stores` badges carry `displayState`, `displayReason` and ' +
+      '`displayRequirement`, computed by the same rule as the store’s own pages.',
+  })
   @ApiOkResponse({ type: ProductPageDto })
   async list(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Query() query: ListProductsQueryDto,
   ): Promise<ProductPageDto> {
-    return ProductPageDto.from(await this.products.list(workspaceId, query));
+    const page = await this.products.list(workspaceId, query);
+    const items = await this.storeDisplays.display(workspaceId, page.items);
+    return ProductPageDto.from({ ...page, items });
   }
 
   @Get(`:${PRODUCT_ID_PARAM}`)

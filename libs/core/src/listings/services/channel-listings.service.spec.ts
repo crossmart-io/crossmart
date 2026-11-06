@@ -1,4 +1,4 @@
-import { ListingStatus } from '@crossmart/database';
+import { ListingStatus, ListingVisibility, ProductStatus } from '@crossmart/database';
 import { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import type { ChannelProductsRepository } from '../repositories/channel-products.repository.js';
 import type { ListingRowRecord } from '../repositories/listing-sync.queries.js';
@@ -20,6 +20,8 @@ function row(productId: string, status: ListingStatus): ListingRowRecord {
     ...listingRecord({ id: `listing-${productId}`, productId, status }),
     product: {
       title: productId,
+      status: ProductStatus.ACTIVE,
+      optionNames: [],
       media: [{ url: 'https://cdn.example.com/1.jpg' }],
       _count: { variants: 1 },
     },
@@ -54,6 +56,7 @@ function setup(records: ListingRowRecord[]) {
     resolve: vi.fn<ListingDisplayResolver['resolve']>(({ publishReadiness }, subject) => ({
       state: subject.selected ? ListingDisplayState.Published : ListingDisplayState.Removing,
       reason: publishReadiness.ready ? null : 'setup',
+      requirement: null,
     })),
   };
   const service = new ChannelListingsService(
@@ -82,7 +85,24 @@ describe('ChannelListingsService', () => {
       selected: false,
       removedByHand: true,
       listing: expect.objectContaining({ status: ListingStatus.ACTIVE }),
-      imageUrls: ['https://cdn.example.com/1.jpg'],
+      candidate: {
+        imageUrls: ['https://cdn.example.com/1.jpg'],
+        active: true,
+        optionNames: [],
+        variantCount: 1,
+      },
     });
+  });
+
+  it('checks the product as the store would show it, following its visibility override', async () => {
+    const hidden: ListingRowRecord = {
+      ...row('p-1', ListingStatus.PENDING),
+      override: { visibility: ListingVisibility.HIDDEN },
+    };
+    const { service, displays } = setup([hidden]);
+
+    await service.list(WORKSPACE_ID, CONNECTION_ID, QUERY);
+
+    expect(displays.resolve.mock.calls[0]?.[1].candidate.active).toBe(false);
   });
 });

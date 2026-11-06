@@ -1,4 +1,4 @@
-import type { ProductSummary } from '../../catalog/entities/product-views.js';
+import type { DisplayedProductSummary } from './store-badge-display.js';
 
 /** What a product selection rule selects, with how each part contributes. */
 export interface SelectionPreview {
@@ -10,7 +10,7 @@ export interface SelectionPreview {
   addedManually: number;
   /** Products the filter matches that were removed by hand. */
   removedManually: number;
-  items: ProductSummary[];
+  items: DisplayedProductSummary[];
   nextCursor: string | null;
 }
 

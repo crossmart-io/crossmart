@@ -770,6 +770,9 @@ model Listing {
   channelCategoryId   String?                  @map("channel_category_id")
   /// The category with its ancestors, as the channel names it: "Home & Garden > Kitchen > Mugs".
   channelCategoryName String?                  @map("channel_category_name")
+  /// When a sync or retry queued this listing's publish, update or delist; cleared once its job
+  /// finishes (or gives up). Lets the store show it publishing and say when a sync is done.
+  syncRequestedAt     DateTime?                @map("sync_requested_at")
   variants            ListingVariant[]
   override            ListingOverride?
   variantOverrides    ListingVariantOverride[]
@@ -782,6 +785,8 @@ model Listing {
   @@index([connectionId, source])
   @@index([connectionId, productId])
   @@index([workspaceId, productId])
+  /// A store's listings with a sync job still outstanding, for its sync progress.
+  @@index([connectionId, syncRequestedAt])
   /// Active listings are counted per organization for plan limits.
   @@index([workspaceId, status])
   @@map("listings")
