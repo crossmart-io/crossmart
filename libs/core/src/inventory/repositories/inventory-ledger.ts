@@ -5,7 +5,10 @@ import type {
   StockAfterMovement,
   StockMovement,
 } from '../entities/inventory-ledger.js';
+import { WebhookEventType } from '../../webhooks/enums/webhook-event-type.enum.js';
+import { WebhookOutbox } from '../../webhooks/services/webhook-outbox.js';
 import { toMovementActor } from '../mappers/movement-actor.mapper.js';
+import { type StockVariant, toStockChangedEventData } from '../rules/stock-changed-event.js';
 
 type Transaction = Prisma.TransactionClient;
 
@@ -19,10 +22,13 @@ interface ResolvedMovement extends StockAfterMovement {
  * The one way stock levels change. Callers lock the items inside their own transaction, decide
  * the change against the locked rows, then apply it: the item and its ledger entry are written
  * together, and `quantityAfter` always follows from the locked stock. Every statement is scoped
- * to the workspace, and rows are locked in id order so concurrent writers cannot deadlock.
+ * to the workspace, and rows are locked in id order so concurrent writers cannot deadlock. Each
+ * write publishes one `inventory.stock_changed` webhook event in the same transaction.
  */
 @Injectable()
 export class InventoryLedger {
+  constructor(private readonly outbox: WebhookOutbox) {}
+
   /** Locks these stock items. Ids outside the workspace are left out of the result. */
   async lockItems(tx: Transaction, workspaceId: string, itemIds: string[]): Promise<LockedStock[]> {
     if (itemIds.length === 0) return [];
@@ -64,7 +70,23 @@ export class InventoryLedger {
     if (resolved.length === 0) return [];
     await this.writeStock(tx, workspaceId, resolved);
     await this.writeEntries(tx, workspaceId, resolved);
+    await this.outbox.publish(tx, workspaceId, WebhookEventType.InventoryStockChanged, async () => [
+      toStockChangedEventData(resolved, await this.findVariants(tx, workspaceId, resolved)),
+    ]);
     return resolved.map(toAfter);
+  }
+
+  /** The product and SKU of each moved item's variant, by variant id, for the event. */
+  private async findVariants(
+    tx: Transaction,
+    workspaceId: string,
+    resolved: ResolvedMovement[],
+  ): Promise<Map<string, StockVariant>> {
+    const variants = await tx.variant.findMany({
+      where: { workspaceId, id: { in: resolved.map(({ movement }) => movement.stock.variantId) } },
+      select: { id: true, productId: true, sku: true },
+    });
+    return new Map(variants.map(({ id, productId, sku }) => [id, { productId, sku }]));
   }
 
   private async lock(

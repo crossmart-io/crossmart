@@ -6,6 +6,7 @@ import { MaintenanceWorkerModule } from './agents/maintenance-worker.module.js';
 import { ChannelImportWorkerModule } from './channel-import/channel-import-worker.module.js';
 import { OrdersWorkerModule } from './orders/orders-worker.module.js';
 import { SyncModule } from './sync/sync.module.js';
+import { WebhooksWorkerModule } from './webhooks/webhooks-worker.module.js';
 
 /** Hosts BullMQ processors. Feature processors are added here as domain modules are built. */
 @Module({
@@ -20,6 +21,7 @@ import { SyncModule } from './sync/sync.module.js';
     OrdersWorkerModule,
     SyncModule,
     AiWorkerModule,
+    WebhooksWorkerModule,
   ],
 })
 export class WorkerModule {}

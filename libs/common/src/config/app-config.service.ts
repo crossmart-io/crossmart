@@ -42,6 +42,14 @@ export interface MailSettings {
   from: string;
 }
 
+/** Which webhook endpoint URLs are allowed (ADR 0023). */
+export interface WebhookSettings {
+  /** Plain http and private addresses, for self-hosted instances on a trusted network. */
+  allowPrivateUrls: boolean;
+  /** https only; true in production unless private URLs are allowed. */
+  requireHttps: boolean;
+}
+
 /** Typed, read-only access to validated configuration. */
 @Injectable()
 export class AppConfigService {
@@ -169,6 +177,11 @@ export class AppConfigService {
   /** Whether plan limits block actions; when false they are only reported. */
   get entitlementsEnforced(): boolean {
     return this.configService.get('ENTITLEMENTS_ENFORCED', { infer: true });
+  }
+
+  get webhookSettings(): WebhookSettings {
+    const allowPrivateUrls = this.configService.get('WEBHOOK_ALLOW_PRIVATE_URLS', { infer: true });
+    return { allowPrivateUrls, requireHttps: this.isProduction && !allowPrivateUrls };
   }
 
   /** The AI agents' settings; AI features are off while the key is missing. */

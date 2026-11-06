@@ -1,6 +1,8 @@
 import { InventoryMovementReason, Prisma } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import type { LockedStock, StockMovement } from '../entities/inventory-ledger.js';
+import { WebhookEventType } from '../../webhooks/enums/webhook-event-type.enum.js';
+import { RecordingWebhookOutbox } from '../../webhooks/testing/recording-webhook-outbox.js';
 import { InventoryLedger } from './inventory-ledger.js';
 
 const WORKSPACE_ID = '00000000-0000-4000-8000-000000000001';
@@ -23,10 +25,16 @@ function fakeTransaction(lockedRows: LockedStock[] = []) {
       return Promise.resolve(result);
     };
   const createMany = vi.fn(() => Promise.resolve({ count: 0 }));
+  const variants = lockedRows.map((row) => ({
+    id: row.variantId,
+    productId: `product-${row.id}`,
+    sku: `SKU-${row.id}`,
+  }));
   const tx = {
     $queryRaw: record(queries, lockedRows),
     $executeRaw: record(statements, 1),
     inventoryMovement: { createMany },
+    variant: { findMany: vi.fn(() => Promise.resolve(variants)) },
   };
   return { tx: tx as unknown as Prisma.TransactionClient, queries, statements, createMany };
 }
@@ -45,7 +53,8 @@ function movement(item: LockedStock, availableDelta: number, reservedDelta = 0):
 }
 
 describe('InventoryLedger', () => {
-  const ledger = new InventoryLedger();
+  const outbox = new RecordingWebhookOutbox();
+  const ledger = new InventoryLedger(outbox);
 
   describe('lockItems', () => {
     it('locks the items of the workspace in id order, with every value as a parameter', async () => {
@@ -132,6 +141,36 @@ describe('InventoryLedger', () => {
       expect(after).toEqual([]);
       expect(statements).toHaveLength(0);
       expect(createMany).not.toHaveBeenCalled();
+    });
+
+    it('publishes one stock change event for the items it moved, in the same transaction', async () => {
+      const item = stock(ITEM_A, 4, 2);
+      const { tx } = fakeTransaction([item]);
+      outbox.published.length = 0;
+
+      await ledger.applyMovements(tx, WORKSPACE_ID, [movement(item, -1, 1)]);
+
+      expect(outbox.published).toEqual([
+        {
+          workspaceId: WORKSPACE_ID,
+          type: WebhookEventType.InventoryStockChanged,
+          data: {
+            items: [
+              {
+                inventoryItemId: ITEM_A,
+                variantId: item.variantId,
+                productId: `product-${ITEM_A}`,
+                sku: `SKU-${ITEM_A}`,
+                available: 3,
+                reserved: 3,
+                onHand: 6,
+                availableDelta: -1,
+                reason: InventoryMovementReason.RECEIVED,
+              },
+            ],
+          },
+        },
+      ]);
     });
   });
 

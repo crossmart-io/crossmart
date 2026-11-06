@@ -8,6 +8,7 @@ import { ORDER_TOOLS } from './orders.tools.js';
 import { REPORT_TOOLS } from './reports.tools.js';
 import { STORE_TOOLS } from './stores.tools.js';
 import { SUGGESTION_TOOLS } from './suggestions.tools.js';
+import { WEBHOOK_TOOLS } from './webhooks.tools.js';
 
 /** Every tool the server offers, grouped by area. */
 export const ALL_TOOLS: readonly ApiToolSpec[] = [
@@ -19,5 +20,6 @@ export const ALL_TOOLS: readonly ApiToolSpec[] = [
   ...LISTING_EDITOR_TOOLS,
   ...REPORT_TOOLS,
   ...SUGGESTION_TOOLS,
+  ...WEBHOOK_TOOLS,
   ...ASK_TOOLS,
 ];

@@ -1,12 +1,29 @@
 import { PublishRequirement } from '@crossmart/connectors';
 import { NotFoundException } from '@nestjs/common';
 import { ListingStatus, type PrismaService } from '@crossmart/database';
+import { WebhookEventType } from '../../webhooks/enums/webhook-event-type.enum.js';
+import { RecordingWebhookOutbox } from '../../webhooks/testing/recording-webhook-outbox.js';
 import { ListingSyncRepository } from './listing-sync.repository.js';
+import { ListingWebhookEvents } from './listing-webhook-events.js';
 
 const LISTING = { workspaceId: 'ws-1', listingId: 'listing-1' };
 
+const LISTING_ROW = {
+  id: 'listing-1',
+  productId: 'p-1',
+  connectionId: 'conn-1',
+  status: ListingStatus.ERROR,
+  externalId: null,
+  externalUrl: null,
+  lastError: 'Slow down',
+  connection: { channel: 'shopify' },
+};
+
 function setup(updated: number) {
-  const listing = { updateMany: vi.fn(() => Promise.resolve({ count: updated })) };
+  const listing = {
+    updateMany: vi.fn(() => Promise.resolve({ count: updated })),
+    findFirst: vi.fn(() => Promise.resolve(LISTING_ROW)),
+  };
   const listingVariant = {
     deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
     createMany: vi.fn(() => Promise.resolve({ count: 0 })),
@@ -16,8 +33,12 @@ function setup(updated: number) {
     listing,
     $transaction: (work: (client: typeof tx) => Promise<void>) => work(tx),
   };
-  const repository = new ListingSyncRepository(prisma as unknown as PrismaService);
-  return { repository, listing, listingVariant };
+  const outbox = new RecordingWebhookOutbox();
+  const repository = new ListingSyncRepository(
+    prisma as unknown as PrismaService,
+    new ListingWebhookEvents(outbox),
+  );
+  return { repository, listing, listingVariant, outbox };
 }
 
 describe('ListingSyncRepository writes', () => {
@@ -57,6 +78,42 @@ describe('ListingSyncRepository writes', () => {
     });
   });
 
+  it('sends listing.failed only for a failure that puts the listing in error', async () => {
+    const { repository, outbox } = setup(1);
+
+    await repository.recordFailure(LISTING, 'Slow down');
+    await repository.recordFailure(LISTING, 'Rejected', ListingStatus.ERROR);
+
+    expect(outbox.published).toEqual([
+      {
+        workspaceId: 'ws-1',
+        type: WebhookEventType.ListingFailed,
+        data: { listing: { ...LISTING_ROW, connection: undefined, channel: 'shopify' } },
+      },
+    ]);
+  });
+
+  it('sends listing.published for a first publish and listing.removed for a delist', async () => {
+    const { repository, outbox } = setup(1);
+    const published = {
+      externalId: 'ext',
+      externalUrl: null,
+      status: ListingStatus.ACTIVE,
+      variants: [],
+      mediaDigest: 'digest',
+      syncedAt: new Date(),
+    };
+
+    await repository.recordPublished(LISTING, { ...published, newlyPublished: false });
+    await repository.recordPublished(LISTING, { ...published, newlyPublished: true });
+    await repository.markDelisted(LISTING, new Date());
+
+    expect(outbox.published.map((event) => event.type)).toEqual([
+      WebhookEventType.ListingPublished,
+      WebhookEventType.ListingRemoved,
+    ]);
+  });
+
   it('queues a failed or delisted listing for a retry, clearing its error', async () => {
     const { repository, listing } = setup(1);
 
@@ -90,6 +147,7 @@ describe('ListingSyncRepository writes', () => {
       variants,
       mediaDigest: 'digest',
       syncedAt: new Date(),
+      newlyPublished: true,
     });
 
     expect(listingVariant.deleteMany).toHaveBeenCalledWith({
@@ -111,6 +169,7 @@ describe('ListingSyncRepository writes', () => {
         variants: [],
         mediaDigest: 'digest',
         syncedAt: new Date(),
+        newlyPublished: true,
       }),
     ).rejects.toThrow(NotFoundException);
     expect(listingVariant.deleteMany).not.toHaveBeenCalled();

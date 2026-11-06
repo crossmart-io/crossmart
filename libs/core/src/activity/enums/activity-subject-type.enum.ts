@@ -14,4 +14,6 @@ export enum ActivitySubjectType {
   /** A role the workspace defined itself. */
   CustomRole = 'custom_role',
   ChannelConnection = 'channel_connection',
+  /** A URL the workspace receives webhook events at. */
+  WebhookEndpoint = 'webhook_endpoint',
 }

@@ -68,6 +68,11 @@ export class UsageRepository {
     });
   }
 
+  /** Every webhook endpoint, enabled or not: a disabled one can be turned back on. */
+  countWebhookEndpoints({ workspaceIds }: OrganizationScope): Promise<number> {
+    return this.prisma.webhookEndpoint.count({ where: { workspaceId: { in: workspaceIds } } });
+  }
+
   /** AI calls the workspaces made in the window, from `ai_usage` (indexed by workspace and time). */
   countAiCalls({ workspaceIds }: OrganizationScope, window: TimeWindow): Promise<number> {
     return this.prisma.aiUsage.count({

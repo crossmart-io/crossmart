@@ -5,7 +5,8 @@ import { AgentScope } from '../enums/agent-scope.enum.js';
 
 /**
  * The workspace permissions each scope can unlock. Members, API keys, store connections,
- * settings and billing are never reachable by an agent, whatever the user's role.
+ * settings and billing are never reachable by an agent, whatever the user's role. Webhook
+ * endpoints are, only with their own scope (`webhooks:write`).
  */
 const SCOPE_PERMISSIONS: Readonly<Record<AgentScope, readonly WorkspacePermission[]>> = {
   [AgentScope.CatalogRead]: [
@@ -22,6 +23,7 @@ const SCOPE_PERMISSIONS: Readonly<Record<AgentScope, readonly WorkspacePermissio
     WorkspacePermission.GenerateContent,
     WorkspacePermission.ApproveSuggestions,
   ],
+  [AgentScope.WebhooksWrite]: [WorkspacePermission.ManageWebhooks],
 };
 
 /** The Crossmart scopes in an OAuth `scope` value or list; unknown and OpenID scopes drop out. */

@@ -11,7 +11,10 @@ import { InventoryLedger } from '../../inventory/repositories/inventory-ledger.j
 import type { OrderToStore, OversoldItem, StoredOrder } from '../entities/order-ingestion.js';
 import { ORDER_LOCK_PREFIX } from '../orders.constants.js';
 import { type LineStock, lineStockChange, orderStatusOf } from '../rules/order-line-stock.js';
+import { WebhookEventType } from '../../webhooks/enums/webhook-event-type.enum.js';
+import { WebhookOutbox } from '../../webhooks/services/webhook-outbox.js';
 import { addChange, findProductsOf, type ItemChange } from './order-stock.js';
+import { readOrderEventData } from './order-webhook-event.js';
 
 type Transaction = Prisma.TransactionClient;
 
@@ -57,6 +60,7 @@ export class OrderWriter {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: InventoryLedger,
+    private readonly outbox: WebhookOutbox,
   ) {}
 
   store(input: OrderToStore): Promise<StoredOrder> {
@@ -82,8 +86,26 @@ export class OrderWriter {
       const orderId = await this.saveOrder(tx, input);
       for (const plan of plans)
         await this.saveLine(tx, { workspaceId: input.workspaceId, orderId }, plan);
+      await this.publish(tx, input, orderId, existing?.externalUpdatedAt ?? null);
       return result;
     });
+  }
+
+  /**
+   * `order.created` the first time an order is stored, `order.updated` when a newer copy
+   * arrives. The same copy delivered twice (a webhook and a poll) is not an update.
+   */
+  private async publish(
+    tx: Transaction,
+    input: OrderToStore,
+    orderId: string,
+    storedUpdatedAt: Date | null,
+  ): Promise<void> {
+    if (storedUpdatedAt && storedUpdatedAt >= input.order.updatedAt) return;
+    const type = storedUpdatedAt ? WebhookEventType.OrderUpdated : WebhookEventType.OrderCreated;
+    await this.outbox.publish(tx, input.workspaceId, type, () =>
+      readOrderEventData(tx, input.workspaceId, orderId),
+    );
   }
 
   private async moveStock(

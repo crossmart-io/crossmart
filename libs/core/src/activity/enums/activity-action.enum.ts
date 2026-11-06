@@ -20,6 +20,15 @@ export enum ActivityAction {
   ProductViewDeleted = 'product_view_deleted',
   ApiKeyCreated = 'api_key_created',
   ApiKeyRevoked = 'api_key_revoked',
+  /** A webhook endpoint was added; the subject is labelled with its URL. */
+  WebhookEndpointCreated = 'webhook_endpoint_created',
+  /** A webhook endpoint's URL, events or description changed, or it was turned on or off. */
+  WebhookEndpointUpdated = 'webhook_endpoint_updated',
+  WebhookEndpointDeleted = 'webhook_endpoint_deleted',
+  /** A webhook endpoint got a new signing secret. */
+  WebhookSecretRotated = 'webhook_secret_rotated',
+  /** Crossmart turned a webhook endpoint off after too many failed deliveries in a row. */
+  WebhookEndpointDisabled = 'webhook_endpoint_disabled',
   /** An AI agent's OAuth connection to the workspace was revoked. */
   AgentDisconnected = 'agent_disconnected',
   /** Someone was invited by email; the subject is the invitation, labelled with the address. */

@@ -11,6 +11,8 @@ import { WorkspaceSettingsModule } from '../workspace-settings/workspace-setting
 import { EventsModule } from '../events/events.module.js';
 import { ListingOverrideRepository } from './repositories/listing-override.repository.js';
 import { ListingSyncRepository } from './repositories/listing-sync.repository.js';
+import { ListingWebhookEvents } from './repositories/listing-webhook-events.js';
+import { WebhookOutboxModule } from '../webhooks/webhook-outbox.module.js';
 import { ProductSelectionRepository } from './repositories/product-selection.repository.js';
 import { BullSyncJobQueue } from './services/bull-sync-job.queue.js';
 import { ChannelListingsService } from './services/channel-listings.service.js';
@@ -73,9 +75,11 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     CurrencyModule,
     EntitlementsModule,
     EventsModule,
+    WebhookOutboxModule,
     WorkspaceSettingsModule,
   ],
   providers: [
+    ListingWebhookEvents,
     PricingContextFactory,
     ActiveListingsGate,
     StoreSelectionService,

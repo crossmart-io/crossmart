@@ -47,4 +47,15 @@ describe('agentPermissions', () => {
       expect(permissions.has(forbidden)).toBe(false);
     }
   });
+
+  it('reaches webhook endpoints only with their own scope, and only for a role that manages them', () => {
+    const others = Object.values(AgentScope).filter((scope) => scope !== AgentScope.WebhooksWrite);
+    expect(agentPermissions(others, OWNER).has(WorkspacePermission.ManageWebhooks)).toBe(false);
+    expect(
+      agentPermissions([AgentScope.WebhooksWrite], OWNER).has(WorkspacePermission.ManageWebhooks),
+    ).toBe(true);
+    expect(
+      agentPermissions([AgentScope.WebhooksWrite], EDITOR).has(WorkspacePermission.ManageWebhooks),
+    ).toBe(false);
+  });
 });

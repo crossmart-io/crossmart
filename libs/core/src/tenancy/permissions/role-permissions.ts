@@ -35,6 +35,7 @@ const ADMINISTRATION: readonly WorkspacePermission[] = [
   WorkspacePermission.ManageWorkspace,
   WorkspacePermission.ManageMembers,
   WorkspacePermission.ManageApiKeys,
+  WorkspacePermission.ManageWebhooks,
   WorkspacePermission.ManageChannels,
   WorkspacePermission.ApproveSuggestions,
   WorkspacePermission.ViewBilling,

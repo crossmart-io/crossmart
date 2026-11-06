@@ -13,6 +13,11 @@ export enum WorkspacePermission {
   /** Invite, change roles and remove members. */
   ManageMembers = 'members:manage',
   ManageApiKeys = 'api-keys:manage',
+  /**
+   * Add, change and delete webhook endpoints, see their secrets and deliveries. Events carry
+   * workspace data to the endpoint's URL, so this is as sensitive as issuing API keys.
+   */
+  ManageWebhooks = 'webhooks:manage',
   ViewProducts = 'products:view',
   /** Create, change, import and delete products, their prices and images. */
   EditProducts = 'products:edit',

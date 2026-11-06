@@ -24,6 +24,7 @@ import {
   DEFAULT_ASK_DAILY_QUESTION_CAP,
   DEFAULT_ASK_SUPPORT_EMAIL,
   DEFAULT_ENTITLEMENTS_ENFORCED,
+  DEFAULT_WEBHOOK_ALLOW_PRIVATE_URLS,
   DEFAULT_MASTER_KEY_VERSION,
   DEFAULT_MEDIA_PUBLIC_URL,
   DEFAULT_WEB_APP_URL,
@@ -198,6 +199,18 @@ export class EnvironmentVariables {
   )
   @IsBoolean()
   ENTITLEMENTS_ENFORCED: boolean = DEFAULT_ENTITLEMENTS_ENFORCED;
+
+  /**
+   * Lets webhook endpoints use plain http and private addresses, such as an n8n on the same
+   * network as a self-hosted Crossmart. Off by default: endpoints must be public, and https in
+   * production. Never turn it on where untrusted users add endpoints.
+   */
+  // Reads the raw value: implicit conversion would turn the string "false" into true.
+  @Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+    [true, ENV_TRUE].includes(obj[key] as boolean | string),
+  )
+  @IsBoolean()
+  WEBHOOK_ALLOW_PRIVATE_URLS: boolean = DEFAULT_WEBHOOK_ALLOW_PRIVATE_URLS;
 
   /**
    * Anthropic API key for the AI agents (content generation). Without it the AI features report
