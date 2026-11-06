@@ -134,6 +134,23 @@ describe('ChannelAuthorizationService', () => {
       expect(url.searchParams.get('state')).toMatch(/^[\w-]+\.[\w-]+$/);
     });
 
+    it('gives the connector a PKCE verifier, and the same one on the callback', async () => {
+      const { service, connector, callback } = setup();
+      const authorizationUrl = vi.spyOn(connector, 'authorizationUrl');
+
+      await service.start(WORKSPACE_ID, USER_ID, {
+        channel: ChannelType.Shopify,
+        accountHandle: 'x',
+      });
+      const sent = callback();
+      await service.complete(ChannelType.Shopify, sent);
+
+      const verifier = authorizationUrl.mock.calls[0]?.[0].codeVerifier;
+      expect(verifier).toMatch(/^[\w-]{43}$/);
+      const received = connector.completeAuthorization.mock.calls[0]?.[0].codeVerifier;
+      expect(received).toBe(new OAuthStateSigner(appConfig).codeVerifier(sent.browser.nonce ?? ''));
+    });
+
     it('rejects invalid accounts and unconfigured connectors', async () => {
       const { service, connector } = setup();
 

@@ -21,6 +21,8 @@ export type OAuthStateClaims = Omit<OAuthStatePayload, 'nonce' | 'expiresAt'>;
 export interface IssuedOAuthState {
   state: string;
   nonce: string;
+  /** The PKCE verifier derived from the nonce, for channels that require PKCE. */
+  codeVerifier: string;
 }
 
 /** The browser that followed the channel's redirect back to the API. */

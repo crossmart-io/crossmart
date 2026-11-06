@@ -7,6 +7,7 @@ import {
   hmacSha256,
 } from '@crossmart/common';
 import {
+  OAUTH_PKCE_KEY_INFO,
   OAUTH_STATE_KEY_BYTES,
   OAUTH_STATE_KEY_INFO,
   OAUTH_STATE_NONCE_BYTES,
@@ -25,6 +26,10 @@ const HASH = 'sha256';
 const ENCODING = 'base64url';
 const STATE_PART_COUNT = 2;
 
+function deriveKey(secret: string, info: string): Buffer {
+  return Buffer.from(hkdfSync(HASH, secret, Buffer.alloc(0), info, OAUTH_STATE_KEY_BYTES));
+}
+
 /**
  * Signs the OAuth `state`: who started the connection, for which workspace and account, with a
  * random nonce and an expiry. The key is derived from the auth secret, so no extra setting is
@@ -34,17 +39,21 @@ const STATE_PART_COUNT = 2;
 @Injectable()
 export class OAuthStateSigner {
   private readonly key: Buffer;
+  private readonly pkceKey: Buffer;
 
   constructor(appConfig: AppConfigService) {
-    this.key = Buffer.from(
-      hkdfSync(
-        HASH,
-        appConfig.authSecret,
-        Buffer.alloc(0),
-        OAUTH_STATE_KEY_INFO,
-        OAUTH_STATE_KEY_BYTES,
-      ),
-    );
+    this.key = deriveKey(appConfig.authSecret, OAUTH_STATE_KEY_INFO);
+    this.pkceKey = deriveKey(appConfig.authSecret, OAUTH_PKCE_KEY_INFO);
+  }
+
+  /**
+   * The PKCE code verifier (RFC 7636) of the connection whose state carries `nonce`: 43
+   * base64url characters, the HMAC of the nonce under a key derived from the auth secret.
+   * The state carries only the nonce, which is visible in URLs, so whoever sees the state
+   * and the code still cannot redeem the code: the verifier never leaves the server.
+   */
+  codeVerifier(nonce: string): string {
+    return hmacSha256(this.pkceKey, nonce, ENCODING);
   }
 
   /**

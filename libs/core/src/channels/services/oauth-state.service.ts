@@ -35,7 +35,16 @@ export class OAuthStateService {
   async issue(claims: OAuthStateClaims): Promise<IssuedOAuthState> {
     await this.quota.assertCanStart(claims.workspaceId, claims.channel, claims.accountHandle);
     const nonce = generateSecureToken(OAUTH_STATE_NONCE_BYTES);
-    return { state: this.signer.sign(claims, new Date(), nonce), nonce };
+    return {
+      state: this.signer.sign(claims, new Date(), nonce),
+      nonce,
+      codeVerifier: this.signer.codeVerifier(nonce),
+    };
+  }
+
+  /** The PKCE verifier of a verified state: the one its authorize URL was built with. */
+  codeVerifierOf(payload: OAuthStatePayload): string {
+    return this.signer.codeVerifier(payload.nonce);
   }
 
   /** The state's claims; throws `ChannelConnectError` and consumes the state once it passes. */

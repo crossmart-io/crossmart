@@ -57,7 +57,7 @@ export class ChannelAuthorizationService {
     if (!accountHandle) {
       throw new BadRequestException(`That is not a valid ${connector.displayName} account`);
     }
-    const { state, nonce } = await this.states.issue({
+    const { state, nonce, codeVerifier } = await this.states.issue({
       workspaceId,
       userId,
       channel: request.channel,
@@ -67,6 +67,7 @@ export class ChannelAuthorizationService {
       accountHandle,
       state,
       redirectUri: this.connectors.redirectUri(request.channel),
+      codeVerifier,
     });
     return {
       started: {
@@ -104,6 +105,7 @@ export class ChannelAuthorizationService {
       query,
       redirectUri: this.connectors.redirectUri(state.channel),
       accountHandle: state.accountHandle,
+      codeVerifier: this.states.codeVerifierOf(state),
     });
     const view = await this.accounts.save(state, connector, authorization);
     await this.recordConnected(state, connector, view);
