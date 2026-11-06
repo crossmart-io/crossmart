@@ -18,6 +18,16 @@ export const BM25_K1 = 1.2;
 export const BM25_B = 0.75;
 /** How many times a chunk's title counts, as titles say what a section is about. */
 export const TITLE_TERM_WEIGHT = 2;
+/**
+ * Added to a chunk's score in proportion to how closely its heading matches the question's
+ * words (their Jaccard similarity), so "Which marketplaces does Crossmart support?" finds the
+ * section with that heading even though "Crossmart" is on every page.
+ */
+export const HEADING_MATCH_WEIGHT = 2;
+/** Overview pages win ties with detailed ones, so broad questions get the big picture. */
+export const OVERVIEW_BOOST = 1.5;
+/** Between a page's title and its section's heading in a chunk title: "Page › Section". */
+export const CHUNK_TITLE_SEPARATOR = ' › ';
 
 /** Answer limits: the model writes short answers and cites at most this many sources. */
 export const ASK_ANSWER_MAX_LENGTH = 2500;
@@ -38,8 +48,26 @@ export const ASK_BUDGET_KEY_PREFIX = `${REDIS_KEY_PREFIX}ask:questions:`;
 export const ASK_ANSWER_KEY_PREFIX = `${REDIS_KEY_PREFIX}ask:answer:`;
 
 /** The public pages Ask points to. */
+export const SITE_URL = 'https://crossmart.io';
 export const DOCS_URL = 'https://docs.crossmart.io';
-export const PRICING_URL = 'https://crossmart.io/pricing';
+export const PRICING_URL = `${SITE_URL}/#pricing`;
+/**
+ * The only hosts Ask cites. Every source must be a public page people can open; the backend
+ * repository is private for now, so its documents are not sources.
+ */
+export const PUBLIC_CITATION_HOSTS: readonly string[] = ['docs.crossmart.io', 'crossmart.io'];
+/**
+ * Overview pages (the channel list, the FAQ, the docs' introductions and the plans), boosted by
+ * `OVERVIEW_BOOST`. Only the chunk at exactly this URL is boosted, not the page's other sections.
+ */
+export const OVERVIEW_URLS: ReadonlySet<string> = new Set([
+  `${SITE_URL}/#channels`,
+  `${SITE_URL}/#faq`,
+  `${SITE_URL}/#hosting`,
+  PRICING_URL,
+  `${DOCS_URL}/`,
+  `${DOCS_URL}/developers/`,
+]);
 export const PLANS_CHUNK_ID = 'plans:offered';
 export const PLANS_CHUNK_TITLE = 'Crossmart Cloud plans and what each includes';
 

@@ -15,7 +15,7 @@ final class AskAnswerDto implements JsonSerializable
 {
     /**
      * @param AskOutcome|string $outcome `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart
-     * @param string $answer The answer, in plain text or short Markdown
+     * @param string $answer The answer, in plain text (no Markdown)
      * @param list<AskCitationDto> $citations Pages the answer is based on
      * @param bool $handoff True when a person should take over, at supportEmail
      */

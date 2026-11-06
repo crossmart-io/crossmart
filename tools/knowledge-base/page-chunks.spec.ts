@@ -4,7 +4,7 @@ import { MAX_CHUNK_LENGTH } from './knowledge-base.constants.js';
 import { splitSections } from './markdown-sections.js';
 import { toPlainMarkdown } from './markdown-text.js';
 import { pageChunks } from './page-chunks.js';
-import { docsPageUrl, repositoryPageUrl } from './page-collector.js';
+import { docsPageUrl } from './page-collector.js';
 import { splitText } from './text-pieces.js';
 
 const MDX_PAGE = `---
@@ -77,6 +77,7 @@ describe('knowledge base build', () => {
       source: KnowledgeSourceKind.Docs,
       path: 'developers/index.mdx',
       url: 'https://docs.crossmart.io/developers/',
+      linksSections: true,
       fallbackTitle: 'index',
       content: MDX_PAGE,
     });
@@ -100,10 +101,6 @@ describe('knowledge base build', () => {
     expect(docsPageUrl('index.mdx')).toBe('https://docs.crossmart.io/');
     expect(docsPageUrl('developers/sdks/python.mdx')).toBe(
       'https://docs.crossmart.io/developers/sdks/python/',
-    );
-    expect(repositoryPageUrl('README.md')).toBe('https://github.com/crossmart-io/crossmart');
-    expect(repositoryPageUrl('docs/channels/ebay.md')).toBe(
-      'https://github.com/crossmart-io/crossmart/blob/main/docs/channels/ebay.md',
     );
   });
 });

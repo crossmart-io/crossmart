@@ -1,4 +1,4 @@
-import { promptSourceId } from '../../ai/prompts/ask.v1.prompt.js';
+import { promptSourceId } from '../../ai/prompts/ask.v2.prompt.js';
 import { ASK_OUT_OF_SCOPE_MESSAGE, askHandoffMessage } from '../ask.constants.js';
 import type { AskAnswer, AskCitation } from '../entities/ask-answer.js';
 import type { KnowledgeChunk } from '../entities/knowledge-chunk.js';

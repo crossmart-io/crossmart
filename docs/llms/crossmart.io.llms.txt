@@ -16,7 +16,7 @@ Do not state prices, plan limits, customers or numbers that are not on these pag
 ## Product
 
 - [Home](https://crossmart.io): what Crossmart does
-- [Pricing](https://crossmart.io/pricing): Crossmart Cloud plans and prices
+- [Pricing](https://crossmart.io/#pricing): Crossmart Cloud plans and prices
 - [Documentation](https://docs.crossmart.io): guides for sellers and developers
 
 ## Developers

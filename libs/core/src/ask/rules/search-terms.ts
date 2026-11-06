@@ -53,6 +53,36 @@ const STOPWORDS: ReadonlySet<string> = new Set([
   'your',
 ]);
 
+const CHANNEL_TERM = 'channel';
+const PRICE_TERM = 'price';
+const PLAN_TERM = 'plan';
+const CONNECT_TERM = 'connect';
+
+/**
+ * Words people use for the same thing, folded (after plurals) to one term, so a question about
+ * "marketplaces" finds the page about "channels" and the other way round.
+ */
+const SYNONYMS: ReadonlyMap<string, string> = new Map([
+  ['marketplace', CHANNEL_TERM],
+  ['store', CHANNEL_TERM],
+  ['shop', CHANNEL_TERM],
+  ['platform', CHANNEL_TERM],
+  ['integration', CHANNEL_TERM],
+  ['integrate', CHANNEL_TERM],
+  ['connector', CHANNEL_TERM],
+  ['pricing', PRICE_TERM],
+  ['cost', PRICE_TERM],
+  ['tier', PLAN_TERM],
+  ['subscription', PLAN_TERM],
+  ['connected', CONNECT_TERM],
+  ['connecting', CONNECT_TERM],
+  ['connection', CONNECT_TERM],
+]);
+
+function foldSynonym(word: string): string {
+  return SYNONYMS.get(word) ?? word;
+}
+
 function foldPlural(word: string): string {
   return word.length >= MIN_PLURAL_LENGTH &&
     word.endsWith(PLURAL_SUFFIX) &&
@@ -63,11 +93,13 @@ function foldPlural(word: string): string {
 
 /**
  * The words of a text as the lexical index compares them: lowercase letters and digits,
- * without stopwords, plurals folded to the singular ("listings" matches "listing").
+ * without stopwords, plurals folded to the singular ("listings" matches "listing") and synonyms
+ * to one word ("marketplaces" matches "channel").
  */
 export function searchTerms(text: string): string[] {
   const words = text.normalize('NFKC').toLowerCase().match(WORD_PATTERN) ?? [];
   return words
     .filter((word) => word.length >= MIN_TERM_LENGTH && !STOPWORDS.has(word))
-    .map(foldPlural);
+    .map(foldPlural)
+    .map(foldSynonym);
 }

@@ -10,8 +10,10 @@ export interface KnowledgePage {
   source: KnowledgeSourceKind;
   /** Its path in the source repository, for chunk ids. */
   path: string;
-  /** The public URL of the page, without an anchor. */
+  /** The public URL of the page, or of its section of a page, without a heading anchor. */
   url: string;
+  /** Whether the page's headings are anchors on the public page, so citations link to them. */
+  linksSections: boolean;
   /** Used when the page has neither a frontmatter title nor a `#` heading. */
   fallbackTitle: string;
   content: string;
@@ -51,7 +53,7 @@ function toChunks(page: KnowledgePage, section: SectionChunk): KnowledgeChunk[] 
     id: `${page.source}:${page.path}${anchor}${part ? `${PART_MARK}${part + 1}` : ''}`,
     source: page.source,
     title: section.title,
-    url: `${page.url}${anchor}`,
+    url: page.linksSections ? `${page.url}${anchor}` : page.url,
     text,
   }));
 }

@@ -22,7 +22,7 @@ export class AskAnswerDto implements AskAnswer {
   })
   outcome: AskOutcome;
 
-  @ApiProperty({ description: 'The answer, in plain text or short Markdown' })
+  @ApiProperty({ description: 'The answer, in plain text (no Markdown)' })
   answer: string;
 
   @ApiProperty({ type: [AskCitationDto], description: 'Pages the answer is based on' })

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
+import { ASK_PROMPT_VERSION } from '../../ai/prompts/ask.v2.prompt.js';
 import { ASK_ANSWER_CACHE_TTL_SECONDS, ASK_ANSWER_KEY_PREFIX } from '../ask.constants.js';
 import type { AskAnswer } from '../entities/ask-answer.js';
 import { AskConfidence } from '../enums/ask-confidence.enum.js';
@@ -23,11 +24,16 @@ const cachedAnswerSchema: z.ZodType<AskAnswer> = z.object({
   supportEmail: z.string(),
 });
 
-/** Questions that differ only in case or spacing share an answer. */
+const KEY_SEPARATOR = ':';
+
+/**
+ * Questions that differ only in case or spacing share an answer. The prompt version is part of
+ * the key, so answers written under an older prompt are not reused after it changes.
+ */
 export function questionKey(question: string): string {
   const normalized = question.trim().toLowerCase().replace(WHITESPACE_RUN, SPACE);
   const digest = createHash(HASH_ALGORITHM).update(normalized).digest(HASH_ENCODING);
-  return `${ASK_ANSWER_KEY_PREFIX}${digest}`;
+  return `${ASK_ANSWER_KEY_PREFIX}${ASK_PROMPT_VERSION}${KEY_SEPARATOR}${digest}`;
 }
 
 /**

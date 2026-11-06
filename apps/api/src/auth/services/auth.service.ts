@@ -4,11 +4,14 @@ import {
   oauthProviderOpenIdConfigMetadata,
 } from '@better-auth/oauth-provider';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
+import type { Request } from 'express';
 import type { JSONWebKeySet } from 'jose';
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import { AppConfigService } from '@crossmart/common';
 import { AccountEmailsService } from '@crossmart/core';
 import { PrismaService } from '@crossmart/database';
+import { isPublicCorsPath } from '../../bootstrap/cors-policy.js';
+import { ORIGIN_HEADER } from '../../bootstrap/cors.constants.js';
 import { type BetterAuthInstance, createBetterAuth } from '../better-auth.factory.js';
 import { PrincipalKind } from '../enums/principal-kind.enum.js';
 import type { UserPrincipal } from '../entities/principal.js';
@@ -29,6 +32,7 @@ export interface AgentTokenKeys {
 @Injectable()
 export class AuthService {
   private readonly auth: BetterAuthInstance;
+  private readonly trustedOrigins: ReadonlySet<string>;
 
   constructor(
     appConfig: AppConfigService,
@@ -36,6 +40,7 @@ export class AuthService {
     accountEmails: AccountEmailsService,
     tenancy: AuthTenancyHooks,
   ) {
+    this.trustedOrigins = new Set(appConfig.corsOrigins);
     this.auth = createBetterAuth({
       appConfig,
       prisma,
@@ -56,6 +61,23 @@ export class AuthService {
       authorizationServer: toNodeHandler(oauthProviderAuthServerMetadata(this.auth)),
       openIdConfiguration: toNodeHandler(oauthProviderOpenIdConfigMetadata(this.auth)),
     };
+  }
+
+  /**
+   * The signed-in user of a request to the API, from its session cookie. On a route any website
+   * may call (public CORS, such as Ask), the cookie counts only from a trusted origin
+   * (`CORS_ORIGINS`) or without an `Origin` header: a page on another site must never act, or
+   * spend limits, as the signed-in user, so its call is anonymous.
+   */
+  findUserBySessionFrom(request: Request): Promise<UserPrincipal | null> {
+    if (!this.acceptsSessionCookieFrom(request)) return Promise.resolve(null);
+    return this.findUserBySession(request.headers);
+  }
+
+  private acceptsSessionCookieFrom(request: Request): boolean {
+    if (!isPublicCorsPath(request.path)) return true;
+    const origin = request.header(ORIGIN_HEADER);
+    return origin === undefined || this.trustedOrigins.has(origin);
   }
 
   async findUserBySession(headers: IncomingHttpHeaders): Promise<UserPrincipal | null> {

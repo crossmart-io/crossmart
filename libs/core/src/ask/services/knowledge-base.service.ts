@@ -6,7 +6,13 @@ import {
   TITLE_TERM_WEIGHT,
 } from '../ask.constants.js';
 import type { KnowledgeChunk, RetrievedChunk } from '../entities/knowledge-chunk.js';
-import { type IndexableDocument, LexicalIndex } from '../rules/lexical-index.js';
+import { chunkRelevance } from '../rules/chunk-relevance.js';
+import {
+  type IndexableDocument,
+  LexicalIndex,
+  type ScoredDocument,
+} from '../rules/lexical-index.js';
+import { searchTerms } from '../rules/search-terms.js';
 import { KNOWLEDGE_SOURCES, KnowledgeSource } from '../sources/knowledge-source.js';
 
 interface IndexedChunk extends IndexableDocument {
@@ -19,6 +25,8 @@ interface BuiltIndex {
 }
 
 const TERM_SEPARATOR = ' ';
+/** Every chunk is scored, then ranked with its heading and overview boost. */
+const ANY_TEXT_SCORE = 0;
 
 function toIndexed(chunk: KnowledgeChunk): IndexedChunk {
   const title = Array.from({ length: TITLE_TERM_WEIGHT }, () => chunk.title).join(TERM_SEPARATOR);
@@ -40,9 +48,20 @@ export class KnowledgeBaseService {
   /** The chunks that best match the question, best first; none when nothing is relevant. */
   async search(question: string, limit: number, now = Date.now()): Promise<RetrievedChunk[]> {
     const { index } = await this.currentIndex(now);
+    const questionTerms = new Set(searchTerms(question));
     return index
-      .search(question, limit, ASK_MIN_RELEVANCE_SCORE)
-      .map(({ document, score }) => ({ chunk: document.chunk, score }));
+      .search(question, index.size, ANY_TEXT_SCORE)
+      .map((scored) => KnowledgeBaseService.ranked(questionTerms, scored))
+      .filter((found) => found.score >= ASK_MIN_RELEVANCE_SCORE)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, limit);
+  }
+
+  private static ranked(
+    questionTerms: ReadonlySet<string>,
+    { document, score }: ScoredDocument<IndexedChunk>,
+  ): RetrievedChunk {
+    return { chunk: document.chunk, score: chunkRelevance(questionTerms, document.chunk, score) };
   }
 
   private async currentIndex(now: number): Promise<BuiltIndex> {
