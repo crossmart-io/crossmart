@@ -28,7 +28,15 @@ import type {
 } from '../sdk/capabilities/taxonomy-provider.js';
 import { ChannelCapability } from '../sdk/channel-capability.enum.js';
 import type { OAuthAppConnector } from '../sdk/channel-connector.interface.js';
-import type { ChannelAccountProfile } from '../sdk/channel-settings.js';
+import type { ChannelAccountProfile, ChannelSettings } from '../sdk/channel-settings.js';
+import type {
+  PublishCandidate,
+  UnmetPublishRequirement,
+} from '../sdk/publishing/unmet-publish-requirement.js';
+import {
+  unmetEbayAccountRequirements,
+  unmetEbayProductRequirements,
+} from './publish/ebay-publish-prerequisites.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { OAuthParam } from '../sdk/oauth/oauth.constants.js';
@@ -172,6 +180,14 @@ export class EbayConnector
 
   parseSettings(raw: unknown): EbaySettings {
     return parseEbaySettings(raw);
+  }
+
+  unmetAccountRequirements(settings: ChannelSettings | null): UnmetPublishRequirement[] {
+    return unmetEbayAccountRequirements(settings);
+  }
+
+  unmetProductRequirements(candidate: PublishCandidate): UnmetPublishRequirement[] {
+    return unmetEbayProductRequirements(candidate);
   }
 
   publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {

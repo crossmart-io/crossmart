@@ -16,8 +16,9 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { AMOUNT_PATTERN, normalizeAmount, slugify } from '@crossmart/common';
+import { AMOUNT_PATTERN, normalizeAmount } from '@crossmart/common';
 import {
+  defaultProductHandle,
   MAX_PRODUCT_OPTIONS,
   MAX_VARIANTS_PER_PRODUCT,
   type MediaDraft,
@@ -49,7 +50,8 @@ function toAmount(value: string): string {
   return normalizeAmount(value) ?? value;
 }
 
-export class CreateVariantDto {
+/** Everything about a variant except its stock, shared by create and update. */
+export abstract class VariantFieldsDto {
   @ApiPropertyOptional({ maxLength: PRODUCT_TEXT_MAX_LENGTH })
   @IsOptional()
   @IsString()
@@ -118,12 +120,7 @@ export class CreateVariantDto {
   @IsBoolean()
   tracked: boolean = true;
 
-  @ApiPropertyOptional({ default: 0, description: 'Opening stock' })
-  @IsOptional()
-  @IsInt()
-  quantity: number = 0;
-
-  toDraft(): VariantDraft {
+  protected toDraftWith(quantity: number | undefined): VariantDraft {
     return {
       sku: this.sku,
       barcode: this.barcode,
@@ -135,8 +132,19 @@ export class CreateVariantDto {
       requiresShipping: this.requiresShipping,
       taxable: this.taxable,
       outOfStockPolicy: this.outOfStockPolicy,
-      inventory: { tracked: this.tracked, quantity: this.quantity },
+      inventory: { tracked: this.tracked, quantity },
     };
+  }
+}
+
+export class CreateVariantDto extends VariantFieldsDto {
+  @ApiPropertyOptional({ default: 0, description: 'Opening stock' })
+  @IsOptional()
+  @IsInt()
+  quantity: number = 0;
+
+  toDraft(): VariantDraft {
+    return this.toDraftWith(this.quantity);
   }
 }
 
@@ -228,7 +236,12 @@ export abstract class ProductContentDto {
 }
 
 export class CreateProductDto extends ProductContentDto {
-  @ApiPropertyOptional({ description: 'Unique in the workspace. Defaults to the slugified title.' })
+  @ApiPropertyOptional({
+    maxLength: PRODUCT_HANDLE_MAX_LENGTH,
+    description:
+      'Unique in the workspace. Defaults to the slugified title, or to `product-<random id>` ' +
+      'when the title has no Latin letters or digits (such as a Hebrew title).',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -245,7 +258,7 @@ export class CreateProductDto extends ProductContentDto {
 
   toDraft(): ProductDraft {
     return this.toDraftWith(
-      this.handle ?? slugify(this.title),
+      this.handle ?? defaultProductHandle(this.title),
       this.variants.map((variant) => variant.toDraft()),
     );
   }

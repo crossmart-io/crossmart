@@ -3,6 +3,7 @@ import { type ChannelConnector, type ChannelFeature, ChannelType } from '@crossm
 import type { ChannelConnectionView } from '../entities/channel-connection-view.js';
 import { parseConnectionSettings } from '../entities/connection-settings.js';
 import type { ChannelConnectionRecord } from '../repositories/channel-connection.queries.js';
+import { publishReadinessOf } from '../rules/publish-readiness.js';
 
 /** Features whose optional scope the merchant has not granted. */
 function missingFeaturesOf(
@@ -19,6 +20,7 @@ export function toChannelConnectionView(
   record: ChannelConnectionRecord,
   connector: ChannelConnector,
 ): ChannelConnectionView {
+  const settings = parseConnectionSettings(connector, record.settings);
   return {
     id: record.id,
     channel: requireEnumValue(ChannelType, record.channel),
@@ -28,7 +30,8 @@ export function toChannelConnectionView(
     statusReason: record.statusReason,
     grantedScopes: record.grantedScopes,
     missingFeatures: missingFeaturesOf(connector, record.grantedScopes),
-    settings: parseConnectionSettings(connector, record.settings),
+    settings,
+    publishReadiness: publishReadinessOf(connector, record.status, settings.account),
     connectedAt: record.connectedAt,
     disconnectedAt: record.disconnectedAt,
     lastSyncedAt: record.lastSyncedAt,

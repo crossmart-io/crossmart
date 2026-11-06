@@ -1,3 +1,4 @@
+import { PublishRequirement } from '@crossmart/connectors';
 import { NotFoundException } from '@nestjs/common';
 import { ListingStatus, type PrismaService } from '@crossmart/database';
 import { ListingSyncRepository } from './listing-sync.repository.js';
@@ -27,7 +28,47 @@ describe('ListingSyncRepository writes', () => {
 
     expect(listing.updateMany).toHaveBeenCalledWith({
       where: { id: 'listing-1', workspaceId: 'ws-1' },
-      data: { lastError: 'Slow down', status: ListingStatus.ERROR },
+      data: { lastError: 'Slow down', status: ListingStatus.ERROR, missingRequirement: null },
+    });
+  });
+
+  it('keeps what a refused publish lacked, and leaves it alone for a retryable failure', async () => {
+    const { repository, listing } = setup(1);
+
+    await repository.recordFailure(
+      LISTING,
+      'Add item specifics',
+      ListingStatus.ERROR,
+      PublishRequirement.ItemSpecifics,
+    );
+    await repository.recordFailure(LISTING, 'Slow down');
+
+    expect(listing.updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: 'listing-1', workspaceId: 'ws-1' },
+      data: {
+        lastError: 'Add item specifics',
+        status: ListingStatus.ERROR,
+        missingRequirement: PublishRequirement.ItemSpecifics,
+      },
+    });
+    expect(listing.updateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: 'listing-1', workspaceId: 'ws-1' },
+      data: { lastError: 'Slow down' },
+    });
+  });
+
+  it('queues a failed or delisted listing for a retry, clearing its error', async () => {
+    const { repository, listing } = setup(1);
+
+    await repository.markForRetry(LISTING);
+
+    expect(listing.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'listing-1',
+        workspaceId: 'ws-1',
+        status: { in: [ListingStatus.ERROR, ListingStatus.DELISTED] },
+      },
+      data: { status: ListingStatus.PENDING, lastError: null, missingRequirement: null },
     });
   });
 

@@ -1,3 +1,4 @@
+import { ListingStatus } from '@crossmart/database';
 import { SyncJobKind } from './enums/sync-job-kind.enum.js';
 import { PriceRounding } from '../channels/enums/price-rounding.enum.js';
 
@@ -66,6 +67,11 @@ export const SYNC_JOB_COST: Record<SyncJobKind, number> = {
 /** Why a listing's sync failed, when the error is not one written for merchants. */
 export const UNEXPECTED_SYNC_FAILURE = 'The channel sync failed unexpectedly. It will be retried.';
 export const CONNECTION_NOT_SYNCABLE = 'Connect this channel again before syncing it';
+export const RETRY_NEEDS_CONNECTION = 'Connect this store again before publishing to it';
+export const RETRY_NEEDS_SELECTION =
+  'This product is not in this store. Add it to the store to publish it there.';
+/** The listing statuses a retry puts back in the queue as pending. */
+export const RETRYABLE_LISTING_STATUSES = [ListingStatus.ERROR, ListingStatus.DELISTED] as const;
 export const LISTING_FAILURE_MAX_LENGTH = 500;
 
 /** Products added to or removed from a store in one request. */
@@ -74,6 +80,7 @@ export const PRODUCT_NOT_FOUND_IN_WORKSPACE =
   'Some of these products do not exist in this workspace';
 
 export const LISTING_NOT_FOUND = 'Listing not found';
+export const LISTING_PRODUCT_NOT_FOUND = 'Product not found';
 
 /**
  * Item specifics a merchant may set on one listing, and their sizes. eBay takes aspect names of

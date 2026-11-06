@@ -124,7 +124,9 @@ class Products(SyncResource):
         """Replaces a product (``PUT``).
 
         Variants sent with an ``id`` are edited, new ones are added and missing ones are removed.
-        Fetch the product first and send it back changed, so nothing is dropped by accident.
+        A variant's ``quantity`` sets its available stock; leave it out to keep the current stock
+        (a new variant then starts at 0). Fetch the product first and send it back changed, so
+        nothing is dropped by accident.
         """
         body = as_model(UpdateProductDto, product)
         with translate_transport_errors():

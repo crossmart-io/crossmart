@@ -1,5 +1,6 @@
 import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
+import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import { HttpMethod } from '../../sdk/http/http-method.enum.js';
 import type { HttpRequest } from '../../sdk/http/http-transport.js';
 import { fakeChannelSession } from '../../sdk/testing/fake-channel-session.js';
@@ -18,8 +19,12 @@ import {
   VARIANT_M,
   VARIANT_S,
 } from './ebay-listing.fixtures.js';
-import { MISSING_LOCATION, MISSING_POLICIES } from './ebay-listing-terms.js';
-import { NO_IMAGES, NOT_ACTIVE, NO_REFERENCE } from './ebay-listing-publisher.js';
+import { NOT_ACTIVE, NO_REFERENCE } from './ebay-listing-publisher.js';
+import {
+  MISSING_LOCATION,
+  MISSING_SHIPPING_POLICY,
+  NO_IMAGES,
+} from './ebay-publish-prerequisites.js';
 import { missingAspectsMessage } from './ebay-listing-category.js';
 
 const SHIRT_M_SKU = 'CM22222222222242228222222222222222';
@@ -349,7 +354,10 @@ describe('EbayListingPublisher', () => {
 
       const publishing = connector.publish(session, shirtDraft({ accountSettings: settings }));
 
-      await expect(publishing).rejects.toThrow(MISSING_POLICIES);
+      await expect(publishing).rejects.toMatchObject({
+        message: MISSING_SHIPPING_POLICY,
+        requirement: PublishRequirement.ShippingPolicy,
+      });
       expect(http.requests).toEqual([]);
     });
 
@@ -361,7 +369,10 @@ describe('EbayListingPublisher', () => {
       const draft = mugDraft();
       draft.product.images = images;
 
-      await expect(connector.publish(session, draft)).rejects.toThrow(NO_IMAGES);
+      await expect(connector.publish(session, draft)).rejects.toMatchObject({
+        message: NO_IMAGES,
+        requirement: PublishRequirement.Images,
+      });
       expect(http.requests).toEqual([]);
     });
 
@@ -377,6 +388,7 @@ describe('EbayListingPublisher', () => {
 
       expect(error).toBeInstanceOf(ChannelError);
       expect((error as ChannelError).message).toBe(MISSING_LOCATION);
+      expect((error as ChannelError).requirement).toBe(PublishRequirement.ShipFromLocation);
       expect((error as ChannelError).code).toBe(ChannelErrorCode.RequestRejected);
       expect((error as ChannelError).retryable).toBe(false);
     });

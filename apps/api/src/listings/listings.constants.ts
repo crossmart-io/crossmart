@@ -10,6 +10,7 @@ export const LISTINGS_PATH = 'listings';
 export const CHANNEL_PRODUCTS_PATH = 'products';
 export const OVERRIDE_PATH = ':connectionId/override';
 export const PRODUCT_CHANNEL_PATH = ':connectionId';
+export const RETRY_PATH = ':connectionId/retry';
 export const ADD_PRODUCTS_PATH = 'products/add';
 export const REMOVE_PRODUCTS_PATH = 'products/remove';
 export const CONNECTION_ID_PARAM = 'connectionId';
@@ -31,6 +32,7 @@ export const PRICE_WARNING_SCHEMA_NAME = 'PriceWarning';
 export const LISTING_STATUS_SCHEMA_NAME = 'ListingStatus';
 export const LISTING_SOURCE_SCHEMA_NAME = 'ListingSource';
 export const CHANNEL_PRODUCT_STATE_SCHEMA_NAME = 'ChannelProductState';
+export const LISTING_DISPLAY_STATE_SCHEMA_NAME = 'ListingDisplayState';
 export const CHANNEL_PRODUCT_SORT_SCHEMA_NAME = 'ChannelProductSort';
 export const LISTING_VISIBILITY_SCHEMA_NAME = 'ListingVisibility';
 

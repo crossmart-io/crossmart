@@ -50,3 +50,6 @@ export const PRICING_MAX_MARGIN_PERCENT = 1000;
 export const PRICE_MAX_FRACTION_DIGITS = 2;
 /** The currency of a connection whose channel does not report one. */
 export const DEFAULT_CURRENCY_CODE = 'USD';
+
+/** Why a store that is not connected cannot publish: the merchant must connect it again. */
+export const RECONNECT_TO_PUBLISH = 'Connect this store again to publish to it.';

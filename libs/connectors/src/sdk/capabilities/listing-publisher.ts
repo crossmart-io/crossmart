@@ -1,6 +1,7 @@
 import type { ChannelSession } from '../auth/channel-session.js';
 import type { ChannelSettings } from '../channel-settings.js';
 import type { ExternalProduct, ExternalVariant } from './catalog.types.js';
+import type { PublishPrerequisites } from '../publishing/unmet-publish-requirement.js';
 import type { ChannelCategory } from './taxonomy-provider.js';
 
 /**
@@ -68,8 +69,11 @@ export interface PriceUpdate {
   compareAtPrice: string | null;
 }
 
-/** `ChannelCapability.PublishListings` and `UpdatePrice`: writes listings to the channel. */
-export interface ListingPublisher {
+/**
+ * `ChannelCapability.PublishListings` and `UpdatePrice`: writes listings to the channel. Its
+ * optional prerequisites say what blocks a publish before one is tried.
+ */
+export interface ListingPublisher extends PublishPrerequisites {
   publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing>;
   update(
     session: ChannelSession,

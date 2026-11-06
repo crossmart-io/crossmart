@@ -30,7 +30,8 @@ class CreateProductDto:
         status (ProductStatus | Unset):  Default: ProductStatus.DRAFT.
         option_names (list[str] | Unset):  Example: ['Size', 'Color'].
         media (list[CreateMediaDto] | Unset):
-        handle (str | Unset): Unique in the workspace. Defaults to the slugified title.
+        handle (str | Unset): Unique in the workspace. Defaults to the slugified title, or to `product-<random id>` when
+            the title has no Latin letters or digits (such as a Hebrew title).
     """
 
     title: str

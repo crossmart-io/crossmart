@@ -28,8 +28,9 @@ class UpdateVariantDto:
         taxable (bool | Unset):  Default: True.
         out_of_stock_policy (OutOfStockPolicy | Unset):  Default: OutOfStockPolicy.STOP_SELLING.
         tracked (bool | Unset): Track stock for this variant Default: True.
-        quantity (float | Unset): Opening stock Default: 0.0.
         id (UUID | Unset): The variant to edit. Leave empty to add a new variant.
+        quantity (float | Unset): Stock on hand; a change is logged as an adjustment. Leave it out to keep the variant’s
+            current stock (a new variant then opens with none).
     """
 
     price: str
@@ -43,8 +44,8 @@ class UpdateVariantDto:
     taxable: bool | Unset = True
     out_of_stock_policy: OutOfStockPolicy | Unset = OutOfStockPolicy.STOP_SELLING
     tracked: bool | Unset = True
-    quantity: float | Unset = 0.0
     id: UUID | Unset = UNSET
+    quantity: float | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -74,11 +75,11 @@ class UpdateVariantDto:
 
         tracked = self.tracked
 
-        quantity = self.quantity
-
         id: str | Unset = UNSET
         if not isinstance(self.id, Unset):
             id = str(self.id)
+
+        quantity = self.quantity
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -107,10 +108,10 @@ class UpdateVariantDto:
             field_dict["outOfStockPolicy"] = out_of_stock_policy
         if tracked is not UNSET:
             field_dict["tracked"] = tracked
-        if quantity is not UNSET:
-            field_dict["quantity"] = quantity
         if id is not UNSET:
             field_dict["id"] = id
+        if quantity is not UNSET:
+            field_dict["quantity"] = quantity
 
         return field_dict
 
@@ -144,14 +145,14 @@ class UpdateVariantDto:
 
         tracked = d.pop("tracked", UNSET)
 
-        quantity = d.pop("quantity", UNSET)
-
         _id = d.pop("id", UNSET)
         id: UUID | Unset
         if isinstance(_id, Unset):
             id = UNSET
         else:
             id = UUID(_id)
+
+        quantity = d.pop("quantity", UNSET)
 
         update_variant_dto = cls(
             price=price,
@@ -165,8 +166,8 @@ class UpdateVariantDto:
             taxable=taxable,
             out_of_stock_policy=out_of_stock_policy,
             tracked=tracked,
-            quantity=quantity,
             id=id,
+            quantity=quantity,
         )
 
         update_variant_dto.additional_properties = d

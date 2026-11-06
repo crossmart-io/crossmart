@@ -35,10 +35,11 @@ export interface VariantDraft {
 export interface InventoryDraft {
   tracked: boolean;
   /**
-   * Stock on hand. For a new variant it is the opening balance; for an existing one the
-   * difference from the current stock is written to the ledger as an adjustment.
+   * Stock on hand. For a new variant it is the opening balance (none when absent); for an
+   * existing one the difference from the current stock is written to the ledger as an
+   * adjustment, and absent keeps the current stock.
    */
-  quantity: number;
+  quantity?: number;
 }
 
 export interface MediaDraft {

@@ -3,7 +3,7 @@ import { ChannelProductState } from '../enums/channel-product-state.enum.js';
 import { type SelectionScope, selectionWhere } from './selection-where.js';
 
 /** Listing statuses of a product the channel holds. */
-const ON_CHANNEL_STATUSES: readonly ListingStatus[] = [
+export const ON_CHANNEL_STATUSES: readonly ListingStatus[] = [
   ListingStatus.ACTIVE,
   ListingStatus.INACTIVE,
 ];

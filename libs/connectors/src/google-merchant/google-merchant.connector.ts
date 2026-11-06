@@ -16,7 +16,11 @@ import type {
 } from '../sdk/capabilities/listing-publisher.js';
 import { ChannelCapability } from '../sdk/channel-capability.enum.js';
 import type { OAuthAppConnector } from '../sdk/channel-connector.interface.js';
-import type { ChannelAccountProfile } from '../sdk/channel-settings.js';
+import type { ChannelAccountProfile, ChannelSettings } from '../sdk/channel-settings.js';
+import type {
+  PublishCandidate,
+  UnmetPublishRequirement,
+} from '../sdk/publishing/unmet-publish-requirement.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
 import { ChannelErrorCode } from '../sdk/errors/channel-error-code.enum.js';
 import { OAuthParam } from '../sdk/oauth/oauth.constants.js';
@@ -43,6 +47,10 @@ import {
 } from './google-merchant-settings.js';
 import { GoogleOAuthClient } from './oauth/google-oauth.client.js';
 import { GoogleListingPublisher } from './publish/google-listing-publisher.js';
+import {
+  unmetGoogleAccountRequirements,
+  unmetGoogleProductRequirements,
+} from './publish/google-publish-prerequisites.js';
 import { GOOGLE_MERCHANT_CONTENT_LIMITS } from './google-merchant-content-limits.js';
 
 /** Characters merchants type around the id, as Merchant Center shows it: `123-456-789`. */
@@ -156,6 +164,14 @@ export class GoogleMerchantConnector implements OAuthAppConnector, ListingPublis
   /** Creates the API data source the country's offers are published into; answers its id. */
   createDataSource(session: ChannelSession, country: GoogleTargetCountry): Promise<string> {
     return this.dataSources.create(session, country);
+  }
+
+  unmetAccountRequirements(settings: ChannelSettings | null): UnmetPublishRequirement[] {
+    return unmetGoogleAccountRequirements(settings);
+  }
+
+  unmetProductRequirements(candidate: PublishCandidate): UnmetPublishRequirement[] {
+    return unmetGoogleProductRequirements(candidate);
   }
 
   publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {

@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { ListingDraft } from '../../sdk/capabilities/listing-publisher.js';
 import type { CategoryAspect, ChannelCategory } from '../../sdk/capabilities/taxonomy-provider.js';
-import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
+import { ChannelType } from '../../sdk/channel-type.enum.js';
+import { ChannelError } from '../../sdk/errors/channel-error.js';
+import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import type { EbayAccountContext } from '../api/ebay-account-context.js';
-import { ebayError } from '../ebay-errors.js';
 import { EbayCategoryAspectsReader } from '../taxonomy/ebay-category-aspects.reader.js';
 import { EbayTaxonomyReader } from '../taxonomy/ebay-taxonomy.reader.js';
 import { missingRequiredAspects } from './ebay-item-aspects.js';
@@ -36,7 +37,10 @@ export class EbayListingCategory {
     if (draft.category) return draft.category;
     const [best] = await this.taxonomy.suggest(account, draft.product.title);
     if (!best) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_CATEGORY);
+      throw ChannelError.unmet(ChannelType.Ebay, {
+        requirement: PublishRequirement.Category,
+        reason: NO_CATEGORY,
+      });
     }
     return best;
   }
@@ -49,7 +53,10 @@ export class EbayListingCategory {
   ): Promise<void> {
     const missing = missingRequiredAspects(draft, await this.categoryAspects(account, category));
     if (missing.length > 0) {
-      throw ebayError(ChannelErrorCode.RequestRejected, missingAspectsMessage(missing));
+      throw ChannelError.unmet(ChannelType.Ebay, {
+        requirement: PublishRequirement.ItemSpecifics,
+        reason: missingAspectsMessage(missing),
+      });
     }
   }
 

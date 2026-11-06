@@ -8,10 +8,14 @@ import {
   type ChannelListingQuery,
   type ChannelListingRow,
   type ListingSummary,
+  ListingDisplayState,
   type SyncRequestResult,
 } from '@crossmart/core';
+import { PublishRequirement } from '@crossmart/connectors';
 import { ListingSource, ListingStatus } from '@crossmart/database';
 import { LISTING_SOURCE_SCHEMA_NAME, LISTING_STATUS_SCHEMA_NAME } from '../listings.constants.js';
+import { PUBLISH_REQUIREMENT_SCHEMA_NAME } from '../../channels/channels.constants.js';
+import { DisplayReasonProperty, DisplayStateProperty } from './listing-display.decorators.js';
 import { PageNumberProperty } from '../../common/page-number.decorator.js';
 import { ChannelCategoryDto } from './channel-category.dto.js';
 
@@ -38,6 +42,16 @@ export class ListingSummaryDto implements ListingSummary {
 
   @ApiProperty({ type: String, nullable: true, description: 'Why the last sync failed' })
   lastError: string | null;
+
+  @ApiProperty({
+    enum: PublishRequirement,
+    enumName: PUBLISH_REQUIREMENT_SCHEMA_NAME,
+    nullable: true,
+    description:
+      'What the channel refused the last publish for lacking (such as `item_specifics`), when ' +
+      'the merchant can add it; null otherwise',
+  })
+  missingRequirement: PublishRequirement | null;
 
   @ApiProperty({ type: Date, nullable: true })
   lastSyncedAt: Date | null;
@@ -69,6 +83,12 @@ export class ChannelListingDto extends ListingSummaryDto implements ChannelListi
 
   @ApiProperty()
   variantCount: number;
+
+  @DisplayStateProperty()
+  displayState: ListingDisplayState;
+
+  @DisplayReasonProperty()
+  displayReason: string | null;
 
   static fromRow(row: ChannelListingRow): ChannelListingDto {
     return Object.assign(new ChannelListingDto(), {

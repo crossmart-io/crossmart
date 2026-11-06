@@ -7,6 +7,8 @@
     "currencyCode": "sample"
   },
   "selected": true,
+  "displayState": "draft",
+  "displayReason": "sample",
   "listing": null,
   "override": null,
   "variants": []

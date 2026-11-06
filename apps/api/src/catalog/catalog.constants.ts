@@ -12,6 +12,7 @@ export const UPLOAD_FILE_FIELD = 'file';
 /** Browsers send file names as UTF-8; multer would otherwise read them as Latin-1. */
 export const UPLOAD_FILE_NAME_CHARSET = 'utf8';
 
+/** Shopify takes product titles of up to 255 characters, the most of any channel. */
 export const PRODUCT_TITLE_MAX_LENGTH = 255;
 export const PRODUCT_HANDLE_MAX_LENGTH = 255;
 export const PRODUCT_TEXT_MAX_LENGTH = 255;

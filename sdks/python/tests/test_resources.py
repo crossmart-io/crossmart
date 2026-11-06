@@ -16,6 +16,7 @@ from crossmart.models import (
     CreateProductDto,
     CreateVariantDto,
     InventoryMovementReason,
+    ListingDisplayState,
     ListingOverrideDto,
     ListingVisibility,
     OrderStatus,
@@ -156,6 +157,16 @@ class TestListings:
         assert route.called
         assert listing.override is None
 
+    def test_retry(self, api: respx.MockRouter, client: Crossmart) -> None:
+        route = api.post(f"{PRODUCT_CHANNEL_PATH}/retry").respond(
+            202, json=fixture("ProductChannelDto")
+        )
+
+        listing = client.listings.retry(PRODUCT_ID, STORE_ID)
+
+        assert route.called
+        assert isinstance(listing.display_state, ListingDisplayState)
+
     def test_remove(self, api: respx.MockRouter, client: Crossmart) -> None:
         route = api.delete(PRODUCT_CHANNEL_PATH).respond(json=fixture("ProductChannelDto"))
 
@@ -276,9 +287,15 @@ async def test_async_client_publishes_and_reads_orders(
     publish = api.post(PRODUCT_CHANNEL_PATH).respond(json=fixture("ProductChannelDto"))
     api.get(f"{WORKSPACE_PATH}/orders").respond(json=page([fixture("OrderSummaryDto")]))
 
+    retry = api.post(f"{PRODUCT_CHANNEL_PATH}/retry").respond(
+        202, json=fixture("ProductChannelDto")
+    )
+
     async with async_client:
         await async_client.listings.publish(PRODUCT_ID, STORE_ID)
+        await async_client.listings.retry(PRODUCT_ID, STORE_ID)
         orders = await async_client.orders.list()
 
     assert publish.called
+    assert retry.called
     assert orders.total == 1

@@ -67,7 +67,7 @@ workspace or to cancel the request with an `AbortSignal`.
 import {
   ChannelConnectionStatus,
   Crossmart,
-  ListingStatus,
+  ListingDisplayState,
   OrderStatus,
   ProductStatus,
 } from '@crossmart/sdk';
@@ -102,12 +102,14 @@ if (store) {
     variantPrices: [{ variantId: product.variants[0]!.id, price: '21.00', compareAtPrice: null }],
   });
 
-  // Later: check that the store accepted it
+  // Later: check that the store accepted it. `displayState` sums it up in one word.
   const [current] = (await crossmart.listings.forProduct(product.id)).filter(
     (candidate) => candidate.connection.id === store.id,
   );
-  if (current?.listing?.status === ListingStatus.ERROR) {
-    console.error('The store refused the listing:', current.listing.lastError);
+  if (current?.displayState === ListingDisplayState.failed) {
+    console.error('The store refused the listing:', current.displayReason);
+    // Once the cause is fixed, publish it to this store again
+    await crossmart.listings.retry(product.id, store.id);
   }
 }
 
@@ -119,17 +121,17 @@ for await (const order of crossmart.orders.listAll({ status: OrderStatus.OPEN })
 
 ## Resources
 
-| Resource                | Methods                                                                                                           |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `crossmart.products`    | `list`, `listAll`, `get`, `create`, `update`, `delete`                                                            |
-| `crossmart.inventory`   | `list`, `listAll`, `adjust`, `listMovements`, `listAllMovements`                                                  |
-| `crossmart.stores`      | `list`, `get`, `updatePricing`, `previewPricing`, `sync`                                                          |
-| `crossmart.listings`    | `forProduct`, `publish`, `remove`, `publishMany`, `removeMany`, `setOverride`, `clearOverride`, `list`, `listAll` |
-| `crossmart.orders`      | `list`, `listAll`, `get`                                                                                          |
-| `crossmart.reports`     | `sales`, `inventory`                                                                                              |
-| `crossmart.ai`          | `status`, `usage`, `generateContent`, `draftContent`                                                              |
-| `crossmart.suggestions` | `list`, `listAll`, `get`, `approve`, `reject`, `approveMany`                                                      |
-| `crossmart.workspaces`  | `get`, `update`, `currentApiKey`                                                                                  |
+| Resource                | Methods                                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `crossmart.products`    | `list`, `listAll`, `get`, `create`, `update`, `delete`                                                                     |
+| `crossmart.inventory`   | `list`, `listAll`, `adjust`, `listMovements`, `listAllMovements`                                                           |
+| `crossmart.stores`      | `list`, `get`, `updatePricing`, `previewPricing`, `sync`                                                                   |
+| `crossmart.listings`    | `forProduct`, `publish`, `retry`, `remove`, `publishMany`, `removeMany`, `setOverride`, `clearOverride`, `list`, `listAll` |
+| `crossmart.orders`      | `list`, `listAll`, `get`                                                                                                   |
+| `crossmart.reports`     | `sales`, `inventory`                                                                                                       |
+| `crossmart.ai`          | `status`, `usage`, `generateContent`, `draftContent`                                                                       |
+| `crossmart.suggestions` | `list`, `listAll`, `get`, `approve`, `reject`, `approveMany`                                                               |
+| `crossmart.workspaces`  | `get`, `update`, `currentApiKey`                                                                                           |
 
 Each method has TSDoc with an example, so your editor shows it on hover. Request and response
 types are exported by name (`Product`, `CreateProductInput`, `Order`, `ListingOverrideInput`…),

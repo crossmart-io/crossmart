@@ -7,6 +7,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..models.channel_product_state import ChannelProductState
+from ..models.listing_display_state import ListingDisplayState
 
 if TYPE_CHECKING:
     from ..models.listing_summary_dto import ListingSummaryDto
@@ -22,11 +23,20 @@ class ChannelProductDto:
     Attributes:
         product (ProductSummaryDto):
         state (ChannelProductState):
+        display_state (ListingDisplayState): The product on this store, in one state computed by the server: `draft`
+            (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something
+            publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`,
+            `failed`, `removing` (being taken off) or `removed`.
+        display_reason (None | str): For `needs_details` and `failed`: a short, merchant-readable reason (what to add,
+            or the channel’s message). Never holds secrets. Null for the other states. Example: Choose a shipping policy in
+            this eBay connection’s listing defaults..
         listing (ListingSummaryDto | None):
     """
 
     product: ProductSummaryDto
     state: ChannelProductState
+    display_state: ListingDisplayState
+    display_reason: None | str
     listing: ListingSummaryDto | None
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -36,6 +46,11 @@ class ChannelProductDto:
         product = self.product.to_dict()
 
         state = self.state.value
+
+        display_state = self.display_state.value
+
+        display_reason: None | str
+        display_reason = self.display_reason
 
         listing: dict[str, Any] | None
         if isinstance(self.listing, ListingSummaryDto):
@@ -49,6 +64,8 @@ class ChannelProductDto:
             {
                 "product": product,
                 "state": state,
+                "displayState": display_state,
+                "displayReason": display_reason,
                 "listing": listing,
             }
         )
@@ -64,6 +81,15 @@ class ChannelProductDto:
         product = ProductSummaryDto.from_dict(d.pop("product"))
 
         state = ChannelProductState(d.pop("state"))
+
+        display_state = ListingDisplayState(d.pop("displayState"))
+
+        def _parse_display_reason(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        display_reason = _parse_display_reason(d.pop("displayReason"))
 
         def _parse_listing(data: object) -> ListingSummaryDto | None:
             if data is None:
@@ -83,6 +109,8 @@ class ChannelProductDto:
         channel_product_dto = cls(
             product=product,
             state=state,
+            display_state=display_state,
+            display_reason=display_reason,
             listing=listing,
         )
 
