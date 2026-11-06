@@ -3400,8 +3400,7 @@ export interface components {
         StoreListingHealthDto: {
             /** Format: uuid */
             connectionId: string;
-            /** @example shopify */
-            channel: string;
+            channel: components["schemas"]["ChannelType"];
             /** @example Demo Store */
             displayName: string;
             status: components["schemas"]["ChannelConnectionStatus"];

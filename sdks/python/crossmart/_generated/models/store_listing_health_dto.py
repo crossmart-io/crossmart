@@ -9,6 +9,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..models.channel_connection_status import ChannelConnectionStatus
+from ..models.channel_type import ChannelType
 
 if TYPE_CHECKING:
     from ..models.listing_state_count_dto import ListingStateCountDto
@@ -22,7 +23,7 @@ class StoreListingHealthDto:
     """
     Attributes:
         connection_id (UUID):
-        channel (str):  Example: shopify.
+        channel (ChannelType):
         display_name (str):  Example: Demo Store.
         status (ChannelConnectionStatus):
         status_reason (None | str): Why the store needs reconnecting or is in error; null otherwise
@@ -33,7 +34,7 @@ class StoreListingHealthDto:
     """
 
     connection_id: UUID
-    channel: str
+    channel: ChannelType
     display_name: str
     status: ChannelConnectionStatus
     status_reason: None | str
@@ -45,7 +46,7 @@ class StoreListingHealthDto:
     def to_dict(self) -> dict[str, Any]:
         connection_id = str(self.connection_id)
 
-        channel = self.channel
+        channel = self.channel.value
 
         display_name = self.display_name
 
@@ -91,7 +92,7 @@ class StoreListingHealthDto:
         d = dict(src_dict)
         connection_id = UUID(d.pop("connectionId"))
 
-        channel = d.pop("channel")
+        channel = ChannelType(d.pop("channel"))
 
         display_name = d.pop("displayName")
 

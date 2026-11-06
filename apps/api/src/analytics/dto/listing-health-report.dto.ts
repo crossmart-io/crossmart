@@ -6,8 +6,12 @@ import {
   type StoreListingHealth,
   type StoreListingRow,
 } from '@crossmart/core';
+import { ChannelType } from '@crossmart/connectors';
 import { ChannelConnectionStatus } from '@crossmart/database';
-import { CHANNEL_CONNECTION_STATUS_SCHEMA_NAME } from '../../channels/channels.constants.js';
+import {
+  CHANNEL_CONNECTION_STATUS_SCHEMA_NAME,
+  CHANNEL_TYPE_SCHEMA_NAME,
+} from '../../channels/channels.constants.js';
 import { ChannelListingDto } from '../../listings/dto/channel-listing.dto.js';
 import { LISTING_DISPLAY_STATE_SCHEMA_NAME } from '../../listings/listings.constants.js';
 
@@ -23,8 +27,8 @@ export class StoreListingHealthDto implements StoreListingHealth {
   @ApiProperty({ format: 'uuid' })
   connectionId: string;
 
-  @ApiProperty({ example: 'shopify' })
-  channel: string;
+  @ApiProperty({ enum: ChannelType, enumName: CHANNEL_TYPE_SCHEMA_NAME })
+  channel: ChannelType;
 
   @ApiProperty({ example: 'Demo Store' })
   displayName: string;
