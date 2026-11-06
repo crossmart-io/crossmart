@@ -1,3 +1,5 @@
+import { REDIS_KEY_PREFIX } from '@crossmart/common';
+
 /** Better Auth serves sign-up, sign-in and sessions under this path (outside `/api/v1`). */
 export const AUTH_BASE_PATH = '/api/auth';
 export const AUTH_ROUTE_PATTERN = `${AUTH_BASE_PATH}/*splat`;
@@ -31,6 +33,25 @@ export const OAUTH_WEB_PAGES = {
 export const OAUTH_REGISTER_PATH = '/oauth2/register';
 /** Dynamic registrations allowed per client IP in one window. */
 export const OAUTH_REGISTER_RATE_LIMIT = { window: 60 * 60, max: 20 } as const;
+/**
+ * Better Auth's rate-limit windows in Redis, shared by every API instance:
+ * `crossmart:auth-rate-limit:<client IP>|<path>`.
+ */
+export const AUTH_RATE_LIMIT_KEY_PREFIX = `${REDIS_KEY_PREFIX}auth-rate-limit:`;
+/** Separates the client IP from the path in Better Auth's rate-limit keys (`<ip>|<path>`). */
+export const AUTH_RATE_LIMIT_KEY_SEPARATOR = '|';
+/** How long a rate-limit check waits for Redis before it falls back, so sign-in never hangs. */
+export const AUTH_RATE_LIMIT_REDIS_TIMEOUT_MS = 250;
+/**
+ * Paths refused while Redis is unavailable, rather than counted per instance: anyone can call
+ * them without signing in, and each success leaves a lasting record (a registered client).
+ */
+export const AUTH_RATE_LIMIT_FAIL_CLOSED_PATHS: readonly string[] = [OAUTH_REGISTER_PATH];
+/** The `Retry-After` of a request refused because the shared limits could not be checked. */
+export const AUTH_RATE_LIMIT_UNAVAILABLE_RETRY_AFTER_SECONDS = 60;
+/** At most this many per-instance fallback windows are kept, so an outage cannot exhaust memory. */
+export const AUTH_RATE_LIMIT_LOCAL_MAX_WINDOWS = 10_000;
+
 /** Only public clients (PKCE, no secret) may register without signing in. */
 export const OAUTH_PUBLIC_CLIENT_AUTH_METHOD = 'none';
 /** The grants agents use: the browser flow, then refresh. */
