@@ -13,7 +13,8 @@ T = TypeVar("T", bound="SyncRequestResultDto")
 class SyncRequestResultDto:
     """
     Attributes:
-        queued (float): Selected products queued to be published or updated
+        queued (float): Selected products queued to be published or updated. With `delisting`, the total a progress bar
+            counts down from `GET …/sync`’s `pending`.
         delisting (float): Listings queued to be delisted, as they are no longer selected
     """
 

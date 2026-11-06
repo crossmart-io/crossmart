@@ -66,9 +66,10 @@ def sync_detailed(
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
-    that is no longer selected to be delisted. Jobs run in the background; follow them in the listings.
-    Refused (402) before anything is queued when the plan has no room for the active listings it would
-    add.
+    that is no longer selected to be delisted. Jobs run in the background. Each listing it queues is
+    marked (`syncRequestedAt`, `displayState: publishing`) until its job finishes; follow them with `GET
+    …/sync`. Refused (402) before anything is queued when the plan has no room for the active listings
+    it would add.
 
     Args:
         workspace_id (str):
@@ -103,9 +104,10 @@ def sync(
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
-    that is no longer selected to be delisted. Jobs run in the background; follow them in the listings.
-    Refused (402) before anything is queued when the plan has no room for the active listings it would
-    add.
+    that is no longer selected to be delisted. Jobs run in the background. Each listing it queues is
+    marked (`syncRequestedAt`, `displayState: publishing`) until its job finishes; follow them with `GET
+    …/sync`. Refused (402) before anything is queued when the plan has no room for the active listings
+    it would add.
 
     Args:
         workspace_id (str):
@@ -135,9 +137,10 @@ async def asyncio_detailed(
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
-    that is no longer selected to be delisted. Jobs run in the background; follow them in the listings.
-    Refused (402) before anything is queued when the plan has no room for the active listings it would
-    add.
+    that is no longer selected to be delisted. Jobs run in the background. Each listing it queues is
+    marked (`syncRequestedAt`, `displayState: publishing`) until its job finishes; follow them with `GET
+    …/sync`. Refused (402) before anything is queued when the plan has no room for the active listings
+    it would add.
 
     Args:
         workspace_id (str):
@@ -170,9 +173,10 @@ async def asyncio(
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
-    that is no longer selected to be delisted. Jobs run in the background; follow them in the listings.
-    Refused (402) before anything is queued when the plan has no room for the active listings it would
-    add.
+    that is no longer selected to be delisted. Jobs run in the background. Each listing it queues is
+    marked (`syncRequestedAt`, `displayState: publishing`) until its job finishes; follow them with `GET
+    …/sync`. Refused (402) before anything is queued when the plan has no room for the active listings
+    it would add.
 
     Args:
         workspace_id (str):

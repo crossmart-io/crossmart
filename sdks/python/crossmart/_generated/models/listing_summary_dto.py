@@ -32,6 +32,8 @@ class ListingSummaryDto:
         missing_requirement (None | PublishRequirement): What the channel refused the last publish for lacking (such as
             `item_specifics`), when the merchant can add it; null otherwise
         last_synced_at (datetime.datetime | None):
+        sync_requested_at (datetime.datetime | None): When a sync or retry queued its publish, update or delist; null
+            once that job finished or gave up. While set, a selected listing shows `displayState: publishing`.
         category (ChannelCategoryDto | None): The channel category it is listed in, on channels with categories (eBay)
     """
 
@@ -43,6 +45,7 @@ class ListingSummaryDto:
     last_error: None | str
     missing_requirement: None | PublishRequirement
     last_synced_at: datetime.datetime | None
+    sync_requested_at: datetime.datetime | None
     category: ChannelCategoryDto | None
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -76,6 +79,12 @@ class ListingSummaryDto:
         else:
             last_synced_at = self.last_synced_at
 
+        sync_requested_at: None | str
+        if isinstance(self.sync_requested_at, datetime.datetime):
+            sync_requested_at = self.sync_requested_at.isoformat()
+        else:
+            sync_requested_at = self.sync_requested_at
+
         category: dict[str, Any] | None
         if isinstance(self.category, ChannelCategoryDto):
             category = self.category.to_dict()
@@ -94,6 +103,7 @@ class ListingSummaryDto:
                 "lastError": last_error,
                 "missingRequirement": missing_requirement,
                 "lastSyncedAt": last_synced_at,
+                "syncRequestedAt": sync_requested_at,
                 "category": category,
             }
         )
@@ -162,6 +172,21 @@ class ListingSummaryDto:
 
         last_synced_at = _parse_last_synced_at(d.pop("lastSyncedAt"))
 
+        def _parse_sync_requested_at(data: object) -> datetime.datetime | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                sync_requested_at_type_0 = datetime.datetime.fromisoformat(data)
+
+                return sync_requested_at_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(datetime.datetime | None, data)
+
+        sync_requested_at = _parse_sync_requested_at(d.pop("syncRequestedAt"))
+
         def _parse_category(data: object) -> ChannelCategoryDto | None:
             if data is None:
                 return data
@@ -186,6 +211,7 @@ class ListingSummaryDto:
             last_error=last_error,
             missing_requirement=missing_requirement,
             last_synced_at=last_synced_at,
+            sync_requested_at=sync_requested_at,
             category=category,
         )
 

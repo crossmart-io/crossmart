@@ -29,3 +29,16 @@ export interface SyncRequestResult {
   /** Listings queued to be taken off the channel, as they are no longer selected. */
   delisting: number;
 }
+
+/** How far a store's sync has come, read from its listings. */
+export interface SyncProgress {
+  /**
+   * Listings whose publish, update or delist a sync or retry queued and whose job has not
+   * finished yet. A sync is done when none are left.
+   */
+  pending: number;
+  /** The store's listings in error now, whatever queued them. */
+  failed: number;
+  /** Whether nothing a sync or retry queued is still pending. */
+  done: boolean;
+}

@@ -350,7 +350,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Products of a workspace, in title order */
+        /**
+         * Products of a workspace, in title order
+         * @description Each row’s `stores` badges carry `displayState`, `displayReason` and `displayRequirement`, computed by the same rule as the store’s own pages.
+         */
         get: operations["ProductsController_list_v1"];
         put?: never;
         /** Create a product with its variants */
@@ -921,11 +924,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * How far the connection’s sync has come
+         * @description Counts the listings a sync or retry queued whose job has not finished yet, and those in error. Poll it after `POST …/sync`: the sync is done when `pending` is 0.
+         */
+        get: operations["ChannelSyncController_syncProgress_v1"];
         put?: never;
         /**
          * Publish the selected products and sync the connection
-         * @description Queues every selected product to be published (or updated when the channel has it) and every listing that is no longer selected to be delisted. Jobs run in the background; follow them in the listings. Refused (402) before anything is queued when the plan has no room for the active listings it would add.
+         * @description Queues every selected product to be published (or updated when the channel has it) and every listing that is no longer selected to be delisted. Jobs run in the background. Each listing it queues is marked (`syncRequestedAt`, `displayState: publishing`) until its job finishes; follow them with `GET …/sync`. Refused (402) before anything is queued when the plan has no room for the active listings it would add.
          */
         post: operations["ChannelSyncController_requestSync_v1"];
         delete?: never;
@@ -1046,7 +1053,7 @@ export interface paths {
         put?: never;
         /**
          * Publish the product to one store again
-         * @description Re-queues this product’s publish (or update) to this store only, unlike `POST …/sync`, which resyncs the whole store. A failed or delisted listing becomes pending at once, so the answer shows `displayState: publishing`; the job runs in the background. Refused (409) when the store is not connected (it needs re-auth or was disconnected) or does not select the product, and (402) when the plan has no room for another active listing.
+         * @description Re-queues this product’s publish (or update) to this store only, unlike `POST …/sync`, which resyncs the whole store. A failed or delisted listing becomes pending at once, so the answer shows `displayState: publishing`; the job runs in the background. Refused (409) when the store is not connected (`code: store_not_connected`: it needs re-auth or was disconnected) or does not select the product (`code: product_not_in_store`), and (402) when the plan has no room for another active listing.
          */
         post: operations["ProductChannelsController_retry_v1"];
         delete?: never;
@@ -1071,6 +1078,30 @@ export interface paths {
         post?: never;
         /** Remove the product’s overrides on one channel */
         delete: operations["ProductChannelsController_clearOverride_v1"];
+        options?: never;
+        head?: never;
+        /**
+         * Change some of the product’s overrides on one channel
+         * @description Absent fields keep their override; null reverts a field to the product’s value. Each `variantPrices` entry replaces that variant’s prices only, and both prices null revert the variant to the pricing rule. When the channel already lists the product, an update is queued.
+         */
+        patch: operations["ProductChannelsController_patchOverride_v1"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/products/{productId}/channels/{connectionId}/listing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The product’s listing on one store, for the listing editor
+         * @description Every field (title, description, tags, images, visibility, and each variant’s price and compare-at price) with the product’s value, the store’s override (null when it follows the product) and the value the store gets, plus the stock limits, category, a summary of the item specifics and the display state. Revert one field with `PATCH …/override`.
+         */
+        get: operations["ListingEditorController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1717,6 +1748,16 @@ export interface components {
         ListingStatus: ListingStatus;
         /** @enum {string} */
         ListingSource: ListingSource;
+        /**
+         * @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`.
+         * @enum {string}
+         */
+        ListingDisplayState: ListingDisplayState;
+        /**
+         * @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states.
+         * @enum {string}
+         */
+        PublishRequirement: PublishRequirement;
         ProductStoreBadgeDto: {
             /** Format: uuid */
             connectionId: string;
@@ -1725,6 +1766,15 @@ export interface components {
             storeName: string;
             status: components["schemas"]["ListingStatus"];
             source: components["schemas"]["ListingSource"];
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            displayState: components["schemas"]["ListingDisplayState"];
+            /**
+             * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
+             * @example Choose a shipping policy in this eBay connection’s listing defaults.
+             */
+            displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
         };
         ProductSummaryDto: {
             /** Format: uuid */
@@ -2413,11 +2463,6 @@ export interface components {
              */
             fixedExchangeRate?: string | null;
         };
-        /**
-         * @description What to finish before publishing, in order; empty when ready. `reconnect` alone when the store needs to be connected again. eBay: `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`. Google: `listing_setup`. `account_settings` when the account was never read.
-         * @enum {string}
-         */
-        PublishRequirement: PublishRequirement;
         PublishReadinessDto: {
             /** @description True when listings can be published to this store */
             ready: boolean;
@@ -2517,11 +2562,6 @@ export interface components {
         ChannelProductState: ChannelProductState;
         /** @enum {string} */
         ChannelProductSort: ChannelProductSort;
-        /**
-         * @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`, `failed`, `removing` (being taken off) or `removed`.
-         * @enum {string}
-         */
-        ListingDisplayState: ListingDisplayState;
         ChannelCategoryDto: {
             /** @example 20625 */
             id: string;
@@ -2547,19 +2587,26 @@ export interface components {
             missingRequirement: components["schemas"]["PublishRequirement"] | null;
             /** Format: date-time */
             lastSyncedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When a sync or retry queued its publish, update or delist; null once that job finished or gave up. While set, a selected listing shows `displayState: publishing`.
+             */
+            syncRequestedAt: string | null;
             /** @description The channel category it is listed in, on channels with categories (eBay) */
             category: components["schemas"]["ChannelCategoryDto"] | null;
         };
         ChannelProductDto: {
             product: components["schemas"]["ProductSummaryDto"];
             state: components["schemas"]["ChannelProductState"];
-            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
             displayState: components["schemas"]["ListingDisplayState"];
             /**
              * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
              * @example Choose a shipping policy in this eBay connection’s listing defaults.
              */
             displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
             listing: components["schemas"]["ListingSummaryDto"] | null;
         };
         ChannelProductCountsDto: {
@@ -2666,10 +2713,18 @@ export interface components {
             toRemove: number;
         };
         SyncRequestResultDto: {
-            /** @description Selected products queued to be published or updated */
+            /** @description Selected products queued to be published or updated. With `delisting`, the total a progress bar counts down from `GET …/sync`’s `pending`. */
             queued: number;
             /** @description Listings queued to be delisted, as they are no longer selected */
             delisting: number;
+        };
+        SyncProgressDto: {
+            /** @description Listings whose publish, update or delist a sync or retry queued and whose job has not finished yet (each shows `syncRequestedAt`, and `displayState: publishing` while selected) */
+            pending: number;
+            /** @description The store’s listings in error now, whatever queued them */
+            failed: number;
+            /** @description True once nothing a sync or retry queued is still pending */
+            done: boolean;
         };
         ChannelListingDto: {
             /** Format: uuid */
@@ -2687,6 +2742,11 @@ export interface components {
             missingRequirement: components["schemas"]["PublishRequirement"] | null;
             /** Format: date-time */
             lastSyncedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When a sync or retry queued its publish, update or delist; null once that job finished or gave up. While set, a selected listing shows `displayState: publishing`.
+             */
+            syncRequestedAt: string | null;
             /** @description The channel category it is listed in, on channels with categories (eBay) */
             category: components["schemas"]["ChannelCategoryDto"] | null;
             /** Format: uuid */
@@ -2694,13 +2754,15 @@ export interface components {
             productTitle: string;
             imageUrl: string | null;
             variantCount: number;
-            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
             displayState: components["schemas"]["ListingDisplayState"];
             /**
              * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
              * @example Choose a shipping policy in this eBay connection’s listing defaults.
              */
             displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
         };
         ChannelListingPageDto: {
             items: components["schemas"]["ChannelListingDto"][];
@@ -2759,16 +2821,33 @@ export interface components {
             connection: components["schemas"]["ConnectionSummaryDto"];
             /** @description Whether the connection’s product selection includes it */
             selected: boolean;
-            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
             displayState: components["schemas"]["ListingDisplayState"];
             /**
              * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
              * @example Choose a shipping policy in this eBay connection’s listing defaults.
              */
             displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
             listing: components["schemas"]["ListingSummaryDto"] | null;
             override: components["schemas"]["ListingOverrideViewDto"] | null;
             variants: components["schemas"]["ChannelVariantDto"][];
+        };
+        /**
+         * @description `store_not_connected`: the store needs re-auth, was disconnected or is in error; reconnect it. `product_not_in_store`: the store does not select the product; add it.
+         * @enum {string}
+         */
+        ListingRetryErrorCode: ListingRetryErrorCode;
+        ListingRetryErrorDto: {
+            /** @example 409 */
+            statusCode: number;
+            /** @example Conflict */
+            error: string;
+            /** @description `store_not_connected`: the store needs re-auth, was disconnected or is in error; reconnect it. `product_not_in_store`: the store does not select the product; add it. */
+            code: components["schemas"]["ListingRetryErrorCode"];
+            /** @example Connect this store again before publishing to it */
+            message: string;
         };
         ListingOverrideDto: {
             title?: string | null;
@@ -2784,6 +2863,142 @@ export interface components {
             /** @description Most units shown */
             maxQuantity?: number | null;
             variantPrices?: components["schemas"]["VariantPriceOverrideDto"][];
+        };
+        ListingOverridePatchDto: {
+            title?: string | null;
+            descriptionHtml?: string | null;
+            /** @description Replaces the product’s tags */
+            tags?: string[] | null;
+            /** @description The product’s image URLs to show, in order */
+            mediaUrls?: string[] | null;
+            /** @description Show or hide on this channel, whatever the product’s status */
+            visibility?: components["schemas"]["ListingVisibility"] | null;
+            /** @description Units held back */
+            inventoryBuffer?: number | null;
+            /** @description Most units shown */
+            maxQuantity?: number | null;
+            variantPrices?: components["schemas"]["VariantPriceOverrideDto"][];
+        };
+        InheritedTextDto: {
+            /** @description The product’s value */
+            product: string;
+            /** @description Null when it follows the product */
+            override: string | null;
+            /** @description What the store gets */
+            effective: string;
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        InheritedTextListDto: {
+            product: string[];
+            /** @description Null when it follows the product */
+            override: string[] | null;
+            effective: string[];
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        InheritedVisibilityDto: {
+            /** @description `VISIBLE` when the product is active, else `HIDDEN` */
+            product: components["schemas"]["ListingVisibility"];
+            override: components["schemas"]["ListingVisibility"] | null;
+            effective: components["schemas"]["ListingVisibility"];
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        ListingStockLimitsDto: {
+            /** @description Units held back from this store */
+            inventoryBuffer: number | null;
+            /** @description The most units this store shows */
+            maxQuantity: number | null;
+        };
+        InheritedPriceDto: {
+            /**
+             * @description The catalog price, in the workspace currency
+             * @example 89.00
+             */
+            product: string;
+            /** @example 79.00 */
+            override: string | null;
+            /**
+             * @description In the store’s currency: the override, else the pricing rule’s result
+             * @example 102.99
+             */
+            effective: string;
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        InheritedCompareAtPriceDto: {
+            /** @description In the workspace currency */
+            product: string | null;
+            override: string | null;
+            /** @description In the store’s currency */
+            effective: string | null;
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        ListingEditorVariantDto: {
+            /** Format: uuid */
+            variantId: string;
+            /** @example Blue / Large */
+            title: string;
+            sku: string | null;
+            price: components["schemas"]["InheritedPriceDto"];
+            compareAtPrice: components["schemas"]["InheritedCompareAtPriceDto"];
+            /** @description How the effective price was reached */
+            resolvedPrice: components["schemas"]["ResolvedPriceDto"];
+            /** @description The stock the store shows; null when the variant does not track stock */
+            quantity: number | null;
+        };
+        ListingCategoryFieldDto: {
+            /** @description Whether the channel has categories (eBay) */
+            supported: boolean;
+            /** @description Null until the merchant chose one or a publish picked one */
+            value: components["schemas"]["ChannelCategoryDto"] | null;
+        };
+        ListingItemSpecificsSummaryDto: {
+            /** @description Whether the channel has item specifics (eBay) */
+            supported: boolean;
+            /** @description How many item specifics the merchant set on the listing */
+            count: number;
+            /**
+             * @example [
+             *       "Brand",
+             *       "Color"
+             *     ]
+             */
+            names: string[];
+        };
+        ListingEditorDto: {
+            /** Format: uuid */
+            productId: string;
+            connection: components["schemas"]["ConnectionSummaryDto"];
+            /** @description Whether the connection’s product selection includes it */
+            selected: boolean;
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            displayState: components["schemas"]["ListingDisplayState"];
+            /**
+             * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
+             * @example Choose a shipping policy in this eBay connection’s listing defaults.
+             */
+            displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
+            listing: components["schemas"]["ListingSummaryDto"] | null;
+            title: components["schemas"]["InheritedTextDto"];
+            descriptionHtml: components["schemas"]["InheritedTextDto"];
+            tags: components["schemas"]["InheritedTextListDto"];
+            /** @description Image URLs in order; an override is a subset of the product’s, in its order */
+            images: components["schemas"]["InheritedTextListDto"];
+            visibility: components["schemas"]["InheritedVisibilityDto"];
+            stock: components["schemas"]["ListingStockLimitsDto"];
+            variants: components["schemas"]["ListingEditorVariantDto"][];
+            category: components["schemas"]["ListingCategoryFieldDto"];
+            itemSpecifics: components["schemas"]["ListingItemSpecificsSummaryDto"];
+            /**
+             * Format: date-time
+             * @description When the overrides last changed; null when there are none
+             */
+            overrideUpdatedAt: string | null;
         };
         ChooseChannelCategoryDto: {
             category: components["schemas"]["ChannelCategoryDto"] | null;
@@ -4830,6 +5045,28 @@ export interface operations {
             };
         };
     };
+    ChannelSyncController_syncProgress_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncProgressDto"];
+                };
+            };
+        };
+    };
     ChannelSyncController_requestSync_v1: {
         parameters: {
             query?: never;
@@ -5055,12 +5292,14 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The store is not connected, or the product is not selected for it */
+            /** @description The store is not connected (`store_not_connected`), or the product is not selected for it (`product_not_in_store`) */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ListingRetryErrorDto"];
+                };
             };
         };
     };
@@ -5111,6 +5350,63 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProductChannelDto"];
                 };
+            };
+        };
+    };
+    ProductChannelsController_patchOverride_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingOverridePatchDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductChannelDto"];
+                };
+            };
+        };
+    };
+    ListingEditorController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingEditorDto"];
+                };
+            };
+            /** @description The product or the store is not in the workspace */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5712,6 +6008,30 @@ export enum ListingSource {
     IMPORT = "IMPORT",
     RULE = "RULE"
 }
+export enum ListingDisplayState {
+    draft = "draft",
+    needs_details = "needs_details",
+    ready = "ready",
+    publishing = "publishing",
+    published = "published",
+    failed = "failed",
+    removing = "removing",
+    removed = "removed"
+}
+export enum PublishRequirement {
+    reconnect = "reconnect",
+    account_settings = "account_settings",
+    shipping_policy = "shipping_policy",
+    payment_policy = "payment_policy",
+    return_policy = "return_policy",
+    ship_from_location = "ship_from_location",
+    listing_setup = "listing_setup",
+    images = "images",
+    active_product = "active_product",
+    category = "category",
+    item_specifics = "item_specifics",
+    option_names = "option_names"
+}
 export enum OutOfStockPolicy {
     STOP_SELLING = "STOP_SELLING",
     CONTINUE_SELLING = "CONTINUE_SELLING"
@@ -5934,20 +6254,6 @@ export enum CompareAtMode {
     keep = "keep",
     omit = "omit"
 }
-export enum PublishRequirement {
-    reconnect = "reconnect",
-    account_settings = "account_settings",
-    shipping_policy = "shipping_policy",
-    payment_policy = "payment_policy",
-    return_policy = "return_policy",
-    ship_from_location = "ship_from_location",
-    listing_setup = "listing_setup",
-    images = "images",
-    active_product = "active_product",
-    category = "category",
-    item_specifics = "item_specifics",
-    option_names = "option_names"
-}
 export enum ChannelProductState {
     listed = "listed",
     pending = "pending",
@@ -5959,16 +6265,6 @@ export enum ChannelProductState {
 export enum ChannelProductSort {
     title = "title",
     updatedAt = "updatedAt"
-}
-export enum ListingDisplayState {
-    draft = "draft",
-    needs_details = "needs_details",
-    ready = "ready",
-    publishing = "publishing",
-    published = "published",
-    failed = "failed",
-    removing = "removing",
-    removed = "removed"
 }
 export enum PriceSource {
     override = "override",
@@ -5994,6 +6290,10 @@ export enum PriceWarning {
 export enum ListingVisibility {
     VISIBLE = "VISIBLE",
     HIDDEN = "HIDDEN"
+}
+export enum ListingRetryErrorCode {
+    store_not_connected = "store_not_connected",
+    product_not_in_store = "product_not_in_store"
 }
 export enum CategoryAspectUsage {
     recommended = "recommended",

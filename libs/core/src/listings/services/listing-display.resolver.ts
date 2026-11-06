@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChannelCapability,
   ChannelConnectorRegistry,
+  type PublishCandidate,
   supportsCapability,
   type UnmetPublishRequirement,
 } from '@crossmart/connectors';
@@ -16,8 +17,8 @@ export interface ListingDisplaySubject {
   /** Whether the merchant removed it from the store by hand. */
   removedByHand: boolean;
   listing: DisplayedListing | null;
-  /** The product's image URLs, for channels that need an image. */
-  imageUrls: readonly string[];
+  /** What the store's connector checks about the product before it is sent. */
+  candidate: PublishCandidate;
 }
 
 /**
@@ -30,22 +31,22 @@ export class ListingDisplayResolver {
   constructor(private readonly registry: ChannelConnectorRegistry) {}
 
   resolve(connection: ChannelConnectionView, subject: ListingDisplaySubject): ListingDisplay {
-    const { imageUrls, ...input } = subject;
+    const { candidate, ...input } = subject;
     return listingDisplayOf({
       ...input,
       blockers: [
         ...connection.publishReadiness.unmet,
-        ...this.productBlockers(connection, imageUrls),
+        ...this.productBlockers(connection, candidate),
       ],
     });
   }
 
   private productBlockers(
     connection: ChannelConnectionView,
-    imageUrls: readonly string[],
+    candidate: PublishCandidate,
   ): UnmetPublishRequirement[] {
     const connector = this.registry.require(connection.channel);
     if (!supportsCapability(connector, ChannelCapability.PublishListings)) return [];
-    return connector.unmetProductRequirements?.({ imageUrls }) ?? [];
+    return connector.unmetProductRequirements?.(candidate) ?? [];
   }
 }

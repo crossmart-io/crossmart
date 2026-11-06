@@ -67,6 +67,8 @@ export const SYNC_JOB_COST: Record<SyncJobKind, number> = {
 /** Why a listing's sync failed, when the error is not one written for merchants. */
 export const UNEXPECTED_SYNC_FAILURE = 'The channel sync failed unexpectedly. It will be retried.';
 export const CONNECTION_NOT_SYNCABLE = 'Connect this channel again before syncing it';
+/** The `error` of a 409 body, as NestJS names the status. */
+export const CONFLICT_ERROR = 'Conflict';
 export const RETRY_NEEDS_CONNECTION = 'Connect this store again before publishing to it';
 export const RETRY_NEEDS_SELECTION =
   'This product is not in this store. Add it to the store to publish it there.';

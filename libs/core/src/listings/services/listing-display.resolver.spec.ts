@@ -13,7 +13,13 @@ import { ListingDisplayResolver } from './listing-display.resolver.js';
 
 const NO_IMAGES = { requirement: PublishRequirement.Images, reason: 'Add a photo' };
 const NO_POLICY = { requirement: PublishRequirement.ShippingPolicy, reason: 'Choose a policy' };
-const SUBJECT = { selected: true, removedByHand: false, listing: null, imageUrls: [] };
+const CANDIDATE: PublishCandidate = {
+  imageUrls: [],
+  active: true,
+  optionNames: [],
+  variantCount: 1,
+};
+const SUBJECT = { selected: true, removedByHand: false, listing: null, candidate: CANDIDATE };
 
 function setup(capabilities = [ChannelCapability.PublishListings]) {
   const check = vi.fn((candidate: PublishCandidate) =>
@@ -33,16 +39,20 @@ describe('ListingDisplayResolver', () => {
     expect(resolver.resolve(store, SUBJECT)).toEqual({
       state: ListingDisplayState.NeedsDetails,
       reason: NO_IMAGES.reason,
+      requirement: PublishRequirement.Images,
     });
     expect(registry.require).toHaveBeenCalledWith(ChannelType.Ebay);
-    expect(check).toHaveBeenCalledWith({ imageUrls: [] });
+    expect(check).toHaveBeenCalledWith(CANDIDATE);
   });
 
   it('names the store’s setup before the product’s details', () => {
     const { resolver } = setup();
     const store = connectionView({ publishReadiness: { ready: false, unmet: [NO_POLICY] } });
 
-    expect(resolver.resolve(store, SUBJECT).reason).toBe(NO_POLICY.reason);
+    expect(resolver.resolve(store, SUBJECT)).toMatchObject({
+      reason: NO_POLICY.reason,
+      requirement: PublishRequirement.ShippingPolicy,
+    });
   });
 
   it('is ready when neither the store nor the product lacks anything', () => {
@@ -50,7 +60,7 @@ describe('ListingDisplayResolver', () => {
 
     const display = resolver.resolve(connectionView(), {
       ...SUBJECT,
-      imageUrls: ['https://cdn.example.com/1.jpg'],
+      candidate: { ...CANDIDATE, imageUrls: ['https://cdn.example.com/1.jpg'] },
     });
 
     expect(display.state).toBe(ListingDisplayState.Ready);
@@ -61,7 +71,12 @@ describe('ListingDisplayResolver', () => {
 
     const display = resolver.resolve(connectionView(), {
       ...SUBJECT,
-      listing: { status: ListingStatus.PENDING, lastError: null, missingRequirement: null },
+      listing: {
+        status: ListingStatus.PENDING,
+        lastError: null,
+        missingRequirement: null,
+        syncRequestedAt: null,
+      },
     });
 
     expect(display.state).toBe(ListingDisplayState.Publishing);

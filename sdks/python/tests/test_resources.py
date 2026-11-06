@@ -17,7 +17,9 @@ from crossmart.models import (
     CreateVariantDto,
     InventoryMovementReason,
     ListingDisplayState,
+    ListingEditorDto,
     ListingOverrideDto,
+    ListingOverridePatchDto,
     ListingVisibility,
     OrderStatus,
     SalesRange,
@@ -147,6 +149,13 @@ class TestStores:
 
         assert (result.queued, result.delisting) == (3, 1)
 
+    def test_sync_progress(self, api: respx.MockRouter, client: Crossmart) -> None:
+        api.get(f"{STORE_PATH}/sync").respond(json={"pending": 2, "failed": 1, "done": False})
+
+        progress = client.stores.sync_progress(STORE_ID)
+
+        assert (progress.pending, progress.failed, progress.done) == (2, 1, False)
+
 
 class TestListings:
     def test_publish(self, api: respx.MockRouter, client: Crossmart) -> None:
@@ -186,6 +195,26 @@ class TestListings:
         )
 
         assert _body(route) == {"title": "Mug | Free shipping", "visibility": "VISIBLE"}
+
+    def test_patch_override_reverts_one_field(
+        self, api: respx.MockRouter, client: Crossmart
+    ) -> None:
+        route = api.patch(f"{PRODUCT_CHANNEL_PATH}/override").respond(
+            json=fixture("ProductChannelDto")
+        )
+
+        client.listings.patch_override(PRODUCT_ID, STORE_ID, ListingOverridePatchDto(title=None))
+
+        assert _body(route) == {"title": None}
+
+    def test_editor(self, api: respx.MockRouter, client: Crossmart) -> None:
+        route = api.get(f"{PRODUCT_CHANNEL_PATH}/listing").respond(json=fixture("ListingEditorDto"))
+
+        editor = client.listings.editor(PRODUCT_ID, STORE_ID)
+
+        assert route.called
+        assert isinstance(editor, ListingEditorDto)
+        assert isinstance(editor.display_state, ListingDisplayState)
 
     def test_clear_override(self, api: respx.MockRouter, client: Crossmart) -> None:
         route = api.delete(f"{PRODUCT_CHANNEL_PATH}/override").respond(

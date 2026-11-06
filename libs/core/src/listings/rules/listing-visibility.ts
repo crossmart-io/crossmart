@@ -1,6 +1,6 @@
 import { ListingStatus, ListingVisibility, type Prisma, ProductStatus } from '@crossmart/database';
 
-interface VisibleListing {
+export interface VisibleListing {
   override: { visibility: ListingVisibility | null } | null;
 }
 

@@ -7,9 +7,11 @@ from typing import Any
 
 from .._core import AsyncResource, SyncResource
 from .._generated.api.listings import (
+    listing_editor_controller_get_v_1,
     product_channels_controller_add_v_1,
     product_channels_controller_clear_override_v_1,
     product_channels_controller_list_v_1,
+    product_channels_controller_patch_override_v_1,
     product_channels_controller_remove_v_1,
     product_channels_controller_retry_v_1,
     product_channels_controller_save_override_v_1,
@@ -17,7 +19,9 @@ from .._generated.api.listings import (
     store_products_controller_remove_v_1,
 )
 from .._generated.models import (
+    ListingEditorDto,
     ListingOverrideDto,
+    ListingOverridePatchDto,
     ProductChannelDto,
     StoreProductsDto,
     StoreProductsResultDto,
@@ -27,6 +31,9 @@ from .._utils import Id, as_model, as_str, as_uuid
 
 ListingOverride = ListingOverrideDto | Mapping[str, Any]
 """A store override as a model, or a mapping in the API's JSON shape."""
+
+ListingOverridePatch = ListingOverridePatchDto | Mapping[str, Any]
+"""Some store overrides to change, as a model or a mapping in the API's JSON shape."""
 
 
 def _store_products(product_ids: Iterable[Id]) -> StoreProductsDto:
@@ -77,8 +84,8 @@ class Listings(SyncResource):
 
         Only this product and store are queued, unlike ``stores.sync``. The listing is pending at
         once (``display_state`` is ``publishing``). Raises a 409 error when the store must be
-        connected again or does not include the product, and a 402 when the plan has no room for
-        another active listing.
+        connected again (``code`` is ``store_not_connected``) or does not include the product
+        (``product_not_in_store``), and a 402 when the plan has no room for another active listing.
         """
         with translate_transport_errors():
             response = product_channels_controller_retry_v_1.sync_detailed(
@@ -119,6 +126,40 @@ class Listings(SyncResource):
                 body=body,
             )
         return unwrap(response)
+
+    def patch_override(
+        self, product_id: Id, store_id: Id, patch: ListingOverridePatch
+    ) -> ProductChannelDto:
+        """Changes some of the product's overrides in one store and keeps the rest.
+
+        Absent fields keep their override; ``None`` reverts a field to the product's value. A
+        variant price entry with both prices ``None`` reverts that variant to the pricing rule.
+        """
+        body = as_model(ListingOverridePatchDto, patch)
+        with translate_transport_errors():
+            response = product_channels_controller_patch_override_v_1.sync_detailed(
+                as_uuid(self._workspace()),
+                as_uuid(product_id),
+                as_uuid(store_id),
+                client=self._http,
+                body=body,
+            )
+        return unwrap(response)
+
+    def editor(self, product_id: Id, store_id: Id) -> ListingEditorDto:
+        """The product's listing in one store, for an editor.
+
+        Every field has the product's value, the store's override (``None`` when it follows the
+        product), the value the store gets and whether it is overridden, with the display state.
+        """
+        with translate_transport_errors():
+            response = listing_editor_controller_get_v_1.sync_detailed(
+                as_uuid(self._workspace()),
+                as_uuid(product_id),
+                as_uuid(store_id),
+                client=self._http,
+            )
+        return unwrap_as(response, ListingEditorDto)
 
     def clear_override(self, product_id: Id, store_id: Id) -> ProductChannelDto:
         """Removes the product's overrides in one store, so it follows the product again."""
@@ -216,6 +257,32 @@ class AsyncListings(AsyncResource):
                 body=body,
             )
         return unwrap(response)
+
+    async def patch_override(
+        self, product_id: Id, store_id: Id, patch: ListingOverridePatch
+    ) -> ProductChannelDto:
+        """Changes some of the product's overrides. See :meth:`Listings.patch_override`."""
+        body = as_model(ListingOverridePatchDto, patch)
+        with translate_transport_errors():
+            response = await product_channels_controller_patch_override_v_1.asyncio_detailed(
+                as_uuid(await self._workspace()),
+                as_uuid(product_id),
+                as_uuid(store_id),
+                client=self._http,
+                body=body,
+            )
+        return unwrap(response)
+
+    async def editor(self, product_id: Id, store_id: Id) -> ListingEditorDto:
+        """The product's listing in one store, for an editor. See :meth:`Listings.editor`."""
+        with translate_transport_errors():
+            response = await listing_editor_controller_get_v_1.asyncio_detailed(
+                as_uuid(await self._workspace()),
+                as_uuid(product_id),
+                as_uuid(store_id),
+                client=self._http,
+            )
+        return unwrap_as(response, ListingEditorDto)
 
     async def clear_override(self, product_id: Id, store_id: Id) -> ProductChannelDto:
         """Removes the product's overrides in one store."""

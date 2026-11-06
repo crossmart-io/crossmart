@@ -5,6 +5,7 @@ import type {
   PricingPreviewInput,
   PricingRule,
   Store,
+  SyncProgress,
   SyncRequestResult,
 } from '../types.js';
 import { Resource } from './resource.js';
@@ -125,6 +126,27 @@ export class StoresResource extends Resource {
     const workspaceId = await this.workspaceId(options);
     return unwrap(
       this.http.POST(SYNC_PATH, {
+        params: { path: { workspaceId, connectionId } },
+        signal: options?.signal,
+      }),
+    );
+  }
+
+  /**
+   * How far the store's sync has come: listings a sync or retry queued whose job has not finished
+   * (`pending`), listings in error (`failed`), and whether nothing is left (`done`).
+   *
+   * @example
+   * ```ts
+   * const { queued, delisting } = await crossmart.stores.sync(connectionId);
+   * const { pending, done } = await crossmart.stores.syncProgress(connectionId);
+   * console.log(`${queued + delisting - pending} of ${queued + delisting} done`, done);
+   * ```
+   */
+  async syncProgress(connectionId: string, options?: RequestOptions): Promise<SyncProgress> {
+    const workspaceId = await this.workspaceId(options);
+    return unwrap(
+      this.http.GET(SYNC_PATH, {
         params: { path: { workspaceId, connectionId } },
         signal: options?.signal,
       }),

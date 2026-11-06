@@ -35,11 +35,14 @@ export type PricingRule = Schemas['PricingRuleDto'];
 export type PricingPreviewInput = Schemas['PricingPreviewRequestDto'];
 export type PricingPreview = Schemas['PricingPreviewDto'];
 export type SyncRequestResult = Schemas['SyncRequestResultDto'];
+export type SyncProgress = Schemas['SyncProgressDto'];
 
 // Listings
 export type ProductChannel = Schemas['ProductChannelDto'];
 export type Listing = Schemas['ChannelListingDto'];
 export type ListingOverrideInput = Schemas['ListingOverrideDto'];
+export type ListingOverridePatch = Schemas['ListingOverridePatchDto'];
+export type ListingEditor = Schemas['ListingEditorDto'];
 export type StoreProductsResult = Schemas['StoreProductsResultDto'];
 export type ListListingsQuery = QueryOf<'ChannelSyncController_listListings_v1'>;
 export type ListAllListingsQuery = ListAllQuery<ListListingsQuery>;
@@ -78,3 +81,4 @@ export type CurrentApiKey = Schemas['CurrentApiKeyDto'];
 
 // Errors
 export type PlanLimitErrorBody = Schemas['PlanLimitErrorDto'];
+export type ListingRetryErrorBody = Schemas['ListingRetryErrorDto'];

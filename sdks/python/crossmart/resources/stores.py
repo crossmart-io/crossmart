@@ -17,6 +17,7 @@ from .._generated.api.listings import (
     channel_rules_controller_update_pricing_v_1,
     channel_sync_controller_list_listings_v_1,
     channel_sync_controller_request_sync_v_1,
+    channel_sync_controller_sync_progress_v_1,
 )
 from .._generated.models import (
     ChannelConnectionDto,
@@ -29,6 +30,7 @@ from .._generated.models import (
     PricingPreviewRequestDto,
     PricingRuleDto,
     SortDirection,
+    SyncProgressDto,
     SyncRequestResultDto,
     UpdatePricingDto,
 )
@@ -143,6 +145,18 @@ class Stores(SyncResource):
             )
         return unwrap_as(response, SyncRequestResultDto)
 
+    def sync_progress(self, store_id: Id) -> SyncProgressDto:
+        """How far the store's sync has come.
+
+        ``pending`` counts the listings a sync or retry queued whose job has not finished,
+        ``failed`` the listings in error, and ``done`` is true once nothing is pending.
+        """
+        with translate_transport_errors():
+            response = channel_sync_controller_sync_progress_v_1.sync_detailed(
+                self._workspace(), as_str(store_id), client=self._http
+            )
+        return unwrap(response)
+
     def list_products(
         self,
         store_id: Id,
@@ -251,6 +265,14 @@ class AsyncStores(AsyncResource):
                 await self._workspace(), as_str(store_id), client=self._http
             )
         return unwrap_as(response, SyncRequestResultDto)
+
+    async def sync_progress(self, store_id: Id) -> SyncProgressDto:
+        """How far the store's sync has come. See :meth:`Stores.sync_progress`."""
+        with translate_transport_errors():
+            response = await channel_sync_controller_sync_progress_v_1.asyncio_detailed(
+                await self._workspace(), as_str(store_id), client=self._http
+            )
+        return unwrap(response)
 
     async def list_products(
         self,

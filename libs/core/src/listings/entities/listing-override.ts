@@ -30,6 +30,13 @@ export interface ListingOverrideView extends ListingOverrideInput {
   updatedAt: Date;
 }
 
+/**
+ * Some overrides of one listing to change, keeping the rest: an absent field keeps its override,
+ * null reverts it to the product's value. `variantPrices` entries replace that variant's prices
+ * only, and an entry whose prices are both null reverts that variant to the pricing rule.
+ */
+export type ListingOverridePatch = Partial<ListingOverrideInput>;
+
 /** Content fields to change on one listing; absent fields keep their current override. */
 export interface ListingContentPatch {
   title?: string;

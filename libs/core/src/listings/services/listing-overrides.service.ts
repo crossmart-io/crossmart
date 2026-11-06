@@ -5,7 +5,12 @@ import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type { ProductDetail } from '../../catalog/entities/product-views.js';
-import type { ListingContentPatch, ListingOverrideInput } from '../entities/listing-override.js';
+import type {
+  ListingContentPatch,
+  ListingOverrideInput,
+  ListingOverridePatch,
+} from '../entities/listing-override.js';
+import { applyOverridePatch } from '../rules/listing-override-patch.js';
 import { type OverrideTarget, ListingOverrideWriter } from './listing-override.writer.js';
 import { SyncConnectionLoader } from './sync-connection.loader.js';
 import { SyncProductLoader } from './sync-product.loader.js';
@@ -47,13 +52,18 @@ export class ListingOverridesService {
    * Changes some content fields of the listing and keeps every other override, as an approved
    * suggestion does. Saved, validated, synced and logged like any other override.
    */
-  async saveContent(
-    target: OverrideTarget,
-    patch: ListingContentPatch,
-    actor: Actor,
-  ): Promise<void> {
+  saveContent(target: OverrideTarget, patch: ListingContentPatch, actor: Actor): Promise<void> {
+    return this.patch(target, patch, actor);
+  }
+
+  /**
+   * Changes some overrides and keeps the rest: absent fields keep their override, null ones
+   * revert to the product's value (variant prices merge per variant). Saved, validated, synced
+   * and logged like a full save.
+   */
+  async patch(target: OverrideTarget, patch: ListingOverridePatch, actor: Actor): Promise<void> {
     const current = await this.writer.current(target);
-    await this.save(target, { ...current, ...patch }, actor);
+    await this.save(target, applyOverridePatch(current, patch), actor);
   }
 
   async clear(target: OverrideTarget, actor: Actor): Promise<void> {

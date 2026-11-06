@@ -7,6 +7,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..models.listing_display_state import ListingDisplayState
+from ..models.publish_requirement import PublishRequirement
 
 if TYPE_CHECKING:
     from ..models.channel_variant_dto import ChannelVariantDto
@@ -26,11 +27,17 @@ class ProductChannelDto:
         selected (bool): Whether the connection’s product selection includes it
         display_state (ListingDisplayState): The product on this store, in one state computed by the server: `draft`
             (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something
-            publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight), `published`,
-            `failed`, `removing` (being taken off) or `removed`.
+            publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update
+            of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or
+            `removed`.
         display_reason (None | str): For `needs_details` and `failed`: a short, merchant-readable reason (what to add,
             or the channel’s message). Never holds secrets. Null for the other states. Example: Choose a shipping policy in
             this eBay connection’s listing defaults..
+        display_requirement (None | PublishRequirement): For `needs_details`: the requirement to fix first, so a client
+            can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`,
+            `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`,
+            `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics`
+            are known once the channel refused a publish. Null for the other states.
         listing (ListingSummaryDto | None):
         override (ListingOverrideViewDto | None):
         variants (list[ChannelVariantDto]):
@@ -40,6 +47,7 @@ class ProductChannelDto:
     selected: bool
     display_state: ListingDisplayState
     display_reason: None | str
+    display_requirement: None | PublishRequirement
     listing: ListingSummaryDto | None
     override: ListingOverrideViewDto | None
     variants: list[ChannelVariantDto]
@@ -57,6 +65,12 @@ class ProductChannelDto:
 
         display_reason: None | str
         display_reason = self.display_reason
+
+        display_requirement: None | str
+        if isinstance(self.display_requirement, PublishRequirement):
+            display_requirement = self.display_requirement.value
+        else:
+            display_requirement = self.display_requirement
 
         listing: dict[str, Any] | None
         if isinstance(self.listing, ListingSummaryDto):
@@ -83,6 +97,7 @@ class ProductChannelDto:
                 "selected": selected,
                 "displayState": display_state,
                 "displayReason": display_reason,
+                "displayRequirement": display_requirement,
                 "listing": listing,
                 "override": override,
                 "variants": variants,
@@ -111,6 +126,21 @@ class ProductChannelDto:
             return cast(None | str, data)
 
         display_reason = _parse_display_reason(d.pop("displayReason"))
+
+        def _parse_display_requirement(data: object) -> None | PublishRequirement:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                display_requirement_type_0 = PublishRequirement(data)
+
+                return display_requirement_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | PublishRequirement, data)
+
+        display_requirement = _parse_display_requirement(d.pop("displayRequirement"))
 
         def _parse_listing(data: object) -> ListingSummaryDto | None:
             if data is None:
@@ -154,6 +184,7 @@ class ProductChannelDto:
             selected=selected,
             display_state=display_state,
             display_reason=display_reason,
+            display_requirement=display_requirement,
             listing=listing,
             override=override,
             variants=variants,

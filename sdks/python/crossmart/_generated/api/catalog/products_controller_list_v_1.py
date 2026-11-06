@@ -146,6 +146,9 @@ def sync_detailed(
 ) -> Response[ProductPageDto]:
     """Products of a workspace, in title order
 
+     Each row’s `stores` badges carry `displayState`, `displayReason` and `displayRequirement`, computed
+    by the same rule as the store’s own pages.
+
     Args:
         workspace_id (str):
         search (str | Unset):
@@ -211,6 +214,9 @@ def sync(
 ) -> ProductPageDto | None:
     """Products of a workspace, in title order
 
+     Each row’s `stores` badges carry `displayState`, `displayReason` and `displayRequirement`, computed
+    by the same rule as the store’s own pages.
+
     Args:
         workspace_id (str):
         search (str | Unset):
@@ -270,6 +276,9 @@ async def asyncio_detailed(
     limit: float | Unset = 25.0,
 ) -> Response[ProductPageDto]:
     """Products of a workspace, in title order
+
+     Each row’s `stores` badges carry `displayState`, `displayReason` and `displayRequirement`, computed
+    by the same rule as the store’s own pages.
 
     Args:
         workspace_id (str):
@@ -333,6 +342,9 @@ async def asyncio(
     limit: float | Unset = 25.0,
 ) -> ProductPageDto | None:
     """Products of a workspace, in title order
+
+     Each row’s `stores` badges carry `displayState`, `displayReason` and `displayRequirement`, computed
+    by the same rule as the store’s own pages.
 
     Args:
         workspace_id (str):

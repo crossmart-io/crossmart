@@ -4,6 +4,7 @@ import { toProductSummary } from '../../catalog/mappers/product-view.mapper.js';
 import type { SelectionPreview, SelectionPreviewQuery } from '../entities/selection-preview.js';
 import { SELECTION_BATCH_SIZE } from '../listings.constants.js';
 import { ProductSelectionRepository } from '../repositories/product-selection.repository.js';
+import { ProductStoreDisplays } from './product-store-displays.js';
 import {
   addedManuallyWhere,
   removedManuallyWhere,
@@ -18,7 +19,10 @@ import {
  */
 @Injectable()
 export class ProductSelectionService {
-  constructor(private readonly products: ProductSelectionRepository) {}
+  constructor(
+    private readonly products: ProductSelectionRepository,
+    private readonly storeDisplays: ProductStoreDisplays,
+  ) {}
 
   async preview(scope: SelectionScope, query: SelectionPreviewQuery): Promise<SelectionPreview> {
     const where = selectionWhere(scope);
@@ -35,7 +39,10 @@ export class ProductSelectionService {
       matchingFilter,
       addedManually,
       removedManually,
-      items: rows.map((record) => toProductSummary(record)),
+      items: await this.storeDisplays.display(
+        scope.workspaceId,
+        rows.map((record) => toProductSummary(record)),
+      ),
       nextCursor,
     };
   }

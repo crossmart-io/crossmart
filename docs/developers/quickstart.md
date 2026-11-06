@@ -224,14 +224,17 @@ and back off if it stays `PENDING`.
 
 Each entry also has `displayState`, the one state to show a merchant, computed by the server from
 the store's selection, the listing and what publishing still needs. `displayReason` says why for
-`needs_details` and `failed`.
+`needs_details` and `failed`, and `displayRequirement` names the `PublishRequirement` to fix first
+for `needs_details` (such as `shipping_policy`, `images` or `active_product`), so a client can open
+the right place. The same three fields are on a store's products and listings, and on each store
+badge of the product list.
 
 | `displayState`  | Meaning                                                                       |
 | --------------- | ----------------------------------------------------------------------------- |
 | `draft`         | Not selected for the store                                                    |
 | `needs_details` | Selected, but the store setup or the product lacks something (see the reason) |
 | `ready`         | Selected and publishable, not sent yet                                        |
-| `publishing`    | Queued or being published                                                     |
+| `publishing`    | Queued or being published, including an update a sync or retry queued         |
 | `published`     | On the store                                                                  |
 | `failed`        | The store refused the last publish or update; `displayReason` has its message |
 | `removing`      | Being taken off the store                                                     |
@@ -272,7 +275,8 @@ for await (const listing of crossmart.listings.listAll(store.id, { status: Listi
 Fix the product (for example with `PUT …/products/{productId}`) and the change is sent to the store automatically.
 To publish one product to one store again, without resyncing the whole store, retry it. The
 answer is `202` with the product on that store, now `publishing`. It is `409` when the store must
-be connected again or does not include the product.
+be connected again (`code: store_not_connected`) or does not include the product
+(`code: product_not_in_store`).
 
 ```bash
 curl -X POST "$CROSSMART_API/workspaces/$WORKSPACE_ID/products/$PRODUCT_ID/channels/$CONNECTION_ID/retry" \
@@ -281,6 +285,16 @@ curl -X POST "$CROSSMART_API/workspaces/$WORKSPACE_ID/products/$PRODUCT_ID/chann
 
 ```ts
 await crossmart.listings.retry(product.id, store.id);
+```
+
+A sync of a whole store (`POST …/channel-connections/{connectionId}/sync`) marks every listing it
+queues with `syncRequestedAt` until its job finishes, so those listings show `publishing`, even
+ones already on the store. Poll its progress until `done`:
+
+```bash
+curl "$CROSSMART_API/workspaces/$WORKSPACE_ID/channel-connections/$CONNECTION_ID/sync" \
+  -H "x-api-key: $CROSSMART_API_KEY"
+# {"pending":3,"failed":0,"done":false}
 ```
 
 ## 5. Override the title or price on one store
@@ -305,11 +319,16 @@ await crossmart.listings.setOverride(product.id, store.id, {
 });
 ```
 
-- An override **replaces** the previous one: send every field you want to keep.
+- `PUT` **replaces** the overrides: send every field you want to keep. `PATCH …/override`
+  (`crossmart.listings.patchOverride`) changes only the fields it names; `null` reverts one field
+  to the product's value, and a variant price entry with both prices `null` reverts that variant.
 - A variant price here is in the store's currency and wins over the store's pricing rule.
 - When the product is already listed, an update is queued to the store.
 - `DELETE …/channels/{connectionId}/override` (`crossmart.listings.clearOverride`) goes back to the
   product's values.
+- `GET …/channels/{connectionId}/listing` (`crossmart.listings.editor`) returns every field with the
+  product's value, the override and the value the store gets (`product`, `override`, `effective`,
+  `overridden`), for a listing editor.
 
 ### Price a whole store with a rule
 

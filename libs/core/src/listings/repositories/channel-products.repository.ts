@@ -6,7 +6,7 @@ import {
   type PageRequest,
   toPageWindow,
 } from '@crossmart/common';
-import { type Prisma, PrismaService } from '@crossmart/database';
+import { ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { ChannelProductSort } from '../enums/channel-product-state.enum.js';
 import { PRODUCT_SUMMARY_INCLUDE } from '../../catalog/repositories/product.queries.js';
 
@@ -19,9 +19,11 @@ const LISTING_SUMMARY_SELECT = {
   lastError: true,
   missingRequirement: true,
   lastSyncedAt: true,
+  syncRequestedAt: true,
   channelCategoryId: true,
   channelCategoryName: true,
   updatedAt: true,
+  override: { select: { visibility: true } },
 } satisfies Prisma.ListingSelect;
 
 /**
@@ -39,6 +41,29 @@ const CHANNEL_PRODUCT_INCLUDE = {
 } as const satisfies Prisma.ProductInclude;
 
 type ChannelProductInclude = typeof CHANNEL_PRODUCT_INCLUDE;
+
+/** What a store badge's display state reads: its listing, and its product as a channel checks it. */
+const STORE_BADGE_LISTING_SELECT = {
+  productId: true,
+  connectionId: true,
+  status: true,
+  lastError: true,
+  missingRequirement: true,
+  syncRequestedAt: true,
+  override: { select: { visibility: true } },
+  product: {
+    select: {
+      status: true,
+      optionNames: true,
+      media: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
+      _count: { select: { variants: true } },
+    },
+  },
+} as const satisfies Prisma.ListingSelect;
+
+export type StoreBadgeListingRecord = Prisma.ListingGetPayload<{
+  select: typeof STORE_BADGE_LISTING_SELECT;
+}>;
 
 export type ChannelProductRecord = Prisma.ProductGetPayload<{ include: ChannelProductInclude }>;
 
@@ -66,6 +91,27 @@ export class ChannelProductsRepository {
       this.prisma.product.count({ where }),
     ]);
     return { records, total };
+  }
+
+  /**
+   * The listings the store badges of a page show, oldest first, in one query: those of
+   * `productIds` on `connectionIds` that are not delisted.
+   */
+  listStoreBadgeListings(
+    workspaceId: string,
+    productIds: string[],
+    connectionIds: string[],
+  ): Promise<StoreBadgeListingRecord[]> {
+    return this.prisma.listing.findMany({
+      where: {
+        workspaceId,
+        productId: { in: productIds },
+        connectionId: { in: connectionIds },
+        status: { not: ListingStatus.DELISTED },
+      },
+      select: STORE_BADGE_LISTING_SELECT,
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
   }
 
   /** Which of `productIds` match `where`, in one query for a whole page. */

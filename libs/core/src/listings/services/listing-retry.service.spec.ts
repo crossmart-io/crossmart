@@ -7,6 +7,7 @@ import type { ChannelConnectionsService } from '../../channels/services/channel-
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import { SyncJobKind } from '../enums/sync-job-kind.enum.js';
+import { ListingRetryErrorCode } from '../enums/listing-retry-error-code.enum.js';
 import { RETRY_NEEDS_CONNECTION, RETRY_NEEDS_SELECTION } from '../listings.constants.js';
 import type { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
 import {
@@ -23,6 +24,7 @@ import { ListingRequeuer } from './listing-requeuer.js';
 import { ListingRetryService } from './listing-retry.service.js';
 import type { ProductSelectionService } from './product-selection.service.js';
 import type { SyncJobQueue } from './sync-job.queue.js';
+import { SyncRequestQueue } from './sync-request.queue.js';
 import type { SyncProductLoader } from './sync-product.loader.js';
 
 const ACTOR = Actor.user('user-1');
@@ -43,6 +45,7 @@ function setup() {
       .fn<ListingSyncRepository['ensurePrimary']>()
       .mockResolvedValue(listingRecord()),
     markForRetry: vi.fn<ListingSyncRepository['markForRetry']>().mockResolvedValue(),
+    markSyncRequested: vi.fn<ListingSyncRepository['markSyncRequested']>().mockResolvedValue(),
   };
   const gate = { assertRoomFor: vi.fn<ActiveListingsGate['assertRoomFor']>().mockResolvedValue() };
   const queue = { enqueue: vi.fn<SyncJobQueue['enqueue']>().mockResolvedValue() };
@@ -50,7 +53,10 @@ function setup() {
   const requeuer = new ListingRequeuer(
     listings as unknown as ListingSyncRepository,
     gate as unknown as ActiveListingsGate,
-    queue as unknown as SyncJobQueue,
+    new SyncRequestQueue(
+      listings as unknown as ListingSyncRepository,
+      queue as unknown as SyncJobQueue,
+    ),
     activity,
   );
   const service = new ListingRetryService(
@@ -73,6 +79,14 @@ describe('ListingRetryService', () => {
       workspaceId: WORKSPACE_ID,
       listingId: LISTING_ID,
     });
+    expect(listings.markSyncRequested).toHaveBeenCalledWith(
+      { workspaceId: WORKSPACE_ID, connectionId: CONNECTION_ID },
+      [PRODUCT_ID],
+      expect.any(Date),
+    );
+    expect(listings.markSyncRequested.mock.invocationCallOrder[0]).toBeLessThan(
+      queue.enqueue.mock.invocationCallOrder[0] ?? 0,
+    );
     expect(queue.enqueue).toHaveBeenCalledWith([
       { kind: SyncJobKind.Content, ...TARGET },
       { kind: SyncJobKind.Inventory, ...TARGET },
@@ -96,7 +110,11 @@ describe('ListingRetryService', () => {
 
     const retrying = service.retry(TARGET, ACTOR);
 
-    await expect(retrying).rejects.toThrow(new ConflictException(RETRY_NEEDS_CONNECTION));
+    await expect(retrying).rejects.toMatchObject({
+      code: ListingRetryErrorCode.StoreNotConnected,
+      message: RETRY_NEEDS_CONNECTION,
+    });
+    await expect(retrying).rejects.toBeInstanceOf(ConflictException);
     expect(queue.enqueue).not.toHaveBeenCalled();
   });
 
@@ -104,9 +122,10 @@ describe('ListingRetryService', () => {
     const { service, selection, listings } = setup();
     selection.includes.mockResolvedValue(false);
 
-    await expect(service.retry(TARGET, ACTOR)).rejects.toThrow(
-      new ConflictException(RETRY_NEEDS_SELECTION),
-    );
+    await expect(service.retry(TARGET, ACTOR)).rejects.toMatchObject({
+      code: ListingRetryErrorCode.ProductNotInStore,
+      message: RETRY_NEEDS_SELECTION,
+    });
     expect(listings.ensurePrimary).not.toHaveBeenCalled();
   });
 
