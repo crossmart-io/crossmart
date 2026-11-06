@@ -12,8 +12,9 @@ export const ORDER_TOOLS = [
     name: 'list_orders',
     title: 'List orders',
     description:
-      'Orders from every connected store, newest first. Orders carry no buyer details, only ' +
-      'what was sold, its status and totals.',
+      'Orders from every connected store (Shopify, eBay and others), newest first; each shows ' +
+      'its channel. Pass connectionId for one store’s orders, such as the eBay store from ' +
+      'list_stores. Orders carry no buyer details, only what was sold, its status and totals.',
     input: {
       status: z.enum(OrderStatus).optional(),
       connectionId: ID_INPUT.optional().describe('Orders of one store, from list_stores'),
