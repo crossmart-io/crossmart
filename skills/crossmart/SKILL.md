@@ -9,19 +9,19 @@ description: >-
   add_product_to_store, get_product_stores) and falls back to the Crossmart REST API.
 license: MIT-0
 compatibility: >-
-  Needs the Crossmart MCP server (https://mcp.crossmart.io/mcp) connected with a workspace API key,
-  or network access to https://api.crossmart.io for the REST fallback.
+  Needs the Crossmart MCP server (https://mcp.crossmart.io/mcp) connected through OAuth sign-in or
+  a workspace API key, or network access to https://api.crossmart.io for the REST fallback.
 metadata:
   homepage: https://crossmart.io
   source: https://github.com/crossmart-io/crossmart/tree/main/skills/crossmart
-  version: '1.0.0'
+  version: '1.0.1'
 ---
 
 # Crossmart
 
 Crossmart keeps one catalog and one stock ledger for a seller and publishes them to every store
-they connect (Shopify, eBay, Google Merchant). You work on one **workspace** (one business); the
-API key decides which.
+they connect (Shopify, eBay, Google Merchant). You work on one **workspace** (one business): the one
+the seller chose when signing the agent in, or the API key's.
 
 ## Before you start
 

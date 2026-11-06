@@ -40,8 +40,9 @@ const crossmart = new Crossmart({ apiKey: process.env.CROSSMART_API_KEY! });
 With an API key you don't need to pass a workspace id: the SDK asks the API which workspace the
 key belongs to (once) and uses it for every call.
 
-AI agents and apps that sign in with OAuth (coming soon) pass their access token instead. A token
-can reach several workspaces, so give the workspace id too:
+AI agents and apps that sign in with OAuth pass their access token instead. A token acts in the
+one workspace the user chose when approving it, but the SDK can't look that workspace up, so give
+its id too:
 
 ```ts
 const crossmart = new Crossmart({ accessToken }, { workspaceId });
