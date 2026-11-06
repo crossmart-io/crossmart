@@ -1,0 +1,5 @@
+/vendor/
+# A library does not pin its dependencies: applications that install it do.
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache

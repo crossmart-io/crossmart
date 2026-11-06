@@ -3,6 +3,8 @@
 This guide walks through the core publishing flow: create a product, find a store, publish the
 product there, follow its listing status, give it its own title and price on that store, and read
 the orders that come in. Each step shows `curl` and the [TypeScript SDK](../../sdks/typescript/README.md).
+The [Python](../../sdks/python/README.md) and [PHP](../../sdks/php/README.md) SDKs have the same
+resources and methods, in each language's naming.
 
 You need:
 
@@ -428,6 +430,6 @@ orders, average order value and units against the period before, per day, store 
 ## Next
 
 - [Developer overview](README.md): authentication, errors, pagination
-- [TypeScript SDK reference](../../sdks/typescript/README.md)
+- SDK references: [TypeScript](../../sdks/typescript/README.md), [Python](../../sdks/python/README.md), [PHP](../../sdks/php/README.md)
 - [MCP server](mcp.md): let an AI agent do all of the above
 - The [interactive API docs](https://api.crossmart.io/api/docs) for every endpoint and field

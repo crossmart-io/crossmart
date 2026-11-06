@@ -1,0 +1,66 @@
+{
+  "productId": "00000000-0000-4000-8000-000000000001",
+  "connection": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "channel": "shopify",
+    "displayName": "sample",
+    "status": "CONNECTED",
+    "currencyCode": "sample"
+  },
+  "selected": true,
+  "displayState": "draft",
+  "displayReason": "sample",
+  "displayRequirement": null,
+  "listing": null,
+  "title": {
+    "product": "sample",
+    "override": "sample",
+    "effective": "sample",
+    "overridden": true
+  },
+  "descriptionHtml": {
+    "product": "sample",
+    "override": "sample",
+    "effective": "sample",
+    "overridden": true
+  },
+  "vendor": {
+    "product": "sample",
+    "override": "sample",
+    "effective": "sample",
+    "overridden": true
+  },
+  "tags": {
+    "product": [],
+    "override": [],
+    "effective": [],
+    "overridden": true
+  },
+  "images": {
+    "product": [],
+    "override": [],
+    "effective": [],
+    "overridden": true
+  },
+  "visibility": {
+    "product": "VISIBLE",
+    "override": null,
+    "effective": "VISIBLE",
+    "overridden": true
+  },
+  "stock": {
+    "inventoryBuffer": 1,
+    "maxQuantity": 1
+  },
+  "variants": [],
+  "category": {
+    "supported": true,
+    "value": null
+  },
+  "itemSpecifics": {
+    "supported": true,
+    "count": 1,
+    "names": []
+  },
+  "overrideUpdatedAt": "2026-01-01T00:00:00.000Z"
+}
