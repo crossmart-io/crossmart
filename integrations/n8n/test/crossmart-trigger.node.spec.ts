@@ -1,5 +1,6 @@
-import type { IDataObject } from 'n8n-workflow';
+import type { IDataObject, INodeType } from 'n8n-workflow';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { CrossmartPollingTrigger } from '../nodes/CrossmartPollingTrigger/CrossmartPollingTrigger.node';
 import { CrossmartTrigger } from '../nodes/CrossmartTrigger/CrossmartTrigger.node';
 import { FakeApi, WORKSPACE_URL } from './support/fake-api';
 import { fakePollFunctions } from './support/fake-context';
@@ -19,19 +20,27 @@ const stock = (id: string, updatedAt: string): IDataObject => ({
 	available: 3,
 });
 
-async function poll(
+/** Both nodes that poll: version 1 of the Crossmart Trigger, and the Crossmart Polling Trigger. */
+const POLLING_NODES: Array<[string, INodeType]> = [
+	['Crossmart Trigger v1', new CrossmartTrigger().getNodeType(1)],
+	['Crossmart Polling Trigger', new CrossmartPollingTrigger()],
+];
+
+async function pollWith(
+	nodeType: INodeType,
 	api: FakeApi,
 	parameters: IDataObject,
 	staticData: IDataObject,
 	mode: 'trigger' | 'manual' = 'trigger',
 ): Promise<IDataObject[] | null> {
-	const result = await new CrossmartTrigger().poll.call(
-		fakePollFunctions(api, parameters, staticData, mode),
-	);
+	if (nodeType.poll === undefined) throw new Error('The node does not poll');
+	const result = await nodeType.poll.call(fakePollFunctions(api, parameters, staticData, mode));
 	return result === null ? null : result[0].map((item) => item.json);
 }
 
-describe('Crossmart Trigger', () => {
+describe.each(POLLING_NODES)('%s', (_name, nodeType) => {
+	const poll = (...args: [FakeApi, IDataObject, IDataObject, ('trigger' | 'manual')?]) =>
+		pollWith(nodeType, ...args);
 	let api: FakeApi;
 	let staticData: IDataObject;
 

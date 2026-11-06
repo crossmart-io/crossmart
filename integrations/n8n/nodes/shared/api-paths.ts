@@ -14,6 +14,9 @@ const product = (workspaceId: string, productId: string): string =>
 const productChannel = (workspaceId: string, productId: string, connectionId: string): string =>
 	`${product(workspaceId, productId)}/channels/${segment(connectionId)}`;
 
+const webhookEndpoints = (workspaceId: string): string =>
+	`${workspace(workspaceId)}/webhook-endpoints`;
+
 const inventoryItem = (workspaceId: string, inventoryItemId: string): string =>
 	`${workspace(workspaceId)}/inventory-items/${segment(inventoryItemId)}`;
 
@@ -46,4 +49,8 @@ export const ApiPath = {
 	orders: (workspaceId: string): string => `${workspace(workspaceId)}/orders`,
 	order: (workspaceId: string, orderId: string): string =>
 		`${workspace(workspaceId)}/orders/${segment(orderId)}`,
+
+	webhookEndpoints,
+	webhookEndpoint: (workspaceId: string, endpointId: string): string =>
+		`${webhookEndpoints(workspaceId)}/${segment(endpointId)}`,
 } as const;

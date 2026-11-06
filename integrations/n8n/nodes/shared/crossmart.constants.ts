@@ -28,3 +28,29 @@ export const EXPRESSION_HINT =
 
 export const API_KEY_DOCUMENTATION_URL =
 	'https://github.com/crossmart-io/crossmart/blob/main/docs/developers/README.md#api-keys';
+
+/** The header that signs every webhook delivery: `t=<unix seconds>,v1=<hex>[,v1=<hex>]`. */
+export const SIGNATURE_HEADER = 'crossmart-signature';
+
+/** The key of the signing time in the signature header. */
+export const SIGNATURE_TIMESTAMP_KEY = 't';
+
+/** The key of a signature in the signature header; repeated while a secret is being rotated. */
+export const SIGNATURE_V1_KEY = 'v1';
+
+/** Separates the parts of the signature header. */
+export const SIGNATURE_PART_SEPARATOR = ',';
+
+/** Separates a key from its value in a signature header part. */
+export const SIGNATURE_KEY_SEPARATOR = '=';
+
+/** Joins the signing time and the raw body in the signed payload: `<t>.<body>`. */
+export const SIGNED_PAYLOAD_SEPARATOR = '.';
+
+/** The HMAC hash of webhook signatures. */
+export const SIGNATURE_ALGORITHM = 'sha256';
+
+/** How far the signing time may be from now, in seconds, before a delivery counts as replayed. */
+export const SIGNATURE_TOLERANCE_SECONDS = 300;
+
+export const MILLISECONDS_PER_SECOND = 1000;

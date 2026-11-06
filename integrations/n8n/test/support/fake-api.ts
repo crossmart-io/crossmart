@@ -22,6 +22,13 @@ export class FakeApi {
 		return this;
 	}
 
+	/** Fails a route with an HTTP status, as n8n's HTTP helper does. */
+	onError(method: string, url: string, httpCode: string): this {
+		return this.on(method, url, () => {
+			throw { httpCode, message: `Request failed with status code ${httpCode}` };
+		});
+	}
+
 	/** Answers a list route with these pages in turn, linked by cursors. */
 	onPages(url: string, pages: IDataObject[][]): this {
 		return this.on('GET', url, (request) => {

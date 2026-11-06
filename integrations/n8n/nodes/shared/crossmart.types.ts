@@ -1,3 +1,5 @@
+import type { IDataObject } from 'n8n-workflow';
+
 /**
  * The parts of the Crossmart API responses the nodes read. Responses carry more fields; the nodes
  * pass them through untouched. Type aliases (not interfaces) so they are valid n8n JSON.
@@ -92,4 +94,34 @@ export type StoreListing = {
 	status: string;
 	lastError: string | null;
 	lastSyncedAt: string | null;
+};
+
+/** A URL Crossmart delivers events to. */
+export type WebhookEndpoint = {
+	id: string;
+	url: string;
+	description: string | null;
+	eventTypes: string[];
+	enabled: boolean;
+	/** Why the endpoint stopped receiving events: `MANUAL` or `FAILING`. */
+	disabledReason: string | null;
+	consecutiveFailures: number;
+	createdAt: string;
+	updatedAt: string;
+};
+
+/** The answer to creating an endpoint; the signing secret is shown only this once. */
+export type CreatedWebhookEndpoint = {
+	endpoint: WebhookEndpoint;
+	secret: string;
+};
+
+/** One event as Crossmart delivers it. */
+export type WebhookEnvelope = {
+	id: string;
+	type: string;
+	createdAt: string;
+	workspaceId: string;
+	apiVersion: string;
+	data: IDataObject;
 };

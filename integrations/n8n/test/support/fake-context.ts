@@ -1,10 +1,12 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	IHookFunctions,
 	IHttpRequestOptions,
 	INode,
 	INodeExecutionData,
 	IPollFunctions,
+	IWebhookFunctions,
 } from 'n8n-workflow';
 import { BASE_URL, type FakeApi } from './fake-api';
 
@@ -68,4 +70,65 @@ export function fakePollFunctions(
 		getWorkflowStaticData: () => staticData,
 	};
 	return context as unknown as IPollFunctions;
+}
+
+export const WEBHOOK_URL = 'https://n8n.example.test/webhook/hook-1/webhook';
+
+export const WORKFLOW = { id: 'wf-1', name: 'Orders to Sheets', active: true };
+
+/** A stand-in for n8n's webhook lifecycle context, with the node's static data. */
+export function fakeHookFunctions(
+	api: FakeApi,
+	parameters: Parameters,
+	staticData: IDataObject,
+	webhookUrl: string = WEBHOOK_URL,
+): IHookFunctions {
+	const context = {
+		...sharedMembers(api),
+		getNodeParameter: (name: string, fallback?: unknown) => parameters[name] ?? fallback,
+		getWorkflowStaticData: () => staticData,
+		getNodeWebhookUrl: () => webhookUrl,
+		getWorkflow: () => WORKFLOW,
+	};
+	return context as unknown as IHookFunctions;
+}
+
+/** What a webhook call sent: its headers and its body, byte for byte. */
+export type FakeDelivery = {
+	headers: Record<string, string>;
+	rawBody: Buffer;
+};
+
+/** Records the status and body the trigger answers with when it rejects a delivery. */
+export class FakeResponse {
+	statusCode: number | undefined;
+	body: IDataObject | undefined;
+
+	status(code: number): this {
+		this.statusCode = code;
+		return this;
+	}
+
+	json(body: IDataObject): this {
+		this.body = body;
+		return this;
+	}
+}
+
+/** A stand-in for n8n's webhook context: one delivery to the trigger's URL. */
+export function fakeWebhookFunctions(
+	parameters: Parameters,
+	staticData: IDataObject,
+	delivery: FakeDelivery,
+	response: FakeResponse,
+): IWebhookFunctions {
+	const context = {
+		getNode: () => NODE,
+		getNodeParameter: (name: string, fallback?: unknown) => parameters[name] ?? fallback,
+		getWorkflowStaticData: () => staticData,
+		getHeaderData: () => delivery.headers,
+		getRequestObject: () => ({ rawBody: delivery.rawBody }),
+		getResponseObject: () => response,
+	};
+	return context as unknown as IWebhookFunctions;
 }

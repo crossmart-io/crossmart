@@ -1,7 +1,7 @@
 {
 	"name": "n8n-nodes-crossmart",
-	"version": "0.1.0",
-	"description": "n8n nodes for Crossmart, the open-source multichannel platform for sellers and their AI agents: products, stock, listings, orders and stores, plus a polling trigger.",
+	"version": "0.2.0",
+	"description": "n8n nodes for Crossmart, the open-source multichannel platform for sellers and their AI agents: products, stock, listings, orders and stores, plus a webhook trigger and a polling trigger.",
 	"keywords": [
 		"n8n-community-node-package",
 		"n8n",
@@ -52,7 +52,8 @@
 		],
 		"nodes": [
 			"dist/nodes/Crossmart/Crossmart.node.js",
-			"dist/nodes/CrossmartTrigger/CrossmartTrigger.node.js"
+			"dist/nodes/CrossmartTrigger/CrossmartTrigger.node.js",
+			"dist/nodes/CrossmartPollingTrigger/CrossmartPollingTrigger.node.js"
 		]
 	},
 	"peerDependencies": {
