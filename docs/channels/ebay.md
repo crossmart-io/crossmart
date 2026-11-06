@@ -5,26 +5,38 @@ merchant picks an eBay marketplace (such as eBay US) on the Channels page and si
 eBay then redirects to the API, which stores the connection and sends the merchant back to the
 Channels page.
 
-Crossmart connects the account, reads its details and business policies, and publishes
-listings through eBay's Sell Inventory API. The connector declares `publish_listings`,
-`update_price` and `provide_taxonomy`. Stock sync, orders and webhooks come in later phases.
+Crossmart connects the account, reads its details and business policies, publishes listings
+through eBay's Sell Inventory API, reads the account's orders through the Fulfillment API, and
+keeps the listings' stock in step with Crossmart's. The connector declares:
+
+| Capability         | What it does on eBay                                                               |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| `publish_listings` | Inventory items, groups and offers, published as listings (see Publishing)         |
+| `update_price`     | `bulk_update_price_quantity` with prices                                           |
+| `provide_taxonomy` | Category suggestions and item specifics (Taxonomy API)                             |
+| `fetch_orders`     | `GET /sell/fulfillment/v1/order`, polled every 2 minutes (see Orders)              |
+| `update_inventory` | `bulk_update_price_quantity` with quantities, after every stock change (see Stock) |
+
+Notifications (eBay's push of order events) are not used yet: polling is the only order source.
 
 ## What Crossmart uses
 
-|            |                                                                                                                  |
-| ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| Sign-in    | `{auth}/oauth2/authorize` with `client_id`, `response_type=code`, `redirect_uri` (the RuName), `scope`, `state`  |
-| Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                           |
-| Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                               |
-| Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                   |
-| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                     |
-| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")        |
-| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)         |
-| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)              |
-| Aspects    | `GET {api}/commerce/taxonomy/v1/category_tree/{tree}/get_item_aspects_for_category?category_id=…` (Taxonomy API) |
-| Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL          |
-| Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only.  |
-| Deletion   | `{API_PUBLIC_URL}/api/v1/webhooks/ebay/account-deletion`, see Marketplace account deletion                       |
+|            |                                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| Sign-in    | `{auth}/oauth2/authorize` with `client_id`, `response_type=code`, `redirect_uri` (the RuName), `scope`, `state`   |
+| Tokens     | `POST {api}/identity/v1/oauth2/token` with HTTP Basic auth (`client_id:client_secret`)                            |
+| Identity   | `GET {identity}/commerce/identity/v1/user/`: the account's `userId` and `username`                                |
+| Policies   | `GET {api}/sell/account/v1/{fulfillment,payment,return}_policy?marketplace_id=…` (Account API)                    |
+| Opt-in     | `POST {api}/sell/account/v1/program/opt_in` with `SELLING_POLICY_MANAGEMENT`                                      |
+| Defaults   | `POST {api}/sell/account/v1/{fulfillment,payment,return}_policy` (Account API, "Create default policies")         |
+| Listings   | `{api}/sell/inventory/v1`: `inventory_item`, `inventory_item_group`, `offer`, `location` (Inventory API)          |
+| Categories | `GET {api}/commerce/taxonomy/v1/…/get_category_suggestions?q=…` (Taxonomy API, with the user token)               |
+| Orders     | `GET {api}/sell/fulfillment/v1/order?filter=lastmodifieddate:[…..]` and `GET …/order/{orderId}` (Fulfillment API) |
+| Stock      | `GET {api}/sell/inventory/v1/offer?sku=…`, then `POST …/bulk_update_price_quantity` (Inventory API)               |
+| Aspects    | `GET {api}/commerce/taxonomy/v1/category_tree/{tree}/get_item_aspects_for_category?category_id=…` (Taxonomy API)  |
+| Callback   | `{API_PUBLIC_URL}/api/v1/channels/ebay/oauth/callback`, registered with eBay as the RuName's accept URL           |
+| Disconnect | eBay has no public endpoint that revokes a user token. Disconnecting deletes the credentials in Crossmart only.   |
+| Deletion   | `{API_PUBLIC_URL}/api/v1/webhooks/ebay/account-deletion`, see Marketplace account deletion                        |
 
 ### Environments
 
@@ -81,7 +93,9 @@ the connection use the marketplace's currency.
   before it existed still parse. Connecting the account again, or refreshing its policies,
   replaces what the connector reads and keeps `listingDefaults`.
 - **Per listing:** `Listing.externalId` is the eBay listing id, each `ListingVariant.externalId`
-  is the variant's eBay SKU (`externalInventoryId` is null), and `Listing.channelCategoryId` /
+  is the variant's eBay SKU, and so is its `externalInventoryId`, as stock is set per SKU
+  (migration `20261109100000_ebay_listing_inventory_ids` filled it in for listings published
+  before stock sync), and `Listing.channelCategoryId` /
   `channelCategoryName` hold the eBay category the listing is in. The item specifics the
   merchant sets are rows of `ListingItemSpecific` (`listing_item_specifics`): one per aspect
   name, with its values in order.
@@ -258,6 +272,90 @@ offer is live), `POST /offer/withdraw_by_inventory_item_group` for a group. The 
 the listing's SKUs and product id for this, which core passes to `delist` as a
 `ListingReference` (kept on delist jobs of deleted products too).
 
+## Orders
+
+Orders come from the Fulfillment API with the `sell.fulfillment` scope, which every connection
+was granted at connect. Crossmart reads each order's id, dates, cancel state, total, refunds and
+lines (SKU, title, quantity, cost, shipping status, marketplace). The schema drops everything
+else, so the buyer (`buyer`, `fulfillmentStartInstructions` with the ship-to name, address,
+phone and email) never leaves the HTTP layer, and nothing about the buyer is stored or logged.
+
+- **Polling** every 2 minutes, on the `orders` queue with the other channels: `GET /order` with
+  `filter=lastmodifieddate:[{since}..]`, `limit=200` and `offset`. `since` is the connection's
+  `ordersPolledAt` (or the time order sync started) minus 5 minutes of overlap; the cursor
+  between pages is the next offset, and `ordersPolledAt` moves on once every page is read.
+  The order of the pages does not matter: an older copy of an order never replaces a newer one.
+- **Order sync starts** on the first poll: orders placed before it are ignored, as their stock
+  was sold before Crossmart held it.
+- **Marketplaces:** eBay returns the seller's orders from every site, and each marketplace is
+  its own connection. A connection keeps only lines listed on its marketplace
+  (`listingMarketplaceId`), and skips orders with none.
+- **Lines** match Crossmart variants by the SKU Crossmart listed them under (the listing
+  variant's `externalId`), else by catalog SKU. Lines that match none, such as items listed
+  outside Crossmart, are kept without holding stock.
+- **Mapping:**
+
+  | Crossmart       | eBay                                                                               |
+  | --------------- | ---------------------------------------------------------------------------------- |
+  | Order number    | `orderId` (such as `12-34567-89012`), which Seller Hub shows                       |
+  | Cancelled       | `cancelStatus.cancelState` is `CANCELED`; a pending request (`IN_PROGRESS`) is not |
+  | Currency, total | `pricingSummary.total`, minus refunds (below), never below zero                    |
+  | Unit price      | `lineItemCost` (unit price × quantity, before discounts) ÷ `quantity`              |
+  | Shipped units   | All of the line's units once `lineItemFulfillmentStatus` is `FULFILLED`, else none |
+
+- **Refunds** lower the total: the order's `paymentSummary.refunds` that are `REFUNDED`, or, when
+  it has none, the lines' `refunds` (eBay reports a refund at one level or the other). eBay's
+  refund amounts are the seller's net and exclude tax eBay collected. Refunds do not return
+  stock; cancelling does.
+- **Stock** moves through the inventory ledger exactly as a Shopify order's does (ADR 0007):
+  each line reserves its units when the order arrives, under a lock on the order so a repeated
+  poll applies it once; shipped units leave the stock on hand (`ORDER_SHIPPED`), and a
+  cancelled order's units go back on sale. Every channel that lists the variant then gets the
+  new quantity. eBay reports shipping per line, not per unit, so a line shipped in several
+  parcels holds all its units reserved until eBay marks it fulfilled.
+- **Retention:** the same as every channel's: shipped and cancelled orders are deleted 2 years
+  after they were placed (`ORDER_RETENTION_DAYS`). A marketplace account deletion notice
+  deletes the account's orders at once.
+
+## Stock
+
+When Crossmart's stock of a listed variant changes (an order on any channel, a manual
+adjustment, an import), the inventory queue sends the listing's quantities to eBay, as it
+does to every channel that sets stock. The quantity is the variant's available stock minus the
+listing's buffer, capped by its maximum (the store's quantity rules), never below zero.
+Variants that do not track stock are left alone; they list 1 unit.
+
+1. `GET /offer?sku=…&marketplace_id=…` reads each SKU's offer.
+2. A SKU whose live offer shows the quantity already is skipped.
+3. The rest go to `POST /bulk_update_price_quantity`, 25 SKUs per call, each with
+   `shipToLocationAvailability.quantity` and, for a published offer, the offer's
+   `availableQuantity`, which is what the listing shows. A SKU whose offer is not live gets the
+   item's quantity only.
+
+The quantity is absolute, so sending it twice changes nothing. SKUs eBay refuses are reported
+on the listing with eBay's reason; the others are applied. A rate limit (429) or an outage
+fails the job, which the queue retries with backoff, under the connection's rate-limit bucket.
+Reconciliation every 15 minutes sends each listing again, and step 2 keeps it to SKUs that
+drifted.
+
+**An eBay sale's own echo.** An eBay order lowers Crossmart's stock, which queues a stock job
+for every channel, eBay included. eBay has already lowered the listing by the units it sold, so
+its offer shows the new quantity and step 2 skips it: the echo costs one read and no write.
+This matters because eBay allows 250 revisions per listing per day, and every quantity write is
+one.
+
+### Limits
+
+- Each listing can be revised 250 times a day; a variant that changes stock more often than that
+  is refused until the next day (reported on the listing).
+- One offer read per SKU per stock job; there is no bulk read of offers.
+- `shipToLocationAvailability.quantity` is the item's quantity across marketplaces. A product
+  listed on two marketplaces of the same eBay account shares one inventory item (SKUs are unique
+  per seller), and each connection sets it to the same Crossmart quantity.
+- Between an eBay sale and the next poll (up to 2 minutes), a stock job from another change
+  can set eBay's quantity from Crossmart's, which does not count that sale yet. The next poll
+  takes the sale in and sends the right quantity. Notifications would narrow this window.
+
 ### Prices
 
 Price-only syncs use `POST /bulk_update_price_quantity`, 25 SKUs per call, with the offers found
@@ -375,11 +473,10 @@ verified (or the app is exempted).
 
 ## Next phases
 
-- Stock sync (`update_inventory`) through `bulk_update_price_quantity`; today stock is sent
-  only when a listing is published or updated.
 - Item specifics per variant (beyond the option values), and value dependencies between
   aspects (`valueConstraints`, such as a model that depends on the brand).
 - Variant-specific images (`aspectsImageVariesBy`), compare-at (strikethrough) prices, and
   moving a listing between single-variant and multi-variant shapes when variants are added or
   removed after publishing.
-- Orders through the Fulfillment API, and notifications.
+- Order notifications (Notification API), to read orders as they happen rather than by polling.
+- Shipped units per parcel (`getShippingFulfillments`), returns, and pushing tracking to eBay.

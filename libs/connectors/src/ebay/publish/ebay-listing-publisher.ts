@@ -192,11 +192,11 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
       externalId: outcome.listingId,
       externalUrl: ebayListingUrl(outcome.listingId, account.marketplace, environment),
       active: outcome.active,
-      variants: draft.variants.map((variant) => ({
-        variantId: variant.variantId,
-        externalId: skus.get(variant.variantId) ?? variant.variantId,
-        externalInventoryId: null,
-      })),
+      variants: draft.variants.map((variant) => {
+        const sku = skus.get(variant.variantId) ?? variant.variantId;
+        // Stock is set per SKU, so the SKU is the variant's inventory id too.
+        return { variantId: variant.variantId, externalId: sku, externalInventoryId: sku };
+      }),
       category: outcome.category,
     };
   }

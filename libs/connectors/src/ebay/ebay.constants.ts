@@ -217,3 +217,21 @@ export const EBAY_SIGNATURE_HEADER = 'x-ebay-signature';
 /** The PEM armor eBay sends the key in, on one line without line breaks. */
 export const PEM_PUBLIC_KEY_ARMOR = /-----(BEGIN|END) PUBLIC KEY-----/g;
 export const WHITESPACE_PATTERN = /\s+/g;
+
+/**
+ * Fulfillment API: the seller's orders. `GET /order` filters on the last modification time
+ * (`lastmodifieddate:[{from}..]`) and pages with `limit` (at most 200) and `offset`.
+ */
+export const EBAY_ORDER_PATH = '/sell/fulfillment/v1/order';
+export const EBAY_ORDER_FILTER_PARAM = 'filter';
+export const EBAY_ORDER_LIMIT_PARAM = 'limit';
+export const EBAY_ORDER_OFFSET_PARAM = 'offset';
+export const EBAY_ORDER_MODIFIED_FILTER_PREFIX = 'lastmodifieddate:[';
+export const EBAY_ORDER_MODIFIED_FILTER_SUFFIX = '..]';
+export const EBAY_ORDERS_PAGE_SIZE = 200;
+
+/**
+ * Inventory API stock writes: `bulk_update_price_quantity` takes up to 25 SKUs per call. Each
+ * call revises the live listings, and eBay allows 250 revisions per listing per day.
+ */
+export const EBAY_BULK_QUANTITY_MAX_SKUS = EBAY_BULK_PRICE_MAX_SKUS;

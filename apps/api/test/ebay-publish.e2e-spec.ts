@@ -206,6 +206,14 @@ describe('eBay publishing (e2e)', () => {
         HttpMethod.Post,
         `${EBAY_INVENTORY}/offer/o-1/publish`,
         jsonResponse({ listingId: LISTING_ID }),
+      )
+      // Adding a product sends its stock too; the new listing shows it already, so no write.
+      .expect(
+        HttpMethod.Get,
+        new RegExp(`/offer\\?sku=${sku}&`),
+        jsonResponse({
+          offers: [{ offerId: 'o-1', sku, status: 'PUBLISHED', availableQuantity: 4 }],
+        }),
       );
 
     expect((await addToStore(owner, productId, connectionId)).status).toBe(HttpStatus.CREATED);

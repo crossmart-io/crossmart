@@ -1,0 +1,133 @@
+{
+  "href": "https://api.sandbox.ebay.com/sell/fulfillment/v1/order?filter=lastmodifieddate:%5B2026-11-05T09:55:00.000Z..%5D&limit=200&offset=0",
+  "total": 201,
+  "next": "https://api.sandbox.ebay.com/sell/fulfillment/v1/order?filter=lastmodifieddate:%5B2026-11-05T09:55:00.000Z..%5D&limit=200&offset=200",
+  "limit": 200,
+  "offset": 0,
+  "orders": [
+    {
+      "orderId": "12-11111-00001",
+      "legacyOrderId": "110553000001-2000000000001",
+      "creationDate": "2026-11-05T10:02:11.000Z",
+      "lastModifiedDate": "2026-11-05T10:04:37.000Z",
+      "orderFulfillmentStatus": "NOT_STARTED",
+      "orderPaymentStatus": "PAID",
+      "sellerId": "demo_seller",
+      "buyer": {
+        "username": "fixture_buyer_1",
+        "taxAddress": { "stateOrProvince": "CA", "postalCode": "95125", "countryCode": "US" }
+      },
+      "pricingSummary": {
+        "priceSubtotal": { "value": "24.00", "currency": "USD" },
+        "deliveryCost": { "value": "0.0", "currency": "USD" },
+        "total": { "value": "24.00", "currency": "USD" }
+      },
+      "cancelStatus": { "cancelState": "NONE_REQUESTED", "cancelRequests": [] },
+      "paymentSummary": {
+        "totalDueSeller": { "value": "24.00", "currency": "USD" },
+        "refunds": [],
+        "payments": [
+          {
+            "paymentMethod": "EBAY",
+            "paymentReferenceId": "FIXTURE-PAYMENT-1",
+            "paymentDate": "2026-11-05T10:02:13.000Z",
+            "amount": { "value": "24.00", "currency": "USD" },
+            "paymentStatus": "PAID"
+          }
+        ]
+      },
+      "fulfillmentStartInstructions": [
+        {
+          "fulfillmentInstructionsType": "SHIP_TO",
+          "minEstimatedDeliveryDate": "2026-11-09T08:00:00.000Z",
+          "maxEstimatedDeliveryDate": "2026-11-12T08:00:00.000Z",
+          "ebaySupportedFulfillment": false,
+          "shippingStep": {
+            "shipTo": {
+              "fullName": "Fixture Buyer",
+              "contactAddress": {
+                "addressLine1": "1 Example Street",
+                "city": "San Jose",
+                "stateOrProvince": "CA",
+                "postalCode": "95125",
+                "countryCode": "US"
+              },
+              "primaryPhone": { "phoneNumber": "0000000000" },
+              "email": "fixture.buyer@example.com"
+            },
+            "shippingCarrierCode": "USPS",
+            "shippingServiceCode": "USPSPriority"
+          }
+        }
+      ],
+      "fulfillmentHrefs": [],
+      "lineItems": [
+        {
+          "lineItemId": "10000000000001",
+          "legacyItemId": "110553000001",
+          "sku": "MUG-1",
+          "title": "Stoneware mug",
+          "lineItemCost": { "value": "24.00", "currency": "USD" },
+          "quantity": 2,
+          "soldFormat": "FIXED_PRICE",
+          "listingMarketplaceId": "EBAY_US",
+          "purchaseMarketplaceId": "EBAY_US",
+          "lineItemFulfillmentStatus": "NOT_STARTED",
+          "total": { "value": "24.00", "currency": "USD" },
+          "deliveryCost": { "shippingCost": { "value": "0.0", "currency": "USD" } },
+          "appliedPromotions": [],
+          "taxes": [],
+          "properties": { "buyerProtection": true },
+          "refunds": []
+        }
+      ],
+      "salesRecordReference": "1001",
+      "totalFeeBasisAmount": { "value": "24.00", "currency": "USD" },
+      "totalMarketplaceFee": { "value": "3.48", "currency": "USD" }
+    },
+    {
+      "orderId": "12-11111-00002",
+      "creationDate": "2026-11-05T10:20:00.000Z",
+      "lastModifiedDate": "2026-11-05T11:45:09.000Z",
+      "orderFulfillmentStatus": "IN_PROGRESS",
+      "orderPaymentStatus": "PAID",
+      "sellerId": "demo_seller",
+      "buyer": { "username": "fixture_buyer_2" },
+      "pricingSummary": {
+        "priceSubtotal": { "value": "70.00", "currency": "USD" },
+        "priceDiscount": { "value": "-7.00", "currency": "USD" },
+        "deliveryCost": { "value": "5.50", "currency": "USD" },
+        "total": { "value": "68.50", "currency": "USD" }
+      },
+      "cancelStatus": { "cancelState": "NONE_REQUESTED", "cancelRequests": [] },
+      "paymentSummary": { "refunds": [], "payments": [] },
+      "lineItems": [
+        {
+          "lineItemId": "10000000000002",
+          "legacyItemId": "110553000002",
+          "legacyVariationId": "400000000001",
+          "sku": "CM8c1e4a1b0b2c4d3e9f00112233445566",
+          "title": "Linen shirt",
+          "lineItemCost": { "value": "40.00", "currency": "USD" },
+          "discountedLineItemCost": { "value": "36.00", "currency": "USD" },
+          "quantity": 1,
+          "listingMarketplaceId": "EBAY_US",
+          "lineItemFulfillmentStatus": "FULFILLED",
+          "variationAspects": [{ "name": "Size", "value": "M" }],
+          "refunds": []
+        },
+        {
+          "lineItemId": "10000000000003",
+          "legacyItemId": "110553000003",
+          "title": "Tote bag listed outside Crossmart",
+          "lineItemCost": { "value": "30.00", "currency": "USD" },
+          "quantity": 3,
+          "listingMarketplaceId": "EBAY_US",
+          "lineItemFulfillmentStatus": "NOT_STARTED",
+          "refunds": []
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}
