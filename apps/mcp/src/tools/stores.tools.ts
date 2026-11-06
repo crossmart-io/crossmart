@@ -3,6 +3,8 @@ import { defineTool } from './api-tool.js';
 import { productStorePath, STORES_PATH, storePath } from './store-paths.js';
 import { ID_INPUT } from './tool-inputs.js';
 
+const SYNC_PART = 'sync';
+
 const PUBLISH_READINESS_GUIDE =
   'publishReadiness.ready is false while the store’s setup blocks every listing; ' +
   'publishReadiness.missing lists what to finish, in order (such as shipping_policy or ' +
@@ -31,6 +33,22 @@ export const STORE_TOOLS = [
     input: { connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: true,
     toCall: ({ connectionId }) => ({ method: HttpMethod.Get, path: storePath(connectionId) }),
+  }),
+  defineTool({
+    name: 'get_sync_progress',
+    title: 'Get a store’s sync progress',
+    description:
+      'How far a store’s sync has come: pending counts the listings a sync or retry queued ' +
+      'whose publish, update or delist has not finished, failed counts the store’s listings in ' +
+      'error, and done is true once nothing is pending. Poll it after retry_store_listing or ' +
+      'a sync the merchant started; on failures, list them with list_store_products (state ' +
+      'failed).',
+    input: { connectionId: ID_INPUT.describe('From list_stores') },
+    readOnly: true,
+    toCall: ({ connectionId }) => ({
+      method: HttpMethod.Get,
+      path: `${storePath(connectionId)}/${SYNC_PART}`,
+    }),
   }),
   defineTool({
     name: 'add_product_to_store',

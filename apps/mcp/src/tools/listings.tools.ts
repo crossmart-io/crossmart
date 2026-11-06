@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ChannelProductState } from '@crossmart/core/listings/enums/channel-product-state.enum.js';
+import { ListingDisplayState } from '@crossmart/core/listings/enums/listing-display-state.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import {
   CATEGORY_ID_MAX_LENGTH,
@@ -48,8 +49,9 @@ const STATE_TOOLS = [
     description:
       'The products a store should have or still has, with their state there, and counts per ' +
       'state. Use it to answer "which listings failed?" (state failed), "what is still being ' +
-      'published?" (pending) or "what is not on this store?" (excluded). Products that need ' +
-      'details before they can be published are pending with displayState needs_details. ' +
+      'published?" (pending) or "what is not on this store?" (excluded). Pass displayState ' +
+      'to narrow to the state a merchant reads, such as needs_details (what to fix before ' +
+      'publishing) or ready (publishable, not sent yet). ' +
       LISTING_STATE_GUIDE,
     input: {
       connectionId: ID_INPUT.describe('The store, from list_stores'),
@@ -57,6 +59,10 @@ const STATE_TOOLS = [
         .enum(ChannelProductState)
         .optional()
         .describe('Leave out for listed, pending, failed and removing together'),
+      displayState: z
+        .enum(ListingDisplayState)
+        .optional()
+        .describe('Only products in this display state; draft and removed need no state'),
       search: SEARCH_INPUT.describe('Matches title, handle or SKU'),
       ...PAGE_INPUT,
     },

@@ -45,6 +45,21 @@ To publish **many** products, list them and confirm the count and the store firs
 one by one (or use the REST bulk endpoint in [rest-api.md](rest-api.md)). Report a
 summary: how many are publishing, how many need details and why.
 
+## Change a product on one store only
+
+A store can show its own title, description, vendor (brand), tags, images, visibility, stock
+limits and fixed prices, without changing the catalog.
+
+1. `get_listing` with `productId` and `connectionId`. Each field has `product` (the catalog's
+   value), `override` (null when it follows the product), `effective` (what the store gets) and
+   `overridden`. Each variant also has `rulePrice`, the store's pricing rule result before a fixed
+   price.
+2. `update_listing` with only the fields to change: a value overrides, `null` reverts the field to
+   the product, and fields left out keep their override. A variant price entry with both prices
+   `null` goes back to the pricing rule.
+
+Confirm the change first. A store that already lists the product gets an update queued.
+
 ## Remove from a store
 
 `remove_product_from_store` takes the product off one store; it is archived there and keeps its
