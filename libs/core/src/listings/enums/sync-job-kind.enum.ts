@@ -10,4 +10,6 @@ export enum SyncJobKind {
   Delist = 'delist',
   /** Re-send stock for every listing of every connection, to correct drift. */
   ReconcileInventory = 'reconcile_inventory',
+  /** Queue again the listings whose requested sync never ran (a lost job), across stores. */
+  SweepSyncRequests = 'sweep_sync_requests',
 }
