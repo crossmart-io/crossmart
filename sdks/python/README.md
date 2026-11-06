@@ -212,6 +212,78 @@ except PlanLimitError as error:
         print(f"Your {error.plan} plan allows {error.limit} {error.feature}. Upgrade to add more.")
 ```
 
+## Verifying webhooks
+
+Crossmart signs every webhook delivery with your endpoint's signing secret (`whsec_...`).
+`verify_webhook_signature` checks the `Crossmart-Signature` header against the **raw** request
+body, rejects deliveries older or newer than five minutes, and returns the parsed event. It
+raises `WebhookSignatureError` (with a `reason`) when the delivery cannot be trusted; answer it
+with a `400`.
+
+Pass the body exactly as it arrived. A body that was parsed and serialized again does not match
+the signature. With Flask, use `request.get_data()`:
+
+```python
+import os
+
+from flask import Flask, request
+
+from crossmart import WebhookEventType, WebhookSignatureError, verify_webhook_signature
+
+app = Flask(__name__)
+
+
+@app.post("/webhooks/crossmart")
+def crossmart_webhook():
+    try:
+        event = verify_webhook_signature(
+            request.get_data(),
+            request.headers.get("Crossmart-Signature"),
+            os.environ["CROSSMART_WEBHOOK_SECRET"],
+        )
+    except WebhookSignatureError as error:
+        return str(error), 400
+
+    if event["type"] == WebhookEventType.ORDER_CREATED:
+        ...  # event["data"] holds the order
+    # Ignore event types you do not handle; new ones may be added.
+    return "", 204
+```
+
+With FastAPI, read `await request.body()`:
+
+```python
+import os
+
+from fastapi import FastAPI, HTTPException, Request, Response
+
+from crossmart import WebhookSignatureError, verify_webhook_signature
+
+app = FastAPI()
+
+
+@app.post("/webhooks/crossmart", status_code=204)
+async def crossmart_webhook(request: Request) -> Response:
+    try:
+        event = verify_webhook_signature(
+            await request.body(),
+            request.headers.get("crossmart-signature"),
+            os.environ["CROSSMART_WEBHOOK_SECRET"],
+        )
+    except WebhookSignatureError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    ...
+    return Response(status_code=204)
+```
+
+- During a secret rotation Crossmart signs with both the new and the old secret, and either one
+  verifies, so you can switch secrets without dropping deliveries.
+- Change the five-minute window with `tolerance=` (seconds), and pass `now=` (a Unix time) in
+  tests.
+- Retries of a delivery carry the same `event["id"]`; use it to skip events you already handled.
+- `WebhookHeader` lists the delivery's headers (`Crossmart-Signature`, `Crossmart-Event-Id`,
+  `Crossmart-Event-Type`, `Crossmart-Delivery-Id`) and `WebhookEventType` the known event types.
+
 ## Retries and timeouts
 
 Idempotent requests (`GET`, `PUT`, `DELETE`) are retried twice by default after a 429, a 5xx or a refused connection, with exponential backoff and jitter. When the API sends `Retry-After`, the client waits that long (at most 60 seconds). `POST` requests are never retried, so nothing is created or published twice.

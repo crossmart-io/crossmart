@@ -6,6 +6,12 @@ All notable changes to the `crossmart` Python package are documented here. The f
 
 ## [Unreleased]
 
+### Added
+
+- `verify_webhook_signature` checks a webhook delivery's `Crossmart-Signature` header against the
+  raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation) and returns the
+  parsed `WebhookEvent`. It raises `WebhookSignatureError` when the delivery cannot be trusted.
+
 ## [0.1.0] - not yet released
 
 ### Added

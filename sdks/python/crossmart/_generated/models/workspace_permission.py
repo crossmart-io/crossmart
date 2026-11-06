@@ -19,6 +19,7 @@ class WorkspacePermission(StrEnum):
     REPORTSVIEW = "reports:view"
     SUGGESTIONSAPPROVE = "suggestions:approve"
     SUGGESTIONSVIEW = "suggestions:view"
+    WEBHOOKSMANAGE = "webhooks:manage"
     WORKSPACEDELETE = "workspace:delete"
     WORKSPACEMANAGE = "workspace:manage"
     WORKSPACEVIEW = "workspace:view"

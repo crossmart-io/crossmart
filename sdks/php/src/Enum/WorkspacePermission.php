@@ -17,6 +17,7 @@ enum WorkspacePermission: string
     case MembersView = 'members:view';
     case MembersManage = 'members:manage';
     case ApiKeysManage = 'api-keys:manage';
+    case WebhooksManage = 'webhooks:manage';
     case ProductsView = 'products:view';
     case ProductsEdit = 'products:edit';
     case InventoryView = 'inventory:view';

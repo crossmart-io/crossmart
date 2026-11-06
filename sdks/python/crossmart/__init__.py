@@ -29,6 +29,14 @@ from .errors import (
     ServerError,
 )
 from .pagination import Page
+from .webhooks import (
+    WebhookEvent,
+    WebhookEventType,
+    WebhookHeader,
+    WebhookSignatureError,
+    WebhookSignatureFailure,
+    verify_webhook_signature,
+)
 
 __all__ = [
     "AsyncCrossmart",
@@ -48,5 +56,11 @@ __all__ = [
     "RateLimitError",
     "RetryPolicy",
     "ServerError",
+    "WebhookEvent",
+    "WebhookEventType",
+    "WebhookHeader",
+    "WebhookSignatureError",
+    "WebhookSignatureFailure",
     "__version__",
+    "verify_webhook_signature",
 ]

@@ -66,6 +66,7 @@ from .create_media_dto import CreateMediaDto
 from .create_product_dto import CreateProductDto
 from .create_product_view_dto import CreateProductViewDto
 from .create_variant_dto import CreateVariantDto
+from .create_webhook_endpoint_dto import CreateWebhookEndpointDto
 from .create_workspace_dto import CreateWorkspaceDto
 from .current_api_key_dto import CurrentApiKeyDto
 from .custom_role_dto import CustomRoleDto
@@ -293,10 +294,21 @@ from .update_pricing_dto import UpdatePricingDto
 from .update_product_dto import UpdateProductDto
 from .update_product_selection_dto import UpdateProductSelectionDto
 from .update_variant_dto import UpdateVariantDto
+from .update_webhook_endpoint_dto import UpdateWebhookEndpointDto
 from .update_workspace_dto import UpdateWorkspaceDto
 from .uploaded_image_dto import UploadedImageDto
 from .variant_dto import VariantDto
 from .variant_price_override_dto import VariantPriceOverrideDto
+from .webhook_delivery_detail_dto import WebhookDeliveryDetailDto
+from .webhook_delivery_dto import WebhookDeliveryDto
+from .webhook_delivery_page_dto import WebhookDeliveryPageDto
+from .webhook_delivery_status import WebhookDeliveryStatus
+from .webhook_disabled_reason import WebhookDisabledReason
+from .webhook_endpoint_dto import WebhookEndpointDto
+from .webhook_endpoint_with_secret_dto import WebhookEndpointWithSecretDto
+from .webhook_envelope_dto import WebhookEnvelopeDto
+from .webhook_envelope_dto_data import WebhookEnvelopeDtoData
+from .webhook_event_type import WebhookEventType
 from .workspace_dto import WorkspaceDto
 from .workspace_member_dto import WorkspaceMemberDto
 from .workspace_permission import WorkspacePermission
@@ -369,6 +381,7 @@ __all__ = (
     "CreateProductDto",
     "CreateProductViewDto",
     "CreateVariantDto",
+    "CreateWebhookEndpointDto",
     "CreateWorkspaceDto",
     "CurrentApiKeyDto",
     "CustomRoleDto",
@@ -552,10 +565,21 @@ __all__ = (
     "UpdateProductDto",
     "UpdateProductSelectionDto",
     "UpdateVariantDto",
+    "UpdateWebhookEndpointDto",
     "UpdateWorkspaceDto",
     "UploadedImageDto",
     "VariantDto",
     "VariantPriceOverrideDto",
+    "WebhookDeliveryDetailDto",
+    "WebhookDeliveryDto",
+    "WebhookDeliveryPageDto",
+    "WebhookDeliveryStatus",
+    "WebhookDisabledReason",
+    "WebhookEndpointDto",
+    "WebhookEndpointWithSecretDto",
+    "WebhookEnvelopeDto",
+    "WebhookEnvelopeDtoData",
+    "WebhookEventType",
     "WorkspaceDto",
     "WorkspaceMemberDto",
     "WorkspacePermission",

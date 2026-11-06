@@ -18,4 +18,5 @@ enum ActivitySubjectType: string
     case Workspace = 'workspace';
     case CustomRole = 'custom_role';
     case ChannelConnection = 'channel_connection';
+    case WebhookEndpoint = 'webhook_endpoint';
 }

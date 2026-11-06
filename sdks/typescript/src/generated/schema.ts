@@ -1562,6 +1562,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Webhook endpoints of a workspace, oldest first */
+        get: operations["WebhookEndpointsController_list_v1"];
+        put?: never;
+        /**
+         * Add a webhook endpoint. Its signing secret is returned once.
+         * @description Events are POSTed to the URL as JSON, signed in the Crossmart-Signature header.
+         */
+        post: operations["WebhookEndpointsController_create_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One webhook endpoint */
+        get: operations["WebhookEndpointsController_get_v1"];
+        put?: never;
+        post?: never;
+        /** Delete a webhook endpoint and its delivery log */
+        delete: operations["WebhookEndpointsController_delete_v1"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a webhook endpoint, or turn it off or on
+         * @description Turning an endpoint off fails what it still had to receive; turning it on clears its failure count. Events from while it was off are not sent.
+         */
+        patch: operations["WebhookEndpointsController_update_v1"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/rotate-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give a webhook endpoint a new signing secret, returned once
+         * @description For 24 hours deliveries are signed with both the new and the old secret (two v1 signatures), so the receiver can switch without dropping events.
+         */
+        post: operations["WebhookEndpointsController_rotateSecret_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The delivery log of a webhook endpoint, newest first
+         * @description Deliveries are kept for 30 days.
+         */
+        get: operations["WebhookDeliveriesController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/deliveries/{deliveryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One delivery, with the JSON body it sends */
+        get: operations["WebhookDeliveriesController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/deliveries/{deliveryId}/redeliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a delivery’s event again
+         * @description A new delivery of the same event, with the same event id, sent right away.
+         */
+        post: operations["WebhookDeliveriesController_redeliver_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/webhook-endpoints/{endpointId}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test event to a webhook endpoint
+         * @description A `webhook.test` event, to this endpoint only and tried once. Its outcome shows in the delivery log within seconds.
+         */
+        post: operations["WebhookDeliveriesController_sendTest_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3794,6 +3934,157 @@ export interface components {
             handoff: boolean;
             /** Format: email */
             supportEmail: string;
+        };
+        /** @enum {string} */
+        WebhookEventType: WebhookEventType;
+        /**
+         * @description MANUAL: turned off by someone. FAILING: turned off by Crossmart.
+         * @enum {string}
+         */
+        WebhookDisabledReason: WebhookDisabledReason;
+        WebhookEndpointDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example https://example.com/crossmart/webhooks */
+            url: string;
+            /** @example Order notifications to n8n */
+            description: string | null;
+            eventTypes: components["schemas"]["WebhookEventType"][];
+            /** @description False when turned off by someone or after repeated failures */
+            enabled: boolean;
+            /** @description MANUAL: turned off by someone. FAILING: turned off by Crossmart. */
+            disabledReason: components["schemas"]["WebhookDisabledReason"] | null;
+            /** Format: date-time */
+            disabledAt: string | null;
+            /** @description Failed attempts since the last delivery that went through */
+            consecutiveFailures: number;
+            /**
+             * Format: date-time
+             * @description Until then deliveries are also signed with the secret the last rotation replaced
+             */
+            previousSecretExpiresAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateWebhookEndpointDto: {
+            /**
+             * @description Where events are POSTed. https and a public address; plain http only outside production.
+             * @example https://example.com/crossmart/webhooks
+             */
+            url: string;
+            description?: string | null;
+            /** @description The events to receive. `webhook.test` cannot be subscribed to. */
+            eventTypes: components["schemas"]["WebhookEventType"][];
+        };
+        WebhookEndpointWithSecretDto: {
+            endpoint: components["schemas"]["WebhookEndpointDto"];
+            /**
+             * @description The signing secret. Shown once; store it now.
+             * @example whsec_3q2-7wEXAMPLEsecretVALUE0123456789abcdef
+             */
+            secret: string;
+        };
+        UpdateWebhookEndpointDto: {
+            /** @description Where events are POSTed. https and a public address; plain http only outside production. */
+            url?: string;
+            description?: string | null;
+            /** @description The events to receive. `webhook.test` cannot be subscribed to. */
+            eventTypes?: components["schemas"]["WebhookEventType"][];
+            /** @description false turns the endpoint off; true turns it back on and clears its failures */
+            enabled?: boolean;
+        };
+        /** @enum {string} */
+        WebhookDeliveryStatus: WebhookDeliveryStatus;
+        WebhookDeliveryDto: {
+            /**
+             * Format: uuid
+             * @description Sent as the Crossmart-Delivery-Id header
+             */
+            id: string;
+            /** Format: uuid */
+            endpointId: string;
+            /**
+             * Format: uuid
+             * @description The event id; the same on every redelivery
+             */
+            eventId: string;
+            eventType: components["schemas"]["WebhookEventType"];
+            /** @description RETRYING: an attempt failed and another is scheduled at nextAttemptAt */
+            status: components["schemas"]["WebhookDeliveryStatus"];
+            /** @description Attempts made so far */
+            attempts: number;
+            /** @description HTTP status of the latest attempt */
+            responseStatus: number | null;
+            durationMs: number | null;
+            /** @description Why the latest attempt failed */
+            error: string | null;
+            /** Format: date-time */
+            nextAttemptAt: string | null;
+            /** Format: date-time */
+            lastAttemptAt: string | null;
+            /** Format: date-time */
+            deliveredAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        WebhookDeliveryPageDto: {
+            items: components["schemas"]["WebhookDeliveryDto"][];
+            nextCursor: string | null;
+            total: number;
+        };
+        WebhookEnvelopeDto: {
+            /**
+             * Format: uuid
+             * @description The event id: deduplicate on it
+             */
+            id: string;
+            type: components["schemas"]["WebhookEventType"];
+            /** @description When the change happened */
+            createdAt: string;
+            /** Format: uuid */
+            workspaceId: string;
+            /** @example v1 */
+            apiVersion: string;
+            /** @description The event’s data; its shape depends on the type */
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        WebhookDeliveryDetailDto: {
+            /**
+             * Format: uuid
+             * @description Sent as the Crossmart-Delivery-Id header
+             */
+            id: string;
+            /** Format: uuid */
+            endpointId: string;
+            /**
+             * Format: uuid
+             * @description The event id; the same on every redelivery
+             */
+            eventId: string;
+            eventType: components["schemas"]["WebhookEventType"];
+            /** @description RETRYING: an attempt failed and another is scheduled at nextAttemptAt */
+            status: components["schemas"]["WebhookDeliveryStatus"];
+            /** @description Attempts made so far */
+            attempts: number;
+            /** @description HTTP status of the latest attempt */
+            responseStatus: number | null;
+            durationMs: number | null;
+            /** @description Why the latest attempt failed */
+            error: string | null;
+            /** Format: date-time */
+            nextAttemptAt: string | null;
+            /** Format: date-time */
+            lastAttemptAt: string | null;
+            /** Format: date-time */
+            deliveredAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The JSON body every attempt sends */
+            payload: components["schemas"]["WebhookEnvelopeDto"];
         };
     };
     responses: never;
@@ -6413,6 +6704,278 @@ export interface operations {
             };
         };
     };
+    WebhookEndpointsController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointDto"][];
+                };
+            };
+        };
+    };
+    WebhookEndpointsController_create_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWebhookEndpointDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointWithSecretDto"];
+                };
+            };
+            /** @description The URL is not https (in production), or not a public address */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description The server has no CREDENTIALS_MASTER_KEY to encrypt secrets with */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WebhookEndpointsController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointDto"];
+                };
+            };
+        };
+    };
+    WebhookEndpointsController_delete_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WebhookEndpointsController_update_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWebhookEndpointDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointDto"];
+                };
+            };
+            /** @description The URL is not https (in production), or not a public address */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WebhookEndpointsController_rotateSecret_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointWithSecretDto"];
+                };
+            };
+            /** @description The server has no CREDENTIALS_MASTER_KEY to encrypt secrets with */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WebhookDeliveriesController_list_v1: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["WebhookDeliveryStatus"];
+                eventType?: components["schemas"]["WebhookEventType"];
+                direction?: components["schemas"]["SortDirection"];
+                /** @description `nextCursor` from the previous page */
+                cursor?: string;
+                /** @description 1-based page number, for tables with page numbers. It wins over `cursor`. */
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryPageDto"];
+                };
+            };
+        };
+    };
+    WebhookDeliveriesController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+                deliveryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryDetailDto"];
+                };
+            };
+        };
+    };
+    WebhookDeliveriesController_redeliver_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+                deliveryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryDto"];
+                };
+            };
+        };
+    };
+    WebhookDeliveriesController_sendTest_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                endpointId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryDto"];
+                };
+            };
+        };
+    };
 }
 export enum PathsApiV1HealthGetResponses200ContentApplicationJsonStatus {
     ok = "ok",
@@ -6467,6 +7030,7 @@ export enum WorkspacePermission {
     members_view = "members:view",
     members_manage = "members:manage",
     api_keys_manage = "api-keys:manage",
+    webhooks_manage = "webhooks:manage",
     products_view = "products:view",
     products_edit = "products:edit",
     inventory_view = "inventory:view",
@@ -6492,6 +7056,7 @@ export enum Feature {
     workspaces = "workspaces",
     members = "members",
     api_keys = "api_keys",
+    webhook_endpoints = "webhook_endpoints",
     ai_credits = "ai_credits",
     autonomous_agents = "autonomous_agents",
     bring_your_own_key = "bring_your_own_key"
@@ -6644,6 +7209,11 @@ export enum ActivityAction {
     product_view_deleted = "product_view_deleted",
     api_key_created = "api_key_created",
     api_key_revoked = "api_key_revoked",
+    webhook_endpoint_created = "webhook_endpoint_created",
+    webhook_endpoint_updated = "webhook_endpoint_updated",
+    webhook_endpoint_deleted = "webhook_endpoint_deleted",
+    webhook_secret_rotated = "webhook_secret_rotated",
+    webhook_endpoint_disabled = "webhook_endpoint_disabled",
     agent_disconnected = "agent_disconnected",
     member_invited = "member_invited",
     invitation_revoked = "invitation_revoked",
@@ -6698,7 +7268,8 @@ export enum ActivitySubjectType {
     invitation = "invitation",
     workspace = "workspace",
     custom_role = "custom_role",
-    channel_connection = "channel_connection"
+    channel_connection = "channel_connection",
+    webhook_endpoint = "webhook_endpoint"
 }
 export enum ActivityActorType {
     USER = "USER",
@@ -6930,7 +7501,8 @@ export enum AgentScope {
     orders_read = "orders:read",
     stores_write = "stores:write",
     reports_read = "reports:read",
-    suggestions_write = "suggestions:write"
+    suggestions_write = "suggestions:write",
+    webhooks_write = "webhooks:write"
 }
 export enum AskOutcome {
     answered = "answered",
@@ -6941,4 +7513,26 @@ export enum AskConfidence {
     high = "high",
     medium = "medium",
     low = "low"
+}
+export enum WebhookEventType {
+    order_created = "order.created",
+    order_updated = "order.updated",
+    inventory_stock_changed = "inventory.stock_changed",
+    listing_published = "listing.published",
+    listing_failed = "listing.failed",
+    listing_removed = "listing.removed",
+    product_created = "product.created",
+    product_updated = "product.updated",
+    product_deleted = "product.deleted",
+    webhook_test = "webhook.test"
+}
+export enum WebhookDisabledReason {
+    MANUAL = "MANUAL",
+    FAILING = "FAILING"
+}
+export enum WebhookDeliveryStatus {
+    PENDING = "PENDING",
+    RETRYING = "RETRYING",
+    SUCCEEDED = "SUCCEEDED",
+    FAILED = "FAILED"
 }

@@ -14,4 +14,5 @@ enum AgentScope: string
     case StoresWrite = 'stores:write';
     case ReportsRead = 'reports:read';
     case SuggestionsWrite = 'suggestions:write';
+    case WebhooksWrite = 'webhooks:write';
 }

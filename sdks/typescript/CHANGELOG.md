@@ -6,6 +6,12 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `verifyWebhookSignature` checks a webhook delivery's `Crossmart-Signature` header against the
+  raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation) and returns the
+  parsed `WebhookEvent`. It throws `WebhookSignatureError` when the delivery cannot be trusted.
+
 ## [0.1.0] - not yet released
 
 ### Added
