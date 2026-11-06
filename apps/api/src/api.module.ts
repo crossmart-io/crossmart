@@ -4,6 +4,7 @@ import { DatabaseModule } from '@crossmart/database';
 import { ActivityApiModule } from './activity/activity.module.js';
 import { AgentsApiModule } from './agents/agents-api.module.js';
 import { AiApiModule } from './ai/ai.module.js';
+import { AskApiModule } from './ask/ask.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CatalogApiModule } from './catalog/catalog.module.js';
 import { EntitlementsApiModule } from './entitlements/entitlements.module.js';
@@ -40,6 +41,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     SuggestionsApiModule,
     AiApiModule,
     AgentsApiModule,
+    AskApiModule,
   ],
 })
 export class ApiModule {}

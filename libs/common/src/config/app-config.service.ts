@@ -27,6 +27,14 @@ export interface AiSettings {
   model: string;
 }
 
+/** Ask Crossmart: how many questions a day it answers, with which model, and who to email. */
+export interface AskSettings {
+  dailyQuestionCap: number;
+  /** Null to answer with the AI agents' model. */
+  model: string | null;
+  supportEmail: string;
+}
+
 export interface MailSettings {
   driver: MailDriver;
   /** Set whenever the driver is `resend`; validation refuses to start without it. */
@@ -168,6 +176,15 @@ export class AppConfigService {
     return {
       anthropicApiKey: this.configService.get('ANTHROPIC_API_KEY', { infer: true }) || null,
       model: this.configService.get('AI_MODEL', { infer: true }) ?? DEFAULT_AI_MODEL,
+    };
+  }
+
+  /** Ask Crossmart's daily cap, model and support address. */
+  get askSettings(): AskSettings {
+    return {
+      dailyQuestionCap: this.configService.get('ASK_DAILY_QUESTION_CAP', { infer: true }),
+      model: this.configService.get('ASK_AI_MODEL', { infer: true }) ?? null,
+      supportEmail: this.configService.get('ASK_SUPPORT_EMAIL', { infer: true }),
     };
   }
 }

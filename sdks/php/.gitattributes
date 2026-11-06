@@ -1,0 +1,13 @@
+# Kept out of the Packagist archive (`composer install --prefer-dist`).
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/generator export-ignore
+/scripts export-ignore
+/tests export-ignore
+/phpstan.neon.dist export-ignore
+/phpunit.xml.dist export-ignore
+
+# Generated from the OpenAPI document by scripts/generate.php.
+/src/Api/** linguist-generated
+/src/Enum/** linguist-generated
+/src/Model/** linguist-generated

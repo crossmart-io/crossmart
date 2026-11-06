@@ -24,6 +24,12 @@
     "effective": "sample",
     "overridden": true
   },
+  "vendor": {
+    "product": "sample",
+    "override": "sample",
+    "effective": "sample",
+    "overridden": true
+  },
   "tags": {
     "product": [],
     "override": [],

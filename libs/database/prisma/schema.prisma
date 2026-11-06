@@ -988,6 +988,8 @@ model Listing {
   @@index([workspaceId, productId])
   /// A store's listings with a sync job still outstanding, for its sync progress.
   @@index([connectionId, syncRequestedAt])
+  /// Sync requests left unsettled for too long, across stores, for the sweep that queues them again.
+  @@index([syncRequestedAt])
   /// Active listings are counted per organization for plan limits.
   @@index([workspaceId, status])
   @@map("listings")
@@ -1050,6 +1052,8 @@ model ListingOverride {
   listing         Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
   title           String?
   descriptionHtml String?            @map("description_html")
+  /// The brand this channel shows instead of the product's vendor.
+  vendor          String?
   /// Tags replace the product's when `tagsOverridden` is set (an empty list means no tags).
   tagsOverridden  Boolean            @default(false) @map("tags_overridden")
   tags            String[]
@@ -1241,4 +1245,22 @@ model AiUsage {
 
   @@index([workspaceId, createdAt])
   @@map("ai_usage")
+}
+
+/// AI calls Crossmart pays for itself, outside any workspace, such as Ask Crossmart's answers to
+/// public questions. Kept apart from `ai_usage` so no tenant row is ever written without a
+/// workspace, and so platform spend can be reported on its own.
+model PlatformAiUsage {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  /// An `AiFeature` value; kept as text so new features need no migration.
+  feature      String
+  /// An `AiProviderName` value.
+  provider     String
+  model        String
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([feature, createdAt])
+  @@map("platform_ai_usage")
 }

@@ -869,7 +869,7 @@ export interface paths {
         };
         /**
          * The store’s products with their state on the channel
-         * @description Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. Counts per state follow `search`, so they can label filter tabs.
+         * @description Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState` narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow `search`, so they can label filter tabs.
          */
         get: operations["ChannelProductsController_listProducts_v1"];
         put?: never;
@@ -1288,6 +1288,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/analytics/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Each store’s products by display state, and the latest failed listings, as of now
+         * @description Counts follow the same rule as each store’s product list. Each failed listing carries `displayState`, `displayReason` and `displayRequirement`, so a client can link to the fix.
+         */
+        get: operations["ListingHealthReportController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/suggestions": {
         parameters: {
             query?: never;
@@ -1517,6 +1537,26 @@ export interface paths {
          * @description Revokes its tokens at once. The agent must be authorized again to come back.
          */
         delete: operations["AgentConnectionsController_revoke_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a question about Crossmart
+         * @description Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
+         */
+        post: operations["AskController_ask_v1"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2966,6 +3006,7 @@ export interface components {
         ListingOverrideViewDto: {
             title: string | null;
             descriptionHtml: string | null;
+            vendor: string | null;
             tags: string[] | null;
             mediaUrls: string[] | null;
             visibility: components["schemas"]["ListingVisibility"] | null;
@@ -2981,6 +3022,11 @@ export interface components {
             /** @example Blue / Large */
             title: string;
             price: components["schemas"]["ResolvedPriceDto"];
+            /**
+             * @description In the store’s currency: what its pricing rule gives, before a fixed price on the listing. Equal to the effective price unless the price is overridden.
+             * @example 102.99
+             */
+            rulePrice: string;
             /** @description The stock the channel shows; null when the variant does not track stock */
             quantity: number | null;
         };
@@ -3019,6 +3065,8 @@ export interface components {
         ListingOverrideDto: {
             title?: string | null;
             descriptionHtml?: string | null;
+            /** @description The brand this channel shows instead of the product’s vendor */
+            vendor?: string | null;
             /** @description Replaces the product’s tags */
             tags?: string[] | null;
             /** @description The product’s image URLs to show, in order */
@@ -3034,6 +3082,8 @@ export interface components {
         ListingOverridePatchDto: {
             title?: string | null;
             descriptionHtml?: string | null;
+            /** @description The brand this channel shows instead of the product’s vendor */
+            vendor?: string | null;
             /** @description Replaces the product’s tags */
             tags?: string[] | null;
             /** @description The product’s image URLs to show, in order */
@@ -3053,6 +3103,16 @@ export interface components {
             override: string | null;
             /** @description What the store gets */
             effective: string;
+            /** @description Whether the store overrides it; reverting sets `override` to null */
+            overridden: boolean;
+        };
+        InheritedOptionalTextDto: {
+            /** @description The product’s value */
+            product: string | null;
+            /** @description Null when it follows the product */
+            override: string | null;
+            /** @description What the store gets */
+            effective: string | null;
             /** @description Whether the store overrides it; reverting sets `override` to null */
             overridden: boolean;
         };
@@ -3110,6 +3170,11 @@ export interface components {
             title: string;
             sku: string | null;
             price: components["schemas"]["InheritedPriceDto"];
+            /**
+             * @description In the store’s currency: what its pricing rule gives, before a fixed price on the listing. Equal to the effective price unless the price is overridden.
+             * @example 102.99
+             */
+            rulePrice: string;
             compareAtPrice: components["schemas"]["InheritedCompareAtPriceDto"];
             /** @description How the effective price was reached */
             resolvedPrice: components["schemas"]["ResolvedPriceDto"];
@@ -3153,6 +3218,8 @@ export interface components {
             listing: components["schemas"]["ListingSummaryDto"] | null;
             title: components["schemas"]["InheritedTextDto"];
             descriptionHtml: components["schemas"]["InheritedTextDto"];
+            /** @description The brand the store shows */
+            vendor: components["schemas"]["InheritedOptionalTextDto"];
             tags: components["schemas"]["InheritedTextListDto"];
             /** @description Image URLs in order; an override is a subset of the product’s, in its order */
             images: components["schemas"]["InheritedTextListDto"];
@@ -3431,8 +3498,82 @@ export interface components {
             stockLevels: components["schemas"]["StockLevelCountsDto"];
             /** @description Available units at or below which stock counts as low */
             lowStockThreshold: number;
+            /** @description Tracked variants out of stock or low, fewest available first (oversold before sold out), at most a few: the ones to restock first */
+            lowestStock: components["schemas"]["InventoryItemDto"][];
             /** @description Every store, oldest first */
             stores: components["schemas"]["StoreHealthDto"][];
+        };
+        ListingStateCountDto: {
+            state: components["schemas"]["ListingDisplayState"];
+            /** @description Products of the catalog in this state on the store */
+            count: number;
+        };
+        StoreListingHealthDto: {
+            /** Format: uuid */
+            connectionId: string;
+            channel: components["schemas"]["ChannelType"];
+            /** @example Demo Store */
+            displayName: string;
+            status: components["schemas"]["ChannelConnectionStatus"];
+            /** @description Why the store needs reconnecting or is in error; null otherwise */
+            statusReason: string | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            /** @description Every display state, in order, with how many products are in it: the same states and rule as the store’s product list (`draft` counts the catalog products not in the store) */
+            states: components["schemas"]["ListingStateCountDto"][];
+            /** @description Listings the channel refused on their last sync */
+            failedListings: number;
+        };
+        StoreListingFailureDto: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["ListingStatus"];
+            /** @description How the product joined the store: by hand, by an import, or by the automatic rule */
+            source: components["schemas"]["ListingSource"];
+            /** @description The product’s id on the channel */
+            externalId: string | null;
+            /** @description Where to see it on the channel */
+            externalUrl: string | null;
+            /** @description Why the last sync failed */
+            lastError: string | null;
+            /** @description What the channel refused the last publish for lacking (such as `item_specifics`), when the merchant can add it; null otherwise */
+            missingRequirement: components["schemas"]["PublishRequirement"] | null;
+            /** Format: date-time */
+            lastSyncedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When a sync or retry queued its publish, update or delist; null once that job finished or gave up. While set, a selected listing shows `displayState: publishing`.
+             */
+            syncRequestedAt: string | null;
+            /** @description The channel category it is listed in, on channels with categories (eBay) */
+            category: components["schemas"]["ChannelCategoryDto"] | null;
+            /** Format: uuid */
+            productId: string;
+            productTitle: string;
+            imageUrl: string | null;
+            variantCount: number;
+            /** @description The product on this store, in one state computed by the server: `draft` (not selected for the store), `needs_details` (selected, but the store setup or the product lacks something publishing needs), `ready` (publishable, not sent yet), `publishing` (queued or in flight, including an update of a published listing that a sync or retry queued), `published`, `failed`, `removing` (being taken off) or `removed`. */
+            displayState: components["schemas"]["ListingDisplayState"];
+            /**
+             * @description For `needs_details` and `failed`: a short, merchant-readable reason (what to add, or the channel’s message). Never holds secrets. Null for the other states.
+             * @example Choose a shipping policy in this eBay connection’s listing defaults.
+             */
+            displayReason: string | null;
+            /** @description For `needs_details`: the requirement to fix first, so a client can open the right place. Store-setup requirements (`reconnect`, `account_settings`, `shipping_policy`, `payment_policy`, `return_policy`, `ship_from_location`, `listing_setup`) come before the product’s (`images`, `active_product`, `option_names`), which the server checks before publishing; `category` and `item_specifics` are known once the channel refused a publish. Null for the other states. */
+            displayRequirement: components["schemas"]["PublishRequirement"] | null;
+            /**
+             * Format: uuid
+             * @description The store the listing is on
+             */
+            connectionId: string;
+        };
+        ListingHealthReportDto: {
+            /** @description Every store, oldest first */
+            stores: components["schemas"]["StoreListingHealthDto"][];
+            /** @description The latest listings a channel refused, latest first, each with its display state and requirement so a client can link to the fix */
+            recentFailures: components["schemas"]["StoreListingFailureDto"][];
+            /** @description Failed listings in all, across the stores */
+            failedListings: number;
         };
         /** @enum {string} */
         SuggestionStatus: SuggestionStatus;
@@ -3617,6 +3758,42 @@ export interface components {
             scopes: components["schemas"]["AgentScope"][];
             /** Format: date-time */
             connectedAt: string;
+        };
+        AskQuestionDto: {
+            /**
+             * @description A question about Crossmart, in any language
+             * @example Can I publish the same product to Shopify and eBay?
+             */
+            question: string;
+        };
+        /**
+         * @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart
+         * @enum {string}
+         */
+        AskOutcome: AskOutcome;
+        AskCitationDto: {
+            /** @description The page and section, such as "Crossmart for developers › Rate limits" */
+            title: string;
+            /**
+             * Format: uri
+             * @description The public page the answer is based on
+             */
+            url: string;
+        };
+        /** @enum {string} */
+        AskConfidence: AskConfidence;
+        AskAnswerDto: {
+            /** @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart */
+            outcome: components["schemas"]["AskOutcome"];
+            /** @description The answer, in plain text or short Markdown */
+            answer: string;
+            /** @description Pages the answer is based on */
+            citations: components["schemas"]["AskCitationDto"][];
+            confidence: components["schemas"]["AskConfidence"];
+            /** @description True when a person should take over, at supportEmail */
+            handoff: boolean;
+            /** Format: email */
+            supportEmail: string;
         };
     };
     responses: never;
@@ -5146,6 +5323,8 @@ export interface operations {
         parameters: {
             query?: {
                 state?: components["schemas"]["ChannelProductState"];
+                /** @description Only products showing this display state. Without `state` it looks at every catalog product, so `draft` and `removed` find those not in the store. */
+                displayState?: components["schemas"]["ListingDisplayState"];
                 /** @description Matches title, handle or SKU */
                 search?: string;
                 sort?: components["schemas"]["ChannelProductSort"];
@@ -5860,6 +6039,27 @@ export interface operations {
             };
         };
     };
+    ListingHealthReportController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingHealthReportDto"];
+                };
+            };
+        };
+    };
     SuggestionsController_list_v1: {
         parameters: {
             query?: {
@@ -6169,6 +6369,43 @@ export interface operations {
         requestBody?: never;
         responses: {
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AskController_ask_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskQuestionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskAnswerDto"];
+                };
+            };
+            /** @description Too many questions from you. Wait a little and try again, or browse https://docs.crossmart.io. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description AI is not configured, Ask is turned off, or today’s questions are spent */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6680,7 +6917,8 @@ export enum SuggestionAgent {
 }
 export enum AiFeature {
     content_generation = "content_generation",
-    content_draft = "content_draft"
+    content_draft = "content_draft",
+    ask = "ask"
 }
 export enum ContentField {
     title = "title",
@@ -6693,4 +6931,14 @@ export enum AgentScope {
     stores_write = "stores:write",
     reports_read = "reports:read",
     suggestions_write = "suggestions:write"
+}
+export enum AskOutcome {
+    answered = "answered",
+    unknown = "unknown",
+    out_of_scope = "out_of_scope"
+}
+export enum AskConfidence {
+    high = "high",
+    medium = "medium",
+    low = "low"
 }

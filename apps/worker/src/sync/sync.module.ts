@@ -3,6 +3,7 @@ import { ListingsModule } from '@crossmart/core';
 import { ConnectionRateLimiter } from './connection-rate-limiter.js';
 import { ListingJobHandler } from './listing-job.handler.js';
 import { ReconciliationScheduler } from './reconciliation.scheduler.js';
+import { SyncRequestSweepScheduler } from './sync-request-sweep.scheduler.js';
 import {
   ContentSyncProcessor,
   InventorySyncProcessor,
@@ -19,6 +20,7 @@ import {
     PriceSyncProcessor,
     ContentSyncProcessor,
     ReconciliationScheduler,
+    SyncRequestSweepScheduler,
   ],
 })
 export class SyncModule {}

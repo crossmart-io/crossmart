@@ -1,6 +1,7 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
@@ -20,6 +21,8 @@ import { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import {
   DEFAULT_API_PORT,
+  DEFAULT_ASK_DAILY_QUESTION_CAP,
+  DEFAULT_ASK_SUPPORT_EMAIL,
   DEFAULT_ENTITLEMENTS_ENFORCED,
   DEFAULT_MASTER_KEY_VERSION,
   DEFAULT_MEDIA_PUBLIC_URL,
@@ -209,6 +212,24 @@ export class EnvironmentVariables {
   @IsString()
   @MinLength(1)
   AI_MODEL?: string;
+
+  /**
+   * Ask Crossmart questions answered per UTC day, across every caller. Crossmart pays for them,
+   * so this caps the bill; once reached, Ask answers 503 until midnight UTC. 0 turns Ask off.
+   */
+  @IsInt()
+  @Min(0)
+  ASK_DAILY_QUESTION_CAP: number = DEFAULT_ASK_DAILY_QUESTION_CAP;
+
+  /** The model Ask Crossmart answers with. Defaults to `AI_MODEL`. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  ASK_AI_MODEL?: string;
+
+  /** The address Ask Crossmart points people to when it cannot answer. */
+  @IsEmail()
+  ASK_SUPPORT_EMAIL: string = DEFAULT_ASK_SUPPORT_EMAIL;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {

@@ -25,3 +25,7 @@ export const SALES_INTERVAL_STEPS: Record<SalesInterval, string> = {
 export const DEFAULT_SALES_RANGE = SalesRange.Last30Days;
 export const DEFAULT_SALES_TIME_ZONE = 'UTC';
 export const TOP_PRODUCTS_LIMIT = 5;
+/** Variants the inventory report lists as running out, fewest available first. */
+export const LOW_STOCK_VARIANTS_LIMIT = 8;
+/** Failed listings the listing health report shows, latest first. */
+export const RECENT_LISTING_FAILURES_LIMIT = 6;

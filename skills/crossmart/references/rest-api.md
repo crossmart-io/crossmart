@@ -32,12 +32,16 @@ Paths below are under `/workspaces/{workspaceId}`.
 | `list_store_products`       | `GET /channel-connections/{connectionId}/products`                       |
 | `get_product_stores`        | `GET /products/{productId}/channels`                                     |
 | `retry_store_listing`       | `POST /products/{productId}/channels/{connectionId}/retry`               |
+| `get_sync_progress`         | `GET /channel-connections/{connectionId}/sync`                           |
+| `get_listing`               | `GET /products/{productId}/channels/{connectionId}/listing`              |
+| `update_listing`            | `PATCH /products/{productId}/channels/{connectionId}/override`           |
 | `suggest_store_categories`  | `GET /products/{productId}/channels/{connectionId}/category-suggestions` |
 | `set_store_category`        | `PUT /products/{productId}/channels/{connectionId}/category`             |
 | `get_item_specifics`        | `GET /products/{productId}/channels/{connectionId}/item-specifics`       |
 | `save_item_specifics`       | `PUT /products/{productId}/channels/{connectionId}/item-specifics`       |
 | `get_sales_report`          | `GET /analytics/sales`                                                   |
 | `get_inventory_report`      | `GET /analytics/inventory`                                               |
+| `get_listing_health_report` | `GET /analytics/listings`                                                |
 | `generate_content`          | `POST /ai/content-generations`                                           |
 | `list_suggestions`          | `GET /suggestions`                                                       |
 | `approve_suggestion`        | `POST /suggestions/{suggestionId}/approve`                               |

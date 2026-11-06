@@ -241,6 +241,12 @@ ruff check . && ruff format --check . && mypy && pytest
 
 Test fixtures in `tests/fixtures` are sample bodies built from the schemas. Rebuild them with `python scripts/build_test_fixtures.py ../../openapi.json tests/fixtures` when the API's models change.
 
+## Releasing
+
+Maintainers publish to PyPI by hand, together with the TypeScript and PHP SDKs. See
+[sdks/RELEASING.md](../RELEASING.md) for the steps and the versioning policy, and record changes
+in [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 [AGPL-3.0](LICENSE).

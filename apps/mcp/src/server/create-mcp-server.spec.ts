@@ -12,11 +12,13 @@ describe('toolsFor', () => {
 
   it('offers an agent only the tools its scopes cover', () => {
     const tools = names(toolsFor(accessTokenCredential('a.b.c', 'ws-1', [AgentScope.OrdersRead])));
-    expect(tools).toEqual(['list_orders', 'get_order', 'get_platform_health']);
+    expect(tools.sort()).toEqual(
+      ['ask_crossmart', 'get_order', 'get_platform_health', 'list_orders'].sort(),
+    );
   });
 
-  it('gives every tool but the health check a scope', () => {
+  it('gives every tool a scope but the public ones, which read no workspace data', () => {
     const unscoped = ALL_TOOLS.filter((tool) => tool.scope === undefined).map((tool) => tool.name);
-    expect(unscoped).toEqual(['get_platform_health']);
+    expect(unscoped.sort()).toEqual(['ask_crossmart', 'get_platform_health']);
   });
 });

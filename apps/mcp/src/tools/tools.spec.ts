@@ -1,5 +1,6 @@
+import { z } from 'zod';
 import { HttpMethod } from '../api/api-call.js';
-import { API_HEALTH_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
+import { API_HEALTH_PATH, ASK_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
 import { ALL_TOOLS } from './index.js';
 
 const SNAKE_CASE = /^[a-z]+(_[a-z]+)*$/;
@@ -20,18 +21,29 @@ describe('MCP tools', () => {
     }
   });
 
-  it('read only with GET', () => {
-    const readOnlyMethods = ALL_TOOLS.filter((spec) => spec.readOnly).map(
-      (spec) => spec.toCall({} as never).method,
-    );
+  it('read only with GET, apart from asking a question, which changes nothing', () => {
+    const readOnlyMethods = ALL_TOOLS.filter(
+      (spec) => spec.readOnly && spec.name !== 'ask_crossmart',
+    ).map((spec) => spec.toCall({} as never).method);
     expect(new Set(readOnlyMethods)).toEqual(new Set([HttpMethod.Get]));
   });
 
-  it('stay inside the key’s workspace, apart from the health check', () => {
+  it('stay inside the key’s workspace, apart from the health check and Ask', () => {
     const outside = ALL_TOOLS.map((spec) => spec.toCall({} as never).path).filter(
       (path) => !path.startsWith(WORKSPACE_PATH),
     );
-    expect(outside).toEqual([API_HEALTH_PATH]);
+    expect(outside).toEqual([API_HEALTH_PATH, ASK_PATH]);
+  });
+
+  it('asks Crossmart a question, read only and outside any workspace', () => {
+    const spec = tool('ask_crossmart');
+
+    expect(spec.readOnly).toBe(true);
+    expect(spec.toCall({ question: 'Does it support Etsy?' } as never)).toEqual({
+      method: HttpMethod.Post,
+      path: ASK_PATH,
+      body: { question: 'Does it support Etsy?' },
+    });
   });
 
   it('need an agent scope for every workspace call', () => {
@@ -85,12 +97,42 @@ describe('MCP tools', () => {
     const call = tool('list_store_products').toCall({
       connectionId: 'c-1',
       state: 'failed',
+      displayState: 'needs_details',
       page: 2,
     } as never);
     expect(call).toEqual({
       method: HttpMethod.Get,
       path: `${WORKSPACE_PATH}/channel-connections/c-1/products`,
-      query: { state: 'failed', page: 2 },
+      query: { state: 'failed', displayState: 'needs_details', page: 2 },
+    });
+  });
+
+  it('takes only known display states when listing a store’s products', () => {
+    const input = z.object(tool('list_store_products').input);
+    const base = { connectionId: '3f1c2b7a-9e8d-4c6b-a5f4-e3d2c1b0a9f8' };
+    expect(input.safeParse({ ...base, displayState: 'ready' }).success).toBe(true);
+    expect(input.safeParse({ ...base, displayState: 'stuck' }).success).toBe(false);
+  });
+
+  it('reads a listing field by field, and patches its overrides with null reverting', () => {
+    const target = { productId: 'p-1', connectionId: 'c-1' };
+    expect(tool('get_listing').toCall(target as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/listing`,
+    });
+    const patch = { title: null, vendor: 'Store brand' };
+    expect(tool('update_listing').toCall({ ...target, ...patch } as never)).toEqual({
+      method: HttpMethod.Patch,
+      path: `${WORKSPACE_PATH}/products/p-1/channels/c-1/override`,
+      body: patch,
+    });
+    expect(tool('update_listing').readOnly).toBe(false);
+  });
+
+  it('reads a store’s sync progress', () => {
+    expect(tool('get_sync_progress').toCall({ connectionId: 'c-1' } as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/channel-connections/c-1/sync`,
     });
   });
 

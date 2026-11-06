@@ -57,6 +57,7 @@ export type ListAllOrdersQuery = ListAllQuery<ListOrdersQuery>;
 export type SalesReport = Schemas['SalesReportDto'];
 export type SalesReportQuery = QueryOf<'SalesReportController_get_v1'>;
 export type InventoryReport = Schemas['InventoryReportDto'];
+export type ListingHealthReport = Schemas['ListingHealthReportDto'];
 
 // AI
 export type AiStatus = Schemas['AiStatusDto'];

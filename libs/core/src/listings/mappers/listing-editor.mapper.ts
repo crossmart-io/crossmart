@@ -57,6 +57,7 @@ function editorVariant(
     title: channelVariant.title,
     sku: variant.sku,
     price: priceField(variant.price, override?.price ?? null, resolved.price),
+    rulePrice: channelVariant.rulePrice,
     compareAtPrice: priceField(
       variant.compareAtPrice,
       override?.compareAtPrice ?? null,
@@ -93,6 +94,7 @@ function itemSpecificsSummary(
 const FOLLOWS_PRODUCT: ListingOverrideInput = {
   title: null,
   descriptionHtml: null,
+  vendor: null,
   tags: null,
   mediaUrls: null,
   visibility: null,
@@ -111,14 +113,18 @@ function imagesField(product: ProductDetail, chosen: string[] | null): Inherited
   };
 }
 
-/** The content fields: title, description, tags, images and visibility. */
+/** The content fields: title, description, vendor, tags, images and visibility. */
 function contentFields(
   product: ProductDetail,
   override: ListingOverrideInput,
-): Pick<ListingEditorView, 'title' | 'descriptionHtml' | 'tags' | 'images' | 'visibility'> {
+): Pick<
+  ListingEditorView,
+  'title' | 'descriptionHtml' | 'vendor' | 'tags' | 'images' | 'visibility'
+> {
   return {
     title: inheritedField(product.title, override.title),
     descriptionHtml: inheritedField(product.descriptionHtml, override.descriptionHtml),
+    vendor: inheritedField(product.vendor, override.vendor),
     tags: inheritedField(product.tags, override.tags),
     images: imagesField(product, override.mediaUrls),
     visibility: inheritedField(productVisibility(product.status), override.visibility),

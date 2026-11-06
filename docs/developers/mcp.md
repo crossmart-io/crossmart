@@ -103,19 +103,24 @@ suggestions). The agent is offered only the tools those scopes cover. The
 | `get_store`                 | One store, with what its setup still needs before it can publish       |              |
 | `add_product_to_store`      | Lists a product on a store                                             |     Yes      |
 | `remove_product_from_store` | Takes a product off a store; it keeps its order history                |     Yes      |
-| `list_store_products`       | A store's products by state (`failed`, `pending`…), with counts        |              |
+| `list_store_products`       | A store's products by state or `displayState`, with counts             |              |
 | `get_product_stores`        | One product on every store, with its display state and reason          |              |
 | `retry_store_listing`       | Publishes one product to one store again                               |     Yes      |
+| `get_sync_progress`         | A store's sync: listings still pending, failed, and whether it is done |              |
+| `get_listing`               | One listing field by field, with each variant's rule price             |              |
+| `update_listing`            | Overrides fields of one listing, or reverts them with `null`           |     Yes      |
 | `suggest_store_categories`  | eBay categories that fit a product                                     |              |
 | `set_store_category`        | Chooses a product's eBay category                                      |     Yes      |
 | `get_item_specifics`        | A listing's eBay item specifics: required, recommended, allowed values |              |
 | `save_item_specifics`       | Replaces a listing's eBay item specifics                               |     Yes      |
 | `get_sales_report`          | Sales, orders, average order value and units against the period before |              |
 | `get_inventory_report`      | Stock value, stock levels and listings per store                       |              |
+| `get_listing_health_report` | Products by display state per store, and the latest failed listings    |              |
 | `get_platform_health`       | Whether the API and its database are reachable                         |              |
 | `generate_content`          | Queues AI titles and descriptions for products on a store              |     Yes      |
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |              |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   |     Yes      |
+| `ask_crossmart`             | Answers questions about Crossmart itself from its docs, with sources   |              |
 
 Read-only tools are marked `readOnlyHint`, and `replace_product`, `remove_product_from_store` and
 `save_item_specifics` are marked `destructiveHint`, so clients can ask before running them. When the

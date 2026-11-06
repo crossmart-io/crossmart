@@ -24,6 +24,8 @@ class ListingEditorVariantDto:
         title (str):  Example: Blue / Large.
         sku (None | str):
         price (InheritedPriceDto):
+        rule_price (str): In the store’s currency: what its pricing rule gives, before a fixed price on the listing.
+            Equal to the effective price unless the price is overridden. Example: 102.99.
         compare_at_price (InheritedCompareAtPriceDto):
         resolved_price (ResolvedPriceDto):
         quantity (float | None): The stock the store shows; null when the variant does not track stock
@@ -33,6 +35,7 @@ class ListingEditorVariantDto:
     title: str
     sku: None | str
     price: InheritedPriceDto
+    rule_price: str
     compare_at_price: InheritedCompareAtPriceDto
     resolved_price: ResolvedPriceDto
     quantity: float | None
@@ -47,6 +50,8 @@ class ListingEditorVariantDto:
         sku = self.sku
 
         price = self.price.to_dict()
+
+        rule_price = self.rule_price
 
         compare_at_price = self.compare_at_price.to_dict()
 
@@ -63,6 +68,7 @@ class ListingEditorVariantDto:
                 "title": title,
                 "sku": sku,
                 "price": price,
+                "rulePrice": rule_price,
                 "compareAtPrice": compare_at_price,
                 "resolvedPrice": resolved_price,
                 "quantity": quantity,
@@ -91,6 +97,8 @@ class ListingEditorVariantDto:
 
         price = InheritedPriceDto.from_dict(d.pop("price"))
 
+        rule_price = d.pop("rulePrice")
+
         compare_at_price = InheritedCompareAtPriceDto.from_dict(d.pop("compareAtPrice"))
 
         resolved_price = ResolvedPriceDto.from_dict(d.pop("resolvedPrice"))
@@ -107,6 +115,7 @@ class ListingEditorVariantDto:
             title=title,
             sku=sku,
             price=price,
+            rule_price=rule_price,
             compare_at_price=compare_at_price,
             resolved_price=resolved_price,
             quantity=quantity,

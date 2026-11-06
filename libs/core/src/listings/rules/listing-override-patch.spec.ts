@@ -5,6 +5,7 @@ import { applyOverridePatch } from './listing-override-patch.js';
 const CURRENT: ListingOverrideInput = {
   title: 'Store title',
   descriptionHtml: '<p>Store copy</p>',
+  vendor: 'Store brand',
   tags: ['sale'],
   mediaUrls: ['https://cdn.example.com/2.jpg'],
   visibility: ListingVisibility.VISIBLE,
@@ -22,9 +23,9 @@ describe('applyOverridePatch', () => {
   });
 
   it('reverts a field set to null to the product, and keeps the others', () => {
-    const patched = applyOverridePatch(CURRENT, { title: null, tags: null });
+    const patched = applyOverridePatch(CURRENT, { title: null, vendor: null, tags: null });
 
-    expect(patched).toEqual({ ...CURRENT, title: null, tags: null });
+    expect(patched).toEqual({ ...CURRENT, title: null, vendor: null, tags: null });
   });
 
   it('changes a field a patch sets', () => {

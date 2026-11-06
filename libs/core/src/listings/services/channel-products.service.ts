@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { toCountedPage } from '@crossmart/common';
+import { type CountedRecords, toCountedPage } from '@crossmart/common';
 import type { Prisma } from '@crossmart/database';
 import { toProductSummary } from '../../catalog/mappers/product-view.mapper.js';
 import { toProductListWhere } from '../../catalog/repositories/product-list.filter.js';
@@ -11,7 +11,6 @@ import type {
   ChannelProductRow,
 } from '../entities/channel-product.js';
 import { toDisplayFields, toListingSummary } from '../mappers/listing.mapper.js';
-import { publishCandidateOf } from '../rules/publish-candidate.js';
 import { ChannelProductState } from '../enums/channel-product-state.enum.js';
 import {
   type ChannelProductRecord,
@@ -25,32 +24,35 @@ import {
   shownListing,
 } from '../rules/channel-product-state-where.js';
 import { selectionWhere } from '../rules/selection-where.js';
+import { displayStateWhere } from '../rules/display-state-where.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
-import { ListingDisplayResolver } from './listing-display.resolver.js';
 import { ProductStoreDisplays } from './product-store-displays.js';
 import type { DisplayedProductSummary } from '../entities/store-badge-display.js';
+import {
+  ChannelProductDisplays,
+  type DisplayFilterTarget,
+  type StoreMembership,
+} from './channel-product-displays.js';
 
 const STATES = Object.values(ChannelProductState);
 
 /** What a page's rows share: their store, and which of the page's products it selects. */
-interface RowContext {
+interface RowContext extends StoreMembership {
   connection: ChannelConnectionView;
-  selected: ReadonlySet<string>;
-  removedByHand: ReadonlySet<string>;
 }
 
 /**
  * A store's products: those it should have or still has, with where each stands on the channel.
- * Without a state it lists the products in the store (not those excluded or removed by hand);
- * counts cover every state.
+ * Without a state or display state it lists the products in the store (not those excluded or
+ * removed by hand); counts cover every state.
  */
 @Injectable()
 export class ChannelProductsService {
   constructor(
     private readonly connections: ChannelConnectionsService,
     private readonly products: ChannelProductsRepository,
-    private readonly displays: ListingDisplayResolver,
     private readonly storeDisplays: ProductStoreDisplays,
+    private readonly displays: ChannelProductDisplays,
   ) {}
 
   async list(
@@ -61,15 +63,37 @@ export class ChannelProductsService {
     const connection = await this.connections.get(workspaceId, connectionId);
     const scope = { workspaceId, connectionId, rule: connection.settings.productSelection };
     const search = toProductListWhere(workspaceId, { search: query.search });
-    const where = query.state
-      ? channelProductStateWhere(scope, query.state)
-      : { NOT: { OR: OUT_OF_STORE_STATES.map((state) => channelProductStateWhere(scope, state)) } };
+    const where = { AND: [this.listWhere(scope, query), search] };
     const [counts, records] = await Promise.all([
       this.count(scope, search),
-      this.products.listPage({ AND: [where, search] }, query),
+      this.listPage({ scope, connection }, where, query),
     ]);
     const { rows, nextCursor, total } = toCountedPage(records, query.limit);
     return { items: await this.toRows(connection, scope, rows), counts, nextCursor, total };
+  }
+
+  /** The products the filters ask for; without any, those in the store. */
+  private listWhere(
+    scope: ChannelProductScope,
+    { state, displayState }: ChannelProductQuery,
+  ): Prisma.ProductWhereInput {
+    const conditions = [
+      ...(state ? [channelProductStateWhere(scope, state)] : []),
+      ...(displayState ? [displayStateWhere(scope, displayState)] : []),
+    ];
+    if (conditions.length > 0) return { AND: conditions };
+    return { NOT: { OR: OUT_OF_STORE_STATES.map((out) => channelProductStateWhere(scope, out)) } };
+  }
+
+  /** A display state is resolved in code, so filtering on it pages in memory. */
+  private listPage(
+    target: DisplayFilterTarget,
+    where: Prisma.ProductWhereInput,
+    query: ChannelProductQuery,
+  ): Promise<CountedRecords<ChannelProductRecord>> {
+    const { displayState } = query;
+    if (!displayState) return this.products.listPage(where, query);
+    return this.displays.page(target, where, { ...query, displayState });
   }
 
   private async count(
@@ -122,23 +146,20 @@ export class ChannelProductsService {
     const listings = record.listings.filter((entry) => entry.connectionId === connection.id);
     const shown = shownListing(listings);
     const listing = shown ? toListingSummary(shown) : null;
+    const candidate = {
+      id: record.id,
+      status: record.status,
+      optionNames: record.optionNames,
+      variantCount: record.variants.length,
+      imageUrls: product.imageUrl ? [product.imageUrl] : [],
+    };
+    const display = this.displays.resolve(
+      connection,
+      { product: candidate, listing, visibleListing: shown },
+      context,
+    );
     const selected = context.selected.has(record.id);
     const removedByHand = context.removedByHand.has(record.id);
-    const candidate = publishCandidateOf(
-      {
-        status: record.status,
-        optionNames: record.optionNames,
-        variantCount: record.variants.length,
-        imageUrls: product.imageUrl ? [product.imageUrl] : [],
-      },
-      shown,
-    );
-    const display = this.displays.resolve(connection, {
-      selected,
-      removedByHand,
-      listing,
-      candidate,
-    });
     return {
       product,
       state: channelProductStateOf(selected, listings, removedByHand),

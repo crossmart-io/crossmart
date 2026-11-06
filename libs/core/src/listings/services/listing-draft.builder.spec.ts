@@ -87,6 +87,7 @@ describe('ListingDraftBuilder', () => {
     const listing = listingRecord({
       override: overrideRecord({
         title: 'Mug for Shopify',
+        vendor: 'Store brand',
         tagsOverridden: true,
         tags: [],
         mediaOverridden: true,
@@ -99,7 +100,12 @@ describe('ListingDraftBuilder', () => {
 
     const { draft } = builder.build({ product: productDetail(), listing, pricing: USD });
 
-    expect(draft.product).toMatchObject({ title: 'Mug for Shopify', tags: [], active: false });
+    expect(draft.product).toMatchObject({
+      title: 'Mug for Shopify',
+      vendor: 'Store brand',
+      tags: [],
+      active: false,
+    });
     expect(draft.product.images.map((image) => image.url)).toEqual([
       'https://cdn.example.com/2.jpg',
     ]);

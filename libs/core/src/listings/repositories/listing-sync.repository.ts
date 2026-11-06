@@ -1,7 +1,13 @@
 import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { ChannelCategory, PublishRequirement } from '@crossmart/connectors';
-import { ListingSource, ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
+import {
+  ChannelConnectionStatus,
+  ListingSource,
+  ListingStatus,
+  type Prisma,
+  PrismaService,
+} from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
 import type { ChannelListingQuery } from '../entities/listing-views.js';
 import { LISTING_NOT_FOUND, RETRYABLE_LISTING_STATUSES } from '../listings.constants.js';
@@ -32,6 +38,12 @@ export interface ListingRef {
 export interface ListingScope {
   workspaceId: string;
   connectionId: string;
+}
+
+/** A listing whose sync was requested, with what queuing its job again needs. */
+export interface SyncRequestRef extends ListingScope {
+  listingId: string;
+  productId: string;
 }
 
 /** What a successful publish or update stores. */
@@ -246,6 +258,39 @@ export class ListingSyncRepository {
     });
   }
 
+  /**
+   * The oldest listings, on connected stores of every workspace, whose sync was requested before
+   * `requestedBefore` and never settled: the sync request sweep's work, a batch at a time.
+   */
+  async findStaleSyncRequests(requestedBefore: Date, take: number): Promise<SyncRequestRef[]> {
+    const rows = await this.prisma.listing.findMany({
+      where: {
+        syncRequestedAt: { lt: requestedBefore },
+        connection: { status: ChannelConnectionStatus.CONNECTED },
+      },
+      select: { id: true, workspaceId: true, connectionId: true, productId: true },
+      orderBy: [{ syncRequestedAt: 'asc' }, { id: 'asc' }],
+      take,
+    });
+    return rows.map(({ id, ...ref }) => ({ listingId: id, ...ref }));
+  }
+
+  /**
+   * Requests the listings' sync again as of `requestedAt`, unless their job settled meanwhile.
+   * Returns how many were still unsettled.
+   */
+  async renewSyncRequests(
+    listingIds: string[],
+    requestedBefore: Date,
+    requestedAt: Date,
+  ): Promise<number> {
+    const { count } = await this.prisma.listing.updateMany({
+      where: { id: { in: listingIds }, syncRequestedAt: { lt: requestedBefore } },
+      data: { syncRequestedAt: requestedAt },
+    });
+    return count;
+  }
+
   /** How many of the connection's listings a sync or retry queued and their job has not settled. */
   countSyncPending(scope: ListingScope): Promise<number> {
     return this.prisma.listing.count({ where: { ...scope, syncRequestedAt: { not: null } } });
@@ -329,6 +374,16 @@ export class ListingSyncRepository {
       _count: { _all: true },
     });
     return new Map(groups.map((group) => [group.connectionId, group._count._all]));
+  }
+
+  /** The workspace's failed listings on any store, latest change first. */
+  listRecentFailures(workspaceId: string, limit: number): Promise<ListingRowRecord[]> {
+    return this.prisma.listing.findMany({
+      where: { workspaceId, status: ListingStatus.ERROR },
+      include: LISTING_ROW_INCLUDE,
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
   }
 
   async listProductIdsOnChannel(workspaceId: string, connectionId: string): Promise<string[]> {

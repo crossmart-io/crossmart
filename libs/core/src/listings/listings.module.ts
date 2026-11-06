@@ -14,6 +14,7 @@ import { ListingSyncRepository } from './repositories/listing-sync.repository.js
 import { ProductSelectionRepository } from './repositories/product-selection.repository.js';
 import { BullSyncJobQueue } from './services/bull-sync-job.queue.js';
 import { ChannelListingsService } from './services/channel-listings.service.js';
+import { ChannelProductDisplays } from './services/channel-product-displays.js';
 import { ChannelProductsService } from './services/channel-products.service.js';
 import { StoreMembershipService } from './services/store-membership.service.js';
 import { StoreMembershipWriter } from './services/store-membership.writer.js';
@@ -23,6 +24,7 @@ import { ChannelPriceResolver } from './services/channel-price-resolver.js';
 import { ChannelSyncService } from './services/channel-sync.service.js';
 import { ConnectionRulesService } from './services/connection-rules.service.js';
 import { InventoryReconciliationService } from './services/inventory-reconciliation.service.js';
+import { SyncRequestSweeper } from './services/sync-request.sweeper.js';
 import { ListingContentSync } from './services/listing-content.sync.js';
 import { ListingDraftBuilder } from './services/listing-draft.builder.js';
 import { ListingInventorySync } from './services/listing-inventory.sync.js';
@@ -45,6 +47,7 @@ import { ProductChannelViews } from './services/product-channel.views.js';
 import { ListingEditorViews } from './services/listing-editor.views.js';
 import { ListingDisplayResolver } from './services/listing-display.resolver.js';
 import { ProductStoreDisplays } from './services/product-store-displays.js';
+import { StoreListingStates } from './services/store-listing-states.js';
 import { ListingRequeuer } from './services/listing-requeuer.js';
 import { ListingRetryService } from './services/listing-retry.service.js';
 import { ProductChannelsService } from './services/product-channels.service.js';
@@ -99,6 +102,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingEditorService,
     ChannelSyncService,
     ChannelListingsService,
+    ChannelProductDisplays,
     ChannelProductsService,
     StoreMembershipService,
     SelectionApplier,
@@ -110,6 +114,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingEditorViews,
     ListingDisplayResolver,
     ProductStoreDisplays,
+    StoreListingStates,
     ListingRequeuer,
     ListingRetryService,
     ProductChannelsService,
@@ -122,9 +127,11 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingItemSpecificsService,
     ListingCategoryService,
     InventoryReconciliationService,
+    SyncRequestSweeper,
     { provide: SyncJobQueue, useClass: BullSyncJobQueue },
   ],
   exports: [
+    StoreListingStates,
     SyncProgressService,
     ListingEditorService,
     ProductStoreDisplays,
@@ -146,6 +153,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingItemSpecificsService,
     ListingSyncRunner,
     InventoryReconciliationService,
+    SyncRequestSweeper,
     SyncJobQueue,
   ],
 })

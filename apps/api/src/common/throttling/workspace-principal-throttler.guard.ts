@@ -1,23 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
-import type { AuthenticatedRequest, Principal } from '../../auth/entities/principal.js';
+import type { AuthenticatedRequest } from '../../auth/entities/principal.js';
 import { PrincipalKind } from '../../auth/enums/principal-kind.enum.js';
+import { principalTracker } from './principal-tracker.js';
 import { NO_WORKSPACE, TRACKER_SEPARATOR } from './throttling.constants.js';
 
-function principalId(principal: Principal | undefined): string {
-  switch (principal?.kind) {
-    case undefined:
-      return PrincipalKind.User;
-    case PrincipalKind.User:
-      return principal.userId;
-    case PrincipalKind.ApiKey:
-      return principal.apiKeyId;
-    case PrincipalKind.Agent:
-      // One budget per agent and the user it acts for, so one agent cannot exhaust another's.
-      return [principal.clientId, principal.userId].join(TRACKER_SEPARATOR);
-  }
-}
+/** The tracker of a request without a principal, which these limits never guard in practice. */
+const ANONYMOUS_TRACKER = [PrincipalKind.User, PrincipalKind.User].join(TRACKER_SEPARATOR);
 
 /**
  * Rate limits per workspace and caller (a person, an API key or an agent), not per IP: callers behind one
@@ -29,9 +19,7 @@ function principalId(principal: Principal | undefined): string {
 export class WorkspacePrincipalThrottlerGuard extends ThrottlerGuard {
   protected override getTracker(request: AuthenticatedRequest): Promise<string> {
     const workspaceId = request.params[WORKSPACE_ID_PARAM] ?? NO_WORKSPACE;
-    const kind = request.principal?.kind ?? PrincipalKind.User;
-    return Promise.resolve(
-      [workspaceId, kind, principalId(request.principal)].join(TRACKER_SEPARATOR),
-    );
+    const caller = request.principal ? principalTracker(request.principal) : ANONYMOUS_TRACKER;
+    return Promise.resolve([workspaceId, caller].join(TRACKER_SEPARATOR));
   }
 }

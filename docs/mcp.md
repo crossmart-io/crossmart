@@ -49,16 +49,16 @@ settings or billing. It only sees the tools its scopes cover. The activity log s
 agent with the user's name. Members see and disconnect their agents under Settings (`GET/DELETE
 /api/v1/workspaces/{id}/agent-connections`), and disconnecting stops the agent at once.
 
-| Scope               | Tools                                                                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `get_store`, `list_store_products`, `get_product_stores`, `list_suggestions`                             |
-| `catalog:write`     | `create_product`, `replace_product`, `adjust_stock`                                                                                                                       |
-| `orders:read`       | `list_orders`, `get_order`                                                                                                                                                |
-| `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics` |
-| `reports:read`      | `get_sales_report`, `get_inventory_report`                                                                                                                                |
-| `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                  |
+| Scope               | Tools                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `get_store`, `list_store_products`, `get_product_stores`, `get_listing`, `get_sync_progress`, `list_suggestions`           |
+| `catalog:write`     | `create_product`, `replace_product`, `adjust_stock`                                                                                                                                         |
+| `orders:read`       | `list_orders`, `get_order`                                                                                                                                                                  |
+| `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics`, `update_listing` |
+| `reports:read`      | `get_sales_report`, `get_inventory_report`, `get_listing_health_report`                                                                                                                     |
+| `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                    |
 
-`get_platform_health` needs no scope.
+`ask_crossmart` and `get_platform_health` need no scope: they read nothing of the workspace.
 
 **Or use an API key**, for scripts and self-hosted setups: send it as `Authorization: Bearer <key>`
 or `x-api-key`. A key works in exactly one workspace, which the server finds with
@@ -78,19 +78,24 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `list_stores`, `get_store`  | Connected stores with their status and publish readiness               |        |
 | `add_product_to_store`      | Lists a product on a store                                             | Yes    |
 | `remove_product_from_store` | Archives a product on a store                                          | Yes    |
-| `list_store_products`       | A store's products by state, with display state and reason             |        |
+| `list_store_products`       | A store's products by state or display state, with the reason          |        |
 | `get_product_stores`        | One product on every store                                             |        |
 | `retry_store_listing`       | Publishes one product to one store again                               | Yes    |
+| `get_sync_progress`         | A store's sync: listings still pending, failed, and whether it is done |        |
+| `get_listing`               | One listing field by field: product value, override, result            |        |
+| `update_listing`            | Overrides fields of one listing, or reverts them with `null`           | Yes    |
 | `suggest_store_categories`  | eBay categories that fit a product                                     |        |
 | `set_store_category`        | Chooses a product's eBay category                                      | Yes    |
 | `get_item_specifics`        | A listing's eBay item specifics and the category's aspects             |        |
 | `save_item_specifics`       | Replaces a listing's eBay item specifics                               | Yes    |
 | `get_sales_report`          | Sales, orders, average order value and units against the period before |        |
 | `get_inventory_report`      | Stock value, stock levels and listings per store                       |        |
+| `get_listing_health_report` | Products by display state per store, and the latest failed listings    |        |
 | `get_platform_health`       | Whether the API and database are up                                    |        |
 | `generate_content`          | Queues AI titles and descriptions for products on a store              | Yes    |
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |        |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
+| `ask_crossmart`             | Answers a question about Crossmart from its public docs (ADR 0022)     |        |
 
 Tools that only read carry `readOnlyHint`; `replace_product`, `remove_product_from_store` and
 `save_item_specifics` carry `destructiveHint`, so clients can ask before running them. When the API refuses a call, the

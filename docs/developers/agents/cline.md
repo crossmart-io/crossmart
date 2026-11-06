@@ -30,7 +30,7 @@ empty, or list only read-only tools, so Cline asks before changing your catalog.
 
 ## Check
 
-The MCP Servers view shows **crossmart** connected, with its 25 tools.
+The MCP Servers view shows **crossmart** connected, with its tools.
 
 ## Install the skill
 
