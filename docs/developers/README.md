@@ -9,6 +9,7 @@ public REST API, so your scripts, integrations and AI agents can do it too.
   - **[TypeScript](../../sdks/typescript/README.md):** `npm install @crossmart/sdk`
   - **[Python](../../sdks/python/README.md):** `pip install crossmart`
   - **[PHP](../../sdks/php/README.md):** `composer require crossmart/crossmart-php`
+- **[n8n](n8n.md):** the `n8n-nodes-crossmart` community nodes, with a trigger for new orders, stock changes and failed listings.
 - **[MCP server](mcp.md):** what AI agents can do with Crossmart, and its 25 tools.
 - **[Connect your AI agent](agents/README.md):** setup guides for Claude, Cursor, VS Code, Codex,
   Gemini CLI, OpenClaw and more, plus the [Crossmart agent skill](../../skills/README.md).
@@ -147,6 +148,7 @@ or `ERROR` (with the store's message in `lastError`) when it refuses. The
 
 - [Quickstart](quickstart.md)
 - SDKs: [TypeScript](../../sdks/typescript/README.md), [Python](../../sdks/python/README.md), [PHP](../../sdks/php/README.md)
+- [n8n nodes](n8n.md)
 - [MCP server for AI agents](mcp.md) and [setup per agent](agents/README.md)
 - [Roles and permissions](../permissions.md)
 - [Architecture](../architecture.md), for contributors

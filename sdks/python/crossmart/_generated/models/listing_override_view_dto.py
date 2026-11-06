@@ -22,6 +22,7 @@ class ListingOverrideViewDto:
     Attributes:
         title (None | str):
         description_html (None | str):
+        vendor (None | str):
         tags (list[str] | None):
         media_urls (list[str] | None):
         visibility (ListingVisibility | None):
@@ -33,6 +34,7 @@ class ListingOverrideViewDto:
 
     title: None | str
     description_html: None | str
+    vendor: None | str
     tags: list[str] | None
     media_urls: list[str] | None
     visibility: ListingVisibility | None
@@ -48,6 +50,9 @@ class ListingOverrideViewDto:
 
         description_html: None | str
         description_html = self.description_html
+
+        vendor: None | str
+        vendor = self.vendor
 
         tags: list[str] | None
         if isinstance(self.tags, list):
@@ -88,6 +93,7 @@ class ListingOverrideViewDto:
             {
                 "title": title,
                 "descriptionHtml": description_html,
+                "vendor": vendor,
                 "tags": tags,
                 "mediaUrls": media_urls,
                 "visibility": visibility,
@@ -119,6 +125,13 @@ class ListingOverrideViewDto:
             return cast(None | str, data)
 
         description_html = _parse_description_html(d.pop("descriptionHtml"))
+
+        def _parse_vendor(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        vendor = _parse_vendor(d.pop("vendor"))
 
         def _parse_tags(data: object) -> list[str] | None:
             if data is None:
@@ -193,6 +206,7 @@ class ListingOverrideViewDto:
         listing_override_view_dto = cls(
             title=title,
             description_html=description_html,
+            vendor=vendor,
             tags=tags,
             media_urls=media_urls,
             visibility=visibility,

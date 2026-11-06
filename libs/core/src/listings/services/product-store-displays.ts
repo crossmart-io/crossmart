@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { findEnumValue } from '@crossmart/common';
-import { type PublishCandidate, PublishRequirement } from '@crossmart/connectors';
+import type { PublishCandidate } from '@crossmart/connectors';
 import type { ProductStoreBadge, ProductSummary } from '../../catalog/entities/product-views.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
-import type { DisplayedListing, ListingDisplay } from '../entities/listing-display.js';
+import type { ListingDisplay } from '../entities/listing-display.js';
 import type {
   DisplayedProductSummary,
   DisplayedStoreBadge,
 } from '../entities/store-badge-display.js';
-import { toDisplayFields } from '../mappers/listing.mapper.js';
+import { toDisplayedListing, toDisplayFields } from '../mappers/listing.mapper.js';
 import {
   ChannelProductsRepository,
   type StoreBadgeListingRecord,
@@ -27,15 +26,6 @@ interface BadgeContext {
   selected: Map<string, Set<string>>;
   /** Per store, each product's listings there, oldest first. */
   listings: Map<string, Map<string, StoreBadgeListingRecord[]>>;
-}
-
-function toDisplayedListing(record: StoreBadgeListingRecord): DisplayedListing {
-  return {
-    status: record.status,
-    lastError: record.lastError,
-    missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
-    syncRequestedAt: record.syncRequestedAt,
-  };
 }
 
 function groupByStore(

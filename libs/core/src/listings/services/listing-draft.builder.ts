@@ -39,6 +39,22 @@ export interface BuiltListingDraft {
 }
 
 /**
+ * The text fields with the listing's overrides applied. The description is sanitized again on
+ * the way out, so nothing stored before sanitizing covered overrides is published.
+ */
+function overriddenText(
+  product: ProductDetail,
+  override: ListingSyncRecord['override'],
+): Pick<ListingDraft['product'], 'title' | 'descriptionHtml' | 'vendor' | 'tags'> {
+  return {
+    title: override?.title ?? product.title,
+    descriptionHtml: sanitizeDescriptionHtml(override?.descriptionHtml ?? product.descriptionHtml),
+    vendor: override?.vendor ?? product.vendor,
+    tags: override?.tagsOverridden ? override.tags : product.tags,
+  };
+}
+
+/**
  * Builds what a channel receives for a product: the catalog content with the listing's
  * overrides applied, each variant's channel price, and the stock the channel may show.
  */
@@ -66,25 +82,16 @@ export class ListingDraftBuilder {
     };
   }
 
-  /**
-   * The product's content with the listing's overrides applied. The description is sanitized
-   * again on the way out, so nothing stored before sanitizing covered overrides is published.
-   */
+  /** The product's content with the listing's overrides applied. */
   private content(
     product: ProductDetail,
     listing: ListingSyncRecord | null,
     images: ExternalImage[],
   ): ListingDraft['product'] {
-    const override = listing?.override ?? null;
     return {
       handle: product.handle,
-      title: override?.title ?? product.title,
-      descriptionHtml: sanitizeDescriptionHtml(
-        override?.descriptionHtml ?? product.descriptionHtml,
-      ),
-      vendor: product.vendor,
+      ...overriddenText(product, listing?.override ?? null),
       productType: product.productType,
-      tags: override?.tagsOverridden ? override.tags : product.tags,
       active: isShownOnChannel(product, listing),
       optionNames: product.optionNames,
       images,

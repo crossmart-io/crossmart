@@ -22,6 +22,10 @@ export const SIGNED_DECIMAL_PATTERN = /^-?\d{1,10}(\.\d{1,2})?$/;
 export const OVERRIDE_TEXT_MAX_LENGTH = 255;
 export const OVERRIDE_DESCRIPTION_MAX_LENGTH = 65_535;
 export const OVERRIDE_MAX_ITEMS = 250;
+/** How the API documents a variant's rule price, wherever it shows one. */
+export const RULE_PRICE_DESCRIPTION =
+  'In the store’s currency: what its pricing rule gives, before a fixed price on the listing. ' +
+  'Equal to the effective price unless the price is overridden.';
 export const MAX_SHOWN_QUANTITY = 1_000_000;
 
 /** Schema names the generated web client uses for these enums. */

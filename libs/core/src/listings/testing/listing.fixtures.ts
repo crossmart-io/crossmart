@@ -119,6 +119,7 @@ export function overrideRecord(
     listingId: LISTING_ID,
     title: null,
     descriptionHtml: null,
+    vendor: null,
     tagsOverridden: false,
     tags: [],
     mediaOverridden: false,

@@ -1,7 +1,10 @@
 import type { SyncJobKind } from '../enums/sync-job-kind.enum.js';
 
-/** The kinds of job that sync one listing. */
-export type ListingJobKind = Exclude<SyncJobKind, SyncJobKind.ReconcileInventory>;
+/** The kinds of job that sync one listing; the others are scheduled upkeep across stores. */
+export type ListingJobKind = Exclude<
+  SyncJobKind,
+  SyncJobKind.ReconcileInventory | SyncJobKind.SweepSyncRequests
+>;
 
 /** What delisting a deleted product needs, since its listing was deleted with it. */
 export interface DeletedProductListing {
