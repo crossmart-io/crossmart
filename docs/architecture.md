@@ -46,6 +46,7 @@ crossmart/
 │   ├── core/                # domain modules (shared by api + worker)
 │   │   ├── activity/        # activity log: who changed what, ActivityRecorder
 │   │   ├── catalog/         # products, variants, listings, channel content
+│   │   ├── media/           # product image uploads, storage quota, orphan cleanup
 │   │   ├── inventory/       # ledger, reservations, policies
 │   │   ├── orders/
 │   │   ├── channels/        # channel connections, sync orchestration
@@ -332,6 +333,60 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 - `sdks/typescript` is the official TypeScript SDK (`@crossmart/sdk`). Its types are generated from `openapi.json`
   and CI fails when they drift from the API. The public, developer-facing documentation lives in
   [developers/](developers/README.md).
+
+## Media storage
+
+Product images are uploaded with `POST /api/v1/workspaces/:workspaceId/media/product-images`. `MediaService` reads
+the format from the bytes (JPEG, PNG, WebP or GIF; never SVG), names the file itself
+(`workspaces/<workspaceId>/products/<uuid>.<ext>`) and stores it through `FileStorage` (`libs/common/src/storage`).
+The only driver today is `local`: files on the API's disk (`STORAGE_LOCAL_DIR`, a volume in the cloud), served at
+`MEDIA_PUBLIC_URL`. Products reference images by URL in `product_media`; images imported from channels keep their
+external URLs and are never stored or deleted by Crossmart.
+
+**Uploads table.** Every stored file has a row in `uploads`: workspace, storage key, URL, byte size, content type,
+`created_at` and a nullable `orphaned_at`. A row is written right after the file; if the write fails the file is
+deleted, so no file escapes tracking. There is deliberately no foreign key to `workspaces`: when a workspace is
+deleted its rows remain, become orphans, and the cleanup deletes the files.
+
+**Quota.** A workspace stores at most `WORKSPACE_STORAGE_MAX_BYTES` (5 GB), a guard against filling the disk, not a
+plan limit. Usage is `SUM(byte_size)` over the workspace's `uploads` rows (indexed by `(workspace_id, url)`), never
+a storage listing. Orphans count until they are deleted. An upload past the cap gets `413`.
+
+**Orphan cleanup.** An upload is orphaned when no `product_media` row of its own workspace has its URL. Removing an
+image from a product or deleting the product only makes it an orphan; nothing is deleted synchronously.
+
+1. The scheduled `clean-up-uploads` job (BullMQ `storage` queue, every hour, one job scheduler for all instances)
+   finds up to `UPLOAD_CLEANUP_WORKSPACES_PER_RUN` workspaces with work to do, and for each, in batches of
+   `UPLOAD_CLEANUP_BATCH_SIZE`:
+   - clears `orphaned_at` on uploads a product uses again;
+   - sets `orphaned_at = now` on uploads no product uses;
+   - deletes uploads orphaned for longer than `UPLOAD_ORPHAN_GRACE_MS` (7 days). The row is deleted only if it is
+     still an orphan and still unused at that moment, then the file, in one transaction: if the file cannot be
+     deleted the row stays and the next run retries. A file that is already gone counts as deleted.
+2. The grace period protects an image uploaded now and attached later, edits in flight, and a removal undone
+   within the week. Attaching an image clears its mark at once: the `product_media_reclaims_uploads` trigger runs
+   on every insert into `product_media`, whatever wrote it (an edit, a bulk change, an import), so the grace period
+   restarts the next time it is detached.
+3. The job logs counts only (reclaimed, orphaned, deleted, failed), never keys or URLs.
+
+The job runs in the **API**, not the worker, because the local driver's files are on the API's disk
+(`MediaMaintenanceModule`). When an object storage driver (S3, R2) is added, it can move to the worker.
+
+**Backfill.** Files stored before `uploads` existed are not counted or cleaned up until they are recorded. The
+backfill lists the storage under `workspaces/`, records each product image it does not know yet, and skips other
+files. A file a product uses is recorded under the URL the product uses (so a changed `MEDIA_PUBLIC_URL` never makes
+a used file look orphaned). It is idempotent and never deletes anything, but files no product uses become orphans
+and are deleted 7 days later, as intended. Run it once after the deploy that adds the `uploads` table, in the API
+service, since it needs the storage volume:
+
+```bash
+# Railway: open a shell in the production api service (railway ssh --service api), then
+node dist/apps/api/main.js --backfill-uploads
+# Self-hosted Docker Compose
+docker compose --profile app exec api node dist/apps/api/main.js --backfill-uploads
+```
+
+It logs `Recorded N files; M were already recorded, K skipped` and exits. Running it again records nothing new.
 
 ## 8. Security
 
