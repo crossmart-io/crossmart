@@ -4,10 +4,9 @@
 [developers.openai.com: connect to ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt)
 and [build an MCP server](https://developers.openai.com/plugins/build/mcp-server).
 **API key header:** not supported. ChatGPT connects custom MCP servers with OAuth or with no
-authentication, so Crossmart needs its [OAuth for agents](../README.md#oauth-for-ai-agents-coming-soon)
-first.
+authentication, so it signs in with Crossmart's [OAuth for agents](../README.md#oauth-for-ai-agents).
 
-## After OAuth (coming soon)
+## Connect
 
 Custom MCP servers are added in developer mode, on plans that allow it (full read/write is for
 Business and Enterprise/Edu workspaces; check
@@ -21,7 +20,7 @@ Business and Enterprise/Edu workspaces; check
 
 Don't choose "No authentication": the Crossmart server refuses requests without a key or token.
 
-## Until then
+## Without OAuth
 
 Use an agent that sends headers, such as [Codex CLI](codex.md) from OpenAI, or call the
 [REST API](../README.md) from your own code.

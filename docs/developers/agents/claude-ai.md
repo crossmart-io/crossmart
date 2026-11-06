@@ -5,11 +5,17 @@
 [connector authentication](https://claude.com/docs/connectors/building/authentication) and
 [support.claude.com](https://support.claude.com/en/articles/11175166).
 **API key header:** only for organisations in Anthropic's request-headers beta. Everyone else needs
-OAuth, which is [coming soon](../README.md#oauth-for-ai-agents-coming-soon).
+Crossmart's [OAuth for agents](../README.md#oauth-for-ai-agents).
 
 Custom connectors are shared by claude.ai, Claude Desktop and the mobile apps.
 
-## Today: request headers (beta, some organisations)
+## Sign in with OAuth
+
+Add the connector with the URL (`https://mcp.crossmart.io/mcp`) only and choose **Sign in**.
+You'll sign in to Crossmart, pick a workspace and approve what Claude may do. No key is pasted, and
+each person connects with their own account and role.
+
+## Or: request headers (beta, some organisations)
 
 If your organisation has the beta, the connector dialog shows a **Request headers** section:
 
@@ -24,14 +30,8 @@ The key is shared by everyone in the organisation who uses the connector, so cre
 smallest role that works (usually **Viewer** or **Editor**). Authentication settings can't be
 edited later; remove the connector and add it again to change the key.
 
-If you don't see **Request headers**, your organisation is not in the beta: use
-[Claude Desktop](claude-desktop.md) with a local bridge, or [Claude Code](claude-code.md), until
-OAuth is live.
-
-## After OAuth (coming soon)
-
-Add the connector with the URL only and choose **Sign in**. You'll sign in to Crossmart, pick a
-workspace and approve what Claude may do. No key is pasted.
+If you don't see **Request headers**, your organisation is not in the beta: sign in with OAuth
+instead.
 
 ## Install the skill
 

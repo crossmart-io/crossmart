@@ -76,12 +76,14 @@ requires one permission; a key without it gets `403 Requires the <permission> pe
 permissions of each role are in [docs/permissions.md](../permissions.md). Give each integration its
 own key with the smallest role that works, so you can revoke it alone.
 
-### OAuth for AI agents (coming soon)
+### OAuth for AI agents
 
-AI agents such as Claude and ChatGPT will be able to connect through OAuth instead of a pasted
-key: the seller signs in, picks a workspace and approves the access. The agent then sends an
-access token as `Authorization: Bearer <token>`, limited to the scopes the seller approved and to
-their own role. The SDK already accepts `{ accessToken }`.
+AI agents such as Claude and ChatGPT connect to the [MCP server](mcp.md) through OAuth instead of
+a pasted key: the seller signs in, picks a workspace and approves the access, full or read-only.
+The agent then sends an access token as `Authorization: Bearer <token>`, limited to the scopes the
+seller approved and to their own role, and to that workspace's routes. The SDK accepts
+`{ accessToken }`. Sellers see and disconnect their agents under **Settings → Connected agents**
+([ADR 0019](../decisions/0019-agent-access.md)).
 
 ### Sessions
 

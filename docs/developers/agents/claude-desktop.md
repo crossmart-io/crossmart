@@ -7,8 +7,8 @@
 **API key header:** not for remote servers in `claude_desktop_config.json`. Use a local bridge (below).
 
 Claude Desktop adds **remote** servers as custom connectors, which sign in with OAuth (see
-[claude.ai](claude-ai.md)). Its config file starts **local** (stdio) servers only. Until Crossmart's
-OAuth is live, run a local server that holds the key.
+[claude.ai](claude-ai.md)). Its config file starts **local** (stdio) servers only. Add Crossmart as a
+custom connector and sign in, or run a local server that holds the key (below).
 
 The config file opens from **Settings → Developer → Edit Config**:
 

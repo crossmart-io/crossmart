@@ -3,7 +3,7 @@
 **Status:** verified on 2026-11-06 against [zed.dev/docs/ai/mcp](https://zed.dev/docs/ai/mcp) and
 [zed.dev/docs/ai/skills](https://zed.dev/docs/ai/skills).
 **API key header:** supported. Use `Authorization: Bearer`: Zed starts an OAuth sign-in for remote
-servers that have no `Authorization` header, and Crossmart's OAuth is not live yet.
+servers that have no `Authorization` header; leave the header out to sign in with OAuth instead.
 
 ## Connect
 
