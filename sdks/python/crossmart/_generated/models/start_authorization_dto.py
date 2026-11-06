@@ -17,7 +17,8 @@ class StartAuthorizationDto:
     Attributes:
         channel (ChannelType):
         account_handle (str): The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay,
-            the marketplace id, such as `EBAY_US`. Example: demo-store.myshopify.com.
+            the marketplace id, such as `EBAY_US`. For Etsy, the shop name (the merchant must sign in to that shop).
+            Example: demo-store.myshopify.com.
     """
 
     channel: ChannelType

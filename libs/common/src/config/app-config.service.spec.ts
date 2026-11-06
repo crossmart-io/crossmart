@@ -37,6 +37,22 @@ describe('AppConfigService', () => {
     );
   });
 
+  describe('etsyApp', () => {
+    const ETSY_VARIABLES = { ETSY_API_KEY: 'test-keystring', ETSY_SHARED_SECRET: 'test-secret' };
+
+    it('returns the keystring and shared secret when both are set', () => {
+      expect(appConfig(ETSY_VARIABLES).etsyApp).toEqual({
+        clientId: 'test-keystring',
+        clientSecret: 'test-secret',
+      });
+    });
+
+    it.each(['ETSY_API_KEY', 'ETSY_SHARED_SECRET'] as const)('is null without %s', (missing) => {
+      expect(appConfig({ ...ETSY_VARIABLES, [missing]: undefined }).etsyApp).toBeNull();
+      expect(appConfig({ ...ETSY_VARIABLES, [missing]: '' }).etsyApp).toBeNull();
+    });
+  });
+
   describe('ebayVerificationToken', () => {
     it('returns the token, and null when it is unset or empty', () => {
       const token = 'Crossmart_verification-token_0123456789abcdef';

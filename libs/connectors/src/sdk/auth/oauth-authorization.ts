@@ -6,6 +6,11 @@ export interface OAuthAuthorizeRequest {
   /** Signed by Crossmart; returned unchanged on the callback. */
   state: string;
   redirectUri: string;
+  /**
+   * The PKCE verifier (RFC 7636) Crossmart derived for this connection. Channels that require
+   * PKCE (Etsy) send its S256 challenge; the same verifier comes back on the callback.
+   */
+  codeVerifier?: string;
 }
 
 /** The query string the channel redirected back with, as received. */
@@ -18,6 +23,8 @@ export interface OAuthCallback {
    * the connector knows how a handle relates to the account it authorizes.
    */
   accountHandle: string;
+  /** The PKCE verifier of the authorize request that this callback answers. */
+  codeVerifier?: string;
 }
 
 /** The outcome of a completed authorization: who the account is and how to call it. */

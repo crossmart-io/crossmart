@@ -18,6 +18,12 @@ export enum PublishRequirement {
   ShipFromLocation = 'ship_from_location',
   /** Google: the country and the product page address listings use. */
   ListingSetup = 'listing_setup',
+  /** Etsy: who made the items, when, and whether they are supplies. */
+  ItemDetails = 'item_details',
+  /** Etsy: a shipping profile. */
+  ShippingProfile = 'shipping_profile',
+  /** Etsy: a processing profile (how long items take to be ready to ship). */
+  ProcessingProfile = 'processing_profile',
   /** The product needs at least one image the channel accepts. */
   Images = 'images',
   /** The product must be active (or set visible on the store) to be listed. */
@@ -39,4 +45,7 @@ export const STORE_PUBLISH_REQUIREMENTS: ReadonlySet<PublishRequirement> = new S
   PublishRequirement.ReturnPolicy,
   PublishRequirement.ShipFromLocation,
   PublishRequirement.ListingSetup,
+  PublishRequirement.ItemDetails,
+  PublishRequirement.ShippingProfile,
+  PublishRequirement.ProcessingProfile,
 ]);

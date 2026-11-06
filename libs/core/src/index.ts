@@ -84,6 +84,8 @@ export * from './channels/ebay/services/ebay-account-deletion.service.js';
 export * from './channels/ebay/services/ebay-deletion-challenge.service.js';
 export * from './channels/google-merchant/entities/google-listing-setup-input.js';
 export * from './channels/google-merchant/services/google-merchant-setup.service.js';
+export * from './channels/etsy/entities/etsy-listing-setup-input.js';
+export * from './channels/etsy/services/etsy-shop-setup.service.js';
 export * from './channels/services/channel-session.factory.js';
 export * from './channels/services/channel-webhooks.service.js';
 export * from './channels/services/oauth-state.signer.js';

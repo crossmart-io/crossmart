@@ -14,6 +14,7 @@ from ..models.channel_type import ChannelType
 
 if TYPE_CHECKING:
     from ..models.ebay_settings_dto import EbaySettingsDto
+    from ..models.etsy_settings_dto import EtsySettingsDto
     from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
     from ..models.pricing_rule_dto import PricingRuleDto
     from ..models.product_selection_rule_dto import ProductSelectionRuleDto
@@ -40,6 +41,7 @@ class ChannelConnectionDto:
         ebay (EbaySettingsDto | None): The account’s details on its marketplace, for eBay connections
         google_merchant (GoogleMerchantSettingsDto | None): The Merchant Center account and its listing setup, for
             Google connections
+        etsy (EtsySettingsDto | None): The Etsy shop, its profiles and its listing setup, for Etsy connections
         product_selection (None | ProductSelectionRuleDto): Which products the connection lists; null lists every
             product
         pricing (None | PricingRuleDto): How the connection prices variants; null sends catalog prices
@@ -63,6 +65,7 @@ class ChannelConnectionDto:
     shopify: None | ShopifySettingsDto
     ebay: EbaySettingsDto | None
     google_merchant: GoogleMerchantSettingsDto | None
+    etsy: EtsySettingsDto | None
     product_selection: None | ProductSelectionRuleDto
     pricing: None | PricingRuleDto
     connected_at: datetime.datetime
@@ -76,6 +79,7 @@ class ChannelConnectionDto:
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.ebay_settings_dto import EbaySettingsDto
+        from ..models.etsy_settings_dto import EtsySettingsDto
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
         from ..models.product_selection_rule_dto import ProductSelectionRuleDto
@@ -118,6 +122,12 @@ class ChannelConnectionDto:
             google_merchant = self.google_merchant.to_dict()
         else:
             google_merchant = self.google_merchant
+
+        etsy: dict[str, Any] | None
+        if isinstance(self.etsy, EtsySettingsDto):
+            etsy = self.etsy.to_dict()
+        else:
+            etsy = self.etsy
 
         product_selection: dict[str, Any] | None
         if isinstance(self.product_selection, ProductSelectionRuleDto):
@@ -168,6 +178,7 @@ class ChannelConnectionDto:
                 "shopify": shopify,
                 "ebay": ebay,
                 "googleMerchant": google_merchant,
+                "etsy": etsy,
                 "productSelection": product_selection,
                 "pricing": pricing,
                 "connectedAt": connected_at,
@@ -185,6 +196,7 @@ class ChannelConnectionDto:
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         from ..models.ebay_settings_dto import EbaySettingsDto
+        from ..models.etsy_settings_dto import EtsySettingsDto
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
         from ..models.product_selection_rule_dto import ProductSelectionRuleDto
@@ -262,6 +274,21 @@ class ChannelConnectionDto:
             return cast(GoogleMerchantSettingsDto | None, data)
 
         google_merchant = _parse_google_merchant(d.pop("googleMerchant"))
+
+        def _parse_etsy(data: object) -> EtsySettingsDto | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                etsy_type_0 = EtsySettingsDto.from_dict(data)
+
+                return etsy_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(EtsySettingsDto | None, data)
+
+        etsy = _parse_etsy(d.pop("etsy"))
 
         def _parse_product_selection(data: object) -> None | ProductSelectionRuleDto:
             if data is None:
@@ -345,6 +372,7 @@ class ChannelConnectionDto:
             shopify=shopify,
             ebay=ebay,
             google_merchant=google_merchant,
+            etsy=etsy,
             product_selection=product_selection,
             pricing=pricing,
             connected_at=connected_at,

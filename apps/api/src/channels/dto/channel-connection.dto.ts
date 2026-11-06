@@ -1,8 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ChannelFeature,
+  type ChannelSettings,
   ChannelType,
   isEbaySettings,
+  isEtsySettings,
   isGoogleMerchantSettings,
   isShopifySettings,
 } from '@crossmart/connectors';
@@ -16,8 +18,22 @@ import {
 import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
 import { EbaySettingsDto } from './ebay-settings.dto.js';
+import { EtsySettingsDto } from './etsy-settings.dto.js';
 import { GoogleMerchantSettingsDto } from './google-merchant-settings.dto.js';
 import { PublishReadinessDto } from './publish-readiness.dto.js';
+
+type AccountDtos = Pick<ChannelConnectionDto, 'shopify' | 'ebay' | 'googleMerchant' | 'etsy'>;
+
+/** The account's details under its channel's field; the other channels' fields are null. */
+function accountDtos(account: ChannelSettings | null): AccountDtos {
+  return {
+    shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
+    ebay: account && isEbaySettings(account) ? EbaySettingsDto.from(account) : null,
+    googleMerchant:
+      account && isGoogleMerchantSettings(account) ? GoogleMerchantSettingsDto.from(account) : null,
+    etsy: account && isEtsySettings(account) ? EtsySettingsDto.from(account) : null,
+  };
+}
 
 /** A channel connection. Credentials are never part of it. */
 export class ChannelConnectionDto {
@@ -72,6 +88,13 @@ export class ChannelConnectionDto {
   googleMerchant: GoogleMerchantSettingsDto | null;
 
   @ApiProperty({
+    type: EtsySettingsDto,
+    nullable: true,
+    description: 'The Etsy shop, its profiles and its listing setup, for Etsy connections',
+  })
+  etsy: EtsySettingsDto | null;
+
+  @ApiProperty({
     type: ProductSelectionRuleDto,
     nullable: true,
     description: 'Which products the connection lists; null lists every product',
@@ -116,12 +139,7 @@ export class ChannelConnectionDto {
       ...fields,
       failedListings,
       publishReadiness: PublishReadinessDto.from(publishReadiness),
-      shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
-      ebay: account && isEbaySettings(account) ? EbaySettingsDto.from(account) : null,
-      googleMerchant:
-        account && isGoogleMerchantSettings(account)
-          ? GoogleMerchantSettingsDto.from(account)
-          : null,
+      ...accountDtos(account),
       productSelection: productSelection ? ProductSelectionRuleDto.from(productSelection) : null,
       pricing: pricing ? PricingRuleDto.from(pricing) : null,
     });

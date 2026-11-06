@@ -18,4 +18,8 @@ export interface ChannelContentLimits {
   descriptionFormat: DescriptionFormat;
   /** Whether a description may link out. */
   allowsLinks: boolean;
+  /** How many tags a listing takes, for channels with listing tags (Etsy). */
+  tagMaxCount?: number;
+  /** The longest tag the channel accepts, in characters. */
+  tagMaxLength?: number;
 }

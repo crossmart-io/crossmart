@@ -4,7 +4,7 @@ import { ChannelErrorCode } from '../errors/channel-error-code.enum.js';
 import { HttpMethod } from '../http/http-method.enum.js';
 import { FakeHttpTransport, jsonResponse } from '../testing/fake-http-transport.js';
 import { OAuthClientAuthentication } from './oauth.constants.js';
-import { OAuthTokenEndpoint } from './oauth-token-endpoint.js';
+import { OAuthTokenEndpoint, type OAuthTokenEndpointOptions } from './oauth-token-endpoint.js';
 
 const TOKEN_URL = 'https://auth.example.com/token';
 const NOW = new Date('2026-11-05T10:00:00Z');
@@ -18,7 +18,10 @@ const TOKEN = {
   scope: 'read write',
 };
 
-function setup(clientAuthentication = OAuthClientAuthentication.RequestBody) {
+function setup(
+  clientAuthentication = OAuthClientAuthentication.RequestBody,
+  extra: Partial<OAuthTokenEndpointOptions> = {},
+) {
   const http = new FakeHttpTransport();
   const endpoint = new OAuthTokenEndpoint(http, {
     tokenUrl: () => TOKEN_URL,
@@ -26,6 +29,7 @@ function setup(clientAuthentication = OAuthClientAuthentication.RequestBody) {
     clientAuthentication,
     error: (code, message) => new ChannelError(ChannelType.Ebay, code, message),
     messages: { exchangeFailed: 'No token', refreshRejected: 'Connect again' },
+    ...extra,
   });
   const form = (): Record<string, string> =>
     Object.fromEntries(new URLSearchParams(http.requests[0]?.body ?? ''));
@@ -94,6 +98,48 @@ describe('OAuthTokenEndpoint', () => {
       refresh_token: 'stored',
       scope: 'read write',
     });
+  });
+
+  it('sends a public client’s id alone, with the PKCE verifier', async () => {
+    const { http, endpoint, form } = setup(OAuthClientAuthentication.None);
+    http.expect(HttpMethod.Post, TOKEN_URL, jsonResponse(TOKEN));
+
+    await endpoint.exchangeCode('code', 'https://app/callback', NOW, 'verifier');
+
+    expect(form()).toEqual({
+      grant_type: 'authorization_code',
+      code: 'code',
+      redirect_uri: 'https://app/callback',
+      client_id: 'client',
+      code_verifier: 'verifier',
+    });
+    expect(http.requests[0]?.headers?.authorization).toBeUndefined();
+  });
+
+  it('keeps a rotated refresh token, dated by the documented lifetime', async () => {
+    const { http, endpoint } = setup(OAuthClientAuthentication.None, {
+      rotatesRefreshTokens: true,
+      refreshTokenLifetimeSeconds: 86_400,
+    });
+    const rotated = { ...TOKEN, refresh_token: 'rotated', refresh_token_expires_in: undefined };
+    http
+      .expect(HttpMethod.Post, TOKEN_URL, jsonResponse(rotated))
+      .expect(HttpMethod.Post, TOKEN_URL, jsonResponse({ ...rotated, refresh_token: undefined }));
+
+    const refreshed = await endpoint.refresh(
+      { accessToken: 'old', refreshToken: 'stored' },
+      { now: NOW },
+    );
+    const unrotated = await endpoint.refresh(
+      { accessToken: 'old', refreshToken: 'stored' },
+      { now: NOW },
+    );
+
+    expect(refreshed).toMatchObject({
+      refreshToken: 'rotated',
+      refreshTokenExpiresAt: '2026-11-06T10:00:00.000Z',
+    });
+    expect(unrotated.refreshToken).toBe('stored');
   });
 
   it('asks to reconnect without a refresh token, or on invalid_grant (400 or 401)', async () => {

@@ -46,6 +46,16 @@ export interface OAuthTokenEndpointOptions {
   clientAuthentication: OAuthClientAuthentication;
   error: ChannelErrorFactory;
   messages: OAuthTokenMessages;
+  /**
+   * The channel issues a new refresh token with every refresh and the old one stops working
+   * (Etsy), so the new one is kept. Otherwise the stored one and its expiry are kept.
+   */
+  rotatesRefreshTokens?: boolean;
+  /**
+   * How long refresh tokens live, for channels that document it but do not send
+   * `refresh_token_expires_in` (Etsy: 90 days).
+   */
+  refreshTokenLifetimeSeconds?: number;
 }
 
 export interface OAuthRefreshOptions {
@@ -66,22 +76,25 @@ export class OAuthTokenEndpoint {
     private readonly options: OAuthTokenEndpointOptions,
   ) {}
 
+  /** `codeVerifier` is the PKCE verifier, for channels that require PKCE (Etsy). */
   async exchangeCode(
     code: string,
     redirectUri: string,
     now = new Date(),
+    codeVerifier?: string,
   ): Promise<OAuthTokenGrant> {
     const token = await this.request({
       [OAuthParam.GrantType]: OAuthGrantType.AuthorizationCode,
       [OAuthParam.Code]: code,
       [OAuthParam.RedirectUri]: redirectUri,
+      ...(codeVerifier ? { [OAuthParam.CodeVerifier]: codeVerifier } : {}),
     });
-    return { credentials: toChannelCredentials(token, now), grantedScopes: grantedScopesOf(token) };
+    return { credentials: this.credentialsOf(token, now), grantedScopes: grantedScopesOf(token) };
   }
 
   /**
-   * Exchanges the stored refresh token for a new access token. Refresh tokens are not rotated
-   * (eBay, Google), so the stored one and its expiry are kept.
+   * Exchanges the stored refresh token for a new access token. Unless the channel rotates
+   * refresh tokens (Etsy), the stored one and its expiry are kept (eBay, Google).
    */
   async refresh(
     credentials: ChannelCredentials,
@@ -99,7 +112,11 @@ export class OAuthTokenEndpoint {
       },
       true,
     );
-    return { ...toChannelCredentials(token, now), refreshToken, refreshTokenExpiresAt };
+    const refreshed = this.credentialsOf(token, now);
+    if (this.options.rotatesRefreshTokens && refreshed.refreshToken) {
+      return refreshed;
+    }
+    return { ...refreshed, refreshToken, refreshTokenExpiresAt };
   }
 
   /** Any grant, such as client credentials; answers the validated token response. */
@@ -118,21 +135,34 @@ export class OAuthTokenEndpoint {
     return parsed.data;
   }
 
+  private credentialsOf(token: OAuthTokenResponse, now: Date): ChannelCredentials {
+    const { refreshTokenLifetimeSeconds } = this.options;
+    const withLifetime =
+      token.refresh_token && token.refresh_token_expires_in === undefined
+        ? { ...token, refresh_token_expires_in: refreshTokenLifetimeSeconds }
+        : token;
+    return toChannelCredentials(withLifetime, now);
+  }
+
   private tokenRequest(
     params: Readonly<Record<string, string>>,
   ): ReturnType<typeof formPostRequest> {
     const { clientId, clientSecret } = this.options.client();
     const url = this.options.tokenUrl();
-    if (this.options.clientAuthentication === OAuthClientAuthentication.HttpBasic) {
-      return formPostRequest(url, params, {
-        [AUTHORIZATION_HEADER]: basicAuthorization(clientId, clientSecret),
-      });
+    switch (this.options.clientAuthentication) {
+      case OAuthClientAuthentication.HttpBasic:
+        return formPostRequest(url, params, {
+          [AUTHORIZATION_HEADER]: basicAuthorization(clientId, clientSecret),
+        });
+      case OAuthClientAuthentication.None:
+        return formPostRequest(url, { ...params, [OAuthParam.ClientId]: clientId });
+      case OAuthClientAuthentication.RequestBody:
+        return formPostRequest(url, {
+          ...params,
+          [OAuthParam.ClientId]: clientId,
+          [OAuthParam.ClientSecret]: clientSecret,
+        });
     }
-    return formPostRequest(url, {
-      ...params,
-      [OAuthParam.ClientId]: clientId,
-      [OAuthParam.ClientSecret]: clientSecret,
-    });
   }
 
   private tokenError(response: HttpResponse, isRefresh: boolean): ChannelError {

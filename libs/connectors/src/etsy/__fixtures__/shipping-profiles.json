@@ -1,0 +1,58 @@
+{
+  "count": 3,
+  "results": [
+    {
+      "shipping_profile_id": 6722757781,
+      "title": "Free US shipping",
+      "user_id": 12345678,
+      "origin_country_iso": "US",
+      "is_deleted": false,
+      "shipping_profile_destinations": [
+        {
+          "shipping_profile_destination_id": 1001,
+          "shipping_profile_id": 6722757781,
+          "origin_country_iso": "US",
+          "destination_country_iso": "US",
+          "destination_region": "none",
+          "primary_cost": { "amount": 0, "divisor": 100, "currency_code": "USD" },
+          "secondary_cost": { "amount": 0, "divisor": 100, "currency_code": "USD" },
+          "shipping_carrier_id": 0,
+          "mail_class": null,
+          "min_delivery_days": 3,
+          "max_delivery_days": 5
+        }
+      ],
+      "shipping_profile_upgrades": [],
+      "origin_postal_code": "11211",
+      "profile_type": "manual",
+      "domestic_handling_fee": 0,
+      "international_handling_fee": 0
+    },
+    {
+      "shipping_profile_id": 6722757782,
+      "title": null,
+      "user_id": 12345678,
+      "origin_country_iso": "US",
+      "is_deleted": false,
+      "shipping_profile_destinations": [],
+      "shipping_profile_upgrades": [],
+      "origin_postal_code": "11211",
+      "profile_type": "calculated",
+      "domestic_handling_fee": 1.5,
+      "international_handling_fee": 3
+    },
+    {
+      "shipping_profile_id": 6722757783,
+      "title": "Old profile",
+      "user_id": 12345678,
+      "origin_country_iso": "US",
+      "is_deleted": true,
+      "shipping_profile_destinations": [],
+      "shipping_profile_upgrades": [],
+      "origin_postal_code": null,
+      "profile_type": "manual",
+      "domestic_handling_fee": 0,
+      "international_handling_fee": 0
+    }
+  ]
+}

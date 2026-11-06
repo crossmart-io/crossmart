@@ -3,6 +3,11 @@ export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 /** HKDF info that derives the state-signing key from the auth secret. */
 export const OAUTH_STATE_KEY_INFO = 'crossmart:channel-oauth-state';
 export const OAUTH_STATE_KEY_BYTES = 32;
+/**
+ * HKDF info that derives the key of PKCE verifiers from the auth secret. A connection's
+ * verifier is the HMAC of its state's nonce, so it never travels in the state.
+ */
+export const OAUTH_PKCE_KEY_INFO = 'crossmart:channel-oauth-pkce';
 export const OAUTH_STATE_NONCE_BYTES = 16;
 export const OAUTH_STATE_SEPARATOR = '.';
 /** Prefix of the replay keys that make each OAuth state single use. */

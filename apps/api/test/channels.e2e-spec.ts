@@ -20,6 +20,9 @@ const env = vi.hoisted(() => {
   const values = {
     SHOPIFY_CLIENT_ID: 'e2e-client-id',
     SHOPIFY_CLIENT_SECRET: 'e2e-client-secret',
+    // No Etsy app on this instance: Etsy cannot be connected.
+    ETSY_API_KEY: '',
+    ETSY_SHARED_SECRET: '',
     API_PUBLIC_URL: 'http://localhost:3004',
     WEB_APP_URL: 'http://localhost:5177',
     CREDENTIALS_MASTER_KEY: Buffer.from(Array.from({ length: 32 }, (_, index) => index)).toString(
@@ -157,6 +160,18 @@ describe('Channels (e2e)', () => {
       'http://localhost:3004/api/v1/channels/shopify/oauth/callback',
     );
     expect(url.searchParams.get('state')).toBeTruthy();
+  });
+
+  it('answers 503 for Etsy until the instance has an Etsy app', async () => {
+    const owner = await signUp(app, 'No Etsy App');
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${owner.workspaceId}/channel-connections/authorizations`)
+      .set('Cookie', owner.cookie)
+      .send({ channel: ChannelType.Etsy, accountHandle: 'ClayAndKiln' });
+
+    expect(response.status).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+    expect(response.body.message).toBe('Etsy is not configured on this Crossmart instance');
   });
 
   it('rejects invalid shop domains and callers who cannot manage the workspace', async () => {

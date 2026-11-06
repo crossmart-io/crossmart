@@ -7,6 +7,7 @@ import { ChannelOAuthController } from './controllers/channel-oauth.controller.j
 import { ChannelWebhooksController } from './controllers/channel-webhooks.controller.js';
 import { EbayAccountController } from './controllers/ebay-account.controller.js';
 import { EbayAccountDeletionController } from './controllers/ebay-account-deletion.controller.js';
+import { EtsyShopController } from './controllers/etsy-shop.controller.js';
 import { GoogleMerchantAccountController } from './controllers/google-merchant-account.controller.js';
 import { OAuthNonceCookie } from './services/oauth-nonce.cookie.js';
 
@@ -20,6 +21,7 @@ import { OAuthNonceCookie } from './services/oauth-nonce.cookie.js';
     EbayAccountController,
     EbayAccountDeletionController,
     GoogleMerchantAccountController,
+    EtsyShopController,
   ],
   providers: [OAuthNonceCookie],
 })

@@ -5,6 +5,8 @@ export interface HttpRequest {
   url: string;
   headers?: Readonly<Record<string, string>>;
   body?: string;
+  /** A binary body (a multipart upload), sent instead of `body`. */
+  bytes?: Uint8Array<ArrayBuffer>;
 }
 
 export interface HttpResponse {

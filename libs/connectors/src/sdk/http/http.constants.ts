@@ -7,6 +7,7 @@ export const AUTHORIZATION_HEADER = 'authorization';
 export const RETRY_AFTER_HEADER = 'retry-after';
 export const JSON_CONTENT_TYPE = 'application/json';
 export const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
+export const MULTIPART_FORM_CONTENT_TYPE = 'multipart/form-data';
 
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_BAD_REQUEST = 400;

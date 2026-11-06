@@ -73,6 +73,12 @@ from .ebay_policy_dto import EbayPolicyDto
 from .ebay_settings_dto import EbaySettingsDto
 from .ebay_ship_from_dto import EbayShipFromDto
 from .entitlement_error_code import EntitlementErrorCode
+from .etsy_listing_setup_dto import EtsyListingSetupDto
+from .etsy_profile_dto import EtsyProfileDto
+from .etsy_settings_dto import EtsySettingsDto
+from .etsy_shop_profiles_dto import EtsyShopProfilesDto
+from .etsy_when_made import EtsyWhenMade
+from .etsy_who_made import EtsyWhoMade
 from .feature import Feature
 from .feature_kind import FeatureKind
 from .feature_usage_dto import FeatureUsageDto
@@ -267,6 +273,7 @@ from .sync_progress_dto import SyncProgressDto
 from .sync_request_result_dto import SyncRequestResultDto
 from .top_product_dto import TopProductDto
 from .update_ebay_listing_defaults_dto import UpdateEbayListingDefaultsDto
+from .update_etsy_listing_setup_dto import UpdateEtsyListingSetupDto
 from .update_google_listing_setup_dto import UpdateGoogleListingSetupDto
 from .update_member_role_dto import UpdateMemberRoleDto
 from .update_pricing_dto import UpdatePricingDto
@@ -356,6 +363,12 @@ __all__ = (
     "EbaySettingsDto",
     "EbayShipFromDto",
     "EntitlementErrorCode",
+    "EtsyListingSetupDto",
+    "EtsyProfileDto",
+    "EtsySettingsDto",
+    "EtsyShopProfilesDto",
+    "EtsyWhenMade",
+    "EtsyWhoMade",
     "Feature",
     "FeatureKind",
     "FeatureUsageDto",
@@ -506,6 +519,7 @@ __all__ = (
     "SyncRequestResultDto",
     "TopProductDto",
     "UpdateEbayListingDefaultsDto",
+    "UpdateEtsyListingSetupDto",
     "UpdateGoogleListingSetupDto",
     "UpdateMemberRoleDto",
     "UpdatePricingDto",
