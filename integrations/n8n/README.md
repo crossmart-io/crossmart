@@ -90,4 +90,5 @@ pnpm dev        # run n8n locally with the nodes loaded
 
 ## License
 
-[AGPL-3.0](../../LICENSE), like the rest of Crossmart.
+[MIT](LICENSE.md). This package only calls the Crossmart API; the rest of Crossmart is
+[AGPL-3.0](../../LICENSE).
