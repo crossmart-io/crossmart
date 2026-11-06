@@ -1,11 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { PublishRequirement } from '@crossmart/connectors';
 import { ActivityOutcome, ListingStatus } from '@crossmart/database';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { type ListingRef, ListingSyncRepository } from '../repositories/listing-sync.repository.js';
-import { isRetryableSyncError, syncFailureReason } from '../rules/sync-failure-reason.js';
+import {
+  isRetryableSyncError,
+  syncFailureReason,
+  syncFailureRequirement,
+} from '../rules/sync-failure-reason.js';
 
 /** A product on a store, named for the activity log. */
 export interface StoreProduct {
@@ -40,13 +45,20 @@ export class ListingSyncFailures {
       await this.listings.recordFailure(listing, reason);
       throw error;
     }
-    await this.reject(listing, reason);
+    await this.reject(listing, reason, syncFailureRequirement(error));
   }
 
-  /** A failure that will not go away by retrying: the listing is in error, logged once. */
-  async reject(listing: FailedListing, reason: string): Promise<void> {
+  /**
+   * A failure that will not go away by retrying: the listing is in error, logged once. A
+   * `requirement` says the merchant must add something first.
+   */
+  async reject(
+    listing: FailedListing,
+    reason: string,
+    requirement: PublishRequirement | null = null,
+  ): Promise<void> {
     this.logger.warn(`Sync of listing ${listing.listingId} was rejected: ${reason}`);
-    await this.listings.recordFailure(listing, reason, ListingStatus.ERROR);
+    await this.listings.recordFailure(listing, reason, ListingStatus.ERROR, requirement);
     await this.recordFailed(listing, reason);
   }
 

@@ -1,4 +1,5 @@
-import type { ChannelCategory, ChannelType } from '@crossmart/connectors';
+import type { ChannelCategory, ChannelType, PublishRequirement } from '@crossmart/connectors';
+import type { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import type { ChannelConnectionStatus, ListingSource, ListingStatus } from '@crossmart/database';
 import type { ListingOverrideView } from './listing-override.js';
 import type { ResolvedPrice } from './price-resolution.js';
@@ -12,13 +13,22 @@ export interface ListingSummary {
   externalId: string | null;
   externalUrl: string | null;
   lastError: string | null;
+  /** What the channel refused the last publish for lacking, when the merchant can add it. */
+  missingRequirement: PublishRequirement | null;
   lastSyncedAt: Date | null;
   /** The channel category it is listed in, on channels that have categories (eBay). */
   category: ChannelCategory | null;
 }
 
+/** The one state a merchant reads for a product on a store, and why when it needs a reason. */
+export interface ListingDisplayFields {
+  displayState: ListingDisplayState;
+  /** For `needs_details` and `failed`: what to add, or the channel's message. */
+  displayReason: string | null;
+}
+
 /** One row of a connection's listings table. */
-export interface ChannelListingRow extends ListingSummary {
+export interface ChannelListingRow extends ListingSummary, ListingDisplayFields {
   productId: string;
   productTitle: string;
   imageUrl: string | null;
@@ -59,7 +69,7 @@ export interface ConnectionSummary {
 }
 
 /** A product on one connected channel, for the product editor's Channels card. */
-export interface ProductChannelView {
+export interface ProductChannelView extends ListingDisplayFields {
   connection: ConnectionSummary;
   /** Whether the connection's product selection includes the product. */
   selected: boolean;

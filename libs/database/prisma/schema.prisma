@@ -734,6 +734,9 @@ model Listing {
   source              ListingSource            @default(RULE)
   /// A short, user-facing reason for `ERROR`. Never holds secrets.
   lastError           String?                  @map("last_error")
+  /// What the last publish was refused for lacking (a connector `PublishRequirement`, such as
+  /// `item_specifics`), so the merchant is asked for details instead of a retry. Null otherwise.
+  missingRequirement  String?                  @map("missing_requirement")
   lastSyncedAt        DateTime?                @map("last_synced_at")
   /// A digest of the images last sent, so an update re-sends media only when they changed.
   mediaDigest         String?                  @map("media_digest")

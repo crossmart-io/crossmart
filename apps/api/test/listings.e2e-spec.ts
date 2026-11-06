@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { FakeHttpTransport, HttpTransport } from '@crossmart/connectors';
+import { API_KEY_HEADER } from '@crossmart/common';
+import { FakeHttpTransport, HttpTransport, PublishRequirement } from '@crossmart/connectors';
 import {
   ActivityAction,
   ChannelProductState,
   CompareAtMode,
+  ListingDisplayState,
   ListingSyncRunner,
   PriceRounding,
   PriceSource,
@@ -15,10 +17,13 @@ import {
   SyncJobQueue,
 } from '@crossmart/core';
 import {
+  ChannelConnectionStatus,
   InventoryMovementReason,
   ListingSource,
   ListingStatus,
+  PrismaService,
   ProductStatus,
+  WorkspaceRole,
 } from '@crossmart/database';
 import { RecordingSyncJobQueue } from './support/recording-sync-job.queue.js';
 import {
@@ -26,6 +31,7 @@ import {
   connectShopifyStore,
   type GraphqlCall,
   newShop,
+  TEST_LOCATION,
 } from './support/shopify-store.js';
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
@@ -771,6 +777,140 @@ describe('Listings (e2e)', () => {
       expect(activity.body.items.map((entry: { action: string }) => entry.action)).toEqual(
         expect.arrayContaining([ActivityAction.ListingAdded, ActivityAction.ListingRemoved]),
       );
+    });
+  });
+
+  describe('display states and retry', () => {
+    const rejectTitle = () => ({
+      data: {
+        productSet: {
+          product: null,
+          userErrors: [{ field: ['input', 'title'], message: 'Title is invalid' }],
+        },
+      },
+    });
+
+    it('shows one state per store, and retries one failed listing in place', async () => {
+      const owner = await signUp(app, 'Retry Seller');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const product = await createProduct(owner, { title: 'Retry Mug' });
+      const productChannel = `${base(owner)}/products/${product.id}/channels/${connectionId}`;
+      const retryPath = `${productChannel}/retry`;
+      const channelOf = async () =>
+        (
+          await request(server())
+            .get(`${base(owner)}/products/${product.id}/channels`)
+            .set('Cookie', owner.cookie)
+        ).body[0];
+
+      // 1. A store that is set up, and a product it does not select: a draft, not retryable.
+      const store = await request(server())
+        .get(`${base(owner)}/channel-connections/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      expect(store.body.publishReadiness).toEqual({ ready: true, missing: [] });
+      expect(await channelOf()).toMatchObject({
+        displayState: ListingDisplayState.Draft,
+        displayReason: null,
+      });
+      const unselected = await request(server()).post(retryPath).set('Cookie', owner.cookie);
+      expect(unselected.status).toBe(HttpStatus.CONFLICT);
+
+      // 2. Added, then refused by Shopify: failed, with Shopify's message, in every view.
+      await request(server()).post(productChannel).set('Cookie', owner.cookie);
+      expect((await channelOf()).displayState).toBe(ListingDisplayState.Publishing);
+      answerGraphql(http, shop, () => ({ data: { location: { id: TEST_LOCATION } } }));
+      answerGraphql(http, shop, rejectTitle);
+      await runQueued();
+      const failed = {
+        displayState: ListingDisplayState.Failed,
+        displayReason: 'Title is invalid',
+      };
+      expect(await channelOf()).toMatchObject(failed);
+      const rows = await request(server())
+        .get(connectionPath(owner, connectionId, 'products'))
+        .set('Cookie', owner.cookie);
+      expect(rows.body.items).toMatchObject([{ product: { id: product.id }, ...failed }]);
+      const listings = await request(server())
+        .get(connectionPath(owner, connectionId, 'listings'))
+        .set('Cookie', owner.cookie);
+      expect(listings.body.items).toMatchObject([{ productId: product.id, ...failed }]);
+
+      // 3. Retried: pending again at once, queued alone, and logged.
+      const retried = await request(server()).post(retryPath).set('Cookie', owner.cookie);
+      expect(retried.status).toBe(HttpStatus.ACCEPTED);
+      expect(retried.body).toMatchObject({
+        displayState: ListingDisplayState.Publishing,
+        displayReason: null,
+        listing: { status: ListingStatus.PENDING, lastError: null },
+      });
+      const requeued = queue.drain();
+      expect(requeued.map((job) => [job.productId, job.kind])).toEqual([
+        [product.id, SyncJobKind.Content],
+        [product.id, SyncJobKind.Inventory],
+      ]);
+      answerGraphql(http, shop, (call) => shopifyReply(call, 'gid://shopify/Product/990001'), 3);
+      for (const job of requeued) {
+        await runner.run(job);
+      }
+      expect(await channelOf()).toMatchObject({
+        displayState: ListingDisplayState.Published,
+        listing: { status: ListingStatus.ACTIVE },
+      });
+      const activity = await request(server())
+        .get(`${base(owner)}/activity`)
+        .query({ subjectType: 'product', subjectId: product.id })
+        .set('Cookie', owner.cookie);
+      expect(activity.body.items.map((entry: { action: string }) => entry.action)).toContain(
+        ActivityAction.ListingRetryRequested,
+      );
+    });
+
+    it('refuses a retry on a store that needs re-auth, a missing product, or a viewer', async () => {
+      const owner = await signUp(app, 'Retry Refusals');
+      const connectionId = await connectShopifyStore(app, http, owner);
+      const product = await createProduct(owner, { title: 'Refused Mug' });
+      const productChannel = `${base(owner)}/products/${product.id}/channels/${connectionId}`;
+      await request(server()).post(productChannel).set('Cookie', owner.cookie);
+      queue.drain();
+      const viewerKey = await request(server())
+        .post(`${base(owner)}/api-keys`)
+        .set('Cookie', owner.cookie)
+        .send({ name: 'Read only', role: WorkspaceRole.VIEWER });
+
+      const byViewer = await request(server())
+        .post(`${productChannel}/retry`)
+        .set(API_KEY_HEADER, viewerKey.body.secret);
+      const missing = await request(server())
+        .post(`${base(owner)}/products/${randomUUID()}/channels/${connectionId}/retry`)
+        .set('Cookie', owner.cookie);
+      await app.get(PrismaService).channelConnection.update({
+        where: { id: connectionId },
+        data: { status: ChannelConnectionStatus.NEEDS_REAUTH },
+      });
+      const needsReauth = await request(server())
+        .post(`${productChannel}/retry`)
+        .set('Cookie', owner.cookie);
+      const store = await request(server())
+        .get(`${base(owner)}/channel-connections/${connectionId}`)
+        .set('Cookie', owner.cookie);
+      const channels = await request(server())
+        .get(`${base(owner)}/products/${product.id}/channels`)
+        .set('Cookie', owner.cookie);
+
+      expect(byViewer.status).toBe(HttpStatus.FORBIDDEN);
+      expect(missing.status).toBe(HttpStatus.NOT_FOUND);
+      expect(needsReauth.status).toBe(HttpStatus.CONFLICT);
+      expect(needsReauth.body.message).toBe('Connect this store again before publishing to it');
+      expect(queue.drain()).toEqual([]);
+      expect(store.body.publishReadiness).toEqual({
+        ready: false,
+        missing: [PublishRequirement.Reconnect],
+      });
+      expect(channels.body[0]).toMatchObject({
+        displayState: ListingDisplayState.NeedsDetails,
+        displayReason: 'Connect this store again to publish to it.',
+      });
     });
   });
 

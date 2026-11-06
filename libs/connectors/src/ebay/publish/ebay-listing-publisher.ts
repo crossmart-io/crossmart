@@ -7,7 +7,10 @@ import type {
   PublishedListing,
 } from '../../sdk/capabilities/listing-publisher.js';
 import type { ChannelCategory } from '../../sdk/capabilities/taxonomy-provider.js';
+import { ChannelType } from '../../sdk/channel-type.enum.js';
+import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
+import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import { type EbayAccountContext, ebayAccountContext } from '../api/ebay-account-context.js';
 import { EbayApp } from '../ebay-app.js';
 import { ebayError } from '../ebay-errors.js';
@@ -21,14 +24,16 @@ import { toOfferDetails } from './ebay-offer.mapper.js';
 import type { EbayOfferTerms } from './ebay-offer.types.js';
 import { listingImageUrls, toInventoryItem, toInventoryItemGroup } from './ebay-product.mapper.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
+import { EBAY_NO_IMAGES } from './ebay-publish-prerequisites.js';
 
 export const NOT_ACTIVE =
   'eBay listings cannot be hidden. Make the product active, or set it visible on this store.';
 export const NO_REFERENCE = 'Crossmart cannot find this listing’s items on eBay. End it on eBay.';
-export const NO_IMAGES =
-  'eBay needs at least one photo. Add an image to this product (eBay takes only https links).';
 export const NO_OPTIONS =
   'Give this product’s options names (such as Size) to list its variants on eBay.';
+
+const INACTIVE_PRODUCT = { requirement: PublishRequirement.ActiveProduct, reason: NOT_ACTIVE };
+const UNNAMED_OPTIONS = { requirement: PublishRequirement.OptionNames, reason: NO_OPTIONS };
 
 /** Everything one listing write needs, resolved before the first call to eBay. */
 interface ListingPlan {
@@ -65,7 +70,7 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
 
   async publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     if (!draft.product.active) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NOT_ACTIVE);
+      throw ChannelError.unmet(ChannelType.Ebay, INACTIVE_PRODUCT);
     }
     return this.list(session, draft);
   }
@@ -126,7 +131,7 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
   private async plan(session: ChannelSession, draft: ListingDraft): Promise<ListingPlan> {
     const terms = listingTermsOf(draft);
     if (listingImageUrls(draft).length === 0) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_IMAGES);
+      throw ChannelError.unmet(ChannelType.Ebay, EBAY_NO_IMAGES);
     }
     const account = await ebayAccountContext(session);
     const category = await this.categories.resolve(account, draft);
@@ -150,7 +155,7 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
     const [variant] = plan.draft.variants;
     const sku = variant ? plan.skus.get(variant.variantId) : undefined;
     if (!variant || !sku) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_OPTIONS);
+      throw ChannelError.unmet(ChannelType.Ebay, UNNAMED_OPTIONS);
     }
     await this.inventory.putItem(
       plan.account,
@@ -166,7 +171,7 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
   private async listGroup(plan: ListingPlan): Promise<string> {
     const { account, draft, skus } = plan;
     if (draft.product.optionNames.length === 0) {
-      throw ebayError(ChannelErrorCode.RequestRejected, NO_OPTIONS);
+      throw ChannelError.unmet(ChannelType.Ebay, UNNAMED_OPTIONS);
     }
     for (const variant of draft.variants) {
       const sku = skus.get(variant.variantId) ?? '';

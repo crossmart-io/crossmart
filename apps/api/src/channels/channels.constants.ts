@@ -33,6 +33,7 @@ export const ACCOUNT_HANDLE_MAX_LENGTH = 255;
 export const CHANNEL_TYPE_SCHEMA_NAME = 'ChannelType';
 export const CHANNEL_FEATURE_SCHEMA_NAME = 'ChannelFeature';
 export const CHANNEL_CONNECTION_STATUS_SCHEMA_NAME = 'ChannelConnectionStatus';
+export const PUBLISH_REQUIREMENT_SCHEMA_NAME = 'PublishRequirement';
 export const CONNECT_FAILURE_SCHEMA_NAME = 'ConnectFailure';
 export const EBAY_MARKETPLACE_ID_SCHEMA_NAME = 'EbayMarketplaceId';
 /** Imports of a connection's catalog, under the connection. */

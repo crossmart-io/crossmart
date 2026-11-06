@@ -9,7 +9,11 @@ import type {
   PublishedListing,
 } from '../../sdk/capabilities/listing-publisher.js';
 import type { ChannelSettings } from '../../sdk/channel-settings.js';
+import { ChannelType } from '../../sdk/channel-type.enum.js';
+import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
+import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
+import type { UnmetPublishRequirement } from '../../sdk/publishing/unmet-publish-requirement.js';
 import { assignVariantKeys } from '../../sdk/listings/variant-keys.js';
 import {
   GOOGLE_OFFER_ID_PATTERN,
@@ -22,18 +26,19 @@ import {
   isGoogleMerchantSettings,
 } from '../google-merchant-settings.js';
 import { toGooglePrices } from './google-price.js';
+import { GOOGLE_NO_SETUP, unmetGoogleProductRequirements } from './google-publish-prerequisites.js';
 import { toProductInput } from './google-product.mapper.js';
 import { type GoogleFeed, GoogleProductInputsClient } from './google-product-inputs.client.js';
 
-export const NO_SETUP =
-  'Choose the country and the product page address in this Google connection’s listing setup.';
+export { NO_IMAGE, NO_SETUP } from './google-publish-prerequisites.js';
 export const NOT_ACTIVE =
   'Google lists only active products. Make the product active, or set it visible on this store.';
-export const NO_IMAGE =
-  'Google needs at least one photo. Add an image to this product (Google takes only https links).';
 export const NO_REFERENCE = 'Crossmart cannot find this listing’s offers on Google.';
 
-const HTTPS_PREFIX = 'https://';
+const INACTIVE_PRODUCT: UnmetPublishRequirement = {
+  requirement: PublishRequirement.ActiveProduct,
+  reason: NOT_ACTIVE,
+};
 
 /** A connection ready to list: its settings, with the listing setup saved. */
 interface ReadyAccount {
@@ -51,7 +56,7 @@ function offerIds(draft: ListingDraft): Map<string, string> {
 
 function readyAccount(settings: ChannelSettings | null | undefined): ReadyAccount {
   if (!settings || !isGoogleMerchantSettings(settings) || !settings.listingSetup) {
-    throw googleMerchantError(ChannelErrorCode.RequestRejected, NO_SETUP);
+    throw ChannelError.unmet(ChannelType.GoogleMerchant, GOOGLE_NO_SETUP);
   }
   return { settings, setup: settings.listingSetup };
 }
@@ -77,7 +82,7 @@ export class GoogleListingPublisher implements ListingPublisher {
 
   async publish(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     if (!draft.product.active) {
-      throw googleMerchantError(ChannelErrorCode.RequestRejected, NOT_ACTIVE);
+      throw ChannelError.unmet(ChannelType.GoogleMerchant, INACTIVE_PRODUCT);
     }
     return this.write(session, draft);
   }
@@ -127,9 +132,9 @@ export class GoogleListingPublisher implements ListingPublisher {
 
   private async write(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     const account = readyAccount(draft.accountSettings);
-    if (!draft.product.images.some(({ url }) => url.startsWith(HTTPS_PREFIX))) {
-      throw googleMerchantError(ChannelErrorCode.RequestRejected, NO_IMAGE);
-    }
+    const imageUrls = draft.product.images.map(({ url }) => url);
+    const [unmetImage] = unmetGoogleProductRequirements({ imageUrls });
+    if (unmetImage) throw ChannelError.unmet(ChannelType.GoogleMerchant, unmetImage);
     const ids = offerIds(draft);
     const feed = feedOf(account);
     const target = {

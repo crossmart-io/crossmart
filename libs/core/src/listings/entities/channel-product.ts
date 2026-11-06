@@ -4,10 +4,10 @@ import type {
   ChannelProductSort,
   ChannelProductState,
 } from '../enums/channel-product-state.enum.js';
-import type { ListingSummary } from './listing-views.js';
+import type { ListingDisplayFields, ListingSummary } from './listing-views.js';
 
 /** A catalog product as one connection sees it: should it be there, and is it. */
-export interface ChannelProductRow {
+export interface ChannelProductRow extends ListingDisplayFields {
   product: ProductSummary;
   state: ChannelProductState;
   /** The product's listing on the connection, once one exists. */

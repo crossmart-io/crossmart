@@ -42,6 +42,9 @@ import { ListingSyncScheduler } from './services/listing-sync.scheduler.js';
 import { ListingTargetResolver } from './services/listing-target.resolver.js';
 import { PricingPreviewService } from './services/pricing-preview.service.js';
 import { ProductChannelViews } from './services/product-channel.views.js';
+import { ListingDisplayResolver } from './services/listing-display.resolver.js';
+import { ListingRequeuer } from './services/listing-requeuer.js';
+import { ListingRetryService } from './services/listing-retry.service.js';
 import { ProductChannelsService } from './services/product-channels.service.js';
 import { ProductSelectionService } from './services/product-selection.service.js';
 import { SyncConnectionLoader } from './services/sync-connection.loader.js';
@@ -96,6 +99,9 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ConnectionRulesService,
     PricingPreviewService,
     ProductChannelViews,
+    ListingDisplayResolver,
+    ListingRequeuer,
+    ListingRetryService,
     ProductChannelsService,
     ListingOverrideWriter,
     ListingOverridesService,
@@ -120,6 +126,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ConnectionRulesService,
     PricingPreviewService,
     ProductChannelsService,
+    ListingRetryService,
     ListingOverridesService,
     ListingContentReader,
     ListingCategoryService,

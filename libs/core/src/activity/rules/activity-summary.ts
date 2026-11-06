@@ -234,6 +234,10 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Choosing a channel category',
     describe: (entry) => `Changed the channel category of${named(entry)}${onStore(entry)}`,
   },
+  [ActivityAction.ListingRetryRequested]: {
+    operation: 'Retrying a listing',
+    describe: (entry) => `Asked to publish${named(entry)} again${onStore(entry)}`,
+  },
   [ActivityAction.ListingItemSpecificsChanged]: {
     operation: 'Setting item specifics',
     describe: (entry) => `Changed the item specifics of${named(entry)}${onStore(entry)}`,

@@ -1,8 +1,19 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { FakeHttpTransport, HttpMethod, HttpTransport, jsonResponse } from '@crossmart/connectors';
-import { ActivityAction, ListingSyncRunner, SyncJobQueue } from '@crossmart/core';
+import {
+  FakeHttpTransport,
+  HttpMethod,
+  HttpTransport,
+  jsonResponse,
+  PublishRequirement,
+} from '@crossmart/connectors';
+import {
+  ActivityAction,
+  ListingDisplayState,
+  ListingSyncRunner,
+  SyncJobQueue,
+} from '@crossmart/core';
 import { ListingStatus, ProductStatus } from '@crossmart/database';
 import {
   connectEbayAccount,
@@ -73,11 +84,15 @@ const CATEGORY = { id: '20625', name: 'Home & Garden > Kitchen > Mugs' };
 
 interface ProductChannelBody {
   connection: { id: string };
+  displayState: ListingDisplayState;
+  displayReason: string | null;
   listing: {
     status: ListingStatus;
     externalId: string | null;
     externalUrl: string | null;
     lastError: string | null;
+    /** A `PublishRequirement`, or null. */
+    missingRequirement: string | null;
     category: { id: string; name: string } | null;
   } | null;
 }
@@ -315,9 +330,27 @@ describe('eBay publishing (e2e)', () => {
 
     expect(http.requests.at(-1)?.url).not.toContain('/sell/inventory/');
     const failed = await productChannel(owner, productId, connectionId);
+    const missingPolicy = 'Choose a shipping policy in this eBay connection’s listing defaults.';
     expect(failed.listing).toMatchObject({
       status: ListingStatus.ERROR,
-      lastError: 'Choose shipping, payment and return policies for this eBay connection.',
+      lastError: missingPolicy,
+      missingRequirement: PublishRequirement.ShippingPolicy,
+    });
+    expect(failed).toMatchObject({
+      displayState: ListingDisplayState.NeedsDetails,
+      displayReason: missingPolicy,
+    });
+    const store = await request(server())
+      .get(`${base(owner)}/channel-connections/${connectionId}`)
+      .set('Cookie', owner.cookie);
+    expect(store.body.publishReadiness).toEqual({
+      ready: false,
+      missing: [
+        PublishRequirement.ShippingPolicy,
+        PublishRequirement.PaymentPolicy,
+        PublishRequirement.ReturnPolicy,
+        PublishRequirement.ShipFromLocation,
+      ],
     });
 
     http.expect(HttpMethod.Post, `${EBAY_API}/sell/account/v1/program/opt_in`, jsonResponse({}));

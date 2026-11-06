@@ -17,6 +17,7 @@ const LISTING_SUMMARY_SELECT = {
   externalId: true,
   externalUrl: true,
   lastError: true,
+  missingRequirement: true,
   lastSyncedAt: true,
   channelCategoryId: true,
   channelCategoryName: true,

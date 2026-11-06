@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { ChannelError } from '@crossmart/connectors';
+import { ChannelError, type PublishRequirement } from '@crossmart/connectors';
 import { LISTING_FAILURE_MAX_LENGTH, UNEXPECTED_SYNC_FAILURE } from '../listings.constants.js';
 
 /**
@@ -17,4 +17,9 @@ export function syncFailureReason(error: unknown): string {
 /** Outages and rate limits are retried by the queue; anything else will fail again. */
 export function isRetryableSyncError(error: unknown): boolean {
   return !(error instanceof ChannelError) || error.retryable;
+}
+
+/** What the channel refused the publish for lacking, when the merchant can add it. */
+export function syncFailureRequirement(error: unknown): PublishRequirement | null {
+  return error instanceof ChannelError ? error.requirement : null;
 }

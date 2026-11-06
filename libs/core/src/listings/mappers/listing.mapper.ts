@@ -1,9 +1,12 @@
+import { findEnumValue } from '@crossmart/common';
+import { PublishRequirement } from '@crossmart/connectors';
 import { toAmount } from '../../catalog/mappers/decimal-amount.mapper.js';
 import type {
   ListingOverrideInput,
   ListingOverrideView,
   VariantPriceOverrideInput,
 } from '../entities/listing-override.js';
+import type { ListingDisplay } from '../entities/listing-display.js';
 import type { ChannelListingRow, ListingSummary } from '../entities/listing-views.js';
 import type { VariantPriceOverride } from '../entities/price-resolution.js';
 import type { ListingRowRecord, ListingSyncRecord } from '../repositories/listing-sync.queries.js';
@@ -16,6 +19,7 @@ type ListingFields = Pick<
   | 'externalId'
   | 'externalUrl'
   | 'lastError'
+  | 'missingRequirement'
   | 'lastSyncedAt'
   | 'channelCategoryId'
   | 'channelCategoryName'
@@ -31,13 +35,19 @@ export function toListingSummary(record: ListingFields): ListingSummary {
     externalId: record.externalId,
     externalUrl: record.externalUrl,
     lastError: record.lastError,
+    missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
     lastSyncedAt: record.lastSyncedAt,
   };
 }
 
-export function toChannelListingRow(record: ListingRowRecord): ChannelListingRow {
+export function toChannelListingRow(
+  record: ListingRowRecord,
+  display: ListingDisplay,
+): ChannelListingRow {
   return {
     ...toListingSummary(record),
+    displayState: display.state,
+    displayReason: display.reason,
     productId: record.productId,
     productTitle: record.product.title,
     imageUrl: record.product.media[0]?.url ?? null,

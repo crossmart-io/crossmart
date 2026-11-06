@@ -5,6 +5,7 @@ import {
   ChannelType,
   type ListingPublisher,
   type PublishedListing,
+  PublishRequirement,
 } from '@crossmart/connectors';
 import { ActivityOutcome, ListingStatus } from '@crossmart/database';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -106,7 +107,12 @@ describe('ListingContentSync', () => {
 
     expect(publisher.publish).not.toHaveBeenCalled();
     expect(connections.openSession).not.toHaveBeenCalled();
-    expect(listings.recordFailure).toHaveBeenCalledWith(LISTING_REF, reason, ListingStatus.ERROR);
+    expect(listings.recordFailure).toHaveBeenCalledWith(
+      LISTING_REF,
+      reason,
+      ListingStatus.ERROR,
+      null,
+    );
     expect(activity.entries[0]).toMatchObject({
       action: ActivityAction.ListingSyncFailed,
       outcome: ActivityOutcome.FAILED,
@@ -176,6 +182,29 @@ describe('ListingContentSync', () => {
     expect(activity.entries[0]?.action).toBe(ActivityAction.ListingDelisted);
   });
 
+  it('keeps what a refused publish lacked, so the merchant is asked for it', async () => {
+    const { sync, publisher, listings } = setup({
+      action: ListingTargetAction.Publish,
+      product: productDetail(),
+      listing: listingRecord(),
+    });
+    publisher.publish.mockRejectedValue(
+      ChannelError.unmet(ChannelType.Ebay, {
+        requirement: PublishRequirement.ItemSpecifics,
+        reason: 'Add Brand',
+      }),
+    );
+
+    await sync.publish(syncJob());
+
+    expect(listings.recordFailure).toHaveBeenCalledWith(
+      LISTING_REF,
+      'Add Brand',
+      ListingStatus.ERROR,
+      PublishRequirement.ItemSpecifics,
+    );
+  });
+
   it('marks the listing in error for a rejected publish, and logs it once', async () => {
     const { sync, publisher, listings, activity } = setup({
       action: ListingTargetAction.Publish,
@@ -192,6 +221,7 @@ describe('ListingContentSync', () => {
       LISTING_REF,
       'Title is invalid',
       ListingStatus.ERROR,
+      null,
     );
     expect(activity.entries).toEqual([
       expect.objectContaining({

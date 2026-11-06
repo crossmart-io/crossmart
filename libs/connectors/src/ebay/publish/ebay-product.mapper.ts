@@ -34,7 +34,7 @@ export function listingDescription(draft: ListingDraft): string {
   return description.slice(0, EBAY_DESCRIPTION_MAX_LENGTH);
 }
 
-function isHttps(url: string): boolean {
+export function isHttps(url: string): boolean {
   return URL.canParse(url) && new URL(url).protocol === HTTPS_PROTOCOL;
 }
 

@@ -1,10 +1,10 @@
 import { type CountedRecords, toPageWindow } from '@crossmart/common';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { ChannelCategory } from '@crossmart/connectors';
+import type { ChannelCategory, PublishRequirement } from '@crossmart/connectors';
 import { ListingSource, ListingStatus, type Prisma, PrismaService } from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
 import type { ChannelListingQuery } from '../entities/listing-views.js';
-import { LISTING_NOT_FOUND } from '../listings.constants.js';
+import { LISTING_NOT_FOUND, RETRYABLE_LISTING_STATUSES } from '../listings.constants.js';
 import {
   LISTING_ROW_INCLUDE,
   LISTING_STOCK_INCLUDE,
@@ -121,7 +121,7 @@ export class ListingSyncRepository {
     await this.prisma.$transaction(async (tx) => {
       await tx.listing.updateMany({
         where: { ...scope, status: ListingStatus.DELISTED },
-        data: { status: ListingStatus.PENDING, lastError: null },
+        data: { status: ListingStatus.PENDING, lastError: null, missingRequirement: null },
       });
       await tx.listing.updateMany({ where: scope, data: { source: ListingSource.MANUAL } });
       const existing = await tx.listing.findMany({ where: scope, select: { productId: true } });
@@ -160,7 +160,12 @@ export class ListingSyncRepository {
     const { variants, syncedAt, ...fields } = record;
     const { workspaceId, listingId } = listing;
     await this.prisma.$transaction(async (tx) => {
-      await this.updateListing(tx, listing, { ...fields, lastSyncedAt: syncedAt, lastError: null });
+      await this.updateListing(tx, listing, {
+        ...fields,
+        lastSyncedAt: syncedAt,
+        lastError: null,
+        missingRequirement: null,
+      });
       await tx.listingVariant.deleteMany({ where: { listingId, workspaceId } });
       await tx.listingVariant.createMany({
         data: variants.map((variant) => ({ ...variant, listingId, workspaceId })),
@@ -181,13 +186,35 @@ export class ListingSyncRepository {
     await this.updateListing(this.prisma, listing, { lastSyncedAt: syncedAt, lastError: null });
   }
 
-  /** Records why a sync failed. A publish failure also marks the listing as in error. */
+  /**
+   * Records why a sync failed. A publish failure also marks the listing as in error, with what
+   * it was refused for lacking when the merchant can add that.
+   */
   async recordFailure(
     listing: ListingRef,
     lastError: string,
     status?: ListingStatus,
+    missingRequirement: PublishRequirement | null = null,
   ): Promise<void> {
-    await this.updateListing(this.prisma, listing, { lastError, ...(status ? { status } : {}) });
+    await this.updateListing(this.prisma, listing, {
+      lastError,
+      ...(status ? { status, missingRequirement } : {}),
+    });
+  }
+
+  /**
+   * Queues the listing to be published again: a failed or delisted one is pending once more,
+   * its error cleared. A listing on the channel keeps its status while it is updated.
+   */
+  async markForRetry(listing: ListingRef): Promise<void> {
+    await this.prisma.listing.updateMany({
+      where: {
+        id: listing.listingId,
+        workspaceId: listing.workspaceId,
+        status: { in: [...RETRYABLE_LISTING_STATUSES] },
+      },
+      data: { status: ListingStatus.PENDING, lastError: null, missingRequirement: null },
+    });
   }
 
   async markDelisted(listing: ListingRef, syncedAt: Date): Promise<void> {
@@ -195,6 +222,7 @@ export class ListingSyncRepository {
       status: ListingStatus.DELISTED,
       lastSyncedAt: syncedAt,
       lastError: null,
+      missingRequirement: null,
     });
   }
 

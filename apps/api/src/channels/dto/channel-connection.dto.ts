@@ -17,6 +17,7 @@ import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
 import { EbaySettingsDto } from './ebay-settings.dto.js';
 import { GoogleMerchantSettingsDto } from './google-merchant-settings.dto.js';
+import { PublishReadinessDto } from './publish-readiness.dto.js';
 
 /** A channel connection. Credentials are never part of it. */
 export class ChannelConnectionDto {
@@ -102,12 +103,19 @@ export class ChannelConnectionDto {
   @ApiProperty({ description: 'Listings in this store whose last sync failed' })
   failedListings: number;
 
+  @ApiProperty({
+    type: PublishReadinessDto,
+    description: 'Whether listings can be published here, and what the store setup lacks',
+  })
+  publishReadiness: PublishReadinessDto;
+
   static from(view: ChannelConnectionView, failedListings = 0): ChannelConnectionDto {
-    const { settings, ...fields } = view;
+    const { settings, publishReadiness, ...fields } = view;
     const { account, productSelection, pricing } = settings;
     return Object.assign(new ChannelConnectionDto(), {
       ...fields,
       failedListings,
+      publishReadiness: PublishReadinessDto.from(publishReadiness),
       shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
       ebay: account && isEbaySettings(account) ? EbaySettingsDto.from(account) : null,
       googleMerchant:

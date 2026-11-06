@@ -4,11 +4,10 @@ import type { ProductDetail } from '../../catalog/entities/product-views.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
 import type { ProductChannelView } from '../entities/listing-views.js';
+import { LISTING_PRODUCT_NOT_FOUND } from '../listings.constants.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
 import { ProductChannelViews } from './product-channel.views.js';
 import { SyncProductLoader } from './sync-product.loader.js';
-
-const PRODUCT_NOT_FOUND = 'Product not found';
 
 /** Where a product stands on each connected channel that can list it, for its editor. */
 @Injectable()
@@ -49,7 +48,7 @@ export class ProductChannelsService {
   private async requireProduct(workspaceId: string, productId: string): Promise<ProductDetail> {
     const product = await this.products.find(workspaceId, productId);
     if (!product) {
-      throw new NotFoundException(PRODUCT_NOT_FOUND);
+      throw new NotFoundException(LISTING_PRODUCT_NOT_FOUND);
     }
     return product;
   }
