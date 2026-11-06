@@ -65,6 +65,32 @@ export type StoreBadgeListingRecord = Prisma.ListingGetPayload<{
   select: typeof STORE_BADGE_LISTING_SELECT;
 }>;
 
+/**
+ * What a product's display state on one store reads: the product as its connector checks it,
+ * and its listings (narrowed to the store's when queried), latest change first.
+ */
+const DISPLAY_CANDIDATE_SELECT = {
+  id: true,
+  status: true,
+  optionNames: true,
+  media: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
+  _count: { select: { variants: true } },
+  listings: {
+    select: {
+      status: true,
+      lastError: true,
+      missingRequirement: true,
+      syncRequestedAt: true,
+      override: { select: { visibility: true } },
+    },
+    orderBy: { updatedAt: 'desc' },
+  },
+} as const satisfies Prisma.ProductSelect;
+
+export type DisplayCandidateRecord = Prisma.ProductGetPayload<{
+  select: typeof DISPLAY_CANDIDATE_SELECT;
+}>;
+
 export type ChannelProductRecord = Prisma.ProductGetPayload<{ include: ChannelProductInclude }>;
 
 /** Reads catalog products with their listings. Every condition is workspace-scoped. */
@@ -111,6 +137,26 @@ export class ChannelProductsRepository {
       },
       select: STORE_BADGE_LISTING_SELECT,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  /**
+   * One batch of the products of `where`, in id order after `afterId`, with their listings on
+   * the connection, for working out their display state there.
+   */
+  listDisplayCandidates(
+    connectionId: string,
+    where: Prisma.ProductWhereInput,
+    batch: { afterId: string | null; size: number },
+  ): Promise<DisplayCandidateRecord[]> {
+    return this.prisma.product.findMany({
+      where: batch.afterId ? { AND: [where, { id: { gt: batch.afterId } }] } : where,
+      select: {
+        ...DISPLAY_CANDIDATE_SELECT,
+        listings: { ...DISPLAY_CANDIDATE_SELECT.listings, where: { connectionId } },
+      },
+      orderBy: { id: 'asc' },
+      take: batch.size,
     });
   }
 

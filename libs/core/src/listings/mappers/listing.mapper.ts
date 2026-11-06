@@ -6,7 +6,7 @@ import type {
   ListingOverrideView,
   VariantPriceOverrideInput,
 } from '../entities/listing-override.js';
-import type { ListingDisplay } from '../entities/listing-display.js';
+import type { DisplayedListing, ListingDisplay } from '../entities/listing-display.js';
 import type {
   ChannelListingRow,
   ListingDisplayFields,
@@ -42,6 +42,21 @@ export function toListingSummary(record: ListingFields): ListingSummary {
     lastError: record.lastError,
     missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
     lastSyncedAt: record.lastSyncedAt,
+    syncRequestedAt: record.syncRequestedAt,
+  };
+}
+
+/** The parts of a listing record its display state reads. */
+export function toDisplayedListing(
+  record: Pick<
+    ListingSyncRecord,
+    'status' | 'lastError' | 'missingRequirement' | 'syncRequestedAt'
+  >,
+): DisplayedListing {
+  return {
+    status: record.status,
+    lastError: record.lastError,
+    missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
     syncRequestedAt: record.syncRequestedAt,
   };
 }

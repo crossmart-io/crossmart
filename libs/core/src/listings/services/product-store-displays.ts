@@ -1,22 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { findEnumValue } from '@crossmart/common';
-import { type PublishCandidate, PublishRequirement } from '@crossmart/connectors';
 import type { ProductStoreBadge, ProductSummary } from '../../catalog/entities/product-views.js';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import { ChannelConnectionsService } from '../../channels/services/channel-connections.service.js';
-import type { DisplayedListing, ListingDisplay } from '../entities/listing-display.js';
+import type { ListingDisplay } from '../entities/listing-display.js';
 import type {
   DisplayedProductSummary,
   DisplayedStoreBadge,
 } from '../entities/store-badge-display.js';
-import { toDisplayFields } from '../mappers/listing.mapper.js';
+import { toDisplayedListing, toDisplayFields } from '../mappers/listing.mapper.js';
 import {
   ChannelProductsRepository,
   type StoreBadgeListingRecord,
 } from '../repositories/channel-products.repository.js';
 import { shownListing } from '../rules/channel-product-state-where.js';
 import { listingDisplayOf } from '../rules/listing-display-state.js';
-import { publishCandidateOf } from '../rules/publish-candidate.js';
+import { publishCandidateOfRecord } from '../rules/publish-candidate.js';
 import { selectionWhere } from '../rules/selection-where.js';
 import { ListingDisplayResolver } from './listing-display.resolver.js';
 
@@ -29,15 +27,6 @@ interface BadgeContext {
   listings: Map<string, Map<string, StoreBadgeListingRecord[]>>;
 }
 
-function toDisplayedListing(record: StoreBadgeListingRecord): DisplayedListing {
-  return {
-    status: record.status,
-    lastError: record.lastError,
-    missingRequirement: findEnumValue(PublishRequirement, record.missingRequirement) ?? null,
-    syncRequestedAt: record.syncRequestedAt,
-  };
-}
-
 function groupByStore(
   records: StoreBadgeListingRecord[],
 ): Map<string, Map<string, StoreBadgeListingRecord[]>> {
@@ -48,20 +37,6 @@ function groupByStore(
     byStore.set(record.connectionId, byProduct);
   }
   return byStore;
-}
-
-/** The badge's product as the store's connector checks it before publishing. */
-function candidateOf(record: StoreBadgeListingRecord): PublishCandidate {
-  const { product } = record;
-  return publishCandidateOf(
-    {
-      status: product.status,
-      optionNames: product.optionNames,
-      variantCount: product._count.variants,
-      imageUrls: product.media.map((media) => media.url),
-    },
-    record,
-  );
 }
 
 function isRemovedByHand(
@@ -164,6 +139,9 @@ export class ProductStoreDisplays {
       listing: record ? toDisplayedListing(record) : null,
     };
     if (!connection || !record) return listingDisplayOf({ ...subject, blockers: [] });
-    return this.displays.resolve(connection, { ...subject, candidate: candidateOf(record) });
+    return this.displays.resolve(connection, {
+      ...subject,
+      candidate: publishCandidateOfRecord(record.product, record),
+    });
   }
 }
