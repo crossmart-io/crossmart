@@ -235,9 +235,9 @@ CI rebuilds the spec on every pull request that touches the API or the SDK and r
 
 ### Releasing
 
-Releases are published to npm by the
-[`Release TypeScript SDK`](../../.github/workflows/sdk-typescript-release.yml) workflow when a
-tag `sdk-ts-v<version>` is pushed. See the workflow file for the one-time npm setup.
+Maintainers publish to npm by hand, together with the Python and PHP SDKs. See
+[sdks/RELEASING.md](../RELEASING.md) for the steps and the versioning policy, and record changes
+in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

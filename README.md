@@ -34,6 +34,8 @@ from one dashboard or straight from Claude & ChatGPT.
 | `libs/database`    | Prisma schema, migrations and client                      |
 | `libs/connectors`  | Marketplace connector SDK and connectors                  |
 | `sdks/typescript`  | `@crossmart/sdk`, the TypeScript client of the REST API   |
+| `sdks/python`      | `crossmart` on PyPI, the Python client of the REST API    |
+| `sdks/php`         | `crossmart/crossmart-php`, the PHP client of the REST API |
 | `integrations/n8n` | `n8n-nodes-crossmart`, n8n nodes and a polling trigger    |
 
 The web app lives in [crossmart-io/crossmart-web](https://github.com/crossmart-io/crossmart-web).
@@ -86,8 +88,8 @@ API and worker you run outside compose.
 
 The [developer guide](docs/developers/README.md) covers the REST API (authentication, errors,
 pagination), a [quickstart](docs/developers/quickstart.md) from product to store to order, the
-[TypeScript SDK](sdks/typescript/README.md), the [n8n nodes](docs/developers/n8n.md) and the
-[MCP server](docs/developers/mcp.md) for AI agents.
+[TypeScript](sdks/typescript/README.md), [Python](sdks/python/README.md) and [PHP](sdks/php/README.md)
+SDKs, the [n8n nodes](docs/developers/n8n.md) and the [MCP server](docs/developers/mcp.md) for AI agents.
 
 ## Authentication
 

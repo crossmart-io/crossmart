@@ -1,0 +1,14 @@
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+
+parameters:
+    level: max
+    # The lowest PHP version the SDK supports, so newer syntax is reported.
+    phpVersion: 80100
+    paths:
+        - src
+        - generator
+        - scripts
+        - tests

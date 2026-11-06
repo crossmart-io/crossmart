@@ -5,7 +5,7 @@
 #   2. Add a trusted publisher to it: owner `crossmart-io`, repository `crossmart`,
 #      workflow `sdk-python-release.yml`, environment `pypi`.
 #   3. Create the `pypi` environment in the repository settings, ideally with required reviewers.
-# See sdks/python/RELEASING.md for the whole procedure.
+# The project releases by hand instead: see sdks/RELEASING.md.
 name: Python SDK release
 
 on:

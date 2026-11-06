@@ -1,0 +1,87 @@
+{
+  "name": "crossmart/crossmart-php",
+  "description": "Official PHP SDK for the Crossmart API, the open-source multichannel platform for sellers and their AI agents.",
+  "type": "library",
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "crossmart",
+    "multichannel",
+    "ecommerce",
+    "listings",
+    "inventory",
+    "shopify",
+    "ebay",
+    "sdk",
+    "openapi",
+    "psr-18",
+    "ai-agents"
+  ],
+  "homepage": "https://crossmart.io",
+  "authors": [
+    {
+      "name": "Crossmart",
+      "email": "hello@crossmart.io",
+      "homepage": "https://crossmart.io"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/crossmart-io/crossmart/issues",
+    "source": "https://github.com/crossmart-io/crossmart/tree/main/sdks/php",
+    "docs": "https://github.com/crossmart-io/crossmart/tree/main/sdks/php#readme"
+  },
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*",
+    "php-http/discovery": "^1.19",
+    "psr/http-client": "^1.0",
+    "psr/http-client-implementation": "^1.0",
+    "psr/http-factory": "^1.0",
+    "psr/http-factory-implementation": "^1.0",
+    "psr/http-message": "^1.1 || ^2.0"
+  },
+  "suggest": {
+    "guzzlehttp/guzzle": "A PSR-18 HTTP client, found automatically when installed.",
+    "symfony/http-client": "A PSR-18 HTTP client (with nyholm/psr7), found automatically when installed."
+  },
+  "require-dev": {
+    "nyholm/psr7": "^1.8",
+    "php-http/mock-client": "^1.6",
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-phpunit": "^2.0",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "phpunit/phpunit": "^10.5 || ^11.5 || ^12.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Crossmart\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Crossmart\\Generator\\": "generator/",
+      "Crossmart\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": false
+    }
+  },
+  "scripts": {
+    "generate": "@php scripts/generate.php",
+    "check:drift": "@php scripts/generate.php --check",
+    "analyse": "phpstan analyse --no-progress --memory-limit=1G",
+    "test": "phpunit",
+    "check": "bash scripts/check.sh"
+  },
+  "scripts-descriptions": {
+    "generate": "Regenerates src/Api, src/Model and src/Enum from the API's OpenAPI document.",
+    "check:drift": "Fails when the generated code differs from a fresh generation.",
+    "analyse": "Runs PHPStan at the maximum level.",
+    "test": "Runs the PHPUnit tests.",
+    "check": "Runs the drift check, PHPStan and PHPUnit."
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

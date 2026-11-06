@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "organizationId": "00000000-0000-4000-8000-000000000001",
+  "name": "sample",
+  "displayName": "sample",
+  "slug": "sample",
+  "currency": "sample",
+  "timeZone": "sample",
+  "role": "OWNER",
+  "customRole": null,
+  "permissions": []
+}

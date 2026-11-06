@@ -37,6 +37,7 @@ Homepage = "https://crossmart.io"
 Documentation = "https://github.com/crossmart-io/crossmart/tree/main/sdks/python#readme"
 Repository = "https://github.com/crossmart-io/crossmart"
 Issues = "https://github.com/crossmart-io/crossmart/issues"
+Changelog = "https://github.com/crossmart-io/crossmart/blob/main/sdks/python/CHANGELOG.md"
 
 [dependency-groups]
 # Pinned so regenerating the client gives the same output locally and in CI.
@@ -52,7 +53,7 @@ dev = [
 path = "crossmart/_version.py"
 
 [tool.hatch.build.targets.sdist]
-include = ["crossmart", "tests", "README.md", "LICENSE"]
+include = ["crossmart", "tests", "README.md", "CHANGELOG.md", "LICENSE"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["crossmart"]
