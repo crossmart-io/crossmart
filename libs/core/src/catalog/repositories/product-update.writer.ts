@@ -10,6 +10,7 @@ import {
   toProductFields,
   toVariantFields,
 } from './product-write.mapper.js';
+import { ProductWebhookEvents } from './product-webhook-events.js';
 
 type Transaction = Prisma.TransactionClient;
 
@@ -30,13 +31,15 @@ interface VariantEdit {
  * Replaces a product's content, variants and media in one transaction. Variants keep their
  * ids (and their listings, later) when edited; stock changes go through the inventory ledger
  * against the locked stock. The editor's quantity is the available stock: reserved units stay
- * reserved. Ledger entries are credited to the editor, like manual adjustments.
+ * reserved. Ledger entries are credited to the editor, like manual adjustments. The
+ * `product.updated` webhook event is published in the same transaction.
  */
 @Injectable()
 export class ProductUpdateWriter {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: InventoryLedger,
+    private readonly webhookEvents: ProductWebhookEvents,
   ) {}
 
   async update(
@@ -62,6 +65,7 @@ export class ProductUpdateWriter {
         where: { id: productId, workspaceId },
         data: toProductFields(draft),
       });
+      await this.webhookEvents.updated(tx, workspaceId, [productId]);
     });
   }
 

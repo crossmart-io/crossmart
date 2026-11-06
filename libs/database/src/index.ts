@@ -16,6 +16,8 @@ export {
   SubscriptionStatus,
   SuggestionCreatorType,
   SuggestionStatus,
+  WebhookDeliveryStatus,
+  WebhookDisabledReason,
   WorkspaceRole,
 } from './generated/prisma/enums.js';
 export { Prisma } from './generated/prisma/client.js';
@@ -43,6 +45,9 @@ export type {
   Suggestion,
   User,
   Variant,
+  WebhookDelivery,
+  WebhookEndpoint,
+  WebhookEvent,
   Workspace,
   WorkspaceDataKey,
   WorkspaceMember,

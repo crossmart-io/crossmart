@@ -10,7 +10,9 @@ import {
 } from '@crossmart/database';
 import type { ListingVariantMapping } from '../../channels/repositories/listing.repository.js';
 import type { ChannelListingQuery } from '../entities/listing-views.js';
+import { WebhookEventType } from '../../webhooks/enums/webhook-event-type.enum.js';
 import { LISTING_NOT_FOUND, RETRYABLE_LISTING_STATUSES } from '../listings.constants.js';
+import { ListingWebhookEvents } from './listing-webhook-events.js';
 import {
   LISTING_ROW_INCLUDE,
   LISTING_STOCK_INCLUDE,
@@ -57,16 +59,22 @@ export interface PublishedListingRecord {
   /** The channel category it was listed in; absent keeps the stored one. */
   channelCategoryId?: string;
   channelCategoryName?: string;
+  /** The product went live on the store for the first time: `listing.published` is sent. */
+  newlyPublished: boolean;
 }
 
 /**
  * Listings as the sync flow reads and writes them. A product may have several listings on one
  * connection; the sync works on its oldest one, the "primary" listing. Every query is scoped
- * to the workspace.
+ * to the workspace. Publishing, failing for good and delisting publish their `listing.*`
+ * webhook event in the same transaction.
  */
 @Injectable()
 export class ListingSyncRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly webhookEvents: ListingWebhookEvents,
+  ) {}
 
   findPrimary(
     workspaceId: string,
@@ -175,7 +183,7 @@ export class ListingSyncRepository {
    * Throws when the listing is not in the workspace (or was deleted meanwhile).
    */
   async recordPublished(listing: ListingRef, record: PublishedListingRecord): Promise<void> {
-    const { variants, syncedAt, ...fields } = record;
+    const { variants, syncedAt, newlyPublished, ...fields } = record;
     const { workspaceId, listingId } = listing;
     await this.prisma.$transaction(async (tx) => {
       await this.updateListing(tx, listing, {
@@ -188,6 +196,9 @@ export class ListingSyncRepository {
       await tx.listingVariant.createMany({
         data: variants.map((variant) => ({ ...variant, listingId, workspaceId })),
       });
+      if (newlyPublished) {
+        await this.webhookEvents.publish(tx, listing, WebhookEventType.ListingPublished);
+      }
     });
   }
 
@@ -206,7 +217,7 @@ export class ListingSyncRepository {
 
   /**
    * Records why a sync failed. A publish failure also marks the listing as in error, with what
-   * it was refused for lacking when the merchant can add that.
+   * it was refused for lacking when the merchant can add that, and sends `listing.failed`.
    */
   async recordFailure(
     listing: ListingRef,
@@ -214,9 +225,14 @@ export class ListingSyncRepository {
     status?: ListingStatus,
     missingRequirement: PublishRequirement | null = null,
   ): Promise<void> {
-    await this.updateListing(this.prisma, listing, {
-      lastError,
-      ...(status ? { status, missingRequirement } : {}),
+    const data = { lastError, ...(status ? { status, missingRequirement } : {}) };
+    if (status !== ListingStatus.ERROR) {
+      await this.updateListing(this.prisma, listing, data);
+      return;
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await this.updateListing(tx, listing, data);
+      await this.webhookEvents.publish(tx, listing, WebhookEventType.ListingFailed);
     });
   }
 
@@ -301,12 +317,16 @@ export class ListingSyncRepository {
     return this.prisma.listing.count({ where: { ...scope, status: ListingStatus.ERROR } });
   }
 
+  /** The listing was taken off its store; sends `listing.removed`. */
   async markDelisted(listing: ListingRef, syncedAt: Date): Promise<void> {
-    await this.updateListing(this.prisma, listing, {
-      status: ListingStatus.DELISTED,
-      lastSyncedAt: syncedAt,
-      lastError: null,
-      missingRequirement: null,
+    await this.prisma.$transaction(async (tx) => {
+      await this.updateListing(tx, listing, {
+        status: ListingStatus.DELISTED,
+        lastSyncedAt: syncedAt,
+        lastError: null,
+        missingRequirement: null,
+      });
+      await this.webhookEvents.publish(tx, listing, WebhookEventType.ListingRemoved);
     });
   }
 

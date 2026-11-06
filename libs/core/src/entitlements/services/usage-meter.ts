@@ -21,6 +21,7 @@ export class UsageMeter {
       [Feature.Workspaces]: (scope) => Promise.resolve(scope.workspaceIds.length),
       [Feature.Members]: (scope) => this.usage.countMembers(scope),
       [Feature.ApiKeys]: (scope) => this.usage.countActiveApiKeys(scope, new Date()),
+      [Feature.WebhookEndpoints]: (scope) => this.usage.countWebhookEndpoints(scope),
       [Feature.AiCredits]: (scope) => this.countAiCredits(scope),
       [Feature.AutonomousAgents]: null,
       [Feature.BringYourOwnKey]: null,

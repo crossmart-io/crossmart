@@ -39,6 +39,7 @@ export class ListingSyncOutcomes {
       variants: published.variants,
       mediaDigest,
       syncedAt,
+      newlyPublished: !listing.wasPublished,
       ...(published.category
         ? {
             channelCategoryId: published.category.id,

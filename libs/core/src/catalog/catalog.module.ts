@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ActivityModule } from '../activity/activity.module.js';
 import { EventsModule } from '../events/events.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
+import { WebhookOutboxModule } from '../webhooks/webhook-outbox.module.js';
 import {
   CATALOG_FILE_PARSERS,
   CATALOG_IMPORT_STRATEGIES,
@@ -22,6 +23,7 @@ import { ProductBulkWriter } from './repositories/product-bulk.writer.js';
 import { ProductUpdateWriter } from './repositories/product-update.writer.js';
 import { ProductViewRepository } from './repositories/product-view.repository.js';
 import { ProductRepository } from './repositories/product.repository.js';
+import { ProductWebhookEvents } from './repositories/product-webhook-events.js';
 import { BulkProductActionsService } from './services/bulk-product-actions.service.js';
 import { CatalogConflictsService } from './services/catalog-conflicts.service.js';
 import { CatalogImportService } from './services/catalog-import.service.js';
@@ -35,9 +37,10 @@ import { ProductsService } from './services/products.service.js';
  * and an import mode by registering its strategy.
  */
 @Module({
-  imports: [ActivityModule, EventsModule, InventoryModule],
+  imports: [ActivityModule, EventsModule, InventoryModule, WebhookOutboxModule],
   providers: [
     ProductRepository,
+    ProductWebhookEvents,
     ProductUpdateWriter,
     ProductBulkWriter,
     ProductViewRepository,

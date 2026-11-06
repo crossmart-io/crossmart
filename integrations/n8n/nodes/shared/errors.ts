@@ -21,3 +21,9 @@ export function toNodeError(
 	const cause = error instanceof Error ? error : String(error);
 	return new NodeOperationError(node, cause, { itemIndex });
 }
+
+/** The HTTP status of a failed API call, such as `'404'`, or undefined when there is none. */
+export function httpStatusOf(error: unknown): string | undefined {
+	if (!(error instanceof NodeApiError)) return undefined;
+	return error.httpCode ?? undefined;
+}

@@ -9,6 +9,8 @@ public REST API, so your scripts, integrations and AI agents can do it too.
   - **[TypeScript](../../sdks/typescript/README.md):** `npm install @crossmart/sdk`
   - **[Python](../../sdks/python/README.md):** `pip install crossmart`
   - **[PHP](../../sdks/php/README.md):** `composer require crossmart/crossmart-php`
+- **[Webhooks](webhooks.md):** get orders, stock, listing and product events as they happen,
+  signed, with retries; verify them with the SDKs.
 - **[n8n](n8n.md):** the `n8n-nodes-crossmart` community nodes, with a trigger for new orders, stock changes and failed listings.
 - **[MCP server](mcp.md):** what AI agents can do with Crossmart, and its tools.
 - **[Connect your AI agent](agents/README.md):** setup guides for Claude, Cursor, VS Code, Codex,

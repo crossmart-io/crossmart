@@ -14,6 +14,7 @@ function setup() {
     countMembers: vi.fn<UsageRepository['countMembers']>().mockResolvedValue(5),
     countActiveApiKeys: vi.fn<UsageRepository['countActiveApiKeys']>().mockResolvedValue(1),
     countAiCalls: vi.fn<UsageRepository['countAiCalls']>().mockResolvedValue(7),
+    countWebhookEndpoints: vi.fn<UsageRepository['countWebhookEndpoints']>().mockResolvedValue(4),
   };
   return { meter: new UsageMeter(usage as unknown as UsageRepository), usage };
 }
@@ -28,6 +29,7 @@ describe('UsageMeter', () => {
       [Feature.Workspaces]: 2,
       [Feature.Members]: 5,
       [Feature.ApiKeys]: 1,
+      [Feature.WebhookEndpoints]: 4,
       [Feature.AiCredits]: 7,
       [Feature.AutonomousAgents]: null,
       [Feature.BringYourOwnKey]: null,

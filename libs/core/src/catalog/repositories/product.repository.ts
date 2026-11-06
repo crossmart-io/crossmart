@@ -15,6 +15,7 @@ import {
   type ProductUpdateTargetRecord,
 } from './product.queries.js';
 import { toProductCreateInput } from './product-write.mapper.js';
+import { ProductWebhookEvents } from './product-webhook-events.js';
 
 export interface DeletedProduct {
   title: string;
@@ -40,9 +41,18 @@ const CREATED_PRODUCT_SELECT = {
   },
 } satisfies Prisma.ProductSelect;
 
+/**
+ * Creating many products is one transaction per import batch; it may run past Prisma's default
+ * interactive transaction timeout on a slow database.
+ */
+const BATCH_CREATE_TIMEOUT_MS = 30_000;
+
 @Injectable()
 export class ProductRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly webhookEvents: ProductWebhookEvents,
+  ) {}
 
   /** One page in the query's order, plus one extra row that says whether more exist, and the total. */
   async listPage(
@@ -122,22 +132,20 @@ export class ProductRepository {
   }
 
   create(workspaceId: string, draft: ProductDraft): Promise<ProductDetailRecord> {
-    return this.prisma.product.create({
-      data: toProductCreateInput(workspaceId, draft),
-      include: PRODUCT_DETAIL_INCLUDE,
+    return this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: toProductCreateInput(workspaceId, draft),
+        include: PRODUCT_DETAIL_INCLUDE,
+      });
+      await this.webhookEvents.created(tx, workspaceId, [product.id]);
+      return product;
     });
   }
 
-  /** Creates the drafts in one transaction: all of them or none. */
-  /** Creates the products in one transaction and returns their ids, in draft order. */
+  /** Creates the products in one transaction, all of them or none, and returns their ids in order. */
   async createAll(workspaceId: string, drafts: ProductDraft[]): Promise<string[]> {
-    const created = await this.prisma.$transaction(
-      drafts.map((draft) =>
-        this.prisma.product.create({
-          data: toProductCreateInput(workspaceId, draft),
-          select: { id: true },
-        }),
-      ),
+    const created = await this.createInTransaction(workspaceId, drafts, (tx, data) =>
+      tx.product.create({ data, select: { id: true } }),
     );
     return created.map((product) => product.id);
   }
@@ -150,13 +158,8 @@ export class ProductRepository {
     workspaceId: string,
     drafts: ProductDraft[],
   ): Promise<CreatedProduct[]> {
-    const created = await this.prisma.$transaction(
-      drafts.map((draft) =>
-        this.prisma.product.create({
-          data: toProductCreateInput(workspaceId, draft),
-          select: CREATED_PRODUCT_SELECT,
-        }),
-      ),
+    const created = await this.createInTransaction(workspaceId, drafts, (tx, data) =>
+      tx.product.create({ data, select: CREATED_PRODUCT_SELECT }),
     );
     return created.map((product) => ({
       id: product.id,
@@ -166,6 +169,29 @@ export class ProductRepository {
         inventoryItemId: variant.inventoryItem?.id ?? null,
       })),
     }));
+  }
+
+  /** Creates the products in order, in one transaction with their `product.created` events. */
+  private createInTransaction<Created extends { id: string }>(
+    workspaceId: string,
+    drafts: ProductDraft[],
+    create: (tx: Prisma.TransactionClient, data: Prisma.ProductCreateInput) => Promise<Created>,
+  ): Promise<Created[]> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const created: Created[] = [];
+        for (const draft of drafts) {
+          created.push(await create(tx, toProductCreateInput(workspaceId, draft)));
+        }
+        await this.webhookEvents.created(
+          tx,
+          workspaceId,
+          created.map((product) => product.id),
+        );
+        return created;
+      },
+      { timeout: BATCH_CREATE_TIMEOUT_MS },
+    );
   }
 
   /** Ids of the product's variants, or null when the product is not in this workspace. */
@@ -213,10 +239,14 @@ export class ProductRepository {
   /** Returns the deleted product's title, or null when it is not in this workspace. */
   async delete(workspaceId: string, productId: string): Promise<DeletedProduct | null> {
     const where = { id: productId, workspaceId };
-    const product = await this.prisma.product.findFirst({ where, select: { title: true } });
-    if (!product) return null;
-    const { count } = await this.prisma.product.deleteMany({ where });
-    return count > 0 ? product : null;
+    return this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.findFirst({ where, select: { id: true, title: true } });
+      if (!product) return null;
+      const { count } = await tx.product.deleteMany({ where });
+      if (count === 0) return null;
+      await this.webhookEvents.deleted(tx, workspaceId, [product]);
+      return { title: product.title };
+    });
   }
 
   private except(productId: string | undefined): Prisma.ProductWhereInput | undefined {

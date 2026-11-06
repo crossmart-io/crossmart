@@ -112,6 +112,26 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'API key revocation',
     describe: (entry) => `Revoked API key${named(entry)}`,
   },
+  [ActivityAction.WebhookEndpointCreated]: {
+    operation: 'Webhook endpoint creation',
+    describe: (entry) => `Added webhook endpoint${named(entry)}`,
+  },
+  [ActivityAction.WebhookEndpointUpdated]: {
+    operation: 'Webhook endpoint update',
+    describe: (entry) => withDetail(`Updated webhook endpoint${named(entry)}`, entry),
+  },
+  [ActivityAction.WebhookEndpointDeleted]: {
+    operation: 'Deleting a webhook endpoint',
+    describe: (entry) => `Deleted webhook endpoint${named(entry)}`,
+  },
+  [ActivityAction.WebhookSecretRotated]: {
+    operation: 'Webhook secret rotation',
+    describe: (entry) => `Rotated the signing secret of webhook endpoint${named(entry)}`,
+  },
+  [ActivityAction.WebhookEndpointDisabled]: {
+    operation: 'Webhook delivery',
+    describe: (entry) => withDetail(`Turned off webhook endpoint${named(entry)}`, entry),
+  },
   [ActivityAction.AgentDisconnected]: {
     operation: 'Disconnecting an agent',
     describe: (entry) => `Disconnected agent${named(entry)}`,

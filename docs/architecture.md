@@ -54,6 +54,7 @@ crossmart/
 │   │   ├── ai/              # AiProvider abstraction, AiGateway, prompts, metering
 │   │   ├── content-generation/ # the Content Generator agent and its channel rules
 │   │   ├── ask/             # Ask Crossmart: docs knowledge index, retrieval, grounded answers
+│   │   ├── webhooks/        # outgoing webhooks: endpoints, outbox, dispatch, delivery (ADR 0023)
 │   │   ├── tenancy/         # organizations, workspaces, members, roles
 │   │   ├── entitlements/    # plans, limits, feature flags
 │   │   └── billing/         # BillingProvider abstraction (Stripe impl)
@@ -105,6 +106,7 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   | `workspaces`          |       1 |     1 |      2 |      5 |          ∞ |
   | `members`             |       2 |     5 |     10 |     25 |          ∞ |
   | `api_keys`            |       5 |    10 |     25 |    100 |          ∞ |
+  | `webhook_endpoints`   |      10 |    20 |     50 |    200 |          ∞ |
   | `ai_credits` / month  |     300 | 1,500 |  5,000 | 20,000 |     20,000 |
   | `autonomous_agents`   |       ✓ |     ✓ |      ✓ |      ✓ |          ✓ |
   | `bring_your_own_key`  |       — |     — |      — |      ✓ |          ✓ |
@@ -202,7 +204,7 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
     description limit, the description length worth writing (eBay: 500,000 hard, 4,000 written), the
     `DescriptionFormat` and whether links are allowed. Core's AI content rules take their numbers from here.
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
-- **Priority queues:** `inventory` > `orders` > `price` > `content` > `import` > `ai`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish, and AI agents never hold up a sync.
+- **Priority queues:** `inventory` > `orders` > `price` > `content` > `import` > `ai`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish, and AI agents never hold up a sync. Outgoing webhooks have their own `webhooks` queue.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
 - **Feed channels:** a generic template-based feed exporter (XML/CSV/TSV), so most simple channels are configuration only.
 - A **test kit** of recorded fixtures and contract tests is required for every connector PR.
@@ -290,6 +292,18 @@ Triggers:
 **Reconciliation:** inventory every 15 minutes and everything else daily. The job compares each channel's state to Crossmart and corrects drift, logging what it changed. Today the inventory reconciliation is a BullMQ job scheduler on the `inventory` queue that re-sends the shown stock of every listing of every connected account; comparing with the channel's own quantities first, and the daily content reconciliation, come later.
 
 **AI checkout channels (ACP):** a reservation with a TTL is made before payment, then confirmed or released.
+
+**Outgoing webhooks** (`libs/core/src/webhooks`, [ADR 0023](decisions/0023-outgoing-webhooks.md)).
+Services that change orders, stock, listings or products call `WebhookOutbox.publish(tx, …)` in
+the transaction that writes the change: the `webhook_events` row and one `webhook_deliveries` row
+per subscribed, enabled endpoint commit with it (the outbox), and nothing is written when no
+endpoint listens. The order writer, the inventory ledger, the product repositories and the
+listing sync repository publish. The worker's `webhooks` queue runs `dispatch` every 2 s (claims
+due deliveries with `FOR UPDATE SKIP LOCKED` under a lease and queues one `deliver` job each),
+`deliver` (signs with `Crossmart-Signature`, POSTs through `HttpWebhookSender` with the SSRF
+rules, stores the outcome and schedules the next attempt with backoff), and a daily `clean-up`
+after 30 days. 30 failed attempts in a row turn an endpoint off and notify its managers. Signing
+secrets are sealed with the workspace's data key. Public docs: [developers/webhooks.md](developers/webhooks.md).
 
 ## 6. AI layer
 

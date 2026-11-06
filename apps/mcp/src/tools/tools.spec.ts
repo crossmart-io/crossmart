@@ -184,4 +184,20 @@ describe('MCP tools', () => {
       body: { category: null },
     });
   });
+
+  it('reads and adds webhook endpoints only with the webhooks scope', () => {
+    for (const name of ['list_webhook_endpoints', 'create_webhook_endpoint']) {
+      expect(tool(name).scope).toBe('webhooks:write');
+    }
+    expect(
+      tool('create_webhook_endpoint').toCall({
+        url: 'https://example.com/hooks',
+        eventTypes: ['order.created'],
+      } as never),
+    ).toEqual({
+      method: HttpMethod.Post,
+      path: `${WORKSPACE_PATH}/webhook-endpoints`,
+      body: { url: 'https://example.com/hooks', eventTypes: ['order.created'] },
+    });
+  });
 });

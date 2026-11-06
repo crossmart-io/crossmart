@@ -70,3 +70,34 @@ export enum ManualMovementReason {
 	Lost = 'LOST',
 	Sold = 'SOLD',
 }
+
+/** The events Crossmart delivers to webhook endpoints. */
+export enum WebhookEventType {
+	OrderCreated = 'order.created',
+	OrderUpdated = 'order.updated',
+	InventoryStockChanged = 'inventory.stock_changed',
+	ListingPublished = 'listing.published',
+	ListingFailed = 'listing.failed',
+	ListingRemoved = 'listing.removed',
+	ProductCreated = 'product.created',
+	ProductUpdated = 'product.updated',
+	ProductDeleted = 'product.deleted',
+	/** Sent by "Send test" to one endpoint, whatever it subscribes to. */
+	Test = 'webhook.test',
+}
+
+/** HTTP statuses the nodes act on. */
+export enum HttpStatus {
+	BadRequest = '400',
+	PaymentRequired = '402',
+	Forbidden = '403',
+	NotFound = '404',
+}
+
+/** Why a delivery's signature was rejected. */
+export enum SignatureFailure {
+	Missing = 'missing',
+	Malformed = 'malformed',
+	Expired = 'expired',
+	Mismatch = 'mismatch',
+}

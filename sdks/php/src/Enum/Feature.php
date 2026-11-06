@@ -13,6 +13,7 @@ enum Feature: string
     case Workspaces = 'workspaces';
     case Members = 'members';
     case ApiKeys = 'api_keys';
+    case WebhookEndpoints = 'webhook_endpoints';
     case AiCredits = 'ai_credits';
     case AutonomousAgents = 'autonomous_agents';
     case BringYourOwnKey = 'bring_your_own_key';

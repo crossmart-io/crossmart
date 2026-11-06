@@ -57,6 +57,7 @@ agent with the user's name. Members see and disconnect their agents under Settin
 | `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics`, `update_listing` |
 | `reports:read`      | `get_sales_report`, `get_inventory_report`, `get_listing_health_report`                                                                                                                     |
 | `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                    |
+| `webhooks:write`    | `list_webhook_endpoints`, `create_webhook_endpoint`                                                                                                                                         |
 
 `ask_crossmart` and `get_platform_health` need no scope: they read nothing of the workspace.
 
@@ -95,6 +96,8 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `generate_content`          | Queues AI titles and descriptions for products on a store              | Yes    |
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |        |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
+| `list_webhook_endpoints`    | The URLs the workspace sends events to, and which events each gets     |        |
+| `create_webhook_endpoint`   | Adds a URL to send events to; returns its signing secret once          | Yes    |
 | `ask_crossmart`             | Answers a question about Crossmart from its public docs (ADR 0022)     |        |
 
 Tools that only read carry `readOnlyHint`; `replace_product`, `remove_product_from_store` and
@@ -108,6 +111,12 @@ Approver), so an agent with an Editor key can propose but never apply.
 
 Connecting a store always needs the merchant: channel OAuth (Shopify and others) runs in the
 dashboard, never through an agent.
+
+Webhook endpoints send workspace data to a URL the agent names, so they have a scope of their own
+(`webhooks:write`) and need a role holding `webhooks:manage` (Owner or Admin). An agent can list
+and add endpoints, so its own backend gets events as they happen
+([webhooks](developers/webhooks.md)); changing, turning off and deleting them stays in the
+dashboard and the REST API.
 
 ## Adding a tool
 

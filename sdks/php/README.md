@@ -227,6 +227,50 @@ try {
 }
 ```
 
+## Verifying webhooks
+
+Crossmart signs every webhook delivery with your endpoint's signing secret (`whsec_...`).
+`WebhookSignature::verify()` checks the `Crossmart-Signature` header against the **raw** request
+body, rejects deliveries older or newer than five minutes, and returns the parsed `WebhookEvent`.
+It throws a `WebhookSignatureException` (with a `getReason()`) when the delivery cannot be
+trusted; answer it with a `400`.
+
+Pass the body exactly as it arrived (`php://input`). A body that was decoded and encoded again
+does not match the signature.
+
+```php
+use Crossmart\Exception\WebhookSignatureException;
+use Crossmart\Webhook\WebhookEventType;
+use Crossmart\Webhook\WebhookHeader;
+use Crossmart\Webhook\WebhookSignature;
+
+try {
+    $event = WebhookSignature::verify(
+        (string) file_get_contents('php://input'),
+        $_SERVER[WebhookHeader::Signature->serverKey()] ?? null, // HTTP_CROSSMART_SIGNATURE
+        (string) getenv('CROSSMART_WEBHOOK_SECRET'),
+    );
+} catch (WebhookSignatureException $exception) {
+    http_response_code(400);
+    echo $exception->getMessage();
+    exit;
+}
+
+if ($event->eventType() === WebhookEventType::OrderCreated) {
+    // $event->data holds the order
+}
+// Ignore event types you do not handle; new ones may be added (eventType() returns null for them).
+http_response_code(204);
+```
+
+- During a secret rotation Crossmart signs with both the new and the old secret, and either one
+  verifies, so you can switch secrets without dropping deliveries.
+- Change the five-minute window with the `$toleranceSeconds` argument, and pass `$now` (a Unix
+  time) in tests.
+- Retries of a delivery carry the same `$event->id`; use it to skip events you already handled.
+- In a framework, read the raw body from the request object, such as
+  `$request->getContent()` (Symfony, Laravel) or `(string) $request->getBody()` (PSR-7).
+
 ## Retries
 
 Idempotent requests (`GET`, `PUT`, `DELETE`) are retried twice by default after a 429, a 5xx or a network failure, with exponential backoff and jitter. When the API sends `Retry-After`, the client waits that long (at most 60 seconds). `POST` and `PATCH` requests are never retried, so nothing is created or published twice.

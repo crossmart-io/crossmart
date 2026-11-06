@@ -9,6 +9,7 @@ class Feature(StrEnum):
     BRING_YOUR_OWN_KEY = "bring_your_own_key"
     CHANNEL_CONNECTIONS = "channel_connections"
     MEMBERS = "members"
+    WEBHOOK_ENDPOINTS = "webhook_endpoints"
     WORKSPACES = "workspaces"
 
     def __str__(self) -> str:

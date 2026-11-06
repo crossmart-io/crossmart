@@ -6,6 +6,13 @@ All notable changes to `crossmart/crossmart-php` are documented here. The format
 
 ## [Unreleased]
 
+### Added
+
+- `Crossmart\Webhook\WebhookSignature::verify()` checks a webhook delivery's `Crossmart-Signature`
+  header against the raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation)
+  and returns a `WebhookEvent`. It throws `WebhookSignatureException` when the delivery cannot be
+  trusted.
+
 ## [0.1.0] - not yet released
 
 ### Added

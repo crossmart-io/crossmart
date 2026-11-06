@@ -204,6 +204,59 @@ try {
 Other problems (no credentials, no workspace id) throw a `CrossmartError`, the base class of
 `CrossmartApiError`.
 
+## Verifying webhooks
+
+Crossmart signs every webhook delivery with your endpoint's signing secret (`whsec_...`).
+`verifyWebhookSignature` checks the `Crossmart-Signature` header against the **raw** request body,
+rejects deliveries older or newer than five minutes, and returns the parsed event. It throws a
+`WebhookSignatureError` (with a `reason`) when the delivery cannot be trusted; answer it with a
+`400`.
+
+Pass the body exactly as it arrived. A body that was parsed and serialized again does not match
+the signature, so in Express use `express.raw()` on the webhook route instead of `express.json()`:
+
+```ts
+import express from 'express';
+import { verifyWebhookSignature, type WebhookEvent, WebhookSignatureError } from '@crossmart/sdk';
+
+const app = express();
+
+app.post('/webhooks/crossmart', express.raw({ type: 'application/json' }), async (req, res) => {
+  let event: WebhookEvent;
+  try {
+    event = await verifyWebhookSignature({
+      payload: req.body, // a Buffer
+      header: req.get('Crossmart-Signature'),
+      secret: process.env.CROSSMART_WEBHOOK_SECRET!,
+    });
+  } catch (error) {
+    if (error instanceof WebhookSignatureError) {
+      return res.status(400).send(error.message);
+    }
+    throw error;
+  }
+
+  switch (event.type) {
+    case 'order.created':
+      // event.data holds the order
+      break;
+    default:
+    // Ignore event types you do not handle; new ones may be added.
+  }
+  res.sendStatus(204);
+});
+```
+
+- During a secret rotation Crossmart signs with both the new and the old secret, and either one
+  verifies, so you can switch secrets without dropping deliveries.
+- Change the five-minute window with `toleranceSeconds`, and pass `now` in tests.
+- Retries of a delivery carry the same `event.id`; use it to skip events you already handled.
+- The header names are exported as constants (`WEBHOOK_SIGNATURE_HEADER`,
+  `WEBHOOK_EVENT_ID_HEADER`, `WEBHOOK_EVENT_TYPE_HEADER`, `WEBHOOK_DELIVERY_ID_HEADER`), and the
+  known event types as `WEBHOOK_EVENT_TYPES`.
+- Verification uses the Web Crypto API, so it is asynchronous and runs on Node.js 20+, Deno, Bun
+  and edge runtimes (on Node.js 18, start Node with `--experimental-global-webcrypto`).
+
 ## Retries
 
 Requests that are safe to repeat (`GET`, `PUT`, `DELETE`) are retried up to twice after a `429`,

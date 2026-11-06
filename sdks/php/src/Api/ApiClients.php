@@ -30,6 +30,7 @@ final class ApiClients
     public readonly AiApi $ai;
     public readonly AgentsApi $agents;
     public readonly AskCrossmartApi $askCrossmart;
+    public readonly WebhooksApi $webhooks;
 
     public function __construct(TransportInterface $transport)
     {
@@ -50,5 +51,6 @@ final class ApiClients
         $this->ai = new AiApi($transport);
         $this->agents = new AgentsApi($transport);
         $this->askCrossmart = new AskCrossmartApi($transport);
+        $this->webhooks = new WebhooksApi($transport);
     }
 }

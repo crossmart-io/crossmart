@@ -1,6 +1,7 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	IHookFunctions,
 	ILoadOptionsFunctions,
 	IPollFunctions,
 } from 'n8n-workflow';
@@ -11,8 +12,12 @@ import type { CurrentApiKey, Page } from './crossmart.types';
 import { toNodeApiError } from './errors';
 import { type ApiRequest, buildRequestOptions, type QueryParams } from './request-options';
 
-/** The n8n contexts that call the API: actions, polling triggers and dropdown loaders. */
-export type RequestContext = IExecuteFunctions | IPollFunctions | ILoadOptionsFunctions;
+/**
+ * The n8n contexts that call the API: actions, polling triggers, dropdown loaders and the webhook
+ * trigger's lifecycle hooks.
+ */
+export type RequestContext =
+	IExecuteFunctions | IPollFunctions | ILoadOptionsFunctions | IHookFunctions;
 
 /** Builds a workspace-scoped route from the workspace id. */
 export type WorkspacePath = (workspaceId: string) => string;

@@ -8,6 +8,7 @@ class AgentScope(StrEnum):
     REPORTSREAD = "reports:read"
     STORESWRITE = "stores:write"
     SUGGESTIONSWRITE = "suggestions:write"
+    WEBHOOKSWRITE = "webhooks:write"
 
     def __str__(self) -> str:
         return str(self.value)

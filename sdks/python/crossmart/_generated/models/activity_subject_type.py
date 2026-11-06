@@ -11,6 +11,7 @@ class ActivitySubjectType(StrEnum):
     MEMBER = "member"
     PRODUCT = "product"
     PRODUCT_VIEW = "product_view"
+    WEBHOOK_ENDPOINT = "webhook_endpoint"
     WORKSPACE = "workspace"
 
     def __str__(self) -> str:

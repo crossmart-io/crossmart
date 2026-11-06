@@ -1,8 +1,9 @@
 import { FAILURE_KEY_SEPARATOR, MAX_REMEMBERED_IDS } from './crossmart-trigger.constants';
 
 /**
- * Pure helpers that decide what a poll emits. The API has no "changed since" filters and no
- * outgoing webhooks yet, so the trigger remembers what it has seen in the workflow's static data.
+ * Pure helpers that decide what a poll emits. The API has no "changed since" filters, so the
+ * polling trigger remembers what it has seen in the workflow's static data. The webhook trigger
+ * reuses `rememberIds` to drop redelivered events.
  */
 
 /** The items whose id is not among the ids already seen. */

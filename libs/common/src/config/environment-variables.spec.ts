@@ -21,6 +21,18 @@ describe('validateEnvironment', () => {
     expect(environment.API_PORT).toBe(8080);
   });
 
+  it('keeps webhook endpoints public unless a self-hosted instance opts out', () => {
+    expect(validateEnvironment(VALID_ENVIRONMENT).WEBHOOK_ALLOW_PRIVATE_URLS).toBe(false);
+    expect(
+      validateEnvironment({ ...VALID_ENVIRONMENT, WEBHOOK_ALLOW_PRIVATE_URLS: 'true' })
+        .WEBHOOK_ALLOW_PRIVATE_URLS,
+    ).toBe(true);
+    expect(
+      validateEnvironment({ ...VALID_ENVIRONMENT, WEBHOOK_ALLOW_PRIVATE_URLS: 'false' })
+        .WEBHOOK_ALLOW_PRIVATE_URLS,
+    ).toBe(false);
+  });
+
   it('applies defaults for optional variables', () => {
     const { NODE_ENV: _nodeEnv, API_PORT: _apiPort, ...required } = VALID_ENVIRONMENT;
 

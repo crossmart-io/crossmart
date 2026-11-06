@@ -3,6 +3,7 @@ import { ActivityModule } from '../activity/activity.module.js';
 import { ChannelsModule } from '../channels/channels.module.js';
 import { EventsModule } from '../events/events.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
+import { WebhookOutboxModule } from '../webhooks/webhook-outbox.module.js';
 import { BullOrderJobQueue } from './queue/bull-order-job.queue.js';
 import { OrderJobQueue } from './queue/order-job.queue.js';
 import { OrderRepository } from './repositories/order.repository.js';
@@ -19,7 +20,7 @@ import { OrdersService } from './services/orders.service.js';
  * ingestion stores them and reserves their stock. Needs the global `QueuesModule`.
  */
 @Module({
-  imports: [ActivityModule, ChannelsModule, EventsModule, InventoryModule],
+  imports: [ActivityModule, ChannelsModule, EventsModule, InventoryModule, WebhookOutboxModule],
   providers: [
     OrderRepository,
     OrderVariantMatcher,

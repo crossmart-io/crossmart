@@ -46,3 +46,5 @@ export * from './redis/in-memory-replay.guard.js';
 export * from './redis/redis.constants.js';
 export * from './redis/redis.module.js';
 export * from './time/utc-month.js';
+export * from './net/guarded-lookup.js';
+export * from './net/public-address.js';

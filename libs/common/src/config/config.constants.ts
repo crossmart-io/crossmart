@@ -18,6 +18,8 @@ export const MIN_MASTER_KEY_VERSION = 1;
 export const ENV_TRUE = 'true';
 /** Plan limits are reported but not enforced until billing exists. */
 export const DEFAULT_ENTITLEMENTS_ENFORCED = false;
+/** Webhook endpoints must be public https URLs unless a self-hosted instance opts out. */
+export const DEFAULT_WEBHOOK_ALLOW_PRIVATE_URLS = false;
 /** The model the AI agents use unless `AI_MODEL` names another. */
 export const DEFAULT_AI_MODEL = 'claude-sonnet-5-5';
 /**

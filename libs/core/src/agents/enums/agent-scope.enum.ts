@@ -13,4 +13,9 @@ export enum AgentScope {
   ReportsRead = 'reports:read',
   /** Ask for AI content, and approve or reject suggestions. */
   SuggestionsWrite = 'suggestions:write',
+  /**
+   * See and add webhook endpoints, so an agent's own backend can receive events. Events carry
+   * workspace data to the URL the agent names, so the user grants this on its own.
+   */
+  WebhooksWrite = 'webhooks:write',
 }

@@ -21,6 +21,11 @@ enum ActivityAction: string
     case ProductViewDeleted = 'product_view_deleted';
     case ApiKeyCreated = 'api_key_created';
     case ApiKeyRevoked = 'api_key_revoked';
+    case WebhookEndpointCreated = 'webhook_endpoint_created';
+    case WebhookEndpointUpdated = 'webhook_endpoint_updated';
+    case WebhookEndpointDeleted = 'webhook_endpoint_deleted';
+    case WebhookSecretRotated = 'webhook_secret_rotated';
+    case WebhookEndpointDisabled = 'webhook_endpoint_disabled';
     case AgentDisconnected = 'agent_disconnected';
     case UnusedAgentsRemoved = 'unused_agents_removed';
     case MemberInvited = 'member_invited';

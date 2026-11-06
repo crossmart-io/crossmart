@@ -8,6 +8,11 @@ export enum QueueName {
   Price = 'price',
   Content = 'content',
   Import = 'import',
+  /**
+   * Outgoing webhook deliveries (ADR 0023). Their own queue, so slow or failing endpoints never
+   * hold up a sync, and a sync never delays an event.
+   */
+  Webhooks = 'webhooks',
   /** AI agent jobs, such as content generation. Slow and metered, so they come last. */
   Ai = 'ai',
   /**
