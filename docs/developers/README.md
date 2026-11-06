@@ -6,7 +6,9 @@ public REST API, so your scripts, integrations and AI agents can do it too.
 
 - **[Quickstart](quickstart.md):** create a product, publish it to a store, override it there, and read orders, with curl and the SDK.
 - **[TypeScript SDK](../../sdks/typescript/README.md):** `@crossmart/sdk`, typed from the OpenAPI spec.
-- **[MCP server](mcp.md):** connect Claude, ChatGPT and other AI agents.
+- **[MCP server](mcp.md):** what AI agents can do with Crossmart, and its 25 tools.
+- **[Connect your AI agent](agents/README.md):** setup guides for Claude, Cursor, VS Code, Codex,
+  Gemini CLI, OpenClaw and more, plus the [Crossmart agent skill](../../skills/README.md).
 
 ## The API
 
@@ -141,6 +143,6 @@ or `ERROR` (with the store's message in `lastError`) when it refuses. The
 
 - [Quickstart](quickstart.md)
 - [TypeScript SDK](../../sdks/typescript/README.md)
-- [MCP server for AI agents](mcp.md)
+- [MCP server for AI agents](mcp.md) and [setup per agent](agents/README.md)
 - [Roles and permissions](../permissions.md)
 - [Architecture](../architecture.md), for contributors

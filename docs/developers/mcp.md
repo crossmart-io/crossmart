@@ -14,6 +14,11 @@ person in the dashboard.
 | Authentication | A workspace API key today; OAuth for agents is coming        |
 | Source         | [`apps/mcp`](../../apps/mcp) ([maintainer notes](../mcp.md)) |
 
+**Setup guides for each agent** (Claude, ChatGPT, Cursor, Windsurf, VS Code, Zed, Cline, Continue,
+Codex, Gemini CLI, OpenClaw, Meta Muse, Goose, Hermes Agent) are in [agents/](agents/README.md).
+The [Crossmart agent skill](../../skills/README.md) teaches an agent the seller workflows on top of
+these tools; it installs in any agent that reads `SKILL.md` files.
+
 ## Connect with an API key
 
 1. In the dashboard, open **Settings → API keys** and create a key for the agent. Name it after the
@@ -37,6 +42,8 @@ claude mcp add --transport http crossmart https://mcp.crossmart.io/mcp \
 
 ### Cursor and other clients that take headers
 
+The exact file and field names differ per client; see [agents/](agents/README.md).
+
 ```json
 {
   "mcpServers": {
@@ -50,7 +57,8 @@ claude mcp add --transport http crossmart https://mcp.crossmart.io/mcp \
 
 ### Claude Desktop (local server)
 
-Claude Desktop starts local MCP servers itself. Build the server from this repository
+Claude Desktop starts local MCP servers itself (or use the `mcp-remote` bridge, see
+[Claude Desktop](agents/claude-desktop.md)). Build the server from this repository
 (`pnpm install && pnpm build:mcp`) and add it to `claude_desktop_config.json`:
 
 ```json
@@ -71,12 +79,13 @@ Claude Desktop starts local MCP servers itself. Build the server from this repos
 The local server talks to the API over stdio; `CROSSMART_API_URL` defaults to
 `http://localhost:3000`, so set it for the hosted API.
 
-### Claude.ai and ChatGPT
+### Claude.ai, ChatGPT and Meta Muse
 
-Their connectors sign in with OAuth rather than a pasted key. Agent OAuth is being added: the seller
+Their connectors sign in with OAuth rather than a pasted key (claude.ai accepts an `x-api-key`
+header only for organisations in its request-headers beta). Agent OAuth is being added: the seller
 will sign in, choose a workspace and approve what the agent may do (read the catalog, write it,
 read orders, manage store listings, read reports, propose suggestions). Until then, use one of the
-clients above.
+clients that send headers; the [agent guides](agents/README.md) say which do.
 
 ## Tools
 
