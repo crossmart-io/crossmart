@@ -543,6 +543,48 @@ describe('Listings (e2e)', () => {
       );
     });
 
+    it('strips scripts and event handlers from a description override, on save and at publish', async () => {
+      const owner = await signUp(app, 'Sanitized');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const product = await createProduct(owner, { title: 'Script Mug', tags: ['xss'] });
+      await request(server())
+        .put(connectionPath(owner, connectionId, 'product-selection'))
+        .set('Cookie', owner.cookie)
+        .send({
+          rule: { filter: { tags: ['xss'] }, includeProductIds: [], excludeProductIds: [] },
+        });
+
+      const saved = await request(server())
+        .put(`${base(owner)}/products/${product.id}/channels/${connectionId}/override`)
+        .set('Cookie', owner.cookie)
+        .send({
+          descriptionHtml:
+            '<p onclick="steal()">Mug</p><script>steal()</script><img src=x onerror="steal()">',
+        });
+      queue.drain();
+      const calls: GraphqlCall[] = [];
+      answerGraphql(
+        http,
+        shop,
+        (call) => {
+          calls.push(call);
+          return shopifyReply(call, 'gid://shopify/Product/990002');
+        },
+        2,
+      );
+      await request(server())
+        .post(connectionPath(owner, connectionId, 'sync'))
+        .set('Cookie', owner.cookie);
+      await runQueued();
+
+      expect(saved.status).toBe(HttpStatus.OK);
+      expect(saved.body.override.descriptionHtml).toBe('<p>Mug</p>');
+      const published = calls.find((call) => call.query.includes('productSet'));
+      expect(published?.variables.input).toMatchObject({ descriptionHtml: '<p>Mug</p>' });
+      http.assertDone();
+    });
+
     it('archives a deleted product on the stores that hold it', async () => {
       const owner = await signUp(app, 'Deleter');
       const shop = newShop();

@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any
+from typing import Any, cast
 from urllib.parse import quote
 
 import httpx
@@ -8,6 +8,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.content_generation_receipt_dto import ContentGenerationReceiptDto
 from ...models.generate_content_dto import GenerateContentDto
+from ...models.plan_limit_error_dto import PlanLimitErrorDto
 from ...types import Response
 
 
@@ -35,11 +36,20 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> ContentGenerationReceiptDto | None:
+) -> Any | ContentGenerationReceiptDto | PlanLimitErrorDto | None:
     if response.status_code == 202:
         response_202 = ContentGenerationReceiptDto.from_dict(response.json())
 
         return response_202
+
+    if response.status_code == 402:
+        response_402 = PlanLimitErrorDto.from_dict(response.json())
+
+        return response_402
+
+    if response.status_code == 429:
+        response_429 = cast(Any, None)
+        return response_429
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -49,7 +59,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[ContentGenerationReceiptDto]:
+) -> Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -63,12 +73,13 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> Response[ContentGenerationReceiptDto]:
+) -> Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]:
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
     store’s channel. The results arrive as pending suggestions to review; nothing changes until one is
-    approved. Answers 503 while AI is not configured.
+    approved. Each product uses one AI credit: answers 402 when the plan’s credits this month do not
+    cover them (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -79,7 +90,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ContentGenerationReceiptDto]
+        Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -99,12 +110,13 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> ContentGenerationReceiptDto | None:
+) -> Any | ContentGenerationReceiptDto | PlanLimitErrorDto | None:
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
     store’s channel. The results arrive as pending suggestions to review; nothing changes until one is
-    approved. Answers 503 while AI is not configured.
+    approved. Each product uses one AI credit: answers 402 when the plan’s credits this month do not
+    cover them (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -115,7 +127,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ContentGenerationReceiptDto
+        Any | ContentGenerationReceiptDto | PlanLimitErrorDto
     """
 
     return sync_detailed(
@@ -130,12 +142,13 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> Response[ContentGenerationReceiptDto]:
+) -> Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]:
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
     store’s channel. The results arrive as pending suggestions to review; nothing changes until one is
-    approved. Answers 503 while AI is not configured.
+    approved. Each product uses one AI credit: answers 402 when the plan’s credits this month do not
+    cover them (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -146,7 +159,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ContentGenerationReceiptDto]
+        Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -164,12 +177,13 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> ContentGenerationReceiptDto | None:
+) -> Any | ContentGenerationReceiptDto | PlanLimitErrorDto | None:
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
     store’s channel. The results arrive as pending suggestions to review; nothing changes until one is
-    approved. Answers 503 while AI is not configured.
+    approved. Each product uses one AI credit: answers 402 when the plan’s credits this month do not
+    cover them (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
 
     Args:
         workspace_id (str):
@@ -180,7 +194,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ContentGenerationReceiptDto
+        Any | ContentGenerationReceiptDto | PlanLimitErrorDto
     """
 
     return (

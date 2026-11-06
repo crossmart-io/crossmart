@@ -1,3 +1,4 @@
+import { AI_CREDITS_PER_CALL } from '../entitlements.constants.js';
 import { Feature } from '../enums/feature.enum.js';
 import type { OrganizationScope, UsageRepository } from '../repositories/usage.repository.js';
 import { UsageMeter } from './usage-meter.js';
@@ -12,6 +13,7 @@ function setup() {
       .mockResolvedValue(3),
     countMembers: vi.fn<UsageRepository['countMembers']>().mockResolvedValue(5),
     countActiveApiKeys: vi.fn<UsageRepository['countActiveApiKeys']>().mockResolvedValue(1),
+    countAiCalls: vi.fn<UsageRepository['countAiCalls']>().mockResolvedValue(7),
   };
   return { meter: new UsageMeter(usage as unknown as UsageRepository), usage };
 }
@@ -26,7 +28,7 @@ describe('UsageMeter', () => {
       [Feature.Workspaces]: 2,
       [Feature.Members]: 5,
       [Feature.ApiKeys]: 1,
-      [Feature.AiCredits]: 0,
+      [Feature.AiCredits]: 7,
       [Feature.AutonomousAgents]: null,
       [Feature.BringYourOwnKey]: null,
     });
@@ -34,8 +36,16 @@ describe('UsageMeter', () => {
     expect(usage.countActiveApiKeys).toHaveBeenCalledWith(SCOPE, expect.any(Date));
   });
 
-  it('meters no AI credits until AI usage is recorded', async () => {
-    const { meter } = setup();
-    await expect(meter.count(SCOPE, Feature.AiCredits)).resolves.toBe(0);
+  it('meters one AI credit per call made this UTC month', async () => {
+    vi.useFakeTimers({ now: new Date('2026-11-20T08:00:00Z') });
+    const { meter, usage } = setup();
+
+    await expect(meter.count(SCOPE, Feature.AiCredits)).resolves.toBe(7 * AI_CREDITS_PER_CALL);
+
+    expect(usage.countAiCalls).toHaveBeenCalledWith(SCOPE, {
+      from: new Date('2026-11-01T00:00:00Z'),
+      to: new Date('2026-12-01T00:00:00Z'),
+    });
+    vi.useRealTimers();
   });
 });

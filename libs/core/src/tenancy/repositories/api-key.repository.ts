@@ -44,6 +44,14 @@ export class ApiKeyRepository {
     });
   }
 
+  /** A key of the workspace that is not revoked, with its role; null otherwise. */
+  findActive(workspaceId: string, apiKeyId: string): Promise<ApiKeyWithRole | null> {
+    return this.prisma.apiKey.findFirst({
+      where: { id: apiKeyId, workspaceId, revokedAt: null },
+      include: CUSTOM_ROLE_SELECT,
+    });
+  }
+
   /** Returns the revoked key, or null when it is not in this workspace or already revoked. */
   async revoke(
     workspaceId: string,

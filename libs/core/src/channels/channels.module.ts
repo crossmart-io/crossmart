@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { RedisModule } from '@crossmart/common';
 import { EventsModule } from '../events/events.module.js';
 import { ConnectorsModule } from '@crossmart/connectors';
 import { ActivityModule } from '../activity/activity.module.js';
@@ -10,6 +11,7 @@ import { ListingRepository } from './repositories/listing.repository.js';
 import { ChannelAuthorizationService } from './services/channel-authorization.service.js';
 import { ChannelConnectionsService } from './services/channel-connections.service.js';
 import { ChannelSessionFactory } from './services/channel-session.factory.js';
+import { ChannelWebhookDispatcher } from './services/channel-webhook.dispatcher.js';
 import { ChannelWebhooksService } from './services/channel-webhooks.service.js';
 import { ChannelConnectionQuota } from './services/channel-connection.quota.js';
 import { ConnectedAccountWriter } from './services/connected-account.writer.js';
@@ -35,6 +37,7 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     CredentialsModule,
     EntitlementsModule,
     EventsModule,
+    RedisModule,
     TenancyModule,
   ],
   providers: [
@@ -49,6 +52,7 @@ import { GoogleMerchantSetupService } from './google-merchant/services/google-me
     ChannelSessionFactory,
     ChannelAuthorizationService,
     ChannelConnectionsService,
+    ChannelWebhookDispatcher,
     ChannelWebhooksService,
     ConnectionAccountStore,
     EbayAccountSetupService,

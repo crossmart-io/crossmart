@@ -106,8 +106,10 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
 
 - **Usage** is counted from the data across the organization's workspaces, one aggregate query per
   feature: listings with status `ACTIVE`, connections not `DISCONNECTED`, workspaces, distinct
-  members, API keys neither revoked nor expired. `ai_credits` reports 0 until AI calls record usage:
-  connect it in `UsageMeter` (sum the period's credits from the AI usage table).
+  members, API keys neither revoked nor expired. `ai_credits` counts the organization's `ai_usage` rows
+  in the current UTC calendar month times `AI_CREDITS_PER_CALL` (1: every call is one credit, whatever its
+  size). Pricing per token may replace it later from the same rows, and the period may follow the billing
+  period once billing is connected.
 - **`EntitlementService`** offers `limit`, `usage`, `check` (always truthful) and `assert` (throws
   `EntitlementExceededException`, HTTP 402 with `code`, `feature`, `limit`, `usage`, `requested`, only
   while `ENTITLEMENTS_ENFORCED=true`; default false until billing exists).
@@ -287,13 +289,20 @@ See [ADR 0016](decisions/0016-ai-layer.md).
   uses `@anthropic-ai/sdk` with `AI_MODEL` (default `claude-sonnet-5-5`) and `ANTHROPIC_API_KEY`. Without the key
   the app boots, `GET …/ai/status` reports `configured: false`, and AI endpoints answer `503 AI is not configured`.
   OpenAI, Gemini, Ollama and per-workspace BYOK keys are later adapters behind the same interface.
-- **Gateway.** Agents call the model only through `AiGateway.generate(context, request)`. It meters the call, then
+- **Gateway.** Agents call the model only through `AiGateway.generate(context, request)`. It first asserts the
+  plan has an AI credit left (`EntitlementService`, `Feature.AiCredits`; HTTP 402 `plan_limit_reached` while
+  `ENTITLEMENTS_ENFORCED` is on), so no provider call is made past the limit. It meters the call, then
   validates the answer against the request's zod schema (also sent as the structured-output format). A refused,
   truncated, non-JSON or off-schema answer throws `AiOutputRejectedError` and nothing from it is stored. Prompts and
   answers are never logged; rejections log only which fields failed.
 - **Metering.** Every call writes an `ai_usage` row: workspace, `AiFeature`, provider, model, input and output tokens.
   Rejected answers are metered too. `AiUsageService.report(workspaceId, period?)` sums calls and tokens per feature and
-  model (`GET …/ai/usage`, the current UTC month by default). Nothing is enforced here: plans and credits read it.
+  model (`GET …/ai/usage`, the current UTC month by default). Plans read the same rows to meter `ai_credits`.
+- **Rate limits.** The AI routes (`content-drafts`: 30, `content-generations`: 10 requests a minute) are limited per
+  workspace and caller (person or API key) with `@nestjs/throttler`, opt-in per route through
+  `WorkspacePrincipalThrottlerGuard`. The windows live in Redis (`RedisThrottlerStorage`), so every API instance
+  shares them. Past the limit the API answers 429 with `Retry-After`. Content generations also check, before
+  queueing, that the credits cover one call per product.
 - **Prompts** are versioned files in `libs/core/src/ai/prompts` (`content-generator.v1.prompt.ts`), never inline
   strings. Product data goes in a fenced data block and the model is told to ignore instructions inside it.
 - **Suggestions** (`libs/core/src/suggestions`). A `Suggestion` targets a product and optionally a connection, has a
@@ -339,7 +348,7 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 
 ## 9. Deployment
 
-- **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out.
+- **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out. PostgreSQL and Redis require `POSTGRES_PASSWORD` and `REDIS_PASSWORD` (Redis runs with `--requirepass`) and publish their ports on 127.0.0.1 only.
 - **Cloud:** Railway (US East), using the same Docker images, with `staging` and `production` environments, a static egress IP, managed Postgres with PITR plus a daily off-site dump to S3/R2.
 - **CI (GitHub Actions):** lint, typecheck, unit + contract tests, build and push images to GHCR, publish `openapi.json` on release.
 

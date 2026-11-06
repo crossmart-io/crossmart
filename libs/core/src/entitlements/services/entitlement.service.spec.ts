@@ -15,6 +15,7 @@ const GRANTS: FeatureGrant[] = [
   { feature: Feature.ChannelConnections, kind: FeatureKind.Limit, enabled: true, limit: 2 },
   { feature: Feature.ActiveListings, kind: FeatureKind.Limit, enabled: true, limit: null },
   { feature: Feature.BringYourOwnKey, kind: FeatureKind.Flag, enabled: false, limit: 0 },
+  { feature: Feature.AiCredits, kind: FeatureKind.Limit, enabled: true, limit: 100 },
 ];
 
 function setup(enforced = true, inUse = 2) {
@@ -96,5 +97,19 @@ describe('EntitlementService', () => {
     await expect(
       service.assertInWorkspace('ws-2', Feature.ChannelConnections),
     ).rejects.toBeInstanceOf(EntitlementExceededException);
+  });
+
+  it('refuses AI calls once the month’s credits are spent, and only while enforced', async () => {
+    const { service, meter } = setup(true, 99);
+    await expect(service.assertInWorkspace('ws-1', Feature.AiCredits)).resolves.toBeUndefined();
+    await expect(service.assertInWorkspace('ws-1', Feature.AiCredits, 2)).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
+    });
+    expect(meter.count).toHaveBeenCalledWith(SCOPE, Feature.AiCredits);
+
+    const reporting = setup(false, 100);
+    await expect(
+      reporting.service.assertInWorkspace('ws-1', Feature.AiCredits),
+    ).resolves.toBeUndefined();
   });
 });

@@ -11,6 +11,7 @@ class ConnectFailure(StrEnum):
     MISSING_SCOPES = "missing_scopes"
     NOT_PERMITTED = "not_permitted"
     PLAN_LIMIT_REACHED = "plan_limit_reached"
+    SESSION_REQUIRED = "session_required"
     UNEXPECTED = "unexpected"
 
     def __str__(self) -> str:

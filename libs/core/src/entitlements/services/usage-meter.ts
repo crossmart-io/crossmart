@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { utcMonthContaining } from '@crossmart/common';
+import { AI_CREDITS_PER_CALL } from '../entitlements.constants.js';
 import { Feature } from '../enums/feature.enum.js';
 import { type OrganizationScope, UsageRepository } from '../repositories/usage.repository.js';
 
 type Counter = (scope: OrganizationScope) => Promise<number>;
-
-const NOTHING_METERED = 0;
 
 /**
  * Measures what an organization uses of each counted feature, from the data itself: nothing is
@@ -21,12 +21,19 @@ export class UsageMeter {
       [Feature.Workspaces]: (scope) => Promise.resolve(scope.workspaceIds.length),
       [Feature.Members]: (scope) => this.usage.countMembers(scope),
       [Feature.ApiKeys]: (scope) => this.usage.countActiveApiKeys(scope, new Date()),
-      // Not metered yet. Once AI calls write usage records (the `ai_usage` table), sum the
-      // credits the organization's workspaces used since the start of the billing period here.
-      [Feature.AiCredits]: () => Promise.resolve(NOTHING_METERED),
+      [Feature.AiCredits]: (scope) => this.countAiCredits(scope),
       [Feature.AutonomousAgents]: null,
       [Feature.BringYourOwnKey]: null,
     };
+  }
+
+  /**
+   * Credits the organization's workspaces spent this period, from the `ai_usage` records. The
+   * period is the UTC calendar month until billing periods are connected.
+   */
+  private async countAiCredits(scope: OrganizationScope): Promise<number> {
+    const calls = await this.usage.countAiCalls(scope, utcMonthContaining(new Date()));
+    return calls * AI_CREDITS_PER_CALL;
   }
 
   organizationIdOf(workspaceId: string): Promise<string> {

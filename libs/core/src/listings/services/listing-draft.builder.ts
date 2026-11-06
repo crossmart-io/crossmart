@@ -6,6 +6,7 @@ import type {
   ListingDraftVariant,
   PriceUpdate,
 } from '@crossmart/connectors';
+import { sanitizeDescriptionHtml } from '@crossmart/common';
 import { OutOfStockPolicy } from '@crossmart/database';
 import type { ProductDetail, VariantView } from '../../catalog/entities/product-views.js';
 import type {
@@ -65,7 +66,10 @@ export class ListingDraftBuilder {
     };
   }
 
-  /** The product's content with the listing's overrides applied. */
+  /**
+   * The product's content with the listing's overrides applied. The description is sanitized
+   * again on the way out, so nothing stored before sanitizing covered overrides is published.
+   */
   private content(
     product: ProductDetail,
     listing: ListingSyncRecord | null,
@@ -75,7 +79,9 @@ export class ListingDraftBuilder {
     return {
       handle: product.handle,
       title: override?.title ?? product.title,
-      descriptionHtml: override?.descriptionHtml ?? product.descriptionHtml,
+      descriptionHtml: sanitizeDescriptionHtml(
+        override?.descriptionHtml ?? product.descriptionHtml,
+      ),
       vendor: product.vendor,
       productType: product.productType,
       tags: override?.tagsOverridden ? override.tags : product.tags,

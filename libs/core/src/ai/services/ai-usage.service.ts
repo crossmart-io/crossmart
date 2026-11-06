@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { findEnumValue } from '@crossmart/common';
+import { findEnumValue, utcMonthContaining } from '@crossmart/common';
 import type {
   AiUsageLine,
   AiUsagePeriod,
@@ -9,7 +9,6 @@ import type {
 } from '../entities/ai-usage.js';
 import { AiFeature } from '../enums/ai-feature.enum.js';
 import { type AiUsageGroup, AiUsageRepository } from '../repositories/ai-usage.repository.js';
-import { AI_USAGE_DEFAULT_PERIOD_MONTHS } from '../ai.constants.js';
 
 const NO_USAGE: AiUsageTotals = { calls: 0, inputTokens: 0, outputTokens: 0 };
 
@@ -35,11 +34,7 @@ export class AiUsageService {
 
   /** From the first day of the month of `now`, in UTC, to the first day of the next. */
   static currentMonth(now: Date): AiUsagePeriod {
-    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth()));
-    const to = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + AI_USAGE_DEFAULT_PERIOD_MONTHS),
-    );
-    return { from, to };
+    return utcMonthContaining(now);
   }
 
   /** Rows of features this version does not know (written by a newer one) are left out. */

@@ -37,8 +37,10 @@ those, not the role name, so they keep working when roles change.
 - A member or API key can only grant, change or remove roles that its own role covers, meaning it
   holds every permission of that role. An Admin can't touch an Owner or make one.
 - A workspace always keeps at least one Owner. Members can't leave their only workspace.
-- API keys can't be Owners. A key never has more access than its creator. Keys are revoked when
-  their creator is removed, and on a demotion when the new role couldn't have created them.
+- API keys can't be Owners. A key never has more access than its creator. Revoking a key needs
+  the same: the revoker must have every permission the key has, unless they created it. Keys are
+  revoked when their creator is removed, and on a demotion when the new role couldn't have created
+  them.
 
 ## Custom roles
 

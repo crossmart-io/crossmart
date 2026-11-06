@@ -22,8 +22,12 @@ that cannot be bypassed and never applies a change over a newer edit.
   logged. Where the model supports it, Anthropic's server-side refusal fallback is on.
 - **Metering:** every call writes an `ai_usage` row (workspace, feature, provider, model, input
   and output tokens), including calls whose answer is then rejected, since the tokens were spent.
-  `AiUsageService.report` sums a period per feature and model. Limits are not enforced here; plans
-  and credits read the report.
+  `AiUsageService.report` sums a period per feature and model.
+- **Credits:** one AI call is one `ai_credits` credit (`AI_CREDITS_PER_CALL`), counted per UTC
+  month from the `ai_usage` rows. `AiGateway` asserts a credit is left before calling the provider,
+  so a plan's limit (HTTP 402 while plans are enforced) caps spend. Pricing credits per token may
+  come later, metered from the same rows. The AI routes are also rate limited per workspace and
+  caller, in Redis.
 - **Suggestions** (`libs/core/src/suggestions`) hold a target (product, optional connection), a
   kind (`SuggestionKind`, stored as text), the value it replaces as it was when made, the proposed
   value, a rationale, who made it (agent, user or API key) and the requester, and a review.

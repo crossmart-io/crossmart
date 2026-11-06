@@ -4,6 +4,7 @@ import {
   AesGcmEnvelopeEncryption,
   type AppConfigService,
   InMemoryDataKeyStore,
+  InMemoryReplayGuard,
   MasterKeyRing,
 } from '@crossmart/common';
 import {
@@ -20,6 +21,7 @@ import type { WorkspaceAccessService } from '../../tenancy/services/workspace-ac
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import type { OAuthCallbackBrowser } from '../entities/oauth-state.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 import type { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
 import { connectionRecord, USER_ID, WORKSPACE_ID } from '../testing/channel-connection.fixtures.js';
@@ -72,18 +74,37 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
   const states = new OAuthStateSigner(appConfig);
   const service = new ChannelAuthorizationService(
     new OAuthConnectorResolver(new ChannelConnectorRegistry([connector]), vault, appConfig),
-    new OAuthStateService(states, workspaceAccess as unknown as WorkspaceAccessService, quota),
+    new OAuthStateService(
+      states,
+      workspaceAccess as unknown as WorkspaceAccessService,
+      quota,
+      new InMemoryReplayGuard(),
+    ),
     new ConnectedAccountWriter(vault, repository, quota),
     activity,
   );
-  const state = () =>
-    states.sign({
-      workspaceId: WORKSPACE_ID,
-      userId: USER_ID,
-      channel: ChannelType.Shopify,
-      accountHandle: FAKE_ACCOUNT,
-    });
-  return { service, connector, connections, activity, vault, state, entitlements };
+  /** A callback from the browser that started the connection: its state, session and nonce. */
+  const callback = (
+    query: Record<string, string> = {},
+    browser: Partial<OAuthCallbackBrowser> = {},
+  ) => {
+    const nonce = randomBytes(16).toString('base64url');
+    const state = states.sign(
+      {
+        workspaceId: WORKSPACE_ID,
+        userId: USER_ID,
+        channel: ChannelType.Shopify,
+        accountHandle: FAKE_ACCOUNT,
+      },
+      new Date(),
+      nonce,
+    );
+    return {
+      query: { state, code: 'c', ...query },
+      browser: { sessionUserId: USER_ID, nonce, ...browser },
+    };
+  };
+  return { service, connector, connections, activity, vault, callback, entitlements };
 }
 
 async function failureOf(promise: Promise<unknown>): Promise<ConnectFailure | undefined> {
@@ -96,12 +117,15 @@ describe('ChannelAuthorizationService', () => {
     it('returns the authorize URL with a signed state and the API callback', async () => {
       const { service } = setup();
 
-      const started = await service.start(WORKSPACE_ID, USER_ID, {
+      const { started, browserNonce } = await service.start(WORKSPACE_ID, USER_ID, {
         channel: ChannelType.Shopify,
         accountHandle: 'demo-store',
       });
 
       const url = new URL(started.authorizationUrl);
+      const [payload] = (url.searchParams.get('state') ?? '').split('.');
+      expect(JSON.parse(Buffer.from(payload, 'base64url').toString()).nonce).toBe(browserNonce);
+      expect(browserNonce).toMatch(/^[\w-]{20,}$/);
       expect(started.accountHandle).toBe(FAKE_ACCOUNT);
       expect(started.externalAccountId).toBe(FAKE_ACCOUNT);
       expect(url.searchParams.get('redirect_uri')).toBe(
@@ -166,17 +190,12 @@ describe('ChannelAuthorizationService', () => {
 
   describe('complete', () => {
     it('stores nothing when the plan filled up meanwhile, and says why', async () => {
-      const { service, connections, activity, entitlements, state } = setup();
+      const { service, connections, activity, entitlements, callback } = setup();
       entitlements.assertInWorkspace.mockRejectedValueOnce(
         planLimitReached(Feature.ChannelConnections),
       );
 
-      const failure = await failureOf(
-        service.complete(ChannelType.Shopify, {
-          query: { state: state(), code: 'c' },
-          sessionUserId: USER_ID,
-        }),
-      );
+      const failure = await failureOf(service.complete(ChannelType.Shopify, callback()));
 
       expect(failure).toBe(ConnectFailure.PlanLimitReached);
       expect(connections.upsertConnected).not.toHaveBeenCalled();
@@ -187,24 +206,18 @@ describe('ChannelAuthorizationService', () => {
     });
 
     it('lets an account the workspace holds connect again', async () => {
-      const { service, connections, entitlements, state } = setup();
+      const { service, connections, entitlements, callback } = setup();
       connections.holdsSlot.mockResolvedValueOnce(true);
 
-      await service.complete(ChannelType.Shopify, {
-        query: { state: state(), code: 'c' },
-        sessionUserId: USER_ID,
-      });
+      await service.complete(ChannelType.Shopify, callback());
       expect(entitlements.assertInWorkspace).not.toHaveBeenCalled();
       expect(connections.upsertConnected).toHaveBeenCalled();
     });
 
     it('stores sealed credentials and records the connection', async () => {
-      const { service, connector, connections, activity, vault, state } = setup();
+      const { service, connector, connections, activity, vault, callback } = setup();
 
-      const view = await service.complete(ChannelType.Shopify, {
-        query: { state: state(), code: 'c' },
-        sessionUserId: USER_ID,
-      });
+      const view = await service.complete(ChannelType.Shopify, callback());
 
       expect(view.displayName).toBe('Demo Store');
       expect(connector.completeAuthorization).toHaveBeenCalledWith(
@@ -232,42 +245,47 @@ describe('ChannelAuthorizationService', () => {
     });
 
     it('rejects forged states without calling the channel or logging activity', async () => {
-      const { service, connector, activity } = setup();
+      const { service, connector, activity, callback } = setup();
 
       expect(
-        await failureOf(
-          service.complete(ChannelType.Shopify, {
-            query: { state: 'forged' },
-            sessionUserId: null,
-          }),
-        ),
+        await failureOf(service.complete(ChannelType.Shopify, callback({ state: 'forged' }))),
       ).toBe(ConnectFailure.InvalidState);
       expect(connector.completeAuthorization).not.toHaveBeenCalled();
       expect(activity.recorded).toEqual([]);
     });
 
-    it('rejects a state followed by another signed-in user', async () => {
-      const { service, state } = setup();
+    it.each<[string, Partial<OAuthCallbackBrowser>, ConnectFailure]>([
+      ['no session', { sessionUserId: null }, ConnectFailure.SessionRequired],
+      ['another signed-in user', { sessionUserId: WORKSPACE_ID }, ConnectFailure.InvalidState],
+      ['no nonce cookie', { nonce: null }, ConnectFailure.InvalidState],
+      ['another browser’s nonce', { nonce: 'not-the-nonce' }, ConnectFailure.InvalidState],
+    ])(
+      'rejects a callback with %s, without calling the channel',
+      async (_case, browser, failure) => {
+        const { service, connector, callback } = setup();
 
-      expect(
-        await failureOf(
-          service.complete(ChannelType.Shopify, {
-            query: { state: state() },
-            sessionUserId: WORKSPACE_ID,
-          }),
-        ),
-      ).toBe(ConnectFailure.InvalidState);
+        expect(await failureOf(service.complete(ChannelType.Shopify, callback({}, browser)))).toBe(
+          failure,
+        );
+        expect(connector.completeAuthorization).not.toHaveBeenCalled();
+      },
+    );
+
+    it('accepts each state once', async () => {
+      const { service, connector, callback } = setup();
+      const input = callback();
+
+      await service.complete(ChannelType.Shopify, input);
+      const replay = await failureOf(service.complete(ChannelType.Shopify, input));
+
+      expect(replay).toBe(ConnectFailure.InvalidState);
+      expect(connector.completeAuthorization).toHaveBeenCalledTimes(1);
     });
 
     it('records a failure when the user lost access, or the connector refuses the account', async () => {
       const lostAccess = setup(WorkspaceRole.VIEWER);
       expect(
-        await failureOf(
-          lostAccess.service.complete(ChannelType.Shopify, {
-            query: { state: lostAccess.state() },
-            sessionUserId: null,
-          }),
-        ),
+        await failureOf(lostAccess.service.complete(ChannelType.Shopify, lostAccess.callback())),
       ).toBe(ConnectFailure.NotPermitted);
       expect(lostAccess.activity.recorded[0].entry).toMatchObject({
         action: ActivityAction.ChannelConnectFailed,
@@ -280,12 +298,7 @@ describe('ChannelAuthorizationService', () => {
         new ChannelError(ChannelType.Shopify, ChannelErrorCode.InvalidAccount, 'other store'),
       );
       expect(
-        await failureOf(
-          otherStore.service.complete(ChannelType.Shopify, {
-            query: { state: otherStore.state() },
-            sessionUserId: null,
-          }),
-        ),
+        await failureOf(otherStore.service.complete(ChannelType.Shopify, otherStore.callback())),
       ).toBe(ConnectFailure.InvalidAccount);
       expect(otherStore.connections.upsertConnected).not.toHaveBeenCalled();
       expect(otherStore.activity.recorded[0].entry).toMatchObject({
@@ -295,30 +308,23 @@ describe('ChannelAuthorizationService', () => {
     });
 
     it('maps channel errors and declined approvals to failures', async () => {
-      const { service, connector, state } = setup();
+      const { service, connector, callback } = setup();
       connector.completeAuthorization.mockRejectedValueOnce(
         new ChannelError(ChannelType.Shopify, ChannelErrorCode.InvalidSignature, 'bad hmac'),
       );
 
+      expect(await failureOf(service.complete(ChannelType.Shopify, callback()))).toBe(
+        ConnectFailure.InvalidSignature,
+      );
       expect(
         await failureOf(
-          service.complete(ChannelType.Shopify, { query: { state: state() }, sessionUserId: null }),
-        ),
-      ).toBe(ConnectFailure.InvalidSignature);
-      expect(
-        await failureOf(
-          service.complete(ChannelType.Shopify, {
-            query: { state: state(), error: 'access_denied' },
-            sessionUserId: null,
-          }),
+          service.complete(ChannelType.Shopify, callback({ error: 'access_denied' })),
         ),
       ).toBe(ConnectFailure.AccessDenied);
       connector.completeAuthorization.mockRejectedValueOnce(new Error('boom'));
-      expect(
-        await failureOf(
-          service.complete(ChannelType.Shopify, { query: { state: state() }, sessionUserId: null }),
-        ),
-      ).toBe(ConnectFailure.Unexpected);
+      expect(await failureOf(service.complete(ChannelType.Shopify, callback()))).toBe(
+        ConnectFailure.Unexpected,
+      );
     });
   });
 });

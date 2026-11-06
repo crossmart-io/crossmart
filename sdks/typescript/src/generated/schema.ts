@@ -293,7 +293,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke an API key */
+        /**
+         * Revoke an API key
+         * @description Answers 403 unless the caller created the key or has every permission the key has.
+         */
         delete: operations["ApiKeysController_revoke_v1"];
         options?: never;
         head?: never;
@@ -648,7 +651,7 @@ export interface paths {
         put?: never;
         /**
          * Start connecting a channel account
-         * @description Returns the URL to send the merchant to. After they approve the app, the channel redirects to the API, which stores the connection and sends them back to the web app’s Channels page with the parameters of `ChannelConnectRedirectDto`. Needs a signed-in user.
+         * @description Returns the URL to send the merchant to. After they approve the app, the channel redirects to the API, which stores the connection and sends them back to the web app’s Channels page with the parameters of `ChannelConnectRedirectDto`. Needs a signed-in user, and the browser must store the cookie this response sets (send it with credentials): the callback only accepts the same browser and session that started the connection.
          */
         post: operations["ChannelConnectionsController_startAuthorization_v1"];
         delete?: never;
@@ -1359,7 +1362,7 @@ export interface paths {
         put?: never;
         /**
          * Generate channel content with AI
-         * @description Queues the Content Generator for each product: it writes a title and description fitted to the store’s channel. The results arrive as pending suggestions to review; nothing changes until one is approved. Answers 503 while AI is not configured.
+         * @description Queues the Content Generator for each product: it writes a title and description fitted to the store’s channel. The results arrive as pending suggestions to review; nothing changes until one is approved. Each product uses one AI credit: answers 402 when the plan’s credits this month do not cover them (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
          */
         post: operations["AiController_generateContent_v1"];
         delete?: never;
@@ -1379,7 +1382,7 @@ export interface paths {
         put?: never;
         /**
          * Rewrite a product’s title or description with AI, right away
-         * @description Rewrites the fields asked for, for the catalog or for one store, optionally following an instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it. Answers 503 while AI is not configured.
+         * @description Rewrites the fields asked for, for the catalog or for one store, optionally following an instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it. Uses one AI credit: answers 402 when the plan has none left this month (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
          */
         post: operations["AiController_draftContent_v1"];
         delete?: never;
@@ -3868,6 +3871,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The key has more access than the caller */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     CurrentApiKeyController_get_v1: {
@@ -5501,6 +5511,22 @@ export interface operations {
                     "application/json": components["schemas"]["ContentGenerationReceiptDto"];
                 };
             };
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Too many AI requests from you in this workspace. Wait a minute and try again. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     AiController_draftContent_v1: {
@@ -5525,6 +5551,22 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ContentDraftDto"];
                 };
+            };
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Too many AI requests from you in this workspace. Wait a minute and try again. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5826,6 +5868,7 @@ export enum ConnectFailure {
     access_denied = "access_denied",
     missing_scopes = "missing_scopes",
     not_permitted = "not_permitted",
+    session_required = "session_required",
     channel_unavailable = "channel_unavailable",
     plan_limit_reached = "plan_limit_reached",
     unexpected = "unexpected"

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { TimeWindow } from '@crossmart/common';
 import { ChannelConnectionStatus, ListingStatus, PrismaService } from '@crossmart/database';
 
 /** The workspaces of one organization, which usage is counted across. */
@@ -64,6 +65,13 @@ export class UsageRepository {
         revokedAt: null,
         OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
       },
+    });
+  }
+
+  /** AI calls the workspaces made in the window, from `ai_usage` (indexed by workspace and time). */
+  countAiCalls({ workspaceIds }: OrganizationScope, window: TimeWindow): Promise<number> {
+    return this.prisma.aiUsage.count({
+      where: { workspaceId: { in: workspaceIds }, createdAt: { gte: window.from, lt: window.to } },
     });
   }
 }

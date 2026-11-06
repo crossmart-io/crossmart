@@ -18,6 +18,3 @@ export const AI_OUTPUT_REJECTED_MESSAGE = 'The AI answer was not usable, so noth
  * description), but adaptive thinking spends output tokens too.
  */
 export const AI_MAX_OUTPUT_TOKENS = 16_000;
-
-/** Usage reports cover the current calendar month (UTC) unless a period is given. */
-export const AI_USAGE_DEFAULT_PERIOD_MONTHS = 1;

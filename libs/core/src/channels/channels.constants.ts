@@ -5,6 +5,16 @@ export const OAUTH_STATE_KEY_INFO = 'crossmart:channel-oauth-state';
 export const OAUTH_STATE_KEY_BYTES = 32;
 export const OAUTH_STATE_NONCE_BYTES = 16;
 export const OAUTH_STATE_SEPARATOR = '.';
+/** Prefix of the replay keys that make each OAuth state single use. */
+export const OAUTH_STATE_REPLAY_KEY_PREFIX = 'channel-oauth-state:';
+
+/** Prefix of the replay keys that remember channel webhook deliveries by id. */
+export const WEBHOOK_DELIVERY_REPLAY_KEY_PREFIX = 'channel-webhook:';
+/**
+ * How long a webhook delivery id is remembered, so a repeat is acknowledged without being
+ * handled again. Longer than any connector accepts a delivery for (Shopify: 6 hours).
+ */
+export const WEBHOOK_DELIVERY_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** Tokens are refreshed this long before they expire, so a call never starts with a dead token. */
 export const CREDENTIALS_REFRESH_MARGIN_MS = 5 * 60 * 1000;

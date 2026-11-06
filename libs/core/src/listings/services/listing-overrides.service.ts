@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { sanitizeDescriptionHtml } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
@@ -17,7 +18,8 @@ const DUPLICATE_VARIANT = 'Each variant can have one price per channel';
 /**
  * Per-channel overrides of one product (ChannelContent): content, images, visibility, prices
  * and stock limits. They are validated against the product, so a listing only ever shows the
- * product's own variants and images.
+ * product's own variants and images, and the description is sanitized like the product's, so
+ * the API, MCP and approved suggestions can never store scripts or event handlers.
  */
 @Injectable()
 export class ListingOverridesService {
@@ -32,8 +34,13 @@ export class ListingOverridesService {
     const product = await this.requireProduct(target);
     this.assertBelongsToProduct(product, input);
     const connection = await this.connections.require(target.workspaceId, target.connectionId);
-    await this.writer.save(target, input);
+    await this.writer.save(target, ListingOverridesService.sanitized(input));
     await this.record(target, actor, product, connection.view.displayName);
+  }
+
+  private static sanitized(input: ListingOverrideInput): ListingOverrideInput {
+    if (input.descriptionHtml === null) return input;
+    return { ...input, descriptionHtml: sanitizeDescriptionHtml(input.descriptionHtml) };
   }
 
   /**

@@ -28,7 +28,7 @@ import {
   newShop,
   signQuery,
 } from './support/shopify-store.js';
-import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
+import { browserCookies, createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // The same fake app settings as `SHOPIFY_TEST_ENV`, set before the app module reads them.
 vi.hoisted(() => {
@@ -339,7 +339,7 @@ describe('Plans and entitlements (e2e)', () => {
       const callback = await request(server())
         .get('/api/v1/channels/shopify/oauth/callback')
         .query(signQuery({ code: 'code', shop, state, timestamp: '1762164000' }))
-        .set('Cookie', owner.cookie);
+        .set('Cookie', browserCookies(owner, started));
 
       expect(callback.status).toBe(HttpStatus.FOUND);
       expect(new URL(callback.headers.location).searchParams.get('error')).toBe(
