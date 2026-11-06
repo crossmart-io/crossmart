@@ -51,6 +51,7 @@ class ActivityAction(StrEnum):
     SUGGESTIONS_BULK_APPROVED = "suggestions_bulk_approved"
     SUGGESTION_APPROVED = "suggestion_approved"
     SUGGESTION_REJECTED = "suggestion_rejected"
+    UNUSED_AGENTS_REMOVED = "unused_agents_removed"
     WORKSPACE_CREATED = "workspace_created"
     WORKSPACE_RENAMED = "workspace_renamed"
     WORKSPACE_TIME_ZONE_CHANGED = "workspace_time_zone_changed"

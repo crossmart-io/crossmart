@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Crossmart\Model;
 
+use Crossmart\Enum\AgentClientRegistration;
 use Crossmart\Enum\AgentScope;
 use Crossmart\Serialization\Payload;
 use DateTimeImmutable;
@@ -16,6 +17,8 @@ final class AgentConnectionDto implements JsonSerializable
     /**
      * @param string $clientId The OAuth client id: a Client ID Metadata Document URL, or a registered id
      * @param string $clientName The name the agent gives, such as "Claude"
+     * @param AgentClientRegistration|string $clientRegistration Whether `clientName` came from a verified host (`metadata_document`) or is only what the agent calls itself (`dynamic`)
+     * @param string|null $clientVerifiedHost For a `metadata_document` client: the host its metadata came from
      * @param string|null $clientUri The agent’s home page
      * @param string|null $clientIcon The agent’s logo address, from its metadata. Crossmart never fetches it.
      * @param string $userId The member who connected the agent
@@ -25,6 +28,8 @@ final class AgentConnectionDto implements JsonSerializable
         public readonly string $id,
         public readonly string $clientId,
         public readonly string $clientName,
+        public readonly AgentClientRegistration|string $clientRegistration,
+        public readonly ?string $clientVerifiedHost,
         public readonly ?string $clientUri,
         public readonly ?string $clientIcon,
         public readonly string $userId,
@@ -48,6 +53,8 @@ final class AgentConnectionDto implements JsonSerializable
             id: $payload->string('id'),
             clientId: $payload->string('clientId'),
             clientName: $payload->string('clientName'),
+            clientRegistration: $payload->enum('clientRegistration', AgentClientRegistration::class),
+            clientVerifiedHost: $payload->isNull('clientVerifiedHost') ? null : $payload->string('clientVerifiedHost'),
             clientUri: $payload->isNull('clientUri') ? null : $payload->string('clientUri'),
             clientIcon: $payload->isNull('clientIcon') ? null : $payload->string('clientIcon'),
             userId: $payload->string('userId'),
@@ -69,6 +76,8 @@ final class AgentConnectionDto implements JsonSerializable
             'id' => $this->id,
             'clientId' => $this->clientId,
             'clientName' => $this->clientName,
+            'clientRegistration' => Payload::enumValue($this->clientRegistration),
+            'clientVerifiedHost' => $this->clientVerifiedHost,
             'clientUri' => $this->clientUri,
             'clientIcon' => $this->clientIcon,
             'userId' => $this->userId,
