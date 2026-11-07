@@ -1,10 +1,7 @@
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
-import { API_DEFAULT_VERSION, API_GLOBAL_PREFIX, API_KEY_HEADER } from '@crossmart/common';
+import { API_KEY_HEADER, VERSIONED_API_PATH } from '@crossmart/common';
 import { ASK_ESCALATIONS_ROUTE, ASK_ROUTE } from '../ask/ask.constants.js';
 import { AUTHORIZATION_HEADER } from '../auth/auth.constants.js';
-
-/** Where URI-versioned routes start: `/api/v1`. */
-const VERSIONED_API_PATH = `/${API_GLOBAL_PREFIX}/v${API_DEFAULT_VERSION}`;
 
 /**
  * Routes any website may call from a browser: public, rate-limited and without cookies, such as

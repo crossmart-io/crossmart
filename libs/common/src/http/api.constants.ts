@@ -1,5 +1,7 @@
 export const API_GLOBAL_PREFIX = 'api';
 export const API_DEFAULT_VERSION = '1';
+/** Where URI-versioned routes start: `/api/v1`. */
+export const VERSIONED_API_PATH = `/${API_GLOBAL_PREFIX}/v${API_DEFAULT_VERSION}`;
 
 export const OPENAPI_DOCS_PATH = 'api/docs';
 export const OPENAPI_TITLE = 'Crossmart API';

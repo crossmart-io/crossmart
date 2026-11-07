@@ -41,8 +41,6 @@ export const BEARER_PREFIX = 'Bearer ';
 /** Where the API's OAuth server lives under its base URL, and its signing keys under that. */
 export const AUTH_BASE_PATH = '/api/auth';
 export const JWKS_PATH = '/jwks';
-/** RFC 9728 metadata: at the root, and with the resource's path appended. */
-export const PROTECTED_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource';
 export const WWW_AUTHENTICATE_HEADER = 'WWW-Authenticate';
 /** The access-token claim naming the agent's workspace (the API's `AGENT_WORKSPACE_CLAIM`). */
 export const SCOPE_CLAIM = 'scope';

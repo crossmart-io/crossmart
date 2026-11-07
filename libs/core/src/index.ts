@@ -263,6 +263,7 @@ export * from './agents/entities/agent-identity.js';
 export * from './agents/enums/agent-client-registration.enum.js';
 export * from './agents/enums/agent-scope.enum.js';
 export * from './agents/permissions/agent-scope-permissions.js';
+export * from './agents/rules/protected-resource-challenge.js';
 export * from './agents/services/agent-access.service.js';
 export * from './agents/services/agent-client-sweeper.js';
 export * from './agents/services/agent-clients.service.js';

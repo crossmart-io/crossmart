@@ -1,11 +1,10 @@
 import { AGENT_SCOPES } from '@crossmart/core/agents/agents.constants.js';
-import type { McpConfig } from '../config/mcp-config.js';
 import {
-  BEARER_PREFIX,
-  PROTECTED_RESOURCE_METADATA_PATH,
-  RESOURCE_NAME,
-  SCOPE_SEPARATOR,
-} from '../mcp.constants.js';
+  bearerChallenge as resourceBearerChallenge,
+  protectedResourceMetadataPaths as resourceMetadataPaths,
+} from '@crossmart/core/agents/rules/protected-resource-challenge.js';
+import type { McpConfig } from '../config/mcp-config.js';
+import { RESOURCE_NAME } from '../mcp.constants.js';
 
 type ResourceConfig = Pick<McpConfig, 'authIssuer' | 'publicUrl'>;
 
@@ -30,8 +29,7 @@ export function protectedResourceMetadata(config: ResourceConfig): ProtectedReso
 
 /** Where the metadata is served for a resource URL: the well-known path, then the resource's. */
 export function protectedResourceMetadataPaths(publicUrl: string): string[] {
-  const { pathname } = new URL(publicUrl);
-  return [`${PROTECTED_RESOURCE_METADATA_PATH}${pathname}`, PROTECTED_RESOURCE_METADATA_PATH];
+  return resourceMetadataPaths(publicUrl);
 }
 
 /**
@@ -39,12 +37,5 @@ export function protectedResourceMetadataPaths(publicUrl: string): string[] {
  * names the scopes to ask for. `invalid_token` when a token was sent but refused.
  */
 export function bearerChallenge(config: ResourceConfig, tokenRefused: boolean): string {
-  const { origin } = new URL(config.publicUrl);
-  const [metadataPath] = protectedResourceMetadataPaths(config.publicUrl);
-  const parameters = [
-    ...(tokenRefused ? ['error="invalid_token"'] : []),
-    `resource_metadata="${origin}${metadataPath}"`,
-    `scope="${AGENT_SCOPES.join(SCOPE_SEPARATOR)}"`,
-  ];
-  return `${BEARER_PREFIX}${parameters.join(', ')}`;
+  return resourceBearerChallenge(config.publicUrl, tokenRefused);
 }
