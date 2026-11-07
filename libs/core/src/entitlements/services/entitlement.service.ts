@@ -24,7 +24,8 @@ function grantOf(snapshot: PlanSnapshot, feature: Feature): FeatureGrant {
  * Answers every plan question: what an organization's plan allows of a feature, what it uses,
  * and whether it may use more. Callers never read plan names or numbers themselves.
  * `assert` blocks only while `ENTITLEMENTS_ENFORCED` is on; `check` always tells the truth.
- * Unclaimed sandbox accounts (ADR 0019) have rules of their own, which always apply.
+ * Unclaimed sandbox accounts (ADR 0019) have rules of their own, which always apply. Whether a
+ * subscription leaves the organization read-only is `SubscriptionAccessPolicy`'s (ADR 0024).
  */
 @Injectable()
 export class EntitlementService {

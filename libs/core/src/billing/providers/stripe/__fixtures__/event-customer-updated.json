@@ -1,0 +1,26 @@
+{
+  "id": "evt_TestCustomerUpdated",
+  "object": "event",
+  "api_version": "2026-09-30.endive",
+  "created": 1793952100,
+  "data": {
+    "object": {
+      "id": "cus_TestCrossmart01",
+      "object": "customer",
+      "created": 1793952000,
+      "email": "owner@example.com",
+      "livemode": false,
+      "metadata": {
+        "organization_id": "5f0c7c43-2f0a-4d8e-9a43-3b1f6c1d2e10"
+      },
+      "name": "Ana Ceramics"
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "customer.updated"
+}

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { MailDriver } from '../mail/mail-driver.enum.js';
+import { BillingDriver } from './billing-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import { CORS_ORIGINS_SEPARATOR, DEFAULT_AI_MODEL } from './config.constants.js';
 import type { EbayEnvironment } from './ebay-environment.enum.js';
@@ -48,6 +49,28 @@ export interface WebhookSettings {
   allowPrivateUrls: boolean;
   /** https only; true in production unless private URLs are allowed. */
   requireHttps: boolean;
+}
+
+/** The Stripe account billing runs on. */
+export interface StripeSettings {
+  secretKey: string;
+  /** Null when no webhook endpoint is set up: every event is refused. */
+  webhookSecret: string | null;
+  /** Whether Stripe Tax computes tax at checkout. */
+  automaticTax: boolean;
+  /** The Customer Portal configuration to open; null for the account's default. */
+  portalConfigurationId: string | null;
+}
+
+/** Billing (ADR 0024). `stripe` is null unless the driver is Stripe. */
+export interface BillingSettings {
+  driver: BillingDriver;
+  stripe: StripeSettings | null;
+  trialDays: number;
+  pastDueGraceDays: number;
+  /** Until when organizations from before billing keep full access; null is for good. */
+  legacyAccessUntil: Date | null;
+  salesEmail: string;
 }
 
 /** Typed, read-only access to validated configuration. */
@@ -182,6 +205,37 @@ export class AppConfigService {
   get webhookSettings(): WebhookSettings {
     const allowPrivateUrls = this.configService.get('WEBHOOK_ALLOW_PRIVATE_URLS', { infer: true });
     return { allowPrivateUrls, requireHttps: this.isProduction && !allowPrivateUrls };
+  }
+
+  /** Billing: off (`BillingDriver.None`) unless a provider is configured. */
+  get billingSettings(): BillingSettings {
+    const driver = this.configService.get('BILLING_DRIVER', { infer: true });
+    const legacyAccessUntil = this.configService.get('BILLING_LEGACY_ACCESS_UNTIL', {
+      infer: true,
+    });
+    return {
+      driver,
+      stripe: driver === BillingDriver.Stripe ? this.stripeSettings() : null,
+      trialDays: this.configService.get('BILLING_TRIAL_DAYS', { infer: true }),
+      pastDueGraceDays: this.configService.get('BILLING_PAST_DUE_GRACE_DAYS', { infer: true }),
+      legacyAccessUntil: legacyAccessUntil ? new Date(legacyAccessUntil) : null,
+      salesEmail: this.configService.get('BILLING_SALES_EMAIL', { infer: true }),
+    };
+  }
+
+  /** Whether an instance bills its customers; false when self-hosting. */
+  get billingEnabled(): boolean {
+    return this.configService.get('BILLING_DRIVER', { infer: true }) !== BillingDriver.None;
+  }
+
+  private stripeSettings(): StripeSettings {
+    return {
+      secretKey: this.configService.get('STRIPE_SECRET_KEY', { infer: true }) ?? '',
+      webhookSecret: this.configService.get('STRIPE_WEBHOOK_SECRET', { infer: true }) || null,
+      automaticTax: this.configService.get('STRIPE_AUTOMATIC_TAX', { infer: true }),
+      portalConfigurationId:
+        this.configService.get('STRIPE_PORTAL_CONFIGURATION_ID', { infer: true }) || null,
+    };
   }
 
   /** The AI agents' settings; AI features are off while the key is missing. */

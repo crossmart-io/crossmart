@@ -30,6 +30,7 @@ import {
 } from '../agents.constants.js';
 import { CurrentAgentConnectionViewer } from '../decorators/agent-connection-viewer.decorator.js';
 import { AgentConnectionDto } from '../dto/agent-connection.dto.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 @ApiTags(AGENTS_TAG)
 @ApiCookieAuth()
@@ -54,6 +55,7 @@ export class AgentConnectionsController {
   }
 
   @Delete(`:${AGENT_CONNECTION_ID_PARAM}`)
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Disconnect an agent',

@@ -43,6 +43,11 @@ export enum WorkspacePermission {
    * the organization's subscription.
    */
   ViewBilling = 'billing:view',
+  /**
+   * Start a subscription and open the billing portal (change plan or card, cancel, invoices).
+   * Held in any workspace of the organization, it manages the organization's billing.
+   */
+  ManageBilling = 'billing:manage',
 
   /** Ask the AI agents for content, such as channel titles and descriptions. Metered. */
   GenerateContent = 'ai:generate',

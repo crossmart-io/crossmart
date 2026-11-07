@@ -31,5 +31,6 @@ enum WorkspacePermission: string
     case SuggestionsView = 'suggestions:view';
     case SuggestionsApprove = 'suggestions:approve';
     case BillingView = 'billing:view';
+    case BillingManage = 'billing:manage';
     case AiGenerate = 'ai:generate';
 }

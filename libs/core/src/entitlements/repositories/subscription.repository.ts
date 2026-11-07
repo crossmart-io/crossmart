@@ -15,6 +15,17 @@ export type SubscriptionRecord = Prisma.OrganizationSubscriptionGetPayload<{
   include: typeof PLAN_VERSION_INCLUDE;
 }>;
 
+const STANDING_SELECT = {
+  status: true,
+  externalSubscriptionId: true,
+  trialEnd: true,
+  pastDueSince: true,
+} as const satisfies Prisma.OrganizationSubscriptionSelect;
+
+export type StandingRecord = Prisma.OrganizationSubscriptionGetPayload<{
+  select: typeof STANDING_SELECT;
+}>;
+
 /** Organizations' subscriptions, with the plan version and features they are on. */
 @Injectable()
 export class SubscriptionRepository {
@@ -24,6 +35,14 @@ export class SubscriptionRepository {
     return this.prisma.organizationSubscription.findUnique({
       where: { organizationId },
       include: PLAN_VERSION_INCLUDE,
+    });
+  }
+
+  /** What the read-only rules need, in one lookup on a unique column; null without a row. */
+  findStanding(organizationId: string): Promise<StandingRecord | null> {
+    return this.prisma.organizationSubscription.findUnique({
+      where: { organizationId },
+      select: STANDING_SELECT,
     });
   }
 

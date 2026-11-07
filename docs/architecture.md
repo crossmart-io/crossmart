@@ -140,6 +140,13 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
 - `GET /api/v1/organizations/{id}/subscription` returns the plan (`offered` is false on a legacy
   plan), `enforced`, and every feature with its limit and usage, for members holding `billing:view`
   (owners and admins).
+- **Billing** (ADR [0024](decisions/0024-billing.md), [billing.md](billing.md)): `libs/core/src/billing`
+  sells the plans through a `BillingProvider` (Stripe; off with `BILLING_DRIVER=none`, as
+  self-hosting runs). Prices are found by lookup key (`crossmart_<plan>_<interval>`), never stored.
+  Webhooks update the organization's subscription row, and so the plan `EntitlementService` reads.
+  `SubscriptionAccessPolicy` makes an organization without a subscription in good standing
+  read-only (402 `subscription_inactive`, from the global `SubscriptionWriteGuard`), only while
+  billing and `ENTITLEMENTS_ENFORCED` are both on.
 
 ## 3. Core domain model (initial)
 

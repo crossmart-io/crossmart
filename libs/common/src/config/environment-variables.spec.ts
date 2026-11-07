@@ -1,5 +1,6 @@
 import { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
+import { BillingDriver } from './billing-driver.enum.js';
 import { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import { validateEnvironment } from './environment-variables.js';
@@ -107,5 +108,29 @@ describe('validateEnvironment', () => {
     for (const invalid of ['too-short', 'a'.repeat(81), `${'a'.repeat(32)}!`]) {
       expect(() => withToken(invalid)).toThrow(/EBAY_VERIFICATION_TOKEN/);
     }
+  });
+
+  it('keeps billing off by default and needs a Stripe key to bill through Stripe', () => {
+    const selfHosted = validateEnvironment(VALID_ENVIRONMENT);
+    expect(selfHosted.BILLING_DRIVER).toBe(BillingDriver.None);
+    expect(selfHosted.BILLING_TRIAL_DAYS).toBe(7);
+    expect(selfHosted.BILLING_PAST_DUE_GRACE_DAYS).toBe(7);
+    expect(() => validateEnvironment({ ...VALID_ENVIRONMENT, BILLING_DRIVER: 'stripe' })).toThrow(
+      /STRIPE_SECRET_KEY/,
+    );
+    const billing = validateEnvironment({
+      ...VALID_ENVIRONMENT,
+      BILLING_DRIVER: 'stripe',
+      STRIPE_SECRET_KEY: 'sk_test_example',
+    });
+    expect(billing.BILLING_DRIVER).toBe(BillingDriver.Stripe);
+  });
+
+  it('accepts only a date as the end of legacy access', () => {
+    const withDate = (value: string) =>
+      validateEnvironment({ ...VALID_ENVIRONMENT, BILLING_LEGACY_ACCESS_UNTIL: value });
+
+    expect(withDate('2026-12-31').BILLING_LEGACY_ACCESS_UNTIL).toBe('2026-12-31');
+    expect(() => withDate('next month')).toThrow(/BILLING_LEGACY_ACCESS_UNTIL/);
   });
 });

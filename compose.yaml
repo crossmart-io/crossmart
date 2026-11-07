@@ -16,6 +16,11 @@ x-app-environment: &app-environment
   REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD (openssl rand -hex 24)}@redis:6379
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET (openssl rand -base64 32)}
   BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+  # Billing is off unless set (docs/billing.md); self-hosting needs none of these.
+  BILLING_DRIVER: ${BILLING_DRIVER:-none}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_PORTAL_CONFIGURATION_ID: ${STRIPE_PORTAL_CONFIGURATION_ID:-}
 
 # Optional settings the API and worker read, passed through from the shell or .env. Every one may
 # be left unset; see .env.example for what each does.

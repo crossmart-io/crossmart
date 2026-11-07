@@ -10,6 +10,7 @@ from ...models.plan_limit_error_dto import PlanLimitErrorDto
 from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...models.start_authorization_dto import StartAuthorizationDto
 from ...models.started_authorization_dto import StartedAuthorizationDto
+from ...models.subscription_inactive_error_dto import SubscriptionInactiveErrorDto
 from ...types import Response
 
 
@@ -37,14 +38,38 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto | None:
+) -> (
+    PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | StartedAuthorizationDto
+    | None
+):
     if response.status_code == 201:
         response_201 = StartedAuthorizationDto.from_dict(response.json())
 
         return response_201
 
     if response.status_code == 402:
-        response_402 = PlanLimitErrorDto.from_dict(response.json())
+
+        def _parse_response_402(
+            data: object,
+        ) -> PlanLimitErrorDto | SubscriptionInactiveErrorDto:
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                response_402_type_0 = PlanLimitErrorDto.from_dict(data)
+
+                return response_402_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            if not isinstance(data, dict):
+                raise TypeError()
+            response_402_type_1 = SubscriptionInactiveErrorDto.from_dict(data)
+
+            return response_402_type_1
+
+        response_402 = _parse_response_402(response.json())
 
         return response_402
 
@@ -61,7 +86,12 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]:
+) -> Response[
+    PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | StartedAuthorizationDto
+]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -75,7 +105,12 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: StartAuthorizationDto,
-) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]:
+) -> Response[
+    PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | StartedAuthorizationDto
+]:
     """Start connecting a channel account
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
@@ -93,7 +128,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]
+        Response[PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]
     """
 
     kwargs = _get_kwargs(
@@ -113,7 +148,13 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: StartAuthorizationDto,
-) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto | None:
+) -> (
+    PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | StartedAuthorizationDto
+    | None
+):
     """Start connecting a channel account
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
@@ -131,7 +172,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto
+        PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto
     """
 
     return sync_detailed(
@@ -146,7 +187,12 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: StartAuthorizationDto,
-) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]:
+) -> Response[
+    PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | StartedAuthorizationDto
+]:
     """Start connecting a channel account
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
@@ -164,7 +210,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]
+        Response[PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto]
     """
 
     kwargs = _get_kwargs(
@@ -182,7 +228,13 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: StartAuthorizationDto,
-) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto | None:
+) -> (
+    PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | StartedAuthorizationDto
+    | None
+):
     """Start connecting a channel account
 
      Returns the URL to send the merchant to. After they approve the app, the channel redirects to the
@@ -200,7 +252,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto
+        PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto | StartedAuthorizationDto
     """
 
     return (

@@ -29,7 +29,7 @@ export class TenancyProvisioningService {
       workspaceName: DEFAULT_WORKSPACE_NAME,
       workspaceSlug: slugify(DEFAULT_WORKSPACE_NAME),
       ownerId: user.id,
-      planVersionId: await this.plans.defaultPlanVersionId(),
+      subscription: await this.plans.startingSubscription(),
     });
     this.logger.log(`Provisioned workspace ${workspaceId} for user ${user.id}`);
   }

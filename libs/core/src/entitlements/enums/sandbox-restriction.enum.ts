@@ -12,4 +12,6 @@ export enum SandboxRestriction {
   GenerateContent = 'generate_content',
   /** More than `SANDBOX_MAX_PRODUCTS` products. */
   AddProducts = 'add_products',
+  /** Starting a paid subscription: only the owner, once they claim the account, may pay. */
+  Subscribe = 'subscribe',
 }

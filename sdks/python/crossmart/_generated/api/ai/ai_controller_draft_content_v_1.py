@@ -10,6 +10,7 @@ from ...models.content_draft_dto import ContentDraftDto
 from ...models.create_content_draft_dto import CreateContentDraftDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
 from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
+from ...models.subscription_inactive_error_dto import SubscriptionInactiveErrorDto
 from ...types import Response
 
 
@@ -37,14 +38,39 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
+) -> (
+    Any
+    | ContentDraftDto
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | None
+):
     if response.status_code == 200:
         response_200 = ContentDraftDto.from_dict(response.json())
 
         return response_200
 
     if response.status_code == 402:
-        response_402 = PlanLimitErrorDto.from_dict(response.json())
+
+        def _parse_response_402(
+            data: object,
+        ) -> PlanLimitErrorDto | SubscriptionInactiveErrorDto:
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                response_402_type_0 = PlanLimitErrorDto.from_dict(data)
+
+                return response_402_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            if not isinstance(data, dict):
+                raise TypeError()
+            response_402_type_1 = SubscriptionInactiveErrorDto.from_dict(data)
+
+            return response_402_type_1
+
+        response_402 = _parse_response_402(response.json())
 
         return response_402
 
@@ -65,7 +91,13 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
+) -> Response[
+    Any
+    | ContentDraftDto
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -79,7 +111,13 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> Response[Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
+) -> Response[
+    Any
+    | ContentDraftDto
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+]:
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
@@ -96,7 +134,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
+        Response[Any | ContentDraftDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -116,7 +154,14 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
+) -> (
+    Any
+    | ContentDraftDto
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | None
+):
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
@@ -133,7 +178,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
+        Any | ContentDraftDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto
     """
 
     return sync_detailed(
@@ -148,7 +193,13 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> Response[Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
+) -> Response[
+    Any
+    | ContentDraftDto
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+]:
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
@@ -165,7 +216,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
+        Response[Any | ContentDraftDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -183,7 +234,14 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: CreateContentDraftDto,
-) -> Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
+) -> (
+    Any
+    | ContentDraftDto
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | SandboxRestrictedErrorDto
+    | None
+):
     """Rewrite a product’s title or description with AI, right away
 
      Rewrites the fields asked for, for the catalog or for one store, optionally following an
@@ -200,7 +258,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | ContentDraftDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
+        Any | ContentDraftDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | SandboxRestrictedErrorDto
     """
 
     return (

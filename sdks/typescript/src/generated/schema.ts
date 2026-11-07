@@ -343,6 +343,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The plans on offer, with what each includes and costs
+         * @description Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through `salesEmail`. No plan charges a fee on sales.
+         */
+        get: operations["BillingPlansController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The organization’s subscription and what it may do under it
+         * @description For people holding `billing:view` in a workspace of the organization. Includes whether it is read-only and why, and whether a checkout would start with a trial. Usage against limits is at `GET /organizations/{organizationId}/subscription`.
+         */
+        get: operations["OrganizationBillingController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}/billing/checkout-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a subscription: a checkout page for a plan and interval
+         * @description For people holding `billing:manage` (owners and admins). Answers the URL of the provider’s checkout page. The card is collected even for the free trial, which only the organization’s first subscription gets, and is charged when it ends. An organization with a live subscription changes it in the billing portal instead (409).
+         */
+        post: operations["OrganizationBillingController_startCheckout_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}/billing/portal-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open the billing portal
+         * @description For people holding `billing:manage`. Answers the URL of the provider’s portal, where the plan, interval and card are changed, the subscription canceled, and invoices downloaded.
+         */
+        post: operations["OrganizationBillingController_openPortal_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/billing-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the workspace can be changed under its organization’s subscription
+         * @description For anyone in the workspace, including API keys and agents. While `writable` is false and `enforced` is true, changes answer 402 `subscription_inactive`: ask a billing admin of the organization (owners and admins) to fix the subscription.
+         */
+        get: operations["WorkspaceBillingAccessController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/products": {
         parameters: {
             query?: never;
@@ -1876,21 +1976,6 @@ export interface components {
             /** @description The workspace’s name, typed to confirm: deleting it cannot be undone */
             confirmName: string;
         };
-        CreateWorkspaceDto: {
-            /** @example EU store */
-            name: string;
-            /**
-             * @description ISO 4217 code of the catalog prices. It cannot change later.
-             * @default USD
-             * @example EUR
-             */
-            currency?: string;
-            /**
-             * @description IANA time zone where the workspace’s day starts, for reports, such as Asia/Jerusalem
-             * @example Europe/Berlin
-             */
-            timeZone?: string;
-        };
         /** @enum {string} */
         EntitlementErrorCode: EntitlementErrorCode;
         /** @enum {string} */
@@ -1914,6 +1999,34 @@ export interface components {
             usage: number;
             /** @description How many more the request asked for */
             requested: number;
+        };
+        /** @enum {string} */
+        SubscriptionAccessState: SubscriptionAccessState;
+        SubscriptionInactiveErrorDto: {
+            /** @example 402 */
+            statusCode: number;
+            /** @example Payment Required */
+            error: string;
+            /** @example subscription_inactive */
+            code: components["schemas"]["EntitlementErrorCode"];
+            /** @example This organization's Crossmart subscription is canceled, so the account is read-only: data can be read, but not changed, published or synced. Ask an owner or admin of the organization to choose a plan in Settings > Billing. */
+            message: string;
+            state: components["schemas"]["SubscriptionAccessState"];
+        };
+        CreateWorkspaceDto: {
+            /** @example EU store */
+            name: string;
+            /**
+             * @description ISO 4217 code of the catalog prices. It cannot change later.
+             * @default USD
+             * @example EUR
+             */
+            currency?: string;
+            /**
+             * @description IANA time zone where the workspace’s day starts, for reports, such as Asia/Jerusalem
+             * @example Europe/Berlin
+             */
+            timeZone?: string;
         };
         /** @enum {string} */
         SandboxRestriction: SandboxRestriction;
@@ -2129,6 +2242,113 @@ export interface components {
             enforced: boolean;
             /** @description Every feature, with what the plan allows and what is in use */
             features: components["schemas"]["FeatureUsageDto"][];
+        };
+        PlanGrantDto: {
+            feature: components["schemas"]["Feature"];
+            kind: components["schemas"]["FeatureKind"];
+            /** @description Whether the plan includes the feature */
+            enabled: boolean;
+            /** @description How many the plan allows; null is unlimited, 0 is not included */
+            limit: number | null;
+        };
+        /** @enum {string} */
+        BillingInterval: BillingInterval;
+        PlanPriceDto: {
+            interval: components["schemas"]["BillingInterval"];
+            /**
+             * @description Each charge, in the currency’s minor unit (cents)
+             * @example 27600
+             */
+            amount: number;
+            /**
+             * @description The charge spread over the months it covers, in minor units, to compare intervals
+             * @example 2300
+             */
+            monthlyAmount: number;
+            /**
+             * @description Lower-case ISO 4217 code
+             * @example usd
+             */
+            currency: string;
+        };
+        BillingPlanDto: {
+            /** @example growth */
+            code: string;
+            /** @example Growth */
+            name: string;
+            /** @description The plan version new subscriptions get */
+            version: number;
+            /** @description What the plan includes, every feature */
+            features: components["schemas"]["PlanGrantDto"][];
+            /** @description Monthly first; empty for a plan that is not sold online */
+            prices: components["schemas"]["PlanPriceDto"][];
+            /** @description False for plans sold by contacting sales, such as Enterprise */
+            selfServe: boolean;
+        };
+        BillingPlanCatalogDto: {
+            /** @description The offered plans, in order */
+            plans: components["schemas"]["BillingPlanDto"][];
+            /**
+             * @description Where to ask about other plans
+             * @example hello@crossmart.io
+             */
+            salesEmail: string;
+        };
+        SubscriptionAccessDto: {
+            /** @description `unrestricted` where billing is off; `trialing`, `active`, `past_due_grace`, `legacy` and `sandbox` keep full access; the others are read-only while billing is enforced */
+            state: components["schemas"]["SubscriptionAccessState"];
+            /** @description False when the organization is read-only. Changes are refused (402 `subscription_inactive`) only while `enforced` is true */
+            writable: boolean;
+            /** @description Whether a read-only organization is refused changes on this instance */
+            enforced: boolean;
+            /**
+             * Format: date-time
+             * @description When the state ends on its own: the trial, the past-due grace period, or access for organizations from before billing. Null when it does not
+             */
+            until: string | null;
+        };
+        BillingStatusDto: {
+            /** Format: uuid */
+            organizationId: string;
+            /** @description Whether this instance bills customers; false when self-hosting, where all is free */
+            enabled: boolean;
+            plan: components["schemas"]["PlanDto"];
+            /** @description `INCOMPLETE` until a plan is chosen; `ACTIVE` with no billing account is an organization from before billing */
+            status: components["schemas"]["SubscriptionStatus"];
+            /** @description How often the subscription renews; null before one starts */
+            interval: components["schemas"]["BillingInterval"] | null;
+            /**
+             * Format: date-time
+             * @description When the subscription renews, or ends when `cancelAtPeriodEnd` is true
+             */
+            currentPeriodEnd: string | null;
+            /**
+             * Format: date-time
+             * @description When the trial ends (the card is charged then), or ended
+             */
+            trialEnd: string | null;
+            /** @description The subscription ends at `currentPeriodEnd` instead of renewing */
+            cancelAtPeriodEnd: boolean;
+            access: components["schemas"]["SubscriptionAccessDto"];
+            /** @description Whether the billing portal can open (a plan was chosen before) */
+            hasBillingAccount: boolean;
+            /** @description Whether choosing a plan now starts with a free trial */
+            trialAvailable: boolean;
+        };
+        StartCheckoutDto: {
+            /**
+             * @description The `code` of an offered, self-serve plan
+             * @example growth
+             */
+            planCode: string;
+            interval: components["schemas"]["BillingInterval"];
+        };
+        HostedSessionDto: {
+            /**
+             * Format: uri
+             * @example https://checkout.stripe.com/c/pay/cs_test_…
+             */
+            url: string;
         };
         /** @enum {string} */
         ProductStatus: ProductStatus;
@@ -4601,13 +4821,13 @@ export interface operations {
                     "application/json": components["schemas"]["WorkspaceDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -4751,13 +4971,13 @@ export interface operations {
                     "application/json": components["schemas"]["InvitationDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -4973,13 +5193,13 @@ export interface operations {
                     "application/json": components["schemas"]["IssuedApiKeyDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
         };
@@ -5047,6 +5267,157 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubscriptionDto"];
+                };
+            };
+        };
+    };
+    BillingPlansController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingPlanCatalogDto"];
+                };
+            };
+        };
+    };
+    OrganizationBillingController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingStatusDto"];
+                };
+            };
+        };
+    };
+    OrganizationBillingController_startCheckout_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartCheckoutDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostedSessionDto"];
+                };
+            };
+            /** @description The plan is not offered, or not sold online */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
+            /** @description Billing is not enabled on this instance (self-hosted), or the organization is unknown. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The organization already has a live subscription */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OrganizationBillingController_openPortal_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostedSessionDto"];
+                };
+            };
+            /** @description Billing is not enabled on this instance (self-hosted), or the organization is unknown. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The organization has not chosen a plan yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WorkspaceBillingAccessController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionAccessDto"];
                 };
             };
         };
@@ -5633,13 +6004,13 @@ export interface operations {
                     "application/json": components["schemas"]["StartedAuthorizationDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -5995,13 +6366,13 @@ export interface operations {
                     "application/json": components["schemas"]["ChannelConnectionDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -6087,13 +6458,13 @@ export interface operations {
                     "application/json": components["schemas"]["SyncRequestResultDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -6159,13 +6530,13 @@ export interface operations {
                     "application/json": components["schemas"]["StoreProductsResultDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -6294,13 +6665,13 @@ export interface operations {
                     "application/json": components["schemas"]["ProductChannelDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -6857,13 +7228,13 @@ export interface operations {
                     "application/json": components["schemas"]["ContentGenerationReceiptDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -6907,13 +7278,13 @@ export interface operations {
                     "application/json": components["schemas"]["ContentDraftDto"];
                 };
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
@@ -7238,13 +7609,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. */
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
             402: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanLimitErrorDto"];
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
                 };
             };
             /** @description The server has no CREDENTIALS_MASTER_KEY to encrypt secrets with */
@@ -7527,12 +7898,14 @@ export enum WorkspacePermission {
     suggestions_view = "suggestions:view",
     suggestions_approve = "suggestions:approve",
     billing_view = "billing:view",
+    billing_manage = "billing:manage",
     ai_generate = "ai:generate"
 }
 export enum EntitlementErrorCode {
     plan_limit_reached = "plan_limit_reached",
     plan_feature_not_included = "plan_feature_not_included",
-    sandbox_claim_required = "sandbox_claim_required"
+    sandbox_claim_required = "sandbox_claim_required",
+    subscription_inactive = "subscription_inactive"
 }
 export enum Feature {
     active_listings = "active_listings",
@@ -7545,23 +7918,44 @@ export enum Feature {
     autonomous_agents = "autonomous_agents",
     bring_your_own_key = "bring_your_own_key"
 }
+export enum SubscriptionAccessState {
+    unrestricted = "unrestricted",
+    sandbox = "sandbox",
+    trialing = "trialing",
+    active = "active",
+    past_due_grace = "past_due_grace",
+    legacy = "legacy",
+    subscription_required = "subscription_required",
+    past_due = "past_due",
+    canceled = "canceled",
+    unpaid = "unpaid",
+    paused = "paused"
+}
 export enum SandboxRestriction {
     connect_channel = "connect_channel",
     publish = "publish",
     invite_member = "invite_member",
     create_workspace = "create_workspace",
     generate_content = "generate_content",
-    add_products = "add_products"
+    add_products = "add_products",
+    subscribe = "subscribe"
 }
 export enum SubscriptionStatus {
     ACTIVE = "ACTIVE",
     TRIALING = "TRIALING",
     PAST_DUE = "PAST_DUE",
-    CANCELED = "CANCELED"
+    CANCELED = "CANCELED",
+    INCOMPLETE = "INCOMPLETE",
+    UNPAID = "UNPAID",
+    PAUSED = "PAUSED"
 }
 export enum FeatureKind {
     limit = "limit",
     flag = "flag"
+}
+export enum BillingInterval {
+    MONTHLY = "MONTHLY",
+    ANNUAL = "ANNUAL"
 }
 export enum ProductStatus {
     DRAFT = "DRAFT",

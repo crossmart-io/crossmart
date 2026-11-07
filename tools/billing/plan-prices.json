@@ -1,0 +1,9 @@
+{
+  "currency": "usd",
+  "plans": {
+    "starter": { "MONTHLY": 2900, "ANNUAL": 27600 },
+    "pro": { "MONTHLY": 5900, "ANNUAL": 56400 },
+    "growth": { "MONTHLY": 12900, "ANNUAL": 123600 },
+    "scale": { "MONTHLY": 29900, "ANNUAL": 286800 }
+  }
+}

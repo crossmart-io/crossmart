@@ -45,7 +45,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "prepare": "husky",
     "seed:demo": "tsx tools/demo-seed/main.ts",
-    "knowledge:build": "tsx tools/knowledge-base/main.ts"
+    "knowledge:build": "tsx tools/knowledge-base/main.ts",
+    "billing:sync-stripe": "tsx tools/billing/main.ts"
   },
   "lint-staged": {
     "*.ts": [
@@ -86,6 +87,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "sanitize-html": "^2.18.1",
+    "stripe": "^23.0.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {

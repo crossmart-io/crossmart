@@ -8,6 +8,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.create_webhook_endpoint_dto import CreateWebhookEndpointDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.subscription_inactive_error_dto import SubscriptionInactiveErrorDto
 from ...models.webhook_endpoint_with_secret_dto import WebhookEndpointWithSecretDto
 from ...types import Response
 
@@ -36,7 +37,13 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto | None:
+) -> (
+    Any
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | WebhookEndpointWithSecretDto
+    | None
+):
     if response.status_code == 201:
         response_201 = WebhookEndpointWithSecretDto.from_dict(response.json())
 
@@ -47,7 +54,25 @@ def _parse_response(
         return response_400
 
     if response.status_code == 402:
-        response_402 = PlanLimitErrorDto.from_dict(response.json())
+
+        def _parse_response_402(
+            data: object,
+        ) -> PlanLimitErrorDto | SubscriptionInactiveErrorDto:
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                response_402_type_0 = PlanLimitErrorDto.from_dict(data)
+
+                return response_402_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            if not isinstance(data, dict):
+                raise TypeError()
+            response_402_type_1 = SubscriptionInactiveErrorDto.from_dict(data)
+
+            return response_402_type_1
+
+        response_402 = _parse_response_402(response.json())
 
         return response_402
 
@@ -63,7 +88,12 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto]:
+) -> Response[
+    Any
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | WebhookEndpointWithSecretDto
+]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -77,7 +107,12 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: CreateWebhookEndpointDto,
-) -> Response[Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto]:
+) -> Response[
+    Any
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | WebhookEndpointWithSecretDto
+]:
     """Add a webhook endpoint. Its signing secret is returned once.
 
      Events are POSTed to the URL as JSON, signed in the Crossmart-Signature header.
@@ -91,7 +126,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto]
+        Response[Any | PlanLimitErrorDto | SubscriptionInactiveErrorDto | WebhookEndpointWithSecretDto]
     """
 
     kwargs = _get_kwargs(
@@ -111,7 +146,13 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: CreateWebhookEndpointDto,
-) -> Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto | None:
+) -> (
+    Any
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | WebhookEndpointWithSecretDto
+    | None
+):
     """Add a webhook endpoint. Its signing secret is returned once.
 
      Events are POSTed to the URL as JSON, signed in the Crossmart-Signature header.
@@ -125,7 +166,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto
+        Any | PlanLimitErrorDto | SubscriptionInactiveErrorDto | WebhookEndpointWithSecretDto
     """
 
     return sync_detailed(
@@ -140,7 +181,12 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: CreateWebhookEndpointDto,
-) -> Response[Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto]:
+) -> Response[
+    Any
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | WebhookEndpointWithSecretDto
+]:
     """Add a webhook endpoint. Its signing secret is returned once.
 
      Events are POSTed to the URL as JSON, signed in the Crossmart-Signature header.
@@ -154,7 +200,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto]
+        Response[Any | PlanLimitErrorDto | SubscriptionInactiveErrorDto | WebhookEndpointWithSecretDto]
     """
 
     kwargs = _get_kwargs(
@@ -172,7 +218,13 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: CreateWebhookEndpointDto,
-) -> Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto | None:
+) -> (
+    Any
+    | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
+    | WebhookEndpointWithSecretDto
+    | None
+):
     """Add a webhook endpoint. Its signing secret is returned once.
 
      Events are POSTed to the URL as JSON, signed in the Crossmart-Signature header.
@@ -186,7 +238,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | PlanLimitErrorDto | WebhookEndpointWithSecretDto
+        Any | PlanLimitErrorDto | SubscriptionInactiveErrorDto | WebhookEndpointWithSecretDto
     """
 
     return (

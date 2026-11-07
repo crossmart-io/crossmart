@@ -14,6 +14,8 @@ export class CrossmartError extends Error {
  * `message` is the API's own message. Validation errors (400) list every problem in `details`
  * and join them in `message`. `code` is the API's machine-readable reason when it sends one,
  * such as `plan_limit_reached` on a 402 (compare with the exported `EntitlementErrorCode` enum).
+ * A 402 with `subscription_inactive` means the organization's subscription has lapsed: it is
+ * read-only until a billing admin renews it.
  *
  * @example
  * ```ts

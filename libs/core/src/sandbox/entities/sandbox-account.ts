@@ -1,3 +1,4 @@
+import type { StartingSubscription } from '../../entitlements/entities/starting-subscription.js';
 import type { SandboxClaimOutcome } from '../enums/sandbox-claim-outcome.enum.js';
 import type { SandboxOpeningOutcome } from '../enums/sandbox-opening-outcome.enum.js';
 
@@ -23,7 +24,7 @@ export interface NewSandboxAccount {
   ownerName: string;
   storeName: string;
   workspaceSlug: string;
-  planVersionId: string;
+  subscription: StartingSubscription;
   claimTokenHash: string;
   expiresAt: Date;
   agentKey: { name: string; prefix: string; hash: string };

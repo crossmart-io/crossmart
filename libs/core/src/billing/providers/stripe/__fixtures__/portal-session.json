@@ -1,0 +1,8 @@
+{
+  "id": "bps_TestCrossmart01",
+  "object": "billing_portal.session",
+  "customer": "cus_TestCrossmart01",
+  "livemode": false,
+  "return_url": "http://localhost:5173/settings/billing",
+  "url": "https://billing.stripe.com/p/session/test_Crossmart01"
+}

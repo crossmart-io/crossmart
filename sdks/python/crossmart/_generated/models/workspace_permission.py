@@ -5,6 +5,7 @@ class WorkspacePermission(StrEnum):
     ACTIVITYVIEW = "activity:view"
     AIGENERATE = "ai:generate"
     API_KEYSMANAGE = "api-keys:manage"
+    BILLINGMANAGE = "billing:manage"
     BILLINGVIEW = "billing:view"
     CHANNELSMANAGE = "channels:manage"
     CHANNELSVIEW = "channels:view"

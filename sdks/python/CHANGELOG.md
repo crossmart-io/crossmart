@@ -8,6 +8,11 @@ All notable changes to the `crossmart` Python package are documented here. The f
 
 ### Added
 
+- Billing types from the API: `BillingInterval`, `SubscriptionAccessState`, plans with prices,
+  the organization's billing status, and the `subscription_inactive` error code. Where billing
+  is on (Crossmart Cloud), a write to a read-only organization answers 402 with that code:
+  reading still works, and a billing admin of the organization renews the subscription.
+
 - `verify_webhook_signature` checks a webhook delivery's `Crossmart-Signature` header against the
   raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation) and returns the
   parsed `WebhookEvent`. It raises `WebhookSignatureError` when the delivery cannot be trusted.

@@ -1,6 +1,7 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
   IsInt,
@@ -17,12 +18,17 @@ import {
 import { DEFAULT_MAIL_FROM } from '../mail/mail.constants.js';
 import { MailDriver } from '../mail/mail-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
+import { BillingDriver } from './billing-driver.enum.js';
 import { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import {
   DEFAULT_API_PORT,
   DEFAULT_ASK_DAILY_QUESTION_CAP,
   DEFAULT_ASK_SUPPORT_EMAIL,
+  DEFAULT_BILLING_PAST_DUE_GRACE_DAYS,
+  DEFAULT_BILLING_SALES_EMAIL,
+  DEFAULT_BILLING_TRIAL_DAYS,
+  DEFAULT_STRIPE_AUTOMATIC_TAX,
   DEFAULT_ENTITLEMENTS_ENFORCED,
   DEFAULT_WEBHOOK_ALLOW_PRIVATE_URLS,
   DEFAULT_MASTER_KEY_VERSION,
@@ -243,6 +249,70 @@ export class EnvironmentVariables {
   /** The address Ask Crossmart points people to when it cannot answer. */
   @IsEmail()
   ASK_SUPPORT_EMAIL: string = DEFAULT_ASK_SUPPORT_EMAIL;
+
+  /**
+   * Who bills customers (ADR 0024): `none` (default) turns billing off, as self-hosting runs,
+   * and `stripe` sells the plans through Stripe Checkout and the Customer Portal.
+   */
+  @IsEnum(BillingDriver)
+  BILLING_DRIVER: BillingDriver = BillingDriver.None;
+
+  /** Stripe secret key (`sk_...` or a restricted `rk_...`). Required with `stripe`; never logged. */
+  @ValidateIf(
+    (environment: EnvironmentVariables) => environment.BILLING_DRIVER === BillingDriver.Stripe,
+  )
+  @IsString()
+  @MinLength(1)
+  STRIPE_SECRET_KEY?: string;
+
+  /**
+   * Signing secret of the Stripe webhook endpoint (`whsec_...`). Without it the endpoint refuses
+   * every event, so subscriptions never update; never logged.
+   */
+  @IsOptional()
+  @IsString()
+  STRIPE_WEBHOOK_SECRET?: string;
+
+  /**
+   * The Customer Portal configuration (`bpc_...`) billing admins get, which lets them switch
+   * plans. `pnpm billing:sync-stripe` creates it; unset, Stripe's default portal opens.
+   */
+  @IsOptional()
+  @IsString()
+  STRIPE_PORTAL_CONFIGURATION_ID?: string;
+
+  /**
+   * Whether Stripe Tax computes sales tax and VAT at checkout. Needs Stripe Tax set up (origin
+   * address, registrations) in the Stripe dashboard first; off by default.
+   */
+  // Reads the raw value: implicit conversion would turn the string "false" into true.
+  @Transform(({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+    [true, ENV_TRUE].includes(obj[key] as boolean | string),
+  )
+  @IsBoolean()
+  STRIPE_AUTOMATIC_TAX: boolean = DEFAULT_STRIPE_AUTOMATIC_TAX;
+
+  /** Days of the trial a first checkout starts. 0 starts paid at once. */
+  @IsInt()
+  @Min(0)
+  BILLING_TRIAL_DAYS: number = DEFAULT_BILLING_TRIAL_DAYS;
+
+  /** Days a past-due organization keeps full access before it becomes read-only. */
+  @IsInt()
+  @Min(0)
+  BILLING_PAST_DUE_GRACE_DAYS: number = DEFAULT_BILLING_PAST_DUE_GRACE_DAYS;
+
+  /**
+   * Until when organizations from before billing keep full access without a subscription (an
+   * ISO date). Unset, they keep it until they choose a plan (grandfathered).
+   */
+  @IsOptional()
+  @IsDateString()
+  BILLING_LEGACY_ACCESS_UNTIL?: string;
+
+  /** Where plans with no self-serve price, such as Enterprise, send people. */
+  @IsEmail()
+  BILLING_SALES_EMAIL: string = DEFAULT_BILLING_SALES_EMAIL;
 }
 
 export function validateEnvironment(rawConfig: Record<string, unknown>): EnvironmentVariables {

@@ -469,8 +469,22 @@ enum SubscriptionStatus {
   /// A payment failed; the plan still applies while the provider retries.
   PAST_DUE
   CANCELED
+  /// No paid subscription has started: checkout was never completed, or its first payment was not.
+  INCOMPLETE
+  /// The provider stopped retrying a failed payment and left the subscription unpaid.
+  UNPAID
+  /// The trial ended without a payment method, and the provider paused the subscription.
+  PAUSED
 
   @@map("subscription_status")
+}
+
+/// How often a paid subscription renews.
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+
+  @@map("billing_interval")
 }
 
 /// A plan organizations can be on, such as Free or Growth. What it includes lives in its versions,
@@ -523,8 +537,9 @@ model PlanFeature {
   @@map("plan_features")
 }
 
-/// The plan version an organization is on. Every organization has one. The provider fields stay
-/// empty until billing is connected.
+/// The plan version an organization is on, and its billing (ADR 0024). Every organization has
+/// one. The provider fields stay empty until the organization checks out; with billing off they
+/// always do. ACTIVE with no provider subscription is an organization from before billing.
 model OrganizationSubscription {
   id                     String             @id @default(uuid()) @db.Uuid
   organizationId         String             @unique @map("organization_id") @db.Uuid
@@ -533,15 +548,33 @@ model OrganizationSubscription {
   planVersion            PlanVersion        @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
   status                 SubscriptionStatus @default(ACTIVE)
   currentPeriodEnd       DateTime?          @map("current_period_end")
-  /// The customer at the billing provider (a Stripe customer id).
-  externalCustomerId     String?            @map("external_customer_id")
+  /// The organization's customer at the billing provider (a Stripe customer id).
+  externalCustomerId     String?            @unique @map("external_customer_id")
   /// The subscription at the billing provider (a Stripe subscription id).
   externalSubscriptionId String?            @unique @map("external_subscription_id")
+  /// Null until a paid subscription starts.
+  billingInterval        BillingInterval?   @map("billing_interval")
+  /// When the trial ends or ended. Set once a trial starts, so an organization trials only once.
+  trialEnd               DateTime?          @map("trial_end")
+  /// The subscription ends at `currentPeriodEnd` instead of renewing.
+  cancelAtPeriodEnd      Boolean            @default(false) @map("cancel_at_period_end")
+  /// When the subscription became past due; the grace period runs from here. Null otherwise.
+  pastDueSince           DateTime?          @map("past_due_since")
   createdAt              DateTime           @default(now()) @map("created_at")
   updatedAt              DateTime           @updatedAt @map("updated_at")
 
   @@index([planVersionId])
   @@map("organization_subscriptions")
+}
+
+/// Billing provider webhook events already handled, so a redelivered event is applied once.
+model BillingWebhookEvent {
+  /// The provider's event id (a Stripe `evt_` id).
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("billing_webhook_events")
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────

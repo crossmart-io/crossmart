@@ -14,4 +14,5 @@ enum SandboxRestriction: string
     case CreateWorkspace = 'create_workspace';
     case GenerateContent = 'generate_content';
     case AddProducts = 'add_products';
+    case Subscribe = 'subscribe';
 }

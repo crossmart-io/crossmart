@@ -20,8 +20,6 @@ export const SANDBOX_AGENT_KEY_ROLE = WorkspaceRole.EDITOR;
 
 /** Better Auth's provider id for an email and password login. */
 export const CREDENTIAL_PROVIDER_ID = 'credential';
-/** Prisma's error code for a unique constraint violation, such as an address taken meanwhile. */
-export const UNIQUE_VIOLATION_CODE = 'P2002';
 /** Separates the local part of an address from its domain. */
 export const EMAIL_DOMAIN_SEPARATOR = '@';
 

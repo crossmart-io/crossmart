@@ -1,0 +1,32 @@
+{
+  "id": "evt_TestInvoiceFailed",
+  "object": "event",
+  "api_version": "2026-09-30.endive",
+  "created": 1793952100,
+  "data": {
+    "object": {
+      "id": "in_TestInvoice01",
+      "object": "invoice",
+      "customer": "cus_TestCrossmart01",
+      "livemode": false,
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {
+            "organization_id": "5f0c7c43-2f0a-4d8e-9a43-3b1f6c1d2e10"
+          },
+          "subscription": "sub_TestCrossmart01"
+        },
+        "type": "subscription_details"
+      },
+      "status": "open"
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "invoice.payment_failed"
+}

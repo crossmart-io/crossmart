@@ -28,6 +28,7 @@ import { ApiKeyDto, IssuedApiKeyDto } from '../dto/api-key.dto.js';
 import { CreateApiKeyDto } from '../dto/create-api-key.dto.js';
 import { API_KEY_ID_PARAM, API_KEYS_ROUTE, API_KEYS_TAG } from '../workspaces.constants.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 @ApiTags(API_KEYS_TAG)
 @Controller(API_KEYS_ROUTE)
@@ -56,6 +57,7 @@ export class ApiKeysController {
   }
 
   @Delete(`:${API_KEY_ID_PARAM}`)
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Revoke an API key',

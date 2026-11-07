@@ -84,7 +84,11 @@ class AuthenticationError(CrossmartAPIError):
 
 
 class PlanLimitError(CrossmartAPIError):
-    """402: the organization's plan does not allow the action. Upgrading the plan resolves it."""
+    """402: the organization's plan does not allow the action. Upgrading the plan resolves it.
+
+    With ``code`` ``"subscription_inactive"``, the organization's subscription has lapsed and it
+    is read-only until a billing admin renews it; ``feature`` and ``plan`` are then ``None``.
+    """
 
     @property
     def feature(self) -> str | None:
