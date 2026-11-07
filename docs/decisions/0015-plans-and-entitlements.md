@@ -5,7 +5,7 @@
 
 ## Context
 
-Pricing will change (PLAN.md §6), and customers must keep what they bought when it does. Limits are
+Pricing will change, and customers must keep what they bought when it does. Limits are
 checked in many places (publishing, connecting channels, workspaces, members, API keys, later AI).
 Billing is not built yet, so limits cannot block anyone in production until merchants can upgrade.
 

@@ -13,4 +13,6 @@ A daily anonymous ping (instance id, version, connector counts, listing bucket).
 
 ## Consequences
 
-A documented payload and a public telemetry page are required before release.
+Telemetry is not implemented yet. Follow-up: when it ships, it must ship together with a public
+page that documents the exact payload and how to turn it off, and the first-boot log line must
+link to that page.

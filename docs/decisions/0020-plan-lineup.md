@@ -2,10 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-11-06
-- Supersedes: the plan list of ADR 0010 (Free, Starter, Growth, Agency, Enterprise), the plans
-  seeded by ADR 0015, and the two-plan lineup (Starter $29, Growth $129) of the Cloud billing
-  decision, ADR 0018. Plans as data, the entitlement service (ADR 0015) and the billing mechanics
-  of ADR 0018 stay as decided there.
+- Supersedes: the plans seeded by ADR 0015 (Free, Starter, Growth, Agency, with Enterprise as
+  custom) and the earlier two-plan lineup for Cloud billing (Starter $29, Growth $129). Plans as
+  data, the entitlement service (ADR 0015) and the billing mechanics stay as decided there.
 
 ## Context
 
@@ -39,8 +38,8 @@ store is one listing, so a product in three stores is three.
 - **Every plan includes everything else:** all channels, the API, MCP, the SDKs and AI agents
   (`autonomous_agents` is on in every plan). Sync speed is not a plan lever.
 - **No Agency plan.** Agencies use workspaces, which Growth and above include.
-- **Unchanged from ADR 0018:** there is no free Cloud plan, a 7-day trial needs a card, and an
-  unpaid organization is read-only. Self-hosting is free under AGPL and runs with no billing and no
+- **Unchanged:** there is no free Cloud plan, a 7-day trial needs a card, and an unpaid
+  organization is read-only. Self-hosting is free under AGPL and runs with no billing and no
   limits (`ENTITLEMENTS_ENFORCED` stays off by default).
 
 Not part of the published lineup, and chosen to keep the earlier proportions:
@@ -57,7 +56,7 @@ version 1 is left as it is. Pro, Scale and Enterprise are added. Starter becomes
 for new organizations. Free and Agency become inactive: they are no longer offered, and they are
 kept for the organizations on them. The subscription API reports this as `plan.offered`.
 
-Prices, monthly and annual, are not stored with plans. Billing owns them: under ADR 0018 each
+Prices, monthly and annual, are not stored with plans. Billing owns them: each
 Stripe price is found by the plan `code`. Enterprise has no self-serve price, and it is sold by
 contacting us.
 
@@ -66,8 +65,7 @@ contacting us.
 - Organizations created before this change stay on the version they had (grandfathering, ADR 0015).
   That is Free for every organization so far. While limits are not enforced and billing has not
   shipped, nothing changes for them except that their plan reads as no longer offered. When billing
-  ships, they choose a plan through checkout, as ADR 0018 describes for organizations without a
-  paid subscription.
+  ships, they choose a plan through checkout, like any organization without a paid subscription.
 - New organizations start on Starter version 2. Without enforcement it only decides what the plan
   page shows.
 - The marketing site's pricing page is the public copy of this table, and must change with it.
