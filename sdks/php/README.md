@@ -1,6 +1,6 @@
 # Crossmart PHP SDK
 
-The official PHP client for [Crossmart](https://crossmart.io), the open-source multichannel platform for sellers and their AI agents. Manage your catalog and stock, publish products to your Shopify, eBay, Etsy and Google Merchant Center stores, set per-store prices and overrides, read orders and sales, and work with Crossmart's AI writing tools from PHP applications and agents.
+The official PHP client for [Crossmart](https://crossmart.io), the open-source multichannel platform for sellers and their AI agents. Manage your catalog and stock, publish products to your Shopify and eBay stores (Google Merchant Center and Etsy are in development, see the [channel status](https://docs.crossmart.io/channels/)), set per-store prices and overrides, read orders and sales, and work with Crossmart's AI writing tools from PHP applications and agents.
 
 - Typed end to end: every model, enum and operation is generated from the API's OpenAPI document, and the SDK passes PHPStan at the maximum level.
 - Works with any [PSR-18](https://www.php-fig.org/psr/psr-18/) HTTP client: Guzzle, Symfony HttpClient, or the one your framework already uses.
@@ -345,4 +345,5 @@ Packagist picks the tag up through the webhook within a minute. See [sdks/RELEAS
 
 ## License
 
-[AGPL-3.0-only](LICENSE), like the rest of Crossmart.
+[MIT](LICENSE), copyright YIOT LLC. The Crossmart platform itself is
+[AGPL-3.0](https://github.com/crossmart-io/crossmart/blob/main/LICENSE).

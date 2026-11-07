@@ -295,4 +295,5 @@ in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-[AGPL-3.0](../../LICENSE), like the rest of Crossmart.
+[MIT](LICENSE), copyright YIOT LLC. The Crossmart platform itself is
+[AGPL-3.0](https://github.com/crossmart-io/crossmart/blob/main/LICENSE).

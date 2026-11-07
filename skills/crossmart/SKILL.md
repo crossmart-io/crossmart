@@ -2,7 +2,7 @@
 name: crossmart
 description: >-
   Manage a seller's multichannel catalog with Crossmart: products, stock, store listings on
-  Shopify, eBay and Google Merchant, and orders from every store. Use when the user wants to add or
+  Shopify and eBay (Google Merchant in development), and orders from every store. Use when the user wants to add or
   publish products, check why a listing failed or needs details, fix eBay categories or item
   specifics, retry a listing, adjust stock, check a store's setup, or read orders and sales, or
   mentions Crossmart. Works through the Crossmart MCP server (tools such as list_products,
@@ -20,7 +20,7 @@ metadata:
 # Crossmart
 
 Crossmart keeps one catalog and one stock ledger for a seller and publishes them to every store
-they connect (Shopify, eBay, Google Merchant). You work on one **workspace** (one business): the one
+they connect: Shopify and eBay, with Google Merchant and Etsy in development. You work on one **workspace** (one business): the one
 the seller chose when signing the agent in, or the API key's.
 
 ## Before you start

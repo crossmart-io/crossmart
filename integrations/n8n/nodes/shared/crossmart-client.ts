@@ -17,7 +17,10 @@ import { type ApiRequest, buildRequestOptions, type QueryParams } from './reques
  * trigger's lifecycle hooks.
  */
 export type RequestContext =
-	IExecuteFunctions | IPollFunctions | ILoadOptionsFunctions | IHookFunctions;
+	| IExecuteFunctions
+	| IPollFunctions
+	| ILoadOptionsFunctions
+	| IHookFunctions;
 
 /** Builds a workspace-scoped route from the workspace id. */
 export type WorkspacePath = (workspaceId: string) => string;

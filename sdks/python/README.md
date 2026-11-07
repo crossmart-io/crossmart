@@ -1,6 +1,6 @@
 # Crossmart Python SDK
 
-The official Python client for [Crossmart](https://crossmart.io), the open-source multichannel platform for sellers and their AI agents. Manage your catalog and stock, publish products to your Shopify, eBay and Google Merchant Center stores, set per-store prices and overrides, read orders and sales, and work with Crossmart's AI writing tools from Python scripts and AI agents.
+The official Python client for [Crossmart](https://crossmart.io), the open-source multichannel platform for sellers and their AI agents. Manage your catalog and stock, publish products to your Shopify and eBay stores (Google Merchant Center and Etsy are in development, see the [channel status](https://docs.crossmart.io/channels/)), set per-store prices and overrides, read orders and sales, and work with Crossmart's AI writing tools from Python scripts and AI agents.
 
 - Typed end to end: models and enums are generated from the API's OpenAPI document, and the client passes `mypy --strict`.
 - Synchronous (`Crossmart`) and asynchronous (`AsyncCrossmart`) clients built on [httpx](https://www.python-httpx.org/).
@@ -321,4 +321,5 @@ in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-[AGPL-3.0](LICENSE).
+[MIT](LICENSE), copyright YIOT LLC. The Crossmart platform itself is
+[AGPL-3.0](https://github.com/crossmart-io/crossmart/blob/main/LICENSE).

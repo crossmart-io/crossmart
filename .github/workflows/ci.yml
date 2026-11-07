@@ -1,17 +1,56 @@
+# Pull request checks. This workflow only reads the repository: it uses no secrets, publishes
+# nothing and deploys nothing, so it runs the same way for pull requests from forks. Every value
+# below is a placeholder for throwaway service containers. Maintainers also verify each pull
+# request locally before merging (see CONTRIBUTING.md); releases are made by hand (sdks/RELEASING.md).
 name: CI
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.12'
+  PHP_VERSION: '8.3'
+  OPENAPI_ARTIFACT: openapi
+
 jobs:
-  verify:
-    name: Lint, typecheck, test, build
+  backend:
+    name: Format, lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    # The values only satisfy configuration validation; unit tests never connect to these.
+    env:
+      DATABASE_URL: postgresql://crossmart:crossmart@localhost:5432/crossmart
+      REDIS_URL: redis://localhost:6379
+      BETTER_AUTH_SECRET: ci-placeholder-secret-at-least-32-characters
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  e2e:
+    name: E2E tests and OpenAPI document
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -30,48 +69,172 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 5s --health-retries 10
+    # Placeholders only. The e2e suite stubs every marketplace and AI provider and sets the fake
+    # credentials it needs itself.
     env:
       DATABASE_URL: postgresql://crossmart:crossmart@localhost:5432/crossmart
       REDIS_URL: redis://localhost:6379
-      BETTER_AUTH_SECRET: ci-only-secret-that-is-at-least-32-characters
+      BETTER_AUTH_SECRET: ci-placeholder-secret-at-least-32-characters
       BETTER_AUTH_URL: http://localhost:3000
+      # The CORS e2e tests need a trusted browser origin.
+      CORS_ORIGINS: http://localhost:5173
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+      - run: pnpm db:deploy
+      # The API reads the database while it starts, even when it only writes the document.
+      - name: Export the OpenAPI document
+        run: pnpm build:api && pnpm openapi:generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OPENAPI_ARTIFACT }}
+          path: openapi.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: E2E tests
+        run: pnpm exec vitest run --config ./vitest.config.e2e.ts --testTimeout=60000 --hookTimeout=60000 --maxWorkers=2
+
+  sdk-typescript:
+    name: TypeScript SDK
+    runs-on: ubuntu-latest
+    needs: e2e
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.OPENAPI_ARTIFACT }}
+          path: .
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: sdks/typescript/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: sdks/typescript/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm db:deploy
-      - run: pnpm test:e2e
       - run: pnpm build
-      - name: Export OpenAPI spec
-        run: pnpm openapi:generate
-      - uses: actions/upload-artifact@v4
-        with:
-          name: openapi
-          path: openapi.json
+      - name: Generated schema matches the API
+        run: pnpm check:drift
 
-  docker:
-    name: Docker images
+  sdk-python:
+    name: Python SDK (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    needs: verify
     strategy:
+      fail-fast: false
       matrix:
-        app: [api, worker, mcp]
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+    defaults:
+      run:
+        working-directory: sdks/python
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
         with:
-          context: .
-          build-args: APP=${{ matrix.app }}
-          push: false
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --group dev -e .
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+      - run: pytest
+
+  sdk-python-drift:
+    name: Python SDK generated client matches the API
+    runs-on: ubuntu-latest
+    needs: e2e
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.OPENAPI_ARTIFACT }}
+          path: .
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install the pinned generator
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --group dev
+      - run: scripts/generate.sh
+      - name: Fail when the committed client is out of date
+        run: |
+          if [ -n "$(git status --porcelain -- crossmart/_generated)" ]; then
+            git status --short -- crossmart/_generated
+            echo "::error::crossmart/_generated is out of date. Run 'pnpm build:api && pnpm openapi:generate' at the repository root, then 'scripts/generate.sh' in sdks/python, and commit the result."
+            exit 1
+          fi
+
+  sdk-php:
+    name: PHP SDK
+    runs-on: ubuntu-latest
+    needs: e2e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.OPENAPI_ARTIFACT }}
+          path: .
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+      - name: Install
+        working-directory: sdks/php
+        run: composer install --no-interaction --no-progress
+      # Drift check, PHPStan and PHPUnit.
+      - run: sdks/php/scripts/check.sh
+
+  n8n:
+    name: n8n node
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integrations/n8n
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: integrations/n8n/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: integrations/n8n/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

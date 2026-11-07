@@ -14,3 +14,23 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  - package-ecosystem: npm
+    directory: /sdks/typescript
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /integrations/n8n
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /sdks/python
+    schedule:
+      interval: weekly
+  - package-ecosystem: composer
+    directory: /sdks/php
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -22,6 +22,27 @@ x-app-environment: &app-environment
   STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
   STRIPE_PORTAL_CONFIGURATION_ID: ${STRIPE_PORTAL_CONFIGURATION_ID:-}
 
+# Optional settings the API and worker read, passed through from the shell or .env. Every one may
+# be left unset; see .env.example for what each does.
+x-app-optional-environment: &app-optional-environment
+  WEB_APP_URL: ${WEB_APP_URL:-http://localhost:5173}
+  CREDENTIALS_MASTER_KEY: ${CREDENTIALS_MASTER_KEY:-}
+  CREDENTIALS_MASTER_KEY_VERSION: ${CREDENTIALS_MASTER_KEY_VERSION:-1}
+  CREDENTIALS_RETIRED_MASTER_KEYS: ${CREDENTIALS_RETIRED_MASTER_KEYS:-}
+  SHOPIFY_CLIENT_ID: ${SHOPIFY_CLIENT_ID:-}
+  SHOPIFY_CLIENT_SECRET: ${SHOPIFY_CLIENT_SECRET:-}
+  EBAY_CLIENT_ID: ${EBAY_CLIENT_ID:-}
+  EBAY_CLIENT_SECRET: ${EBAY_CLIENT_SECRET:-}
+  EBAY_RU_NAME: ${EBAY_RU_NAME:-}
+  EBAY_ENVIRONMENT: ${EBAY_ENVIRONMENT:-sandbox}
+  EBAY_VERIFICATION_TOKEN: ${EBAY_VERIFICATION_TOKEN:-}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  ETSY_API_KEY: ${ETSY_API_KEY:-}
+  ETSY_SHARED_SECRET: ${ETSY_SHARED_SECRET:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  ENTITLEMENTS_ENFORCED: ${ENTITLEMENTS_ENFORCED:-false}
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -71,9 +92,9 @@ services:
       args:
         APP: api
     environment:
-      <<: *app-environment
+      <<: [*app-environment, *app-optional-environment]
       API_PORT: 3000
-      CORS_ORIGINS: http://localhost:5173
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     ports:
       - '3000:3000'
     depends_on:
@@ -88,7 +109,8 @@ services:
       context: .
       args:
         APP: worker
-    environment: *app-environment
+    environment:
+      <<: [*app-environment, *app-optional-environment]
     depends_on:
       migrate:
         condition: service_completed_successfully

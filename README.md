@@ -2,17 +2,26 @@
 
 # crossmart
 
-**The open-source multichannel platform for sellers and their AI agents.**
+**The open-source multichannel listing platform for sellers and their AI agents.**
 
-Manage listings, inventory and orders across Amazon, eBay, Shopify, Etsy and more,
-from one dashboard or straight from Claude & ChatGPT.
+Manage listings, inventory and orders on Shopify and eBay today, with Google Merchant and Etsy
+on the way, from one dashboard or straight from Claude & ChatGPT.
 
 [Website](https://crossmart.io) · [Docs](https://docs.crossmart.io) · [Developers](docs/developers/README.md) · [Architecture](docs/architecture.md)
 
 </div>
 
-> [!WARNING]
-> Crossmart is in early development. APIs and data models will change, and it is not ready for production use yet.
+> [!NOTE]
+> Crossmart is young and moving fast. Shopify and eBay are live, and more channels are on the way. Until 1.0, APIs may change; breaking changes are announced and versioned under `/api/v1`.
+
+![The Crossmart overview: sales over time, sales by store and top products](docs/images/01-dashboard.png)
+
+| | |
+|---|---|
+| ![One catalog with Shopify and eBay listings, stock and prices](docs/images/02-products.png) | ![A product published to Shopify and eBay from the listing editor](docs/images/03-product-channels.png) |
+| One catalog for every channel | Publish a product to every store |
+| ![Channels: Shopify and eBay live, more coming](docs/images/04-channels.png) | ![AI agents such as Claude and Cursor connected over MCP](docs/images/05-connected-agents.png) |
+| Connect your stores | Let your AI agents work through MCP |
 
 ## Why Crossmart
 
@@ -21,6 +30,26 @@ from one dashboard or straight from Claude & ChatGPT.
 - **Built for agents.** Everything in the dashboard is available through a REST API and an MCP server, so your own AI agent can run your catalog.
 - **No overselling.** A single inventory ledger with real-time order ingestion and last-unit protection keeps every channel in sync.
 - **Open source.** Self-host it for free, or use [Crossmart Cloud](https://crossmart.io) and skip marketplace app approvals.
+
+## Project status
+
+Crossmart is pre-1.0. The catalog, the stock ledger, the REST API, the SDKs and the MCP server
+work end to end, but APIs and data models can still change between releases.
+
+| Channel                             | Status                                                          |
+| ----------------------------------- | --------------------------------------------------------------- |
+| Shopify                             | Live                                                            |
+| eBay                                | Live (a self-hosted instance uses eBay sandbox keys by default) |
+| Google Merchant (Google Shopping)   | In development                                                  |
+| Etsy                                | In development                                                  |
+| Amazon, Walmart                     | Planned                                                         |
+| WooCommerce, BigCommerce and others | Community contributions welcome                                 |
+
+The [channel status page](https://docs.crossmart.io/channels/) is kept up to date as connectors
+ship.
+
+**Plans:** Crossmart Cloud has plans sized by active listings. On a self-hosted instance plan
+limits are reported but not enforced unless you set `ENTITLEMENTS_ENFORCED=true`.
 
 ## Repository layout
 
@@ -42,18 +71,44 @@ The web app lives in [crossmart-io/crossmart-web](https://github.com/crossmart-i
 
 ## Quick start (development)
 
-Requirements: Node.js 22+ (see `.nvmrc`), pnpm 10, Docker.
+Requirements: Node.js 22 or 24 (`.nvmrc` pins 24, the version the Docker images use), pnpm 10,
+and Docker (or your own PostgreSQL and Redis, see below).
 
 ```bash
 pnpm install
-cp .env.example .env                  # then set BETTER_AUTH_SECRET: openssl rand -base64 32
-                                      # and POSTGRES_PASSWORD / REDIS_PASSWORD: openssl rand -hex 24,
-                                      # also in DATABASE_URL and REDIS_URL
+cp .env.example .env                  # then fill in the secrets, see below
 docker compose up -d postgres redis   # set POSTGRES_PORT / REDIS_PORT if 5432 / 6379 are taken
-pnpm db:migrate
+pnpm db:generate                      # generates the Prisma client; the build needs it
+pnpm db:deploy                        # applies the migrations
 pnpm start:api                        # http://localhost:3000/api/docs
 pnpm start:worker
 ```
+
+In `.env`, set:
+
+| Variable                               | How                                                                                              |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `BETTER_AUTH_SECRET`                   | `openssl rand -base64 32`                                                                        |
+| `POSTGRES_PASSWORD` / `REDIS_PASSWORD` | `openssl rand -hex 24`, and put the same values in `DATABASE_URL` and `REDIS_URL`                |
+| `CREDENTIALS_MASTER_KEY`               | `openssl rand -base64 32`. It encrypts channel credentials; without it no store can be connected |
+
+Everything else is optional for running locally. The channel credentials (`SHOPIFY_*`, `EBAY_*`,
+`GOOGLE_*`, `ETSY_*`) only turn on connecting that channel; see [docs/channels](docs/channels).
+Without `ANTHROPIC_API_KEY` the app runs as usual and the AI features say AI is not configured.
+
+`GET /api/v1/health` reports whether the API is up. It checks the database connection only.
+
+### Without Docker
+
+If you already run PostgreSQL 16+ and Redis 7+, skip `docker compose` and point `DATABASE_URL`
+and `REDIS_URL` in `.env` at them. `POSTGRES_PASSWORD` and `REDIS_PASSWORD` are only read by
+`compose.yaml`.
+
+### Another port
+
+`API_PORT` defaults to 3000. If you change it, change the URLs that contain it too:
+`BETTER_AUTH_URL`, `MEDIA_PUBLIC_URL` and `CROSSMART_API_URL` in `.env`, and `VITE_API_URL` in
+the web app's `.env.local`.
 
 ### Demo data
 
@@ -62,7 +117,7 @@ and 116 variants from invented brands: sizes and colours, stock with a few sell-
 products missing images or barcodes, so every screen has something to show. It goes through the
 public API, so the data passes the same validation as anything a seller enters. It prints the demo
 login when it is done (`DEMO_EMAIL` and `DEMO_PASSWORD` override it), and does nothing if that
-workspace already has products. Never run it against a server other people can reach.
+workspace already has products. It talks to `API_URL`, `http://localhost:3000` by default. Never run it against a server other people can reach.
 
 ## Self-hosting
 
@@ -77,6 +132,23 @@ This starts PostgreSQL, Redis, applies migrations, and runs the API and worker. 
 secrets (for example in `.env` next to `compose.yaml`): compose refuses to start without them.
 PostgreSQL and Redis require their passwords and publish their ports on `127.0.0.1` only, so
 they are not reachable from other machines.
+
+Compose also passes `CREDENTIALS_MASTER_KEY`, the channel credentials (`SHOPIFY_*`, `EBAY_*`,
+`GOOGLE_*`, `ETSY_*`), `ANTHROPIC_API_KEY` and `ENTITLEMENTS_ENFORCED` from the shell or `.env`
+to the API and worker. Set `CREDENTIALS_MASTER_KEY` before you connect a store.
+
+What compose does not include:
+
+- **The web app.** It lives in [crossmart-io/crossmart-web](https://github.com/crossmart-io/crossmart-web).
+  Its Docker image takes the API address as a build argument:
+  `docker build --build-arg VITE_API_URL=https://api.example.com .` (see its
+  [Dockerfile](https://github.com/crossmart-io/crossmart-web/blob/main/Dockerfile)).
+- **The MCP server.** Build it with `docker build --build-arg APP=mcp .` or run it from source
+  (see [Using Crossmart from Claude, ChatGPT or Cursor](#using-crossmart-from-claude-chatgpt-or-cursor)).
+
+The stack assumes the API at `http://localhost:3000` and the web app at `http://localhost:5173`.
+For another address, set `BETTER_AUTH_URL`, `CORS_ORIGINS` and `WEB_APP_URL` (in the shell or
+`.env`), and change the published port in `compose.yaml` if needed.
 
 **Upgrading an existing stack:** PostgreSQL sets its password only when the data volume is first
 created. Keep the old one (`crossmart`) as `POSTGRES_PASSWORD`, or change it first with
@@ -140,7 +212,21 @@ Crossmart has an MCP server, so an AI agent can run the catalog with the same ru
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. It covers the code standards, the commit format and the Contributor License Agreement.
 
+## Getting help
+
+- **Questions and ideas:** [GitHub Discussions](https://github.com/crossmart-io/crossmart/discussions).
+- **Bugs:** [GitHub Issues](https://github.com/crossmart-io/crossmart/issues).
+- **Security vulnerabilities:** email security@crossmart.io, never a public issue. See [SECURITY.md](SECURITY.md).
+- **Anything else:** hello@crossmart.io.
+
+See [SUPPORT.md](SUPPORT.md) for what to expect.
+
 ## License
 
-Crossmart is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+Copyright YIOT LLC.
+
+- The platform (this repository, unless stated otherwise) is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+- The SDKs in `sdks/` and the n8n node in `integrations/n8n` are licensed under the MIT License (see the `LICENSE` file in each).
+- The agent skill in `skills/crossmart` is licensed under MIT-0.
+
 "Crossmart" and the Crossmart logo are trademarks of their owner and are not covered by the code license.

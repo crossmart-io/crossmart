@@ -5,3 +5,5 @@ pnpm-lock.yaml
 libs/database/src/generated
 sdks/typescript/src/generated
 libs/database/prisma/migrations
+# Formatted by its own Prettier version and config (integrations/n8n/package.json)
+integrations/n8n

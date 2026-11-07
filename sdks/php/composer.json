@@ -2,7 +2,7 @@
   "name": "crossmart/crossmart-php",
   "description": "Official PHP SDK for the Crossmart API, the open-source multichannel platform for sellers and their AI agents.",
   "type": "library",
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "keywords": [
     "crossmart",
     "multichannel",
