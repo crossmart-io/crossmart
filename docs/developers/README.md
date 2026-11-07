@@ -56,10 +56,6 @@ A workspace you can't access answers `404`, the same as one that doesn't exist, 
 Plan limits (active listings, connected stores, API keys…) count across the organization's
 workspaces.
 
-> [!NOTE]
-> Paid plans are not live yet. Limits are computed and reported, but they only block requests
-> (with `402`) on an instance that sets `ENTITLEMENTS_ENFORCED=true`, which is off by default.
-
 ## Authentication
 
 ### API keys
@@ -142,8 +138,7 @@ Errors use the HTTP status and a JSON body:
 - **401**: the key or token is missing, wrong, revoked or expired.
 - **402**: the plan doesn't allow it. The body adds a machine-readable `code`
   (`plan_limit_reached` or `plan_feature_not_included`), the `feature`, the `plan`, its `limit`
-  and current `usage`, so you can tell the user what to upgrade. Only returned when the instance
-  enforces plan limits, which is off by default while paid plans are not live.
+  and current `usage`, so you can tell the user what to upgrade.
 - **403**: the role lacks the permission, or (with `code: "sandbox_claim_required"`) the
   workspace is an unclaimed [sandbox account](#sandbox-accounts-for-ai-agents) the user must
   claim first.

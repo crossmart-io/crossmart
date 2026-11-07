@@ -41,8 +41,8 @@ work end to end, but APIs and data models can still change between releases.
 The [channel status page](https://docs.crossmart.io/channels/) is kept up to date as connectors
 ship.
 
-**Billing:** paid plans are not live yet. Plan limits are computed and reported, but not enforced
-by default (`ENTITLEMENTS_ENFORCED=false`), so a self-hosted instance has no limits.
+**Plans:** Crossmart Cloud has plans sized by active listings. On a self-hosted instance plan
+limits are reported but not enforced unless you set `ENTITLEMENTS_ENFORCED=true`.
 
 ## Repository layout
 
