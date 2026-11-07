@@ -2,6 +2,8 @@ import type { Job } from 'bullmq';
 import {
   AGENT_CLIENT_SWEEP_JOB_NAME,
   type AgentClientSweeper,
+  ASK_RETENTION_JOB_NAME,
+  type AskRetentionService,
   SANDBOX_SWEEP_JOB_NAME,
   type SandboxSweeper,
 } from '@crossmart/core';
@@ -14,11 +16,15 @@ function setup() {
   const sandboxes = {
     sweep: vi.fn<SandboxSweeper['sweep']>(() => Promise.resolve({ reminded: 1, deleted: 2 })),
   };
+  const askRetention = {
+    purge: vi.fn<AskRetentionService['purge']>(() => Promise.resolve(4)),
+  };
   const processor = new MaintenanceProcessor(
     agentClients as unknown as AgentClientSweeper,
     sandboxes as unknown as SandboxSweeper,
+    askRetention as unknown as AskRetentionService,
   );
-  return { agentClients, sandboxes, processor };
+  return { agentClients, sandboxes, askRetention, processor };
 }
 
 describe('MaintenanceProcessor', () => {
@@ -33,6 +39,13 @@ describe('MaintenanceProcessor', () => {
     const { agentClients, sandboxes, processor } = setup();
     await processor.process({ name: SANDBOX_SWEEP_JOB_NAME } as Job);
     expect(sandboxes.sweep).toHaveBeenCalled();
+    expect(agentClients.sweep).not.toHaveBeenCalled();
+  });
+
+  it('purges Ask Crossmart conversations past their retention', async () => {
+    const { agentClients, askRetention, processor } = setup();
+    await processor.process({ name: ASK_RETENTION_JOB_NAME } as Job);
+    expect(askRetention.purge).toHaveBeenCalled();
     expect(agentClients.sweep).not.toHaveBeenCalled();
   });
 

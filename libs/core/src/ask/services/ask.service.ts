@@ -1,68 +1,69 @@
+import { performance } from 'node:perf_hooks';
 import { Injectable } from '@nestjs/common';
-import { AppConfigService, type AskSettings } from '@crossmart/common';
-import { AiFeature } from '../../ai/enums/ai-feature.enum.js';
-import { askSystemPrompt, askUserPrompt } from '../../ai/prompts/ask.v2.prompt.js';
+import { AppConfigService } from '@crossmart/common';
 import { AiGateway } from '../../ai/services/ai-gateway.service.js';
-import { ASK_MAX_OUTPUT_TOKENS, ASK_RETRIEVED_CHUNKS } from '../ask.constants.js';
-import type { AskAnswer } from '../entities/ask-answer.js';
-import type { KnowledgeChunk } from '../entities/knowledge-chunk.js';
+import type { AskReply } from '../entities/ask-reply.js';
+import type { AskRequest } from '../entities/ask-request.js';
+import { AskCallerType } from '../enums/ask-caller-type.enum.js';
 import { AskTurnedOffError } from '../errors/ask.errors.js';
-import { askModelOutputSchema } from '../rules/ask-answer.schema.js';
-import { groundedAnswer, unknownAnswer } from '../rules/grounded-answer.js';
-import { AskSpendControls } from './ask-spend-controls.js';
-import { KnowledgeBaseService } from './knowledge-base.service.js';
+import { escalationOffer } from '../rules/escalation-offer.js';
+import { AskAnswerer } from './ask-answerer.js';
+import { AskConversationsService, type OpenedConversation } from './ask-conversations.service.js';
 
 const TURNED_OFF_CAP = 0;
 
 /**
  * Ask Crossmart: answers questions about Crossmart from its public docs and plan data, for
- * sellers (a support widget) and AI agents (the API and the MCP tool). It never reads
- * workspace data. Crossmart pays for the calls, so it spends the model only when retrieval
- * found something relevant, reuses recent answers, and stops at a daily cap.
+ * sellers (the widgets) and AI agents (the API, MCP and A2A), within a conversation (ADR 0022,
+ * ADR 0025). Callers signed in to a workspace may also ask about it, read-only. Every question
+ * and answer is stored, redacted, so the team knows what people ask; when Ask cannot help, the
+ * reply offers a person.
  */
 @Injectable()
 export class AskService {
   constructor(
     private readonly ai: AiGateway,
-    private readonly knowledge: KnowledgeBaseService,
-    private readonly spend: AskSpendControls,
+    private readonly answerer: AskAnswerer,
+    private readonly conversations: AskConversationsService,
     private readonly config: AppConfigService,
   ) {}
 
-  async ask(question: string, now = new Date()): Promise<AskAnswer> {
-    const settings = this.config.askSettings;
-    this.assertAvailable(settings);
-    const cached = await this.spend.cachedAnswer(question);
-    if (cached) return cached;
-    const retrieved = await this.knowledge.search(question, ASK_RETRIEVED_CHUNKS, now.getTime());
-    if (!retrieved.length) return unknownAnswer(settings.supportEmail);
-    await this.spend.takeQuestion(settings.dailyQuestionCap, settings.supportEmail, now);
-    const sources = retrieved.map((found) => found.chunk);
-    const answer = await this.answerFrom(question, sources, settings);
-    await this.spend.remember(question, answer);
-    return answer;
+  async ask(request: AskRequest, now = new Date()): Promise<AskReply> {
+    const startedAt = performance.now();
+    this.assertAvailable();
+    const opened = await this.conversations.open(request, now);
+    const composed = await this.answerer.answer({
+      question: request.question,
+      history: opened.history,
+      workspace: request.caller.workspace,
+      cacheable: this.isCacheable(request, opened),
+      now,
+    });
+    const offer = escalationOffer(composed);
+    const latencyMs = Math.round(performance.now() - startedAt);
+    const recorded = await this.conversations.record(
+      request,
+      opened,
+      { composed, offer, latencyMs },
+      now,
+    );
+    return { ...composed.answer, ...recorded, escalation: offer };
   }
 
-  private assertAvailable(settings: AskSettings): void {
-    if (settings.dailyQuestionCap === TURNED_OFF_CAP) throw new AskTurnedOffError();
+  private assertAvailable(): void {
+    if (this.config.askSettings.dailyQuestionCap === TURNED_OFF_CAP) throw new AskTurnedOffError();
     this.ai.assertConfigured();
   }
 
-  private async answerFrom(
-    question: string,
-    sources: readonly KnowledgeChunk[],
-    settings: AskSettings,
-  ): Promise<AskAnswer> {
-    const { output } = await this.ai.generateForPlatform(
-      { feature: AiFeature.Ask },
-      {
-        system: askSystemPrompt(settings.supportEmail),
-        prompt: askUserPrompt(question, sources),
-        schema: askModelOutputSchema,
-        maxOutputTokens: ASK_MAX_OUTPUT_TOKENS,
-        ...(settings.model ? { model: settings.model } : {}),
-      },
+  /**
+   * Only a first question from an anonymous caller is answered from (and kept in) the cache:
+   * a follow-up depends on the conversation, and an identified caller's on their account.
+   */
+  private isCacheable(request: AskRequest, opened: OpenedConversation): boolean {
+    return (
+      !opened.existing &&
+      request.caller.type === AskCallerType.Anonymous &&
+      request.caller.workspace === null
     );
-    return groundedAnswer(output, sources, settings.supportEmail);
   }
 }

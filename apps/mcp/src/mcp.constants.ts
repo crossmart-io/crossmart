@@ -30,6 +30,8 @@ export const CURRENT_API_KEY_PATH = `${API_PREFIX}/api-key`;
 export const API_HEALTH_PATH = `${API_PREFIX}/health`;
 /** Ask Crossmart; it needs no workspace, and takes calls without a key. */
 export const ASK_PATH = `${API_PREFIX}/ask`;
+/** Escalations of an Ask conversation to a person; read with the ticket id alone. */
+export const ASK_ESCALATIONS_PATH = `${API_PREFIX}/ask/escalations`;
 /** Opens a sandbox account for someone without one (ADR 0019); it takes calls without a key. */
 export const SANDBOX_ACCOUNTS_PATH = `${API_PREFIX}/sandbox-accounts`;
 export const API_KEY_HEADER = 'x-api-key';

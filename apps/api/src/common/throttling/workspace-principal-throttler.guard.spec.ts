@@ -24,6 +24,7 @@ describe('WorkspacePrincipalThrottlerGuard', () => {
       userId: 'user-1',
       name: 'A',
       email: 'a@x.io',
+      emailVerified: true,
     } as const;
 
     expect(await guard.tracker({ params, principal: user })).toBe('ws-1:user:user-1');

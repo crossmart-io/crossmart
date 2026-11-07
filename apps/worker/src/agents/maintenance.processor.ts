@@ -5,6 +5,8 @@ import { QueueName } from '@crossmart/common';
 import {
   AGENT_CLIENT_SWEEP_JOB_NAME,
   AgentClientSweeper,
+  ASK_RETENTION_JOB_NAME,
+  AskRetentionService,
   SANDBOX_SWEEP_JOB_NAME,
   SandboxSweeper,
 } from '@crossmart/core';
@@ -17,6 +19,7 @@ export class MaintenanceProcessor extends WorkerHost {
   constructor(
     private readonly agentClients: AgentClientSweeper,
     private readonly sandboxes: SandboxSweeper,
+    private readonly askRetention: AskRetentionService,
   ) {
     super();
   }
@@ -27,6 +30,8 @@ export class MaintenanceProcessor extends WorkerHost {
         return this.sweepAgentClients();
       case SANDBOX_SWEEP_JOB_NAME:
         return this.sweepSandboxes();
+      case ASK_RETENTION_JOB_NAME:
+        return this.purgeAskConversations();
       default:
         this.logger.warn(`Skipped unknown maintenance job ${job.name}`);
     }
@@ -47,6 +52,13 @@ export class MaintenanceProcessor extends WorkerHost {
       this.logger.log(
         `Reminded ${reminded} sandbox accounts to be claimed and deleted ${deleted} expired ones`,
       );
+    }
+  }
+
+  private async purgeAskConversations(): Promise<void> {
+    const deleted = await this.askRetention.purge();
+    if (deleted > 0) {
+      this.logger.log(`Deleted ${deleted} Ask Crossmart conversations past their retention`);
     }
   }
 }

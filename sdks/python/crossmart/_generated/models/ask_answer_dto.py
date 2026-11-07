@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Self, TypeVar
+from uuid import UUID
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -11,6 +12,7 @@ from ..models.ask_outcome import AskOutcome
 
 if TYPE_CHECKING:
     from ..models.ask_citation_dto import AskCitationDto
+    from ..models.ask_escalation_offer_dto import AskEscalationOfferDto
 
 
 T = TypeVar("T", bound="AskAnswerDto")
@@ -27,6 +29,10 @@ class AskAnswerDto:
         confidence (AskConfidence):
         handoff (bool): True when a person should take over, at supportEmail
         support_email (str):
+        conversation_id (str): Send it as `conversationId` with a follow-up question. Only you can continue the
+            conversation, for 24 hours after its last question.
+        turn_id (UUID): This question and answer, as stored
+        escalation (AskEscalationOfferDto):
     """
 
     outcome: AskOutcome
@@ -35,6 +41,9 @@ class AskAnswerDto:
     confidence: AskConfidence
     handoff: bool
     support_email: str
+    conversation_id: str
+    turn_id: UUID
+    escalation: AskEscalationOfferDto
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -53,6 +62,12 @@ class AskAnswerDto:
 
         support_email = self.support_email
 
+        conversation_id = self.conversation_id
+
+        turn_id = str(self.turn_id)
+
+        escalation = self.escalation.to_dict()
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -63,6 +78,9 @@ class AskAnswerDto:
                 "confidence": confidence,
                 "handoff": handoff,
                 "supportEmail": support_email,
+                "conversationId": conversation_id,
+                "turnId": turn_id,
+                "escalation": escalation,
             }
         )
 
@@ -71,6 +89,7 @@ class AskAnswerDto:
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         from ..models.ask_citation_dto import AskCitationDto
+        from ..models.ask_escalation_offer_dto import AskEscalationOfferDto
 
         d = dict(src_dict)
         outcome = AskOutcome(d.pop("outcome"))
@@ -90,6 +109,12 @@ class AskAnswerDto:
 
         support_email = d.pop("supportEmail")
 
+        conversation_id = d.pop("conversationId")
+
+        turn_id = UUID(d.pop("turnId"))
+
+        escalation = AskEscalationOfferDto.from_dict(d.pop("escalation"))
+
         ask_answer_dto = cls(
             outcome=outcome,
             answer=answer,
@@ -97,6 +122,9 @@ class AskAnswerDto:
             confidence=confidence,
             handoff=handoff,
             support_email=support_email,
+            conversation_id=conversation_id,
+            turn_id=turn_id,
+            escalation=escalation,
         )
 
         ask_answer_dto.additional_properties = d

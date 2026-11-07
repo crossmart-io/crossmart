@@ -21,27 +21,15 @@ import {
 import { PrismaService, WorkspaceRole } from '@crossmart/database';
 import { ASK_ANONYMOUS_PER_MINUTE, ASK_RATE_LIMITED_MESSAGE } from '../src/ask/ask.constants.js';
 import { connectAgent, registerAgent } from './support/agent-oauth.js';
+import { CITED_ANSWER, CLIENT_IP_HEADER, randomIp } from './support/ask.js';
 import { createTestApp, signUp } from './support/test-app.js';
 
-const CLIENT_IP_HEADER = 'x-real-ip';
 /** The marketing site: not a trusted origin, but its widget calls Ask. */
 const SITE_ORIGIN = 'https://crossmart.io';
 const ALLOW_ORIGIN = 'access-control-allow-origin';
 const ALLOW_CREDENTIALS = 'access-control-allow-credentials';
 const ALLOW_METHODS = 'access-control-allow-methods';
 const ALLOW_HEADERS = 'access-control-allow-headers';
-const CITED = {
-  outcome: AskOutcome.Answered,
-  answer: 'Past a limit the API answers 429 with a Retry-After header.',
-  sourceIds: ['S1'],
-  confidence: AskConfidence.High,
-};
-
-/** A fresh address per test, so rate-limit windows in Redis never carry over between runs. */
-function randomIp(): string {
-  const bytes = randomUUID().replaceAll('-', '').slice(0, 6);
-  return `10.${parseInt(bytes.slice(0, 2), 16)}.${parseInt(bytes.slice(2, 4), 16)}.${parseInt(bytes.slice(4, 6), 16)}`;
-}
 
 describe('Ask Crossmart (e2e)', () => {
   let app: INestApplication<App>;
@@ -60,7 +48,7 @@ describe('Ask Crossmart (e2e)', () => {
         .useValue(budget),
     );
     prisma = app.get(PrismaService);
-    ai.answerWith(CITED);
+    ai.answerWith(CITED_ANSWER);
   });
 
   afterEach(() => {
@@ -82,7 +70,7 @@ describe('Ask Crossmart (e2e)', () => {
     expect(response.status).toBe(HttpStatus.OK);
     expect(response.body).toMatchObject({
       outcome: AskOutcome.Answered,
-      answer: CITED.answer,
+      answer: CITED_ANSWER.answer,
       confidence: AskConfidence.High,
       handoff: false,
     });
@@ -129,8 +117,19 @@ describe('Ask Crossmart (e2e)', () => {
     );
     const extra = await request(app.getHttpServer())
       .post('/api/v1/ask')
-      .send({ question: 'rate limits?', workspaceId: randomUUID() });
+      .set(CLIENT_IP_HEADER, randomIp())
+      .send({ question: 'rate limits?', organizationId: randomUUID() });
     expect(extra.status).toBe(HttpStatus.BAD_REQUEST);
+    const unknownConversation = await request(app.getHttpServer())
+      .post('/api/v1/ask')
+      .set(CLIENT_IP_HEADER, randomIp())
+      .send({ question: 'rate limits?', conversationId: 'not-a-conversation' });
+    expect(unknownConversation.status).toBe(HttpStatus.BAD_REQUEST);
+    const channel = await request(app.getHttpServer())
+      .post('/api/v1/ask')
+      .set(CLIENT_IP_HEADER, randomIp())
+      .send({ question: 'rate limits?', channel: 'a2a' });
+    expect(channel.status).toBe(HttpStatus.BAD_REQUEST);
   });
 
   it('refuses a wrong API key instead of treating the caller as anonymous', async () => {

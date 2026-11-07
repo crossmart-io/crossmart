@@ -29,6 +29,10 @@ export const DEFAULT_AI_MODEL = 'claude-sonnet-5-5';
 export const DEFAULT_ASK_DAILY_QUESTION_CAP = 1000;
 /** Where Ask Crossmart sends people it cannot answer. */
 export const DEFAULT_ASK_SUPPORT_EMAIL = 'hello@crossmart.io';
+/** Who is emailed when a conversation with Ask Crossmart is escalated to a person. */
+export const DEFAULT_ASK_ESCALATION_EMAIL = 'hello@crossmart.io';
+/** Separates the addresses in `PLATFORM_ADMIN_EMAILS`. */
+export const PLATFORM_ADMIN_EMAILS_SEPARATOR = ',';
 /** eBay's rule for the account deletion endpoint's verification token. */
 export const EBAY_VERIFICATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,80}$/;
 /** Stripe Tax needs setting up in the Stripe dashboard first, so checkout leaves tax off by default. */

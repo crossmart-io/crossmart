@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { HttpMethod } from '../api/api-call.js';
-import { API_HEALTH_PATH, ASK_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
+import {
+  API_HEALTH_PATH,
+  ASK_ESCALATIONS_PATH,
+  ASK_PATH,
+  WORKSPACE_PATH,
+} from '../mcp.constants.js';
 import { ALL_TOOLS } from './index.js';
 
 const SNAKE_CASE = /^[a-z]+(_[a-z]+)*$/;
@@ -29,10 +34,10 @@ describe('MCP tools', () => {
   });
 
   it('stay inside the key’s workspace, apart from the health check and Ask', () => {
-    const outside = ALL_TOOLS.map((spec) => spec.toCall({} as never).path).filter(
-      (path) => !path.startsWith(WORKSPACE_PATH),
-    );
-    expect(outside).toEqual([API_HEALTH_PATH, ASK_PATH]);
+    const outside = ALL_TOOLS.map(
+      (spec) => spec.toCall({ escalationId: 'esc_1' } as never).path,
+    ).filter((path) => !path.startsWith(WORKSPACE_PATH));
+    expect(outside).toEqual([API_HEALTH_PATH, ASK_PATH, `${ASK_ESCALATIONS_PATH}/esc_1`]);
   });
 
   it('asks Crossmart a question, read only and outside any workspace', () => {
@@ -42,7 +47,33 @@ describe('MCP tools', () => {
     expect(spec.toCall({ question: 'Does it support Etsy?' } as never)).toEqual({
       method: HttpMethod.Post,
       path: ASK_PATH,
-      body: { question: 'Does it support Etsy?' },
+      body: { question: 'Does it support Etsy?', conversationId: undefined, channel: 'mcp' },
+    });
+  });
+
+  it('continues a conversation, and escalates it to a person', () => {
+    const spec = tool('ask_crossmart');
+
+    expect(
+      spec.toCall({ question: 'And eBay?', conversationId: 'conv_1' } as never).body,
+    ).toMatchObject({ conversationId: 'conv_1' });
+    expect(
+      spec.toCall({
+        question: 'A person, please',
+        conversationId: 'conv_1',
+        escalate: { contactEmail: 'owner@example.com' },
+      } as never),
+    ).toEqual({
+      method: HttpMethod.Post,
+      path: ASK_ESCALATIONS_PATH,
+      body: { conversationId: 'conv_1', contactEmail: 'owner@example.com' },
+    });
+  });
+
+  it('reads an escalation by its ticket id', () => {
+    expect(tool('get_ask_escalation').toCall({ escalationId: 'esc_a/b' } as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${ASK_ESCALATIONS_PATH}/esc_a%2Fb`,
     });
   });
 

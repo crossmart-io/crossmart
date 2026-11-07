@@ -1,6 +1,6 @@
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
 import { API_DEFAULT_VERSION, API_GLOBAL_PREFIX, API_KEY_HEADER } from '@crossmart/common';
-import { ASK_ROUTE } from '../ask/ask.constants.js';
+import { ASK_ESCALATIONS_ROUTE, ASK_ROUTE } from '../ask/ask.constants.js';
 import { AUTHORIZATION_HEADER } from '../auth/auth.constants.js';
 
 /** Where URI-versioned routes start: `/api/v1`. */
@@ -8,10 +8,11 @@ const VERSIONED_API_PATH = `/${API_GLOBAL_PREFIX}/v${API_DEFAULT_VERSION}`;
 
 /**
  * Routes any website may call from a browser: public, rate-limited and without cookies, such as
- * Ask Crossmart (ADR 0022). Every other route allows only the trusted origins in `CORS_ORIGINS`.
+ * Ask Crossmart and its escalations (ADR 0022, ADR 0025). Every other route allows only the trusted origins in `CORS_ORIGINS`.
  */
 export const PUBLIC_CORS_PATHS: ReadonlySet<string> = new Set([
   `${VERSIONED_API_PATH}/${ASK_ROUTE}`,
+  `${VERSIONED_API_PATH}/${ASK_ESCALATIONS_ROUTE}`,
 ]);
 
 export const ANY_ORIGIN = '*';

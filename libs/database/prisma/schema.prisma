@@ -36,6 +36,7 @@ model User {
   oauthAccessTokens    OauthAccessToken[]
   oauthConsents        OauthConsent[]
   sandboxAccount       SandboxAccount?
+  askConversations     AskConversation[]
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
@@ -335,6 +336,7 @@ model Workspace {
   webhookEvents     WebhookEvent[]
   webhookDeliveries WebhookDelivery[]
   sandboxAccount    SandboxAccount?
+  askConversations  AskConversation[]
   createdAt         DateTime              @default(now()) @map("created_at")
   updatedAt         DateTime              @updatedAt @map("updated_at")
 
@@ -1449,4 +1451,108 @@ model WebhookDelivery {
   @@index([eventId])
   @@index([createdAt])
   @@map("webhook_deliveries")
+}
+
+// ─── Ask Crossmart conversations and escalations (ADR 0025) ──────────────────
+// Closed sets (channel, caller type, outcome, confidence, escalation reason and status) are
+// TypeScript string enums stored as text, like `platform_ai_usage.feature`, so a new value
+// needs no migration. Raw IP addresses are never stored: only salted hashes.
+
+/// One conversation with Ask Crossmart, from any channel. Kept for `ASK_RETENTION_DAYS`.
+model AskConversation {
+  id                String            @id @default(uuid(7)) @db.Uuid
+  /// The unguessable id the caller continues the conversation with (`conv_…`, the A2A
+  /// `contextId`). Only the caller it is bound to (`ownerKey`) can continue it.
+  publicId          String            @unique @map("public_id")
+  /// An `AskChannel`: web_widget, app_widget, api, mcp or a2a.
+  channel           String
+  /// An `AskCallerType`: anonymous, user, api_key or agent.
+  callerType        String            @map("caller_type")
+  /// The agent's client name, for agents.
+  clientName        String?           @map("client_name")
+  /// Salted hash of who may continue the conversation (the principal, or the client fingerprint).
+  ownerKey          String            @map("owner_key")
+  /// Salted hash of the caller's IP address and user agent; never the raw values.
+  clientFingerprint String            @map("client_fingerprint")
+  workspaceId       String?           @map("workspace_id") @db.Uuid
+  workspace         Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  userId            String?           @map("user_id") @db.Uuid
+  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  turnCount         Int               @default(0) @map("turn_count")
+  /// When a turn was last added; the conversation expires `ASK_CONVERSATION_IDLE_MS` after it.
+  lastActivityAt    DateTime          @default(now()) @map("last_activity_at")
+  /// When it was first escalated to a person; null while it was not.
+  escalatedAt       DateTime?         @map("escalated_at")
+  turns             AskTurn[]
+  escalations       AskEscalation[]
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([lastActivityAt])
+  @@index([ownerKey, lastActivityAt])
+  @@map("ask_conversations")
+}
+
+/// One question and its answer. The question is stored with obvious secrets redacted.
+model AskTurn {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  conversationId    String          @map("conversation_id") @db.Uuid
+  conversation      AskConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  /// 1 for the first question of the conversation.
+  position          Int
+  question          String
+  /// SHA-256 of the normalised, redacted question, to count questions asked alike.
+  questionHash      String          @map("question_hash")
+  answer            String
+  /// An `AskOutcome`.
+  outcome           String
+  /// An `AskConfidence`.
+  confidence        String
+  /// `[{ title, url }]`: the pages (or account data) the answer cites.
+  citations         Json
+  /// Which `AccountLookupKind`s ran for this answer; empty for docs-only answers.
+  accountLookups    String[]        @map("account_lookups")
+  /// Why a person was offered (an `AskEscalationReason`); null when none was.
+  escalationReason  String?         @map("escalation_reason")
+  latencyMs         Int             @map("latency_ms")
+  /// The model that answered; null when no model was called (cache, no relevant docs).
+  model             String?
+  /// True when the answer came from the answer cache.
+  cached            Boolean         @default(false)
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  @@unique([conversationId, position])
+  @@index([createdAt])
+  @@index([outcome, createdAt])
+  @@index([questionHash])
+  @@map("ask_turns")
+}
+
+/// A conversation handed to a person, with the reply once one is sent.
+model AskEscalation {
+  id                  String          @id @default(uuid(7)) @db.Uuid
+  conversationId      String          @map("conversation_id") @db.Uuid
+  conversation        AskConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the ticket id the caller holds (and polls with); the id itself is never stored.
+  tokenHash           String          @unique @map("token_hash")
+  /// An `AskEscalationReason`.
+  reason              String
+  /// An `AskEscalationStatus`: open or replied.
+  status              String
+  contactEmail        String?         @map("contact_email")
+  /// Where the reply is POSTed, signed like outgoing webhooks (ADR 0023).
+  callbackUrl         String?         @map("callback_url")
+  reply               String?
+  repliedAt           DateTime?       @map("replied_at")
+  /// The platform admin who replied.
+  repliedBy           String?         @map("replied_by")
+  callbackDeliveredAt DateTime?       @map("callback_delivered_at")
+  /// Why the callback failed, safe to show; null when it succeeded or was not attempted.
+  callbackError       String?         @map("callback_error")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  @@index([conversationId])
+  @@index([status, createdAt])
+  @@map("ask_escalations")
 }

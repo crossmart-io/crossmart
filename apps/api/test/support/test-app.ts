@@ -30,8 +30,11 @@ export async function createTestApp(
 }
 
 /** Signs up a fresh user and returns their session cookie and first workspace. */
-export async function signUp(app: INestApplication<App>, name: string): Promise<SignedUpUser> {
-  const email = `${randomUUID()}@example.com`;
+export async function signUp(
+  app: INestApplication<App>,
+  name: string,
+  email = `${randomUUID()}@example.com`,
+): Promise<SignedUpUser> {
   const signUpResponse = await request(app.getHttpServer())
     .post('/api/auth/sign-up/email')
     .send({ name, email, password: TEST_PASSWORD });

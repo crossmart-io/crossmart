@@ -8,6 +8,12 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
 
 ### Added
 
+- Ask Crossmart conversations and escalations: `conversationId` and `channel` on a question,
+  and `conversationId`, `turnId` and `escalation` on the answer; `POST /ask/escalations` to hand
+  a conversation to a person and `GET /ask/escalations/{escalationId}` to read the reply; and the
+  types `AskChannel`, `AskEscalationReason`, `AskEscalationStatus`. `platformAdmin` on `/me`, and
+  the platform admins' `/admin/ask` routes (404 for everyone else).
+
 - Billing types from the API: `BillingInterval`, `SubscriptionAccessState`, plans with prices,
   the organization's billing status, and the `subscription_inactive` error code. Where billing
   is on (Crossmart Cloud), a write to a read-only organization answers 402 with that code:

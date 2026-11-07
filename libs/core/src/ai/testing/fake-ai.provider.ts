@@ -34,6 +34,12 @@ export class FakeAiProvider extends AiProvider {
     return this.answerWithText(JSON.stringify(output), stopReason);
   }
 
+  /** Forgets the queued answers, so the next `answerWith` is the next call's answer. */
+  clearAnswers(): this {
+    this.answers.length = 0;
+    return this;
+  }
+
   answerWithText(text: string, stopReason = AiStopReason.Completed): this {
     this.answers.push({ text, model: FAKE_AI_MODEL, stopReason, usage: FAKE_AI_USAGE });
     return this;

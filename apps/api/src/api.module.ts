@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule, MailModule, QueuesModule, StorageModule } from '@crossmart/common';
 import { DatabaseModule } from '@crossmart/database';
+import { A2aApiModule } from './a2a/a2a.module.js';
 import { ActivityApiModule } from './activity/activity.module.js';
 import { AgentsApiModule } from './agents/agents-api.module.js';
 import { AiApiModule } from './ai/ai.module.js';
@@ -46,6 +47,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     AiApiModule,
     AgentsApiModule,
     AskApiModule,
+    A2aApiModule,
     SandboxApiModule,
     WebhooksApiModule,
   ],

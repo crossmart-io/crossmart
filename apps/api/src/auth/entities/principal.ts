@@ -8,6 +8,8 @@ export interface UserPrincipal {
   userId: string;
   name: string;
   email: string;
+  /** Whether the user proved they own `email`; platform admin rights need it. */
+  emailVerified: boolean;
 }
 
 /**

@@ -102,3 +102,88 @@ export function askDailyLimitMessage(supportEmail: string): string {
     `Browse ${DOCS_URL}, or email ${supportEmail}.`
   );
 }
+
+// ─── Conversations (ADR 0025) ────────────────────────────────────────────────
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/** Random bytes in a conversation id and an escalation ticket id (256 bits): unguessable. */
+export const ASK_TOKEN_BYTES = 32;
+/** Conversation ids start with this, so they are easy to tell apart from ticket ids. */
+export const ASK_CONVERSATION_ID_PREFIX = 'conv_';
+/** Escalation ticket ids start with this. The id is also the capability to read the ticket. */
+export const ASK_ESCALATION_ID_PREFIX = 'esc_';
+/** The longest conversation or ticket id a caller can send (prefix plus base64url bytes). */
+export const ASK_TOKEN_MAX_LENGTH = 64;
+/** A conversation with no new question for this long expires and cannot be continued. */
+export const ASK_CONVERSATION_IDLE_MS = 24 * MS_PER_HOUR;
+/** Questions one conversation may hold; past it, the caller starts a new one. */
+export const ASK_CONVERSATION_MAX_TURNS = 30;
+/** Earlier turns sent to the model with a follow-up question, at most. */
+export const ASK_CONTEXT_MAX_TURNS = 4;
+/** Earlier turns are cut to fit about this many tokens, newest kept first. */
+export const ASK_CONTEXT_MAX_TOKENS = 1200;
+/** A rough count of characters per token, to bound the context without a tokenizer. */
+export const ASK_CHARS_PER_TOKEN = 4;
+/** Earlier questions added to the retrieval query of a follow-up, so "and on eBay?" finds eBay. */
+export const ASK_RETRIEVAL_CONTEXT_QUESTIONS = 2;
+
+// ─── Storage and retention ───────────────────────────────────────────────────
+
+/** Conversations, with their turns and escalations, are kept this long after their last turn. */
+export const ASK_RETENTION_DAYS = 180;
+/** Conversations deleted per statement, so retention never holds long locks. */
+export const ASK_RETENTION_BATCH_SIZE = 1000;
+/** Batches one retention run deletes at most; the next run picks up the rest. */
+export const ASK_RETENTION_MAX_BATCHES = 50;
+export const ASK_RETENTION_INTERVAL_MS = 24 * MS_PER_HOUR;
+export const ASK_RETENTION_JOB_NAME = 'ask-retention';
+export const ASK_RETENTION_SCHEDULER_ID = 'ask-retention';
+/** What a redacted secret or address is replaced with in stored questions and answers. */
+export const ASK_REDACTED = '[redacted]';
+/** The salted hashes of callers are keyed with a key derived for this purpose only. */
+export const ASK_HASH_KEY_CONTEXT = 'crossmart:ask:caller-hash:v1';
+/** Escalation callbacks are signed with a per-ticket secret derived with this context. */
+export const ASK_CALLBACK_SECRET_CONTEXT = 'crossmart:ask:escalation-callback:v1';
+
+// ─── Escalation to a person ──────────────────────────────────────────────────
+
+/** Escalations one caller may open per UTC day. Each one emails a person. */
+export const ASK_ESCALATIONS_PER_DAY = 5;
+export const ASK_ESCALATION_QUOTA_KEY_PREFIX = `${REDIS_KEY_PREFIX}ask:escalations:`;
+export const ASK_REPLY_MAX_LENGTH = 5000;
+export const ASK_CALLBACK_URL_MAX_LENGTH = 2048;
+/** The callback's event type, in its envelope and `Crossmart-Event-Type` header. */
+export const ASK_ESCALATION_REPLIED_EVENT = 'ask.escalation.replied';
+/** The admin page of one escalated conversation in the web app, linked from the email. */
+export const ASK_ADMIN_CONVERSATION_PATH = '/admin/ask';
+export const ASK_ESCALATION_NOT_FOUND = 'Escalation not found';
+export const ASK_CONVERSATION_NOT_FOUND =
+  'Conversation not found. It may have expired; start a new one without a conversationId.';
+export const ASK_CONVERSATION_FULL =
+  'This conversation is full. Start a new one without a conversationId.';
+export const ASK_ESCALATION_LIMIT_MESSAGE =
+  'You have asked for a person too many times today. Email the support address instead.';
+export const ASK_ALREADY_REPLIED = 'This escalation already has a reply';
+/** What Ask says when it offers a person. */
+export const ASK_ESCALATION_OFFER_MESSAGE =
+  'A person from the Crossmart team can follow up. Escalate this conversation to reach them.';
+
+// ─── Account questions ───────────────────────────────────────────────────────
+
+/** Account questions one workspace may ask per UTC day; each may cost two model calls. */
+export const ASK_ACCOUNT_QUESTIONS_PER_DAY = 200;
+export const ASK_ACCOUNT_QUOTA_KEY_PREFIX = `${REDIS_KEY_PREFIX}ask:account-questions:`;
+/** Lookups the model may ask for in one answer. */
+export const ASK_MAX_ACCOUNT_LOOKUPS = 3;
+/** Products a listing-status lookup reports at most. */
+export const ASK_LOOKUP_PRODUCTS_LIMIT = 3;
+/** Failed listings a lookup reports at most. */
+export const ASK_LOOKUP_FAILED_LISTINGS_LIMIT = 10;
+export const ASK_LOOKUP_QUERY_MAX_LENGTH = 100;
+/** Ids account data has in the prompt: A1, A2, … */
+export const ACCOUNT_SOURCE_ID_PREFIX = 'A';
+/** The quota keys of a day live a little longer than the day they count. */
+export const ASK_QUOTA_KEY_TTL_SECONDS = 2 * 24 * 60 * 60;
+export const ASK_ACCOUNT_LIMIT_MESSAGE =
+  'This workspace has asked Ask Crossmart about its account too many times today. Try again tomorrow.';

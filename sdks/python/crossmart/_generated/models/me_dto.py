@@ -22,12 +22,15 @@ class MeDto:
         name (str):
         email (str):
         workspaces (list[WorkspaceDto]):
+        platform_admin (bool): Whether the user runs this instance (`PLATFORM_ADMIN_EMAILS`, verified): they can read
+            Ask Crossmart’s conversations and answer escalations
     """
 
     id: UUID
     name: str
     email: str
     workspaces: list[WorkspaceDto]
+    platform_admin: bool
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -42,6 +45,8 @@ class MeDto:
             workspaces_item = workspaces_item_data.to_dict()
             workspaces.append(workspaces_item)
 
+        platform_admin = self.platform_admin
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -50,6 +55,7 @@ class MeDto:
                 "name": name,
                 "email": email,
                 "workspaces": workspaces,
+                "platformAdmin": platform_admin,
             }
         )
 
@@ -73,11 +79,14 @@ class MeDto:
 
             workspaces.append(workspaces_item)
 
+        platform_admin = d.pop("platformAdmin")
+
         me_dto = cls(
             id=id,
             name=name,
             email=email,
             workspaces=workspaces,
+            platform_admin=platform_admin,
         )
 
         me_dto.additional_properties = d

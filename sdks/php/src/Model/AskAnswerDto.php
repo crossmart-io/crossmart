@@ -18,6 +18,8 @@ final class AskAnswerDto implements JsonSerializable
      * @param string $answer The answer, in plain text (no Markdown)
      * @param list<AskCitationDto> $citations Pages the answer is based on
      * @param bool $handoff True when a person should take over, at supportEmail
+     * @param string $conversationId Send it as `conversationId` with a follow-up question. Only you can continue the conversation, for 24 hours after its last question.
+     * @param string $turnId This question and answer, as stored
      */
     public function __construct(
         public readonly AskOutcome|string $outcome,
@@ -26,6 +28,9 @@ final class AskAnswerDto implements JsonSerializable
         public readonly AskConfidence|string $confidence,
         public readonly bool $handoff,
         public readonly string $supportEmail,
+        public readonly string $conversationId,
+        public readonly string $turnId,
+        public readonly AskEscalationOfferDto $escalation,
     ) {
     }
 
@@ -45,6 +50,9 @@ final class AskAnswerDto implements JsonSerializable
             confidence: $payload->enum('confidence', AskConfidence::class),
             handoff: $payload->bool('handoff'),
             supportEmail: $payload->string('supportEmail'),
+            conversationId: $payload->string('conversationId'),
+            turnId: $payload->string('turnId'),
+            escalation: $payload->model('escalation', AskEscalationOfferDto::fromArray(...)),
         );
     }
 
@@ -62,6 +70,9 @@ final class AskAnswerDto implements JsonSerializable
             'confidence' => Payload::enumValue($this->confidence),
             'handoff' => $this->handoff,
             'supportEmail' => $this->supportEmail,
+            'conversationId' => $this->conversationId,
+            'turnId' => $this->turnId,
+            'escalation' => $this->escalation->toArray(),
         ];
     }
 
