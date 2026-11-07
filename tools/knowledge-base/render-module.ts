@@ -13,6 +13,7 @@ const SOURCE_MEMBERS: Record<KnowledgeSourceKind, string> = {
   [KnowledgeSourceKind.Docs]: 'KnowledgeSourceKind.Docs',
   [KnowledgeSourceKind.Site]: 'KnowledgeSourceKind.Site',
   [KnowledgeSourceKind.Plans]: 'KnowledgeSourceKind.Plans',
+  [KnowledgeSourceKind.Account]: 'KnowledgeSourceKind.Account',
 };
 const JSON_INDENTATION = 2;
 

@@ -24,6 +24,7 @@ import { Environment } from './environment.enum.js';
 import {
   DEFAULT_API_PORT,
   DEFAULT_ASK_DAILY_QUESTION_CAP,
+  DEFAULT_ASK_ESCALATION_EMAIL,
   DEFAULT_ASK_SUPPORT_EMAIL,
   DEFAULT_BILLING_PAST_DUE_GRACE_DAYS,
   DEFAULT_BILLING_SALES_EMAIL,
@@ -249,6 +250,18 @@ export class EnvironmentVariables {
   /** The address Ask Crossmart points people to when it cannot answer. */
   @IsEmail()
   ASK_SUPPORT_EMAIL: string = DEFAULT_ASK_SUPPORT_EMAIL;
+
+  /** Who is emailed, with the whole conversation, when someone asks Ask Crossmart for a person. */
+  @IsEmail()
+  ASK_ESCALATION_EMAIL: string = DEFAULT_ASK_ESCALATION_EMAIL;
+
+  /**
+   * Comma-separated emails of the people who run this instance (platform admins). Signed in with
+   * one of these verified addresses, they can read Ask Crossmart's conversations and answer
+   * escalations. Empty by default: nobody is a platform admin.
+   */
+  @IsString()
+  PLATFORM_ADMIN_EMAILS = '';
 
   /**
    * Who bills customers (ADR 0024): `none` (default) turns billing off, as self-hosting runs,

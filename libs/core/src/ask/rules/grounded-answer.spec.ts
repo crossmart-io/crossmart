@@ -3,9 +3,10 @@ import { AskConfidence } from '../enums/ask-confidence.enum.js';
 import { AskOutcome } from '../enums/ask-outcome.enum.js';
 import { KnowledgeSourceKind } from '../enums/knowledge-source-kind.enum.js';
 import { citationsFor, groundedAnswer } from './grounded-answer.js';
+import { accountSources, docSources } from './prompt-sources.js';
 
 const EMAIL = 'help@example.com';
-const SOURCES = [
+const CHUNKS = [
   {
     id: 'a',
     source: KnowledgeSourceKind.Docs,
@@ -29,11 +30,22 @@ const SOURCES = [
   },
 ];
 
+const SOURCES = docSources(CHUNKS);
+
 describe('citationsFor', () => {
   it('maps source ids to pages, once per URL, and drops ids it never gave', () => {
     expect(citationsFor(['S1', 'S2', 'S3', 'S9'], SOURCES)).toEqual([
       { title: 'Rate limits', url: 'https://docs.example/limits' },
       { title: 'Keys', url: 'https://docs.example/keys' },
+    ]);
+  });
+
+  it('maps account data by its own ids, apart from the docs', () => {
+    const account = accountSources([{ ...CHUNKS[2], source: KnowledgeSourceKind.Account }]);
+
+    expect(citationsFor(['A1', 'S1'], [...SOURCES.slice(0, 1), ...account])).toEqual([
+      { title: 'Keys', url: 'https://docs.example/keys' },
+      { title: 'Rate limits', url: 'https://docs.example/limits' },
     ]);
   });
 });

@@ -22,3 +22,26 @@ export const ASK_DAY_THROTTLER = 'ask-day';
 
 export const ASK_RATE_LIMITED_MESSAGE =
   'Too many questions from you. Wait a little and try again, or browse https://docs.crossmart.io.';
+
+/** Escalations to a person (ADR 0025): `POST /ask/escalations`, `GET /ask/escalations/:id`. */
+export const ASK_ESCALATIONS_ROUTE = 'ask/escalations';
+export const ASK_ESCALATION_ID_PARAM = 'escalationId';
+export const ASK_CHANNEL_SCHEMA_NAME = 'AskChannel';
+export const ASK_ESCALATION_REASON_SCHEMA_NAME = 'AskEscalationReason';
+export const ASK_ESCALATION_STATUS_SCHEMA_NAME = 'AskEscalationStatus';
+export const ASK_CALLER_TYPE_SCHEMA_NAME = 'AskCallerType';
+export const ASK_LOOKUP_KIND_SCHEMA_NAME = 'AccountLookupKind';
+/** The header a caller's user agent is read from, hashed into its fingerprint. */
+export const USER_AGENT_HEADER = 'user-agent';
+/** Stands in for a missing user agent in the fingerprint. */
+export const UNKNOWN_USER_AGENT = '';
+
+/** The platform admins' view of Ask Crossmart: conversations, questions and escalations. */
+export const ASK_ADMIN_TAG = 'Ask Crossmart admin';
+export const ASK_ADMIN_ROUTE = 'admin/ask';
+export const ASK_ADMIN_CONVERSATION_ID_PARAM = 'conversationId';
+export const ASK_ADMIN_ESCALATION_ID_PARAM = 'escalationId';
+export const ASK_ADMIN_PAGE_DEFAULT_LIMIT = 25;
+export const ASK_ADMIN_PAGE_MAX_LIMIT = 100;
+export const ASK_QUESTION_COUNT_DEFAULT_LIMIT = 20;
+export const ASK_QUESTION_COUNT_MAX_LIMIT = 100;

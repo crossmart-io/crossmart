@@ -49,6 +49,11 @@ export class EntitlementService {
     return grantOf(await this.plans.current(organizationId), feature).enabled;
   }
 
+  /** The organization a workspace belongs to, whose plan applies to it. */
+  organizationIdOf(workspaceId: string): Promise<string> {
+    return this.meter.organizationIdOf(workspaceId);
+  }
+
   /** What is in use now, counted from the data. Flags are 0. */
   async usage(organizationId: string, feature: Feature): Promise<number> {
     const scope = await this.meter.scopeOf(organizationId);

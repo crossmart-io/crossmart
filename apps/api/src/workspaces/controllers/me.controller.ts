@@ -6,9 +6,11 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { AppConfigService } from '@crossmart/common';
 import { AccountDeletionService, WorkspaceAccessService } from '@crossmart/core';
 import { CurrentPrincipal } from '../../auth/decorators/current-principal.decorator.js';
 import type { Principal } from '../../auth/entities/principal.js';
+import { isPlatformAdmin } from '../../auth/platform-admin.js';
 import { requireUser } from '../../auth/principal.utils.js';
 import { MeDto } from '../dto/me.dto.js';
 import { ME_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
@@ -20,6 +22,7 @@ export class MeController {
   constructor(
     private readonly workspaceAccess: WorkspaceAccessService,
     private readonly accounts: AccountDeletionService,
+    private readonly config: AppConfigService,
   ) {}
 
   @Get()
@@ -28,7 +31,7 @@ export class MeController {
   async getMe(@CurrentPrincipal() principal: Principal): Promise<MeDto> {
     const user = requireUser(principal);
     const workspaces = await this.workspaceAccess.listWorkspacesForUser(user.userId);
-    return MeDto.from(user, workspaces);
+    return MeDto.from(user, workspaces, isPlatformAdmin(user, this.config.platformAdminEmails));
   }
 
   @Delete()

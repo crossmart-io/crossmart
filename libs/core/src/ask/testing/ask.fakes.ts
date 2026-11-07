@@ -2,6 +2,7 @@ import type { AskAnswer } from '../entities/ask-answer.js';
 import type { KnowledgeChunk } from '../entities/knowledge-chunk.js';
 import { AskAnswerCache } from '../cache/ask-answer.cache.js';
 import { AskDailyBudget } from '../cache/ask-daily-budget.js';
+import { AskQuota } from '../cache/ask-quota.js';
 import { KnowledgeSource } from '../sources/knowledge-source.js';
 
 /** An answer cache in memory, keyed by the exact question, for tests. */
@@ -36,5 +37,17 @@ export class FixedKnowledgeSource extends KnowledgeSource {
 
   chunks(): Promise<readonly KnowledgeChunk[]> {
     return Promise.resolve(this.fixed);
+  }
+}
+
+/** Daily quotas in memory, for tests. */
+export class InMemoryAskQuota extends AskQuota {
+  readonly taken = new Map<string, number>();
+
+  tryTake(keyPrefix: string, key: string, cap: number): Promise<boolean> {
+    const id = `${keyPrefix}${key}`;
+    const taken = (this.taken.get(id) ?? 0) + 1;
+    this.taken.set(id, taken);
+    return Promise.resolve(taken <= cap);
   }
 }

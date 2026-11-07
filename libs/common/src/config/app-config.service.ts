@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import type { MailDriver } from '../mail/mail-driver.enum.js';
 import { BillingDriver } from './billing-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
-import { CORS_ORIGINS_SEPARATOR, DEFAULT_AI_MODEL } from './config.constants.js';
+import {
+  CORS_ORIGINS_SEPARATOR,
+  DEFAULT_AI_MODEL,
+  PLATFORM_ADMIN_EMAILS_SEPARATOR,
+} from './config.constants.js';
 import type { EbayEnvironment } from './ebay-environment.enum.js';
 import { Environment } from './environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
@@ -34,6 +38,8 @@ export interface AskSettings {
   /** Null to answer with the AI agents' model. */
   model: string | null;
   supportEmail: string;
+  /** Who is emailed when a conversation is escalated to a person. */
+  escalationEmail: string;
 }
 
 export interface MailSettings {
@@ -252,6 +258,18 @@ export class AppConfigService {
       dailyQuestionCap: this.configService.get('ASK_DAILY_QUESTION_CAP', { infer: true }),
       model: this.configService.get('ASK_AI_MODEL', { infer: true }) ?? null,
       supportEmail: this.configService.get('ASK_SUPPORT_EMAIL', { infer: true }),
+      escalationEmail: this.configService.get('ASK_ESCALATION_EMAIL', { infer: true }),
     };
+  }
+
+  /** The platform admins' emails (`PLATFORM_ADMIN_EMAILS`), in lower case. */
+  get platformAdminEmails(): ReadonlySet<string> {
+    return new Set(
+      this.configService
+        .get('PLATFORM_ADMIN_EMAILS', { infer: true })
+        .split(PLATFORM_ADMIN_EMAILS_SEPARATOR)
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email.length > 0),
+    );
   }
 }

@@ -6,4 +6,6 @@ export enum KnowledgeSourceKind {
   Site = 'site',
   /** The offered plans, read from the plan data at run time. */
   Plans = 'plans',
+  /** The caller's own workspace data, read for one answer and never indexed. */
+  Account = 'account',
 }

@@ -16,12 +16,20 @@ export class MeDto {
   @ApiProperty({ type: [WorkspaceDto] })
   workspaces: WorkspaceDto[];
 
-  static from(user: UserPrincipal, workspaces: WorkspaceAccess[]): MeDto {
+  @ApiProperty({
+    description:
+      'Whether the user runs this instance (`PLATFORM_ADMIN_EMAILS`, verified): they can read ' +
+      'Ask Crossmart’s conversations and answer escalations',
+  })
+  platformAdmin: boolean;
+
+  static from(user: UserPrincipal, workspaces: WorkspaceAccess[], platformAdmin: boolean): MeDto {
     return Object.assign(new MeDto(), {
       id: user.userId,
       name: user.name,
       email: user.email,
       workspaces: workspaces.map((workspace) => WorkspaceDto.from(workspace)),
+      platformAdmin,
     });
   }
 }

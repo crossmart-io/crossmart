@@ -83,15 +83,36 @@ describe('AppConfigService', () => {
   describe('askSettings', () => {
     it('falls back to the AI agents’ model when no Ask model is set', () => {
       expect(
-        appConfig({ ASK_DAILY_QUESTION_CAP: 50, ASK_SUPPORT_EMAIL: 'help@example.com' })
-          .askSettings,
-      ).toEqual({ dailyQuestionCap: 50, model: null, supportEmail: 'help@example.com' });
+        appConfig({
+          ASK_DAILY_QUESTION_CAP: 50,
+          ASK_SUPPORT_EMAIL: 'help@example.com',
+          ASK_ESCALATION_EMAIL: 'team@example.com',
+        }).askSettings,
+      ).toEqual({
+        dailyQuestionCap: 50,
+        model: null,
+        supportEmail: 'help@example.com',
+        escalationEmail: 'team@example.com',
+      });
     });
 
     it('returns the Ask model override', () => {
       expect(appConfig({ ASK_AI_MODEL: 'claude-haiku-5-5' }).askSettings.model).toBe(
         'claude-haiku-5-5',
       );
+    });
+  });
+
+  describe('platformAdminEmails', () => {
+    it('reads a comma-separated list, trimmed and in lower case', () => {
+      expect([
+        ...appConfig({ PLATFORM_ADMIN_EMAILS: ' Yariv@Crossmart.io, ,ops@example.com ' })
+          .platformAdminEmails,
+      ]).toEqual(['yariv@crossmart.io', 'ops@example.com']);
+    });
+
+    it('has nobody when the list is empty', () => {
+      expect(appConfig({ PLATFORM_ADMIN_EMAILS: '' }).platformAdminEmails.size).toBe(0);
     });
   });
 

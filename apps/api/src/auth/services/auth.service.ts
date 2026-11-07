@@ -87,7 +87,13 @@ export class AuthService {
       return null;
     }
     const { user } = session;
-    return { kind: PrincipalKind.User, userId: user.id, name: user.name, email: user.email };
+    return {
+      kind: PrincipalKind.User,
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      emailVerified: user.emailVerified,
+    };
   }
 
   /**

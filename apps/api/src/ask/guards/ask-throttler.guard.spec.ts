@@ -46,7 +46,13 @@ describe('AskThrottlerGuard', () => {
     const user = request(
       {},
       {
-        principal: { kind: PrincipalKind.User, userId: 'user-1', name: 'A', email: 'a@x.io' },
+        principal: {
+          kind: PrincipalKind.User,
+          userId: 'user-1',
+          name: 'A',
+          email: 'a@x.io',
+          emailVerified: true,
+        },
       },
     );
     const key = request(

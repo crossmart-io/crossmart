@@ -28,6 +28,14 @@ function limitFor(anonymous: number, authenticated: number) {
     isAuthenticated(context) ? authenticated : anonymous;
 }
 
+/** Who an Ask rate limit counts: anonymous callers by address, others by who they are. */
+export function askCallerTracker(request: AuthenticatedRequest): string {
+  const { principal } = request;
+  return principal
+    ? principalTracker(principal)
+    : [IP_TRACKER_KIND, clientIp(request)].join(TRACKER_SEPARATOR);
+}
+
 /** Ask's own windows: a burst limit per minute and a total per day. */
 export const ASK_THROTTLERS: ThrottlerOptions[] = [
   {
@@ -55,9 +63,6 @@ export class AskThrottlerGuard extends ThrottlerGuard implements OnModuleInit {
   }
 
   protected override getTracker(request: AuthenticatedRequest): Promise<string> {
-    const { principal } = request;
-    if (!principal)
-      return Promise.resolve([IP_TRACKER_KIND, clientIp(request)].join(TRACKER_SEPARATOR));
-    return Promise.resolve(principalTracker(principal));
+    return Promise.resolve(askCallerTracker(request));
   }
 }

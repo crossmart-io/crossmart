@@ -1,18 +1,14 @@
-import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
-import { ASK_PROMPT_VERSION } from '../../ai/prompts/ask.v2.prompt.js';
+import { ASK_PROMPT_VERSION } from '../../ai/prompts/ask.v3.prompt.js';
 import { ASK_ANSWER_CACHE_TTL_SECONDS, ASK_ANSWER_KEY_PREFIX } from '../ask.constants.js';
 import type { AskAnswer } from '../entities/ask-answer.js';
 import { AskConfidence } from '../enums/ask-confidence.enum.js';
 import { AskOutcome } from '../enums/ask-outcome.enum.js';
+import { questionHash } from '../rules/question-hash.js';
 import { AskAnswerCache } from './ask-answer.cache.js';
 
-const HASH_ALGORITHM = 'sha256';
-const HASH_ENCODING = 'hex';
-const WHITESPACE_RUN = /\s+/g;
-const SPACE = ' ';
 const EXPIRE_IN_SECONDS = 'EX';
 
 const cachedAnswerSchema: z.ZodType<AskAnswer> = z.object({
@@ -31,9 +27,7 @@ const KEY_SEPARATOR = ':';
  * the key, so answers written under an older prompt are not reused after it changes.
  */
 export function questionKey(question: string): string {
-  const normalized = question.trim().toLowerCase().replace(WHITESPACE_RUN, SPACE);
-  const digest = createHash(HASH_ALGORITHM).update(normalized).digest(HASH_ENCODING);
-  return `${ASK_ANSWER_KEY_PREFIX}${ASK_PROMPT_VERSION}${KEY_SEPARATOR}${digest}`;
+  return `${ASK_ANSWER_KEY_PREFIX}${ASK_PROMPT_VERSION}${KEY_SEPARATOR}${questionHash(question)}`;
 }
 
 /**

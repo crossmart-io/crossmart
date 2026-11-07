@@ -1,17 +1,16 @@
-import { promptSourceId } from '../../ai/prompts/ask.v2.prompt.js';
 import { ASK_OUT_OF_SCOPE_MESSAGE, askHandoffMessage } from '../ask.constants.js';
 import type { AskAnswer, AskCitation } from '../entities/ask-answer.js';
-import type { KnowledgeChunk } from '../entities/knowledge-chunk.js';
+import type { PromptSource } from '../entities/prompt-source.js';
 import { AskConfidence } from '../enums/ask-confidence.enum.js';
 import { AskOutcome } from '../enums/ask-outcome.enum.js';
-import type { AskModelOutput } from './ask-answer.schema.js';
+import type { AskGroundableOutput } from './ask-answer.schema.js';
 
 /** The pages behind the source ids the model named; ids it was not given are dropped. */
 export function citationsFor(
   sourceIds: readonly string[],
-  sources: readonly KnowledgeChunk[],
+  sources: readonly PromptSource[],
 ): AskCitation[] {
-  const byId = new Map(sources.map((chunk, position) => [promptSourceId(position), chunk]));
+  const byId = new Map(sources.map(({ id, chunk }) => [id, chunk]));
   const citations = new Map<string, AskCitation>();
   for (const sourceId of sourceIds) {
     const chunk = byId.get(sourceId);
@@ -51,8 +50,8 @@ function outOfScopeAnswer(supportEmail: string): AskAnswer {
  * manipulated answer never reaches the caller.
  */
 export function groundedAnswer(
-  output: AskModelOutput,
-  sources: readonly KnowledgeChunk[],
+  output: AskGroundableOutput,
+  sources: readonly PromptSource[],
   supportEmail: string,
 ): AskAnswer {
   if (output.outcome === AskOutcome.OutOfScope) return outOfScopeAnswer(supportEmail);

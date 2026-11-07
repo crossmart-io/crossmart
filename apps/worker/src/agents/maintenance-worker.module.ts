@@ -1,12 +1,21 @@
 import { Module } from '@nestjs/common';
-import { AgentsModule, SandboxModule } from '@crossmart/core';
+import { AgentsModule, AskStorageModule, SandboxModule } from '@crossmart/core';
 import { AgentClientSweepScheduler } from './agent-client-sweep.scheduler.js';
+import { AskRetentionScheduler } from './ask-retention.scheduler.js';
 import { MaintenanceProcessor } from './maintenance.processor.js';
 import { SandboxSweepScheduler } from './sandbox-sweep.scheduler.js';
 
-/** Scheduled housekeeping: unused agent clients, and sandbox account reminders and expiry. */
+/**
+ * Scheduled housekeeping: unused agent clients, sandbox account reminders and expiry, and the
+ * retention of Ask Crossmart's conversations.
+ */
 @Module({
-  imports: [AgentsModule, SandboxModule],
-  providers: [MaintenanceProcessor, AgentClientSweepScheduler, SandboxSweepScheduler],
+  imports: [AgentsModule, AskStorageModule, SandboxModule],
+  providers: [
+    MaintenanceProcessor,
+    AgentClientSweepScheduler,
+    AskRetentionScheduler,
+    SandboxSweepScheduler,
+  ],
 })
 export class MaintenanceWorkerModule {}
