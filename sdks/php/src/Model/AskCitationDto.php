@@ -13,7 +13,7 @@ final class AskCitationDto implements JsonSerializable
 {
     /**
      * @param string $title The page and section, such as "Crossmart for developers › Rate limits"
-     * @param string $url The public page the answer is based on
+     * @param string $url The public page the answer is based on, or for an account answer the page of the Crossmart app it comes from
      */
     public function __construct(
         public readonly string $title,

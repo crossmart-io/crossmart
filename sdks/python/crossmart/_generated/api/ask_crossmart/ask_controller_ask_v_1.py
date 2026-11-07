@@ -37,6 +37,10 @@ def _parse_response(
 
         return response_200
 
+    if response.status_code == 404:
+        response_404 = cast(Any, None)
+        return response_404
+
     if response.status_code == 429:
         response_429 = cast(Any, None)
         return response_429
@@ -69,12 +73,16 @@ def sync_detailed(
 ) -> Response[Any | AskAnswerDto]:
     """Ask a question about Crossmart
 
-     Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When
-    they do not answer the question, `outcome` is `unknown` and the answer points to the support
-    address. It never sees or changes any account or workspace data. No credentials are needed:
-    anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session
-    or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured
-    or the platform’s daily question budget is spent.
+     Answers from Crossmart’s public documentation and plan lineup, citing the pages it used. When they
+    do not answer the question, `outcome` is `unknown` and the answer points to the support address.
+    Send the returned `conversationId` with a follow-up question to continue the conversation. With an
+    API key, an agent token, or a session and a `workspaceId`, it can also look up that workspace
+    (listings, plan and usage, stores) to answer, read-only and within the caller’s permissions; it
+    never changes anything. When a person can help, `escalation.offered` is true (see `POST
+    /api/v1/ask/escalations`). Questions and answers are stored, with secrets redacted, for 180 days. No
+    credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address;
+    with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503
+    when AI is not configured or the platform’s daily question budget is spent.
 
     Args:
         body (AskQuestionDto):
@@ -105,12 +113,16 @@ def sync(
 ) -> Any | AskAnswerDto | None:
     """Ask a question about Crossmart
 
-     Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When
-    they do not answer the question, `outcome` is `unknown` and the answer points to the support
-    address. It never sees or changes any account or workspace data. No credentials are needed:
-    anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session
-    or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured
-    or the platform’s daily question budget is spent.
+     Answers from Crossmart’s public documentation and plan lineup, citing the pages it used. When they
+    do not answer the question, `outcome` is `unknown` and the answer points to the support address.
+    Send the returned `conversationId` with a follow-up question to continue the conversation. With an
+    API key, an agent token, or a session and a `workspaceId`, it can also look up that workspace
+    (listings, plan and usage, stores) to answer, read-only and within the caller’s permissions; it
+    never changes anything. When a person can help, `escalation.offered` is true (see `POST
+    /api/v1/ask/escalations`). Questions and answers are stored, with secrets redacted, for 180 days. No
+    credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address;
+    with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503
+    when AI is not configured or the platform’s daily question budget is spent.
 
     Args:
         body (AskQuestionDto):
@@ -136,12 +148,16 @@ async def asyncio_detailed(
 ) -> Response[Any | AskAnswerDto]:
     """Ask a question about Crossmart
 
-     Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When
-    they do not answer the question, `outcome` is `unknown` and the answer points to the support
-    address. It never sees or changes any account or workspace data. No credentials are needed:
-    anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session
-    or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured
-    or the platform’s daily question budget is spent.
+     Answers from Crossmart’s public documentation and plan lineup, citing the pages it used. When they
+    do not answer the question, `outcome` is `unknown` and the answer points to the support address.
+    Send the returned `conversationId` with a follow-up question to continue the conversation. With an
+    API key, an agent token, or a session and a `workspaceId`, it can also look up that workspace
+    (listings, plan and usage, stores) to answer, read-only and within the caller’s permissions; it
+    never changes anything. When a person can help, `escalation.offered` is true (see `POST
+    /api/v1/ask/escalations`). Questions and answers are stored, with secrets redacted, for 180 days. No
+    credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address;
+    with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503
+    when AI is not configured or the platform’s daily question budget is spent.
 
     Args:
         body (AskQuestionDto):
@@ -170,12 +186,16 @@ async def asyncio(
 ) -> Any | AskAnswerDto | None:
     """Ask a question about Crossmart
 
-     Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When
-    they do not answer the question, `outcome` is `unknown` and the answer points to the support
-    address. It never sees or changes any account or workspace data. No credentials are needed:
-    anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session
-    or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured
-    or the platform’s daily question budget is spent.
+     Answers from Crossmart’s public documentation and plan lineup, citing the pages it used. When they
+    do not answer the question, `outcome` is `unknown` and the answer points to the support address.
+    Send the returned `conversationId` with a follow-up question to continue the conversation. With an
+    API key, an agent token, or a session and a `workspaceId`, it can also look up that workspace
+    (listings, plan and usage, stores) to answer, read-only and within the caller’s permissions; it
+    never changes anything. When a person can help, `escalation.offered` is true (see `POST
+    /api/v1/ask/escalations`). Questions and answers are stored, with secrets redacted, for 180 days. No
+    credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address;
+    with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503
+    when AI is not configured or the platform’s daily question budget is spent.
 
     Args:
         body (AskQuestionDto):

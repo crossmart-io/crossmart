@@ -14,7 +14,8 @@ class AskCitationDto:
     """
     Attributes:
         title (str): The page and section, such as "Crossmart for developers › Rate limits"
-        url (str): The public page the answer is based on
+        url (str): The public page the answer is based on, or for an account answer the page of the Crossmart app it
+            comes from
     """
 
     title: str

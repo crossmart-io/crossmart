@@ -1673,9 +1673,154 @@ export interface paths {
         put?: never;
         /**
          * Ask a question about Crossmart
-         * @description Answers from Crossmart’s public documentation and plan lineup only, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. It never sees or changes any account or workspace data. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
+         * @description Answers from Crossmart’s public documentation and plan lineup, citing the pages it used. When they do not answer the question, `outcome` is `unknown` and the answer points to the support address. Send the returned `conversationId` with a follow-up question to continue the conversation. With an API key, an agent token, or a session and a `workspaceId`, it can also look up that workspace (listings, plan and usage, stores) to answer, read-only and within the caller’s permissions; it never changes anything. When a person can help, `escalation.offered` is true (see `POST /api/v1/ask/escalations`). Questions and answers are stored, with secrets redacted, for 180 days. No credentials are needed: anonymous callers may ask 5 questions a minute and 50 a day per IP address; with an API key, session or agent token, 20 a minute and 500 a day. Answers 429 past those, and 503 when AI is not configured or the platform’s daily question budget is spent.
          */
         post: operations["AskController_ask_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask/escalations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a person
+         * @description Hands your conversation with Ask Crossmart to the Crossmart team, who get it by email. Their reply goes to `contactEmail`, is POSTed to `callbackUrl` (signed like webhooks, with the `callbackSecret` returned here), and can be read with `GET /api/v1/ask/escalations/{id}`. Only the caller who had the conversation can escalate it, 5 times a day at most.
+         */
+        post: operations["AskEscalationsController_open_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask/escalations/{escalationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read an escalation
+         * @description Its status and, once the team answered, the reply. The ticket id returned when the escalation was opened is the only credential needed.
+         */
+        get: operations["AskEscalationsController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ask/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stored conversations, newest first */
+        get: operations["AskAdminController_conversations_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ask/conversations/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One conversation, with every question, answer and escalation */
+        get: operations["AskAdminController_conversation_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ask/questions/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The questions asked most */
+        get: operations["AskAdminController_topQuestions_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ask/questions/unanswered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The questions Ask did not answer, or answered unsure, most asked first */
+        get: operations["AskAdminController_unansweredQuestions_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ask/escalations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Escalations, newest first */
+        get: operations["AskAdminController_escalationList_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ask/escalations/{escalationId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reply to an escalation
+         * @description Stores the reply once, emails it to the contact email, and POSTs it, signed, to the callback URL; the asker can also read it with their ticket id.
+         */
+        post: operations["AskAdminController_reply_v1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1962,6 +2107,8 @@ export interface components {
             name: string;
             email: string;
             workspaces: components["schemas"]["WorkspaceDto"][];
+            /** @description Whether the user runs this instance (`PLATFORM_ADMIN_EMAILS`, verified): they can read Ask Crossmart’s conversations and answer escalations */
+            platformAdmin: boolean;
         };
         UpdateWorkspaceDto: {
             /** @example EU store */
@@ -4280,12 +4427,32 @@ export interface components {
             /** Format: date-time */
             connectedAt: string;
         };
+        /**
+         * @description Where the question comes from, for Crossmart’s statistics only
+         * @enum {string}
+         */
+        AskChannel: AskChannel;
         AskQuestionDto: {
             /**
              * @description A question about Crossmart, in any language
              * @example Can I publish the same product to Shopify and eBay?
              */
             question: string;
+            /**
+             * @description The `conversationId` of an earlier answer, to ask a follow-up in the same conversation. Only the same caller can continue it, and it expires after 24 hours without a question.
+             * @example conv_3q2-7wEXAMPLEd1Yk1x8kz0A6E2r9cP4mT5vW8yB0fH
+             */
+            conversationId?: string;
+            /**
+             * @description Where the question comes from, for Crossmart’s statistics only
+             * @default api
+             */
+            channel?: components["schemas"]["AskChannel"];
+            /**
+             * Format: uuid
+             * @description For a signed-in person: a workspace they belong to, so Ask can also answer about it (listings, plan and usage, stores), read-only. API keys and agents always ask from their own workspace.
+             */
+            workspaceId?: string;
         };
         /**
          * @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart
@@ -4297,12 +4464,23 @@ export interface components {
             title: string;
             /**
              * Format: uri
-             * @description The public page the answer is based on
+             * @description The public page the answer is based on, or for an account answer the page of the Crossmart app it comes from
              */
             url: string;
         };
         /** @enum {string} */
         AskConfidence: AskConfidence;
+        /**
+         * @description Why a person is offered; null when none is
+         * @enum {string}
+         */
+        AskEscalationReason: AskEscalationReason;
+        AskEscalationOfferDto: {
+            /** @description True when a person can follow up: call `POST /api/v1/ask/escalations` with the `conversationId` to reach one */
+            offered: boolean;
+            /** @description Why a person is offered; null when none is */
+            reason: components["schemas"]["AskEscalationReason"] | null;
+        };
         AskAnswerDto: {
             /** @description `answered` from the cited pages; `unknown` when the docs do not answer it (the answer points to support); `out_of_scope` when it is not about Crossmart */
             outcome: components["schemas"]["AskOutcome"];
@@ -4315,6 +4493,158 @@ export interface components {
             handoff: boolean;
             /** Format: email */
             supportEmail: string;
+            /** @description Send it as `conversationId` with a follow-up question. Only you can continue the conversation, for 24 hours after its last question. */
+            conversationId: string;
+            /**
+             * Format: uuid
+             * @description This question and answer, as stored
+             */
+            turnId: string;
+            escalation: components["schemas"]["AskEscalationOfferDto"];
+        };
+        CreateAskEscalationDto: {
+            /** @description The `conversationId` of your conversation with Ask Crossmart */
+            conversationId: string;
+            /**
+             * Format: email
+             * @description Where a person from the Crossmart team should email the reply
+             */
+            contactEmail?: string;
+            /**
+             * Format: uri
+             * @description A public https URL the reply is POSTed to, signed like Crossmart webhooks with the `callbackSecret` this call returns (event type `ask.escalation.replied`)
+             */
+            callbackUrl?: string;
+            /** @description Why; defaults to the reason Ask last offered a person, else `human_requested` */
+            reason?: components["schemas"]["AskEscalationReason"];
+        };
+        /** @enum {string} */
+        AskEscalationStatus: AskEscalationStatus;
+        OpenedAskEscalationDto: {
+            /** @description The ticket id. It is the only way to read the escalation, so keep it like a password. */
+            id: string;
+            status: components["schemas"]["AskEscalationStatus"];
+            reason: components["schemas"]["AskEscalationReason"];
+            /** @description The team’s reply, once sent */
+            reply: string | null;
+            /** Format: date-time */
+            repliedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Verifies the callback’s `Crossmart-Signature`, as for webhooks. Shown only now; null without a callback URL. */
+            callbackSecret: string | null;
+        };
+        AskEscalationDto: {
+            /** @description The ticket id. It is the only way to read the escalation, so keep it like a password. */
+            id: string;
+            status: components["schemas"]["AskEscalationStatus"];
+            reason: components["schemas"]["AskEscalationReason"];
+            /** @description The team’s reply, once sent */
+            reply: string | null;
+            /** Format: date-time */
+            repliedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        AskCallerType: AskCallerType;
+        AskConversationSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            channel: components["schemas"]["AskChannel"];
+            callerType: components["schemas"]["AskCallerType"];
+            /** @description The agent’s name, for agents */
+            clientName: string | null;
+            /** Format: uuid */
+            workspaceId: string | null;
+            turnCount: number;
+            /** @description The first question, redacted */
+            firstQuestion: string | null;
+            lastOutcome: components["schemas"]["AskOutcome"] | null;
+            escalated: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastActivityAt: string;
+        };
+        AskConversationPageDto: {
+            items: components["schemas"]["AskConversationSummaryDto"][];
+            nextCursor: string | null;
+            total: number;
+        };
+        /** @enum {string} */
+        AccountLookupKind: AccountLookupKind;
+        AskTurnDto: {
+            /** Format: uuid */
+            id: string;
+            position: number;
+            /** @description The question, with obvious secrets and emails redacted */
+            question: string;
+            answer: string;
+            outcome: components["schemas"]["AskOutcome"];
+            confidence: components["schemas"]["AskConfidence"];
+            citations: components["schemas"]["AskCitationDto"][];
+            accountLookups: components["schemas"]["AccountLookupKind"][];
+            escalationReason: components["schemas"]["AskEscalationReason"] | null;
+            latencyMs: number;
+            model: string | null;
+            cached: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AskEscalationRecordDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            conversationId: string;
+            reason: components["schemas"]["AskEscalationReason"];
+            status: components["schemas"]["AskEscalationStatus"];
+            contactEmail: string | null;
+            callbackUrl: string | null;
+            reply: string | null;
+            /** Format: date-time */
+            repliedAt: string | null;
+            /** @description The admin who replied */
+            repliedBy: string | null;
+            /** Format: date-time */
+            callbackDeliveredAt: string | null;
+            /** @description Why the callback failed */
+            callbackError: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AskConversationDetailDto: {
+            /** Format: uuid */
+            id: string;
+            channel: components["schemas"]["AskChannel"];
+            callerType: components["schemas"]["AskCallerType"];
+            /** @description The agent’s name, for agents */
+            clientName: string | null;
+            /** Format: uuid */
+            workspaceId: string | null;
+            turnCount: number;
+            /** @description The first question, redacted */
+            firstQuestion: string | null;
+            lastOutcome: components["schemas"]["AskOutcome"] | null;
+            escalated: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastActivityAt: string;
+            turns: components["schemas"]["AskTurnDto"][];
+            escalations: components["schemas"]["AskEscalationRecordDto"][];
+        };
+        AskQuestionCountDto: {
+            /** @description One of the questions asked alike, redacted */
+            question: string;
+            /** @description How many times it was asked in the period */
+            count: number;
+            /** Format: date-time */
+            lastAskedAt: string;
+        };
+        ReplyAskEscalationDto: {
+            /** @description Plain text; it is emailed and POSTed to the callback as written */
+            reply: string;
         };
         CreateSandboxAccountDto: {
             /**
@@ -7427,6 +7757,13 @@ export interface operations {
                     "application/json": components["schemas"]["AskAnswerDto"];
                 };
             };
+            /** @description The conversation expired or is not yours, or the workspace is not yours */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Too many questions from you. Wait a little and try again, or browse https://docs.crossmart.io. */
             429: {
                 headers: {
@@ -7436,6 +7773,251 @@ export interface operations {
             };
             /** @description AI is not configured, Ask is turned off, or today’s questions are spent */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AskEscalationsController_open_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAskEscalationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenedAskEscalationDto"];
+                };
+            };
+            /** @description The callback URL is not a public https URL */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The conversation expired or is not yours */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many escalations today */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AskEscalationsController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                escalationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskEscalationDto"];
+                };
+            };
+            /** @description No escalation has this id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AskAdminController_conversations_v1: {
+        parameters: {
+            query?: {
+                /** @description Start, included */
+                from?: string;
+                /** @description End, included */
+                to?: string;
+                /** @description Only conversations with at least one answer of this outcome */
+                outcome?: components["schemas"]["AskOutcome"];
+                channel?: components["schemas"]["AskChannel"];
+                /** @description Only escalated conversations (true) or only others (false) */
+                escalated?: boolean;
+                /** @description `nextCursor` from the previous page */
+                cursor?: string;
+                /** @description 1-based page number, for tables with page numbers. It wins over `cursor`. */
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskConversationPageDto"];
+                };
+            };
+            /** @description Not a platform admin (404 for everyone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AskAdminController_conversation_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskConversationDetailDto"];
+                };
+            };
+            /** @description Not a platform admin (404 for everyone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AskAdminController_topQuestions_v1: {
+        parameters: {
+            query?: {
+                /** @description Start, included */
+                from?: string;
+                /** @description End, included */
+                to?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskQuestionCountDto"][];
+                };
+            };
+        };
+    };
+    AskAdminController_unansweredQuestions_v1: {
+        parameters: {
+            query?: {
+                /** @description Start, included */
+                from?: string;
+                /** @description End, included */
+                to?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskQuestionCountDto"][];
+                };
+            };
+        };
+    };
+    AskAdminController_escalationList_v1: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["AskEscalationStatus"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskEscalationRecordDto"][];
+                };
+            };
+        };
+    };
+    AskAdminController_reply_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                escalationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyAskEscalationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskEscalationRecordDto"];
+                };
+            };
+            /** @description Another admin replied first */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8408,6 +8990,12 @@ export enum AgentScope {
     suggestions_write = "suggestions:write",
     webhooks_write = "webhooks:write"
 }
+export enum AskChannel {
+    web_widget = "web_widget",
+    app_widget = "app_widget",
+    api = "api",
+    mcp = "mcp"
+}
 export enum AskOutcome {
     answered = "answered",
     unknown = "unknown",
@@ -8417,6 +9005,28 @@ export enum AskConfidence {
     high = "high",
     medium = "medium",
     low = "low"
+}
+export enum AskEscalationReason {
+    unanswered = "unanswered",
+    low_confidence = "low_confidence",
+    human_requested = "human_requested",
+    sales = "sales"
+}
+export enum AskEscalationStatus {
+    open = "open",
+    replied = "replied"
+}
+export enum AskCallerType {
+    anonymous = "anonymous",
+    user = "user",
+    api_key = "api_key",
+    agent = "agent"
+}
+export enum AccountLookupKind {
+    listing_status = "listing_status",
+    plan_usage = "plan_usage",
+    channel_connections = "channel_connections",
+    failed_listings = "failed_listings"
 }
 export enum SandboxOpeningOutcome {
     created = "created",

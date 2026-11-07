@@ -13,12 +13,14 @@ final class MeDto implements JsonSerializable
 {
     /**
      * @param list<WorkspaceDto> $workspaces
+     * @param bool $platformAdmin Whether the user runs this instance (`PLATFORM_ADMIN_EMAILS`, verified): they can read Ask Crossmart’s conversations and answer escalations
      */
     public function __construct(
         public readonly string $id,
         public readonly string $name,
         public readonly string $email,
         public readonly array $workspaces,
+        public readonly bool $platformAdmin,
     ) {
     }
 
@@ -36,6 +38,7 @@ final class MeDto implements JsonSerializable
             name: $payload->string('name'),
             email: $payload->string('email'),
             workspaces: $payload->modelList('workspaces', WorkspaceDto::fromArray(...)),
+            platformAdmin: $payload->bool('platformAdmin'),
         );
     }
 
@@ -51,6 +54,7 @@ final class MeDto implements JsonSerializable
             'name' => $this->name,
             'email' => $this->email,
             'workspaces' => array_map(static fn (WorkspaceDto $item): array => $item->toArray(), $this->workspaces),
+            'platformAdmin' => $this->platformAdmin,
         ];
     }
 
