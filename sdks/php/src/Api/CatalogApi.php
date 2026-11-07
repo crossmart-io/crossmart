@@ -29,6 +29,7 @@ use Crossmart\Model\ProductPageDto;
 use Crossmart\Model\ProductViewDto;
 use Crossmart\Model\UpdateProductContentDto;
 use Crossmart\Model\UpdateProductDto;
+use Crossmart\Model\UpdateVariantPriceDto;
 
 /**
  * The operations tagged "Catalog".
@@ -171,6 +172,29 @@ final class CatalogApi
             method: HttpMethod::Patch,
             pathTemplate: '/api/v1/workspaces/{workspaceId}/products/{productId}',
             pathParameters: ['workspaceId' => $workspaceId, 'productId' => $productId],
+            body: $body->toArray(),
+        ));
+
+        return ProductDto::fromArray($response->object());
+    }
+
+    /**
+     * Change one variant’s price or compare-at price
+     *
+     * Changes only the prices sent; the rest of the product stays as it is. Connected stores are updated like after any price edit. A null compare-at price removes it.
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function productsControllerUpdateVariantPriceV1(
+        string $workspaceId,
+        string $productId,
+        string $variantId,
+        UpdateVariantPriceDto $body,
+    ): ProductDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Patch,
+            pathTemplate: '/api/v1/workspaces/{workspaceId}/products/{productId}/variants/{variantId}',
+            pathParameters: ['workspaceId' => $workspaceId, 'productId' => $productId, 'variantId' => $variantId],
             body: $body->toArray(),
         ));
 

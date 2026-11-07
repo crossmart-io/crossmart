@@ -490,6 +490,26 @@ export interface paths {
         patch: operations["ProductsController_updateContent_v1"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/products/{productId}/variants/{variantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change one variant’s price or compare-at price
+         * @description Changes only the prices sent; the rest of the product stays as it is. Connected stores are updated like after any price edit. A null compare-at price removes it.
+         */
+        patch: operations["ProductsController_updateVariantPrice_v1"];
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/product-bulk-actions": {
         parameters: {
             query?: never;
@@ -2884,6 +2904,18 @@ export interface components {
             title?: string;
             /** @description HTML; unsafe markup is removed */
             descriptionHtml?: string;
+        };
+        UpdateVariantPriceDto: {
+            /**
+             * @description In the workspace currency
+             * @example 19.90
+             */
+            price?: string;
+            /**
+             * @description The "was" price buyers see struck through; null removes it
+             * @example 24.90
+             */
+            compareAtPrice?: string | null;
         };
         /** @enum {string} */
         BulkProductAction: BulkProductAction;
@@ -6236,6 +6268,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateProductContentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDto"];
+                };
+            };
+        };
+    };
+    ProductsController_updateVariantPrice_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVariantPriceDto"];
             };
         };
         responses: {

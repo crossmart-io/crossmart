@@ -358,6 +358,7 @@ from .update_product_content_dto import UpdateProductContentDto
 from .update_product_dto import UpdateProductDto
 from .update_product_selection_dto import UpdateProductSelectionDto
 from .update_variant_dto import UpdateVariantDto
+from .update_variant_price_dto import UpdateVariantPriceDto
 from .update_webhook_endpoint_dto import UpdateWebhookEndpointDto
 from .update_workspace_dto import UpdateWorkspaceDto
 from .uploaded_image_dto import UploadedImageDto
@@ -695,6 +696,7 @@ __all__ = (
     "UpdateProductDto",
     "UpdateProductSelectionDto",
     "UpdateVariantDto",
+    "UpdateVariantPriceDto",
     "UpdateWebhookEndpointDto",
     "UpdateWorkspaceDto",
     "UploadedImageDto",
