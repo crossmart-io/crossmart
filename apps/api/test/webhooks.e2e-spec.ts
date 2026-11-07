@@ -16,6 +16,7 @@ import {
 import {
   InventoryMovementReason,
   PrismaService,
+  WebhookAttemptOutcome,
   WebhookDeliveryStatus,
   WebhookDisabledReason,
   WorkspaceRole,
@@ -149,6 +150,7 @@ describe('Outgoing webhooks (e2e)', () => {
       .set('Cookie', owner.cookie);
     expect(JSON.stringify(listed.body)).not.toContain('whsec_');
     expect(listed.body[0]).not.toHaveProperty('sealedSecret');
+    expect(listed.body[0].lastDelivery).toBeNull();
 
     for (const eventTypes of [[WebhookEventType.Test], ['order.teleported'], []]) {
       const refused = await request(app.getHttpServer())
@@ -227,6 +229,11 @@ describe('Outgoing webhooks (e2e)', () => {
     expect(new Date(log.body.items[0].nextAttemptAt).getTime()).toBeGreaterThan(Date.now());
     const failing = await request(app.getHttpServer()).get(base).set('Cookie', owner.cookie);
     expect(failing.body.consecutiveFailures).toBe(2);
+    expect(failing.body.lastDelivery).toMatchObject({
+      outcome: WebhookAttemptOutcome.FAILED,
+      responseStatus: HttpStatus.SERVICE_UNAVAILABLE,
+      error: 'The endpoint answered with HTTP 503',
+    });
 
     const rotated = await request(app.getHttpServer())
       .post(`${base}/rotate-secret`)
@@ -237,8 +244,21 @@ describe('Outgoing webhooks (e2e)', () => {
     await runWorker();
     expect(signatureCount(receiver.received[0]!)).toBe(2);
     expect(verifies(receiver.received[0]!, rotated.body.secret)).toBe(true);
-    const healthy = await request(app.getHttpServer()).get(base).set('Cookie', owner.cookie);
-    expect(healthy.body.consecutiveFailures).toBe(0);
+    const listed = await request(app.getHttpServer())
+      .get(endpointsPath(owner))
+      .set('Cookie', owner.cookie);
+    const healthy = listed.body.find(
+      (listedEndpoint: { id: string }) => listedEndpoint.id === endpoint.id,
+    );
+    expect(healthy.consecutiveFailures).toBe(0);
+    expect(healthy.lastDelivery).toMatchObject({
+      outcome: WebhookAttemptOutcome.SUCCEEDED,
+      responseStatus: HttpStatus.OK,
+      error: null,
+    });
+    expect(new Date(healthy.lastDelivery.attemptedAt).getTime()).toBeGreaterThan(
+      new Date(failing.body.lastDelivery.attemptedAt).getTime(),
+    );
     await deleteEndpoint(endpoint.id);
   });
 

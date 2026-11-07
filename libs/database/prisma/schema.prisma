@@ -1323,6 +1323,14 @@ enum WebhookDeliveryStatus {
   FAILED
 }
 
+/// How the latest attempt to deliver to an endpoint ended.
+enum WebhookAttemptOutcome {
+  /// The endpoint answered 2xx.
+  SUCCEEDED
+  /// Any other answer, a timeout, a connection error or a redirect.
+  FAILED
+}
+
 /// A URL a workspace receives events at, signed with its own secret.
 model WebhookEndpoint {
   id                      String                 @id @default(uuid()) @db.Uuid
@@ -1341,6 +1349,13 @@ model WebhookEndpoint {
   disabledAt              DateTime?              @map("disabled_at")
   /// Failed attempts since the last one that went through; reaching the limit disables it.
   consecutiveFailures     Int                    @default(0) @map("consecutive_failures")
+  /// The latest delivery attempt, across events, kept here so listing endpoints reads no deliveries.
+  lastAttemptAt           DateTime?              @map("last_attempt_at")
+  lastAttemptOutcome      WebhookAttemptOutcome? @map("last_attempt_outcome")
+  /// The HTTP status of the latest attempt; null when no response came.
+  lastResponseStatus      Int?                   @map("last_response_status")
+  /// Why the latest attempt failed, safe to show; null after a success.
+  lastAttemptError        String?                @map("last_attempt_error")
   deliveries              WebhookDelivery[]
   createdAt               DateTime               @default(now()) @map("created_at")
   updatedAt               DateTime               @updatedAt @map("updated_at")

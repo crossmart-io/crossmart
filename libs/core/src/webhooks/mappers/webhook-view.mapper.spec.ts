@@ -1,4 +1,8 @@
-import { WebhookDeliveryStatus, WebhookDisabledReason } from '@crossmart/database';
+import {
+  WebhookAttemptOutcome,
+  WebhookDeliveryStatus,
+  WebhookDisabledReason,
+} from '@crossmart/database';
 import { WebhookEventType } from '../enums/webhook-event-type.enum.js';
 import {
   deliveryDetailRow,
@@ -42,6 +46,30 @@ describe('toWebhookEndpointView', () => {
     );
 
     expect(view.eventTypes).toEqual([WebhookEventType.OrderCreated]);
+  });
+
+  it('has no last delivery before the first attempt', () => {
+    expect(toWebhookEndpointView(storedEndpoint()).lastDelivery).toBeNull();
+  });
+
+  it('shows the latest attempt with its outcome', () => {
+    const view = toWebhookEndpointView(
+      storedEndpoint({
+        consecutiveFailures: 3,
+        lastAttemptAt: TEST_CREATED_AT,
+        lastAttemptOutcome: WebhookAttemptOutcome.FAILED,
+        lastResponseStatus: 503,
+        lastAttemptError: 'The endpoint answered with HTTP 503',
+      }),
+    );
+
+    expect(view.consecutiveFailures).toBe(3);
+    expect(view.lastDelivery).toEqual({
+      attemptedAt: TEST_CREATED_AT,
+      outcome: WebhookAttemptOutcome.FAILED,
+      responseStatus: 503,
+      error: 'The endpoint answered with HTTP 503',
+    });
   });
 });
 

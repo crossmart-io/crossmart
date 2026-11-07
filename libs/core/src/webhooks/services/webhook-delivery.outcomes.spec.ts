@@ -1,4 +1,4 @@
-import { WebhookDeliveryStatus } from '@crossmart/database';
+import { WebhookAttemptOutcome, WebhookDeliveryStatus } from '@crossmart/database';
 import type { DeliveryAttemptResult } from '../entities/delivery-attempt.js';
 import type { DeliveryRef } from '../entities/delivery-ref.js';
 import { WebhookDeliveryFailure } from '../enums/webhook-delivery-failure.enum.js';
@@ -35,14 +35,26 @@ function refAt(attempts: number): DeliveryRef {
 function createOutcomes() {
   const recordAttempt = vi.fn<WebhookDeliveryRepository['recordAttempt']>().mockResolvedValue(true);
   const resetFailures = vi.fn<WebhookEndpointRepository['resetFailures']>().mockResolvedValue();
+  const recordLastAttempt = vi
+    .fn<WebhookEndpointRepository['recordLastAttempt']>()
+    .mockResolvedValue();
   const recordFailure = vi.fn<WebhookEndpointHealth['recordFailure']>().mockResolvedValue();
   const outcomes = new WebhookDeliveryOutcomes(
     { recordAttempt } as unknown as WebhookDeliveryRepository,
-    { resetFailures } as unknown as WebhookEndpointRepository,
+    { resetFailures, recordLastAttempt } as unknown as WebhookEndpointRepository,
     { recordFailure } as unknown as WebhookEndpointHealth,
   );
   const stored = () => recordAttempt.mock.calls[0]?.[1];
-  return { outcomes, recordAttempt, resetFailures, recordFailure, stored };
+  const lastAttempt = () => recordLastAttempt.mock.calls[0]?.[1];
+  return {
+    outcomes,
+    recordAttempt,
+    resetFailures,
+    recordFailure,
+    recordLastAttempt,
+    stored,
+    lastAttempt,
+  };
 }
 
 describe('WebhookDeliveryOutcomes.record', () => {
@@ -101,8 +113,37 @@ describe('WebhookDeliveryOutcomes.record', () => {
     expect(stored()).toMatchObject({ status: WebhookDeliveryStatus.FAILED, nextAttemptAt: null });
   });
 
+  it('keeps a success as the endpoint last delivery', async () => {
+    const { outcomes, recordLastAttempt, lastAttempt } = createOutcomes();
+
+    await outcomes.record(refAt(0), deliveryToSend(), SUCCEEDED);
+
+    expect(recordLastAttempt).toHaveBeenCalledWith(TEST_ENDPOINT_ID, expect.any(Object));
+    expect(lastAttempt()).toEqual({
+      attemptedAt: expect.any(Date),
+      outcome: WebhookAttemptOutcome.SUCCEEDED,
+      responseStatus: 200,
+      error: null,
+    });
+  });
+
+  it('keeps a failure as the endpoint last delivery, whether or not it is retried', async () => {
+    for (const attempts of [0, WEBHOOK_MAX_ATTEMPTS - 1]) {
+      const { outcomes, lastAttempt } = createOutcomes();
+
+      await outcomes.record(refAt(attempts), deliveryToSend(), FAILED);
+
+      expect(lastAttempt()).toMatchObject({
+        outcome: WebhookAttemptOutcome.FAILED,
+        responseStatus: null,
+        error: WebhookDeliveryFailure.Unreachable,
+      });
+    }
+  });
+
   it('changes nothing else when another attempt was recorded first', async () => {
-    const { outcomes, recordAttempt, resetFailures, recordFailure } = createOutcomes();
+    const { outcomes, recordAttempt, resetFailures, recordFailure, recordLastAttempt } =
+      createOutcomes();
     recordAttempt.mockResolvedValue(false);
 
     await outcomes.record(refAt(0), deliveryToSend(), SUCCEEDED);
@@ -110,5 +151,6 @@ describe('WebhookDeliveryOutcomes.record', () => {
 
     expect(resetFailures).not.toHaveBeenCalled();
     expect(recordFailure).not.toHaveBeenCalled();
+    expect(recordLastAttempt).not.toHaveBeenCalled();
   });
 });

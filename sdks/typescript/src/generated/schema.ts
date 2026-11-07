@@ -4149,6 +4149,27 @@ export interface components {
          * @enum {string}
          */
         WebhookDisabledReason: WebhookDisabledReason;
+        /**
+         * @description SUCCEEDED: the endpoint answered 2xx. FAILED: anything else, or no answer.
+         * @enum {string}
+         */
+        WebhookAttemptOutcome: WebhookAttemptOutcome;
+        WebhookEndpointLastDeliveryDto: {
+            /** Format: date-time */
+            attemptedAt: string;
+            /** @description SUCCEEDED: the endpoint answered 2xx. FAILED: anything else, or no answer. */
+            outcome: components["schemas"]["WebhookAttemptOutcome"];
+            /**
+             * @description Null when no response came: a timeout or a connection error
+             * @example 200
+             */
+            responseStatus: number | null;
+            /**
+             * @description Why the attempt failed; null on success
+             * @example The endpoint answered with HTTP 503
+             */
+            error: string | null;
+        };
         WebhookEndpointDto: {
             /** Format: uuid */
             id: string;
@@ -4165,6 +4186,8 @@ export interface components {
             disabledAt: string | null;
             /** @description Failed attempts since the last delivery that went through */
             consecutiveFailures: number;
+            /** @description The latest delivery attempt, whatever event it carried; null before the first */
+            lastDelivery: components["schemas"]["WebhookEndpointLastDeliveryDto"] | null;
             /**
              * Format: date-time
              * @description Until then deliveries are also signed with the secret the last rotation replaced
@@ -8010,6 +8033,10 @@ export enum WebhookEventType {
 export enum WebhookDisabledReason {
     MANUAL = "MANUAL",
     FAILING = "FAILING"
+}
+export enum WebhookAttemptOutcome {
+    SUCCEEDED = "SUCCEEDED",
+    FAILED = "FAILED"
 }
 export enum WebhookDeliveryStatus {
     PENDING = "PENDING",

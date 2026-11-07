@@ -19,6 +19,7 @@ final class WebhookEndpointDto implements JsonSerializable
      * @param bool $enabled False when turned off by someone or after repeated failures
      * @param WebhookDisabledReason|string|null $disabledReason MANUAL: turned off by someone. FAILING: turned off by Crossmart.
      * @param int|float $consecutiveFailures Failed attempts since the last delivery that went through
+     * @param WebhookEndpointLastDeliveryDto|null $lastDelivery The latest delivery attempt, whatever event it carried; null before the first
      * @param DateTimeImmutable|null $previousSecretExpiresAt Until then deliveries are also signed with the secret the last rotation replaced
      */
     public function __construct(
@@ -30,6 +31,7 @@ final class WebhookEndpointDto implements JsonSerializable
         public readonly WebhookDisabledReason|string|null $disabledReason,
         public readonly ?DateTimeImmutable $disabledAt,
         public readonly int|float $consecutiveFailures,
+        public readonly ?WebhookEndpointLastDeliveryDto $lastDelivery,
         public readonly ?DateTimeImmutable $previousSecretExpiresAt,
         public readonly DateTimeImmutable $createdAt,
         public readonly DateTimeImmutable $updatedAt,
@@ -54,6 +56,7 @@ final class WebhookEndpointDto implements JsonSerializable
             disabledReason: $payload->isNull('disabledReason') ? null : $payload->enum('disabledReason', WebhookDisabledReason::class),
             disabledAt: $payload->isNull('disabledAt') ? null : $payload->dateTime('disabledAt'),
             consecutiveFailures: $payload->number('consecutiveFailures'),
+            lastDelivery: $payload->isNull('lastDelivery') ? null : $payload->model('lastDelivery', WebhookEndpointLastDeliveryDto::fromArray(...)),
             previousSecretExpiresAt: $payload->isNull('previousSecretExpiresAt') ? null : $payload->dateTime('previousSecretExpiresAt'),
             createdAt: $payload->dateTime('createdAt'),
             updatedAt: $payload->dateTime('updatedAt'),
@@ -76,6 +79,7 @@ final class WebhookEndpointDto implements JsonSerializable
             'disabledReason' => Payload::enumValue($this->disabledReason),
             'disabledAt' => $this->disabledAt === null ? null : Payload::formatDateTime($this->disabledAt),
             'consecutiveFailures' => $this->consecutiveFailures,
+            'lastDelivery' => $this->lastDelivery?->toArray(),
             'previousSecretExpiresAt' => $this->previousSecretExpiresAt === null ? null : Payload::formatDateTime($this->previousSecretExpiresAt),
             'createdAt' => Payload::formatDateTime($this->createdAt),
             'updatedAt' => Payload::formatDateTime($this->updatedAt),

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from collections.abc import Mapping
-from typing import Any, Self, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 from uuid import UUID
 
 from attrs import define as _attrs_define
@@ -10,6 +10,12 @@ from attrs import field as _attrs_field
 
 from ..models.webhook_disabled_reason import WebhookDisabledReason
 from ..models.webhook_event_type import WebhookEventType
+
+if TYPE_CHECKING:
+    from ..models.webhook_endpoint_last_delivery_dto import (
+        WebhookEndpointLastDeliveryDto,
+    )
+
 
 T = TypeVar("T", bound="WebhookEndpointDto")
 
@@ -26,6 +32,8 @@ class WebhookEndpointDto:
         disabled_reason (None | WebhookDisabledReason): MANUAL: turned off by someone. FAILING: turned off by Crossmart.
         disabled_at (datetime.datetime | None):
         consecutive_failures (float): Failed attempts since the last delivery that went through
+        last_delivery (None | WebhookEndpointLastDeliveryDto): The latest delivery attempt, whatever event it carried;
+            null before the first
         previous_secret_expires_at (datetime.datetime | None): Until then deliveries are also signed with the secret the
             last rotation replaced
         created_at (datetime.datetime):
@@ -40,12 +48,17 @@ class WebhookEndpointDto:
     disabled_reason: None | WebhookDisabledReason
     disabled_at: datetime.datetime | None
     consecutive_failures: float
+    last_delivery: None | WebhookEndpointLastDeliveryDto
     previous_secret_expires_at: datetime.datetime | None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        from ..models.webhook_endpoint_last_delivery_dto import (
+            WebhookEndpointLastDeliveryDto,
+        )
+
         id = str(self.id)
 
         url = self.url
@@ -74,6 +87,12 @@ class WebhookEndpointDto:
 
         consecutive_failures = self.consecutive_failures
 
+        last_delivery: dict[str, Any] | None
+        if isinstance(self.last_delivery, WebhookEndpointLastDeliveryDto):
+            last_delivery = self.last_delivery.to_dict()
+        else:
+            last_delivery = self.last_delivery
+
         previous_secret_expires_at: None | str
         if isinstance(self.previous_secret_expires_at, datetime.datetime):
             previous_secret_expires_at = self.previous_secret_expires_at.isoformat()
@@ -96,6 +115,7 @@ class WebhookEndpointDto:
                 "disabledReason": disabled_reason,
                 "disabledAt": disabled_at,
                 "consecutiveFailures": consecutive_failures,
+                "lastDelivery": last_delivery,
                 "previousSecretExpiresAt": previous_secret_expires_at,
                 "createdAt": created_at,
                 "updatedAt": updated_at,
@@ -106,6 +126,10 @@ class WebhookEndpointDto:
 
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
+        from ..models.webhook_endpoint_last_delivery_dto import (
+            WebhookEndpointLastDeliveryDto,
+        )
+
         d = dict(src_dict)
         id = UUID(d.pop("id"))
 
@@ -159,6 +183,21 @@ class WebhookEndpointDto:
 
         consecutive_failures = d.pop("consecutiveFailures")
 
+        def _parse_last_delivery(data: object) -> None | WebhookEndpointLastDeliveryDto:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                last_delivery_type_0 = WebhookEndpointLastDeliveryDto.from_dict(data)
+
+                return last_delivery_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | WebhookEndpointLastDeliveryDto, data)
+
+        last_delivery = _parse_last_delivery(d.pop("lastDelivery"))
+
         def _parse_previous_secret_expires_at(data: object) -> datetime.datetime | None:
             if data is None:
                 return data
@@ -191,6 +230,7 @@ class WebhookEndpointDto:
             disabled_reason=disabled_reason,
             disabled_at=disabled_at,
             consecutive_failures=consecutive_failures,
+            last_delivery=last_delivery,
             previous_secret_expires_at=previous_secret_expires_at,
             created_at=created_at,
             updated_at=updated_at,

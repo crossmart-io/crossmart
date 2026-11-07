@@ -28,7 +28,7 @@ instances on a trusted network can allow plain http and private addresses with
 
 | Call                                                             | Does                                                          |
 | ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| `GET /webhook-endpoints`                                         | Lists the endpoints. Secrets are never returned               |
+| `GET /webhook-endpoints`                                         | Lists the endpoints and their last delivery. No secrets       |
 | `POST /webhook-endpoints`                                        | Adds one and returns its secret once                          |
 | `GET`, `PATCH`, `DELETE /webhook-endpoints/{id}`                 | Reads, changes (URL, events, description, `enabled`), deletes |
 | `POST /webhook-endpoints/{id}/rotate-secret`                     | Issues a new secret, returned once                            |
@@ -227,6 +227,24 @@ Without an SDK, in any language: split the header on `,`, take `t` and every `v1
 - **Delivery log.** Each delivery shows its status (`PENDING`, `RETRYING`, `SUCCEEDED`,
   `FAILED`), attempts, last HTTP status, duration and error. Deliveries are kept for 30 days and
   can be sent again (**Redeliver**).
+- **Endpoint health.** Every endpoint, in the list and on its own, carries `consecutiveFailures`
+  (failed attempts since the last one that went through) and `lastDelivery`, the latest attempt
+  whatever event it carried: `attemptedAt`, `outcome` (`SUCCEEDED` or `FAILED`), `responseStatus`
+  (null when no response came) and `error`. It is `null` until the first attempt. The dashboard
+  shows them in **Settings → Webhooks**.
+
+  ```json
+  {
+    "consecutiveFailures": 2,
+    "lastDelivery": {
+      "attemptedAt": "2026-11-07T09:12:44.120Z",
+      "outcome": "FAILED",
+      "responseStatus": 503,
+      "error": "The endpoint answered with HTTP 503"
+    }
+  }
+  ```
+
 - **Auto-disable.** After 30 failed attempts in a row, across events, Crossmart turns the endpoint
   off. What it still had to receive fails, the activity log says so, and members who manage
   webhooks get an email. Fix the receiver, send a test event, then turn the endpoint back on.
