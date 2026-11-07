@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Questions and ideas
+    url: https://github.com/crossmart-io/crossmart/discussions
+    about: Ask questions and share ideas in GitHub Discussions. Issues are for bugs and feature requests.
   - name: Security vulnerability
     url: https://github.com/crossmart-io/crossmart/security/advisories/new
     about: Report security issues privately, never in a public issue.

@@ -16,7 +16,7 @@
   "type": "module",
   "packageManager": "pnpm@10.18.3",
   "engines": {
-    "node": ">=22"
+    "node": "^22.0.0 || ^24.0.0"
   },
   "scripts": {
     "build": "nest build api && nest build worker && nest build mcp",
