@@ -68,11 +68,36 @@ Crossmart is read by many people. Code must be clear, modular and predictable. C
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/): `feat(catalog): add variant bulk update`, `fix(ebay): handle expired tokens`. A commit hook checks the format.
 - Keep pull requests focused. Fill in the PR template and link the issue.
-- CI must be green: lint, typecheck, tests and build.
+- Checks must be green. GitHub Actions run them on every pull request ([ci.yml](.github/workflows/ci.yml)): format, lint, typecheck, unit and e2e tests, build, and the SDK and n8n node checks. Before merging, a maintainer also verifies the pull request locally, merged with the latest `main`. Run the same commands before you push:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm db:deploy             # against a throwaway database, for the e2e tests
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:e2e              # needs Postgres and Redis: docker compose up -d postgres redis
+pnpm openapi:generate      # writes openapi.json for the SDK drift checks
+
+# Only when you change an SDK or the API
+(cd sdks/typescript && pnpm install && pnpm check:drift && pnpm lint && pnpm typecheck && pnpm test && pnpm build)
+(cd sdks/python && scripts/generate.sh && git diff --exit-code -- crossmart/_generated && ruff check . && ruff format --check . && mypy && pytest)
+sdks/php/scripts/check.sh  # after composer install in sdks/php
+
+# Only when you change the n8n node
+(cd integrations/n8n && pnpm install && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build)
+```
+
+- Workflows never publish, deploy or use secrets. Releases are made by a maintainer by hand ([sdks/RELEASING.md](sdks/RELEASING.md)).
 
 ## Contributor License Agreement
 
-Before your first pull request can be merged, you must sign the [Contributor License Agreement](CLA.md). A bot asks you to sign by posting a comment on the PR. You keep the copyright to your contribution. The CLA grants the project the rights it needs to distribute your contribution, including under other license terms.
+Before your first pull request can be merged, you must sign the [Contributor License Agreement](CLA.md) with YIOT LLC, the company that owns Crossmart. The CLA bot comments on your pull request; to sign, reply with the sentence it gives you. You sign once, and it covers your later contributions.
+
+The CLA is a license, not an assignment: you keep the copyright to your contribution. It grants YIOT LLC the rights it needs to distribute your contribution, including under other license terms, which keeps dual licensing possible. The platform is [AGPL-3.0](LICENSE); the SDKs and the n8n node are MIT (see [NOTICE](NOTICE)).
 
 ## Adding a marketplace connector
 

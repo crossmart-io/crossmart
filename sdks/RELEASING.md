@@ -8,9 +8,9 @@ Crossmart has three official SDKs, all generated from the API's OpenAPI document
 | Python     | `sdks/python`     | [PyPI](https://pypi.org/project/crossmart/)                         | `crossmart`               | `sdk-py-vX.Y.Z`        |
 | PHP        | `sdks/php`        | [Packagist](https://packagist.org/packages/crossmart/crossmart-php) | `crossmart/crossmart-php` | `sdk-php-vX.Y.Z`       |
 
-Releases are made by a maintainer from their own machine. The project runs no CI, so nothing is
-published by GitHub Actions: the tag-triggered workflows in `.github/workflows` do not run, and
-this document is the procedure.
+Releases are made by a maintainer from their own machine, following this document. GitHub Actions
+only run pull request checks (`.github/workflows/ci.yml`, which tests the SDKs and checks that they
+match the API); no workflow publishes a package, and no registry token is stored in GitHub.
 
 ## Versions
 
@@ -69,13 +69,13 @@ Each release:
 ```bash
 cd sdks/typescript
 npm login                        # once per machine
-pnpm publish --access public     # prepack copies LICENSE; prepublishOnly lints, tests and builds
+pnpm publish --access public     # prepublishOnly lints, typechecks, tests and builds
 git tag sdk-ts-v0.1.0 && git push origin sdk-ts-v0.1.0
 ```
 
 npm asks for the one-time password. Packages published from a laptop cannot carry
 [provenance](https://docs.npmjs.com/generating-provenance-statements), which needs a supported CI
-provider, so `package.json` does not ask for it.
+provider to publish from, so `package.json` does not ask for it.
 
 ## PyPI (Python)
 
@@ -88,7 +88,7 @@ One-time setup:
    `~/.pypirc` or a password manager, never in the repository.
 
    [Trusted publishing](https://docs.pypi.org/trusted-publishers/) is the alternative to tokens,
-   but it needs a CI workflow to publish from, which the project does not run.
+   but it needs a CI workflow to publish from, and the project does not publish from CI.
 
 Each release:
 

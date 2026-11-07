@@ -438,8 +438,8 @@ It logs `Recorded N files; M were already recorded, K skipped` and exits. Runnin
 
 - **Self-host:** `docker compose up` brings up api, worker, web, postgres and redis. Configuration is via env, telemetry is opt-out. PostgreSQL and Redis require `POSTGRES_PASSWORD` and `REDIS_PASSWORD` (Redis runs with `--requirepass`) and publish their ports on 127.0.0.1 only.
 - **Cloud:** Railway (US East), using the same Docker images, with `staging` and `production` environments, a static egress IP, managed Postgres with PITR plus a daily off-site dump to S3/R2.
-- **CI (GitHub Actions):** lint, typecheck, unit + contract tests, build and push images to GHCR, publish `openapi.json` on release.
+- **CI (GitHub Actions):** pull request checks only (format, lint, typecheck, unit and e2e tests, build, SDK checks), with no secrets. Nothing is published or deployed from Actions: maintainers release the SDKs and deploy from their own machines.
 
 ## 10. Telemetry (self-hosted)
 
-A daily anonymous ping containing a random instance id, the version, connector counts by type and a listing-count bucket. It never includes product, order, customer or credential data. Disable it with `CROSSMART_TELEMETRY=false`. The exact payload is documented at `docs/telemetry`.
+A daily anonymous ping containing a random instance id, the version, connector counts by type and a listing-count bucket. It never includes product, order, customer or credential data. Disable it with `CROSSMART_TELEMETRY=false`. Telemetry is not implemented yet; the exact payload will be documented on a public page when it ships (ADR 0012).
