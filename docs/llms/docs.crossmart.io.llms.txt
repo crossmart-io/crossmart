@@ -22,4 +22,5 @@ To get a grounded answer about Crossmart instead of reading every page, call `PO
 - [API reference](https://docs.crossmart.io/developers/api/): every endpoint and field
 - [OpenAPI spec](https://api.crossmart.io/api/docs-json)
 - [crossmart.io](https://crossmart.io): the product and its pricing
+- [Discord](https://discord.gg/dWPQjnzWhf): the Crossmart community, for questions and help
 - [Full docs in one file](https://docs.crossmart.io/llms-full.txt)

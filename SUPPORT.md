@@ -1,6 +1,7 @@
 # Getting help with Crossmart
 
-- **Questions, ideas and "how do I…":** ask in [GitHub Discussions](https://github.com/crossmart-io/crossmart/discussions).
+- **Questions and "how do I…":** join the community on [Discord](https://discord.gg/dWPQjnzWhf) and ask there.
+- **Ideas and longer threads:** [GitHub Discussions](https://github.com/crossmart-io/crossmart/discussions).
   Search first; someone may have asked already.
 - **Bugs:** open a [GitHub issue](https://github.com/crossmart-io/crossmart/issues/new/choose) with
   the steps to reproduce, what you expected and what happened, and your Crossmart version.
