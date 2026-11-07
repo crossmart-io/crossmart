@@ -1,7 +1,7 @@
 # ADR 0019: Agents sign in with OAuth, and may open sandbox accounts
 
-- Status: Accepted
-- Date: 2026-11-05
+- Status: Accepted. Part 1 (OAuth) and part 2 (sandbox accounts) are implemented.
+- Date: 2026-11-05 (part 2 implemented 2026-11-07)
 
 ## Context
 
@@ -133,4 +133,60 @@ over, without the user filling in a form first.
 - Sandbox accounts are a new abuse surface: account creation that sends email. The limits above,
   the 14-day expiry, sending no email for existing addresses, and the no-publish rule are the
   first defenses. Watch the creation rate after launch.
-- Numbers marked in bold are product choices to confirm before part 2 ships.
+- Numbers marked in bold are product choices to confirm before part 2 ships. Part 2 uses them as
+  written; they are constants (`SANDBOX_TTL_DAYS`, `SANDBOX_CLAIM_REMINDER_AFTER_MS`,
+  `SANDBOX_MAX_PRODUCTS`, `SANDBOX_ACCOUNTS_PER_HOUR`, `SANDBOX_ACCOUNTS_PER_DAY`), not plan data.
+
+## Part 2 as implemented
+
+- **Data.** An additive table, `sandbox_accounts` (migration `20261115090000_sandbox_accounts`):
+  one row per sandbox with its organization, workspace and user (each unique), the SHA-256 hash of
+  the claim token, `expiresAt`, `claimEmailSentAt`, `claimEmailResentAt` and `claimedAt`. A
+  workspace is a sandbox while its row has no `claimedAt`. The row stays after the claim, so a used
+  link never works again. `WorkspaceDto.sandbox` (`claimExpiresAt`, or null) tells the web app.
+- **Opening.** `POST /api/v1/sandbox-accounts` (public) and the MCP tool `create_account` take an
+  email and a store name. One transaction creates a user without a password (named after the
+  address's local part), an organization named after the store on the default plan, its workspace,
+  the sandbox row and an **Editor API key** for the agent, which the answer returns once. The claim
+  link goes to `{WEB_APP_URL}/claim?token=…`. The answer is `outcome: created` with `workspaceId`,
+  `apiKey` and `claimExpiresAt`, or `outcome: sign_in_required` with nothing else, for every address
+  that has an account, sandbox or not (compared case-insensitively, and again on the unique
+  constraint if two requests race). Both carry a `nextStep` for the agent.
+- **The agent's token is an API key**, not an OAuth access token. No OAuth client exists before
+  the user signs in, so there is nothing to issue an access token to. An API key works with the
+  REST API and with both MCP transports, and the activity log credits it ("AI agent (sandbox
+  account)"). Editor is the least role that builds a catalog: it cannot manage members, keys,
+  webhooks, stores or billing, and its AI suggestions still need approval. The key outlives the
+  claim, so the agent can go on; the owner revokes it under Settings like any other key.
+- **MCP.** `create_account` is offered only without a credential: by a local (stdio) server started
+  without `CROSSMART_API_KEY`, which then adopts the returned key for the rest of the session. The
+  remote server keeps answering 401 to requests without a token, because serving them would stop
+  MCP clients from starting the OAuth sign-in. Agents on the remote server can call the REST
+  endpoint directly.
+- **Rate limits.** "Per client" is the caller's IP address (`x-real-ip`, as for Ask and Better
+  Auth), since an anonymous request has no verified client identity. Two Redis windows,
+  `sandbox-ip:<address>`, 5 an hour and 50 a day, count every call, including those answered
+  `sign_in_required`, so the endpoint cannot be used to test many addresses.
+- **Enforcement.** `EntitlementService.assertSandboxAllows(workspaceId, SandboxRestriction.…)`
+  (and an organization variant) refuses with `SandboxRestrictedException`: HTTP 403, `code:
+sandbox_claim_required`, the `restriction`, `claimExpiresAt`, and a message telling the agent to
+  ask the user to claim the account. It applies whatever `ENTITLEMENTS_ENFORCED` says. Restricted:
+  connecting a channel (`ChannelConnectionQuota`, also `error=sandbox_claim_required` on a
+  callback), publishing (`ActiveListingsGate`), inviting members (`InvitationPolicy`), adding a
+  workspace, and Crossmart AI content (`AiGateway`), which Crossmart pays for. `assertProductRoom`
+  caps products at 100 (`ProductsService`, CSV create imports). Billing has no endpoint yet; the
+  checkout must call `assertSandboxAllows` when it lands.
+- **Claiming.** `POST /api/v1/sandbox-claims/preview` shows the link's address, store, expiry and
+  whether the person already has a password. `POST /api/v1/sandbox-claims` with the token and a
+  password sets the password (hashed by Better Auth), marks the address verified and claims, in one
+  transaction that checks the sandbox is still unclaimed; the web app then signs in with them. A
+  person who already has a password (a reset link is the only other way to one) signs in and calls
+  `POST /api/v1/workspaces/{id}/sandbox/claim`, which only the sandbox's own user may call.
+  Either way the workspace stays in the same organization, which becomes a normal one. Both are
+  recorded as `sandbox_created` (by the agent's key) and `sandbox_claimed` (by the user).
+- **Sweep.** The hourly maintenance job `sandbox-sweep` sends the reminder to sandboxes first
+  emailed 3 days ago and not reminded yet, and deletes sandboxes past `expiresAt` with their
+  organization, everything in it, and their user unless that user joined another workspace. It
+  works in batches of 50 (at most 20 a run), and every write re-checks its conditions, so a second
+  run changes nothing. Only the token's hash is stored, so the reminder carries a new link and the
+  first one stops working; the reminder says so.

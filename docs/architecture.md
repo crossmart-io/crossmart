@@ -127,6 +127,16 @@ Organization ── OrganizationSubscription (planVersion, status, currentPeriod
   before writing anything when the products that would go live do not fit (`ActiveListingsGate`),
   and the worker checks each listing it is about to make live: a blocked one is not sent and is
   marked `ERROR` with the reason.
+- **Sandbox accounts** (ADR [0019](decisions/0019-agent-access.md), part 2). An organization with
+  an unclaimed `SandboxAccount` row was opened by an AI agent (`libs/core/src/sandbox`). Its rules
+  apply whatever `ENTITLEMENTS_ENFORCED` says: `EntitlementService.assertSandboxAllows` (by
+  workspace) and `assertSandboxAllowsInOrganization` refuse a `SandboxRestriction` (connect a
+  channel, publish, invite, add a workspace, Crossmart AI) with `SandboxRestrictedException`, HTTP
+  403 `sandbox_claim_required`, and `assertProductRoom` caps products at `SANDBOX_MAX_PRODUCTS` (100).
+  The callers are `ChannelConnectionQuota`, `ActiveListingsGate`, `InvitationPolicy`,
+  `WorkspacesService`, `AiGateway`, `ProductAdmission` and the create-products import. Claiming
+  sets `claimedAt`, which lifts them all; the hourly maintenance sweep (`SandboxSweeper`) sends the
+  one reminder and deletes expired sandboxes.
 - `GET /api/v1/organizations/{id}/subscription` returns the plan (`offered` is false on a legacy
   plan), `enforced`, and every feature with its limit and usage, for members holding `billing:view`
   (owners and admins).
