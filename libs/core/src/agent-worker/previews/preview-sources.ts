@@ -16,6 +16,7 @@ export const PRODUCT_SOURCE = z.object({
       sku: z.string().nullable(),
       optionValues: z.array(z.string()),
       price: z.string(),
+      compareAtPrice: z.string().nullable(),
     }),
   ),
 });

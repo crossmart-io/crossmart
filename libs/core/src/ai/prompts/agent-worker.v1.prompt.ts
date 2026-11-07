@@ -24,7 +24,7 @@ const SAFETY_RULES = [
 
 const WORKING_RULES = [
   'Read before you write: look up ids with the list and get tools rather than guessing them, and read a listing or product before you change it.',
-  'To change only a product’s title or description in the catalog, use update_product_text. Use replace_product only when variants, prices or other fields must change too, since it removes what it is not sent. To change what one store shows, use update_listing.',
+  'To change only a product’s title or description in the catalog, use update_product_text; to change only a variant’s catalog price or compare-at price, use update_variant_price. Use replace_product only when several of a product’s fields or its variants must change together, since it removes what it is not sent. To change what one store shows or charges, use update_listing.',
   'For questions about Crossmart itself (what it does, plans and limits, how to connect a channel, the API or MCP), use ask_crossmart and answer from what it returns. It cannot reach a person: if the seller wants one, point them to the support email it gives.',
   'Keep tool calls few: prefer one list call with filters over many single reads.',
   'When a store refuses a listing, read why (list_store_products with state failed, get_product_stores, get_listing) and propose the fix the error asks for; explain the cause in one sentence.',

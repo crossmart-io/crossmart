@@ -59,6 +59,7 @@ export const PREVIEW_HEADLINES = {
   generateContent: (count: number, store: string): string =>
     `Write AI titles and descriptions for ${count} ${count === 1 ? 'product' : 'products'} on ${store}; they arrive as suggestions to review`,
   approveSuggestion: 'Apply an AI suggestion to its listing',
+  variantPrice: (variant: string): string => `Change the catalog price of ${variant}`,
   addStock: (units: number, reason: string): string =>
     `Add ${units} ${units === 1 ? 'unit' : 'units'} (${reason})`,
   removeStock: (units: number, reason: string): string =>

@@ -6,7 +6,6 @@ import type {
 } from '../../entities/agent-worker-views.js';
 import type { ActionPreviewFormatter } from '../action-preview-formatter.js';
 import {
-  COMPARE_AT_PRICE_LABEL,
   FROM_CATALOG_SUFFIX,
   ON_STORE,
   PREVIEW_HEADLINES,
@@ -14,7 +13,7 @@ import {
 } from '../preview.constants.js';
 import type { PreviewReader } from '../preview-reader.js';
 import type { ListingSource } from '../preview-sources.js';
-import { change, money, priceLabel } from '../preview-values.js';
+import { change, compareAtPriceLabel, money, priceLabel } from '../preview-values.js';
 
 const VARIANT_PRICE = z.object({
   variantId: z.string(),
@@ -82,7 +81,7 @@ function priceChanges(
         money(price ?? variant.rulePrice, currency),
       ),
       ...change(
-        `${COMPARE_AT_PRICE_LABEL} (${variant.title})`,
+        compareAtPriceLabel(variant.title),
         money(variant.compareAtPrice.effective, currency),
         money(compareAtPrice, currency),
       ),

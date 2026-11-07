@@ -280,6 +280,75 @@ describe('Agent Worker (e2e)', () => {
     expect(product.body.variants[0]).toMatchObject({ price: '20.00', available: 3 });
   });
 
+  it('changes one variant’s price through update_variant_price once the price change is confirmed', async () => {
+    const owner = await signUp(app, 'Price Setter');
+    const inventoryItemId = await createStockedProduct(owner);
+    const item = await request(server())
+      .get(`/api/v1/workspaces/${owner.workspaceId}/inventory-items/${inventoryItemId}`)
+      .set('Cookie', owner.cookie);
+    const { productId, variantId } = item.body;
+    const conversationId = await startConversation(owner);
+    ai.replyWith([
+      toolUse('update_variant_price', {
+        productId,
+        variantId,
+        price: '17.50',
+        compareAtPrice: '20.00',
+      }),
+    ]).replyWith([text('Repriced.')]);
+
+    const events = parseEvents((await send(owner, conversationId, 'Put the mug on sale')).text);
+    const action = firstOf(events, AgentWorkerEventType.ActionProposed).action;
+    expect(action).toMatchObject({
+      risks: ['price_change'],
+      preview: {
+        headline: expect.stringMatching(/^Change the catalog price of MUG-/),
+        changes: [
+          { label: expect.stringMatching(/^Price \(MUG-/), before: '$20.00', after: '$17.50' },
+          { label: expect.stringMatching(/^Compare-at price/), before: 'none', after: '$20.00' },
+        ],
+      },
+    });
+    expect((await decide(owner, conversationId, [action?.id ?? ''])).status).toBe(
+      HttpStatus.BAD_REQUEST,
+    );
+    await request(server())
+      .post(`${conversationsOf(owner)}/${conversationId}/decision`)
+      .set('Cookie', owner.cookie)
+      .send({ approvedActionIds: [action?.id], confirmHighRisk: true });
+
+    const product = await request(server())
+      .get(`/api/v1/workspaces/${owner.workspaceId}/products/${productId}`)
+      .set('Cookie', owner.cookie);
+    expect(product.body.title).toBe('Stoneware Mug');
+    expect(product.body.variants[0]).toMatchObject({
+      price: '17.50',
+      compareAtPrice: '20.00',
+      available: 3,
+    });
+  });
+
+  it('refuses an invalid, empty or foreign variant price edit', async () => {
+    const owner = await signUp(app, 'Variant Owner');
+    const stranger = await signUp(app, 'Variant Stranger');
+    const item = await request(server())
+      .get(
+        `/api/v1/workspaces/${owner.workspaceId}/inventory-items/${await createStockedProduct(owner)}`,
+      )
+      .set('Cookie', owner.cookie);
+    const path = (user: SignedUpUser, variantId = item.body.variantId) =>
+      `/api/v1/workspaces/${user.workspaceId}/products/${item.body.productId}/variants/${variantId}`;
+    const patch = (user: SignedUpUser, body: object, variantId?: string) =>
+      request(server()).patch(path(user, variantId)).set('Cookie', user.cookie).send(body);
+
+    expect((await patch(owner, { price: '-3' })).status).toBe(HttpStatus.BAD_REQUEST);
+    expect((await patch(owner, {})).status).toBe(HttpStatus.BAD_REQUEST);
+    expect((await patch(owner, { price: '5' }, randomUUID())).status).toBe(HttpStatus.NOT_FOUND);
+    expect((await patch(stranger, { price: '5' })).status).toBe(HttpStatus.NOT_FOUND);
+    const cleared = await patch(owner, { price: '9.5', compareAtPrice: null });
+    expect(cleared.body.variants[0]).toMatchObject({ price: '9.50', compareAtPrice: null });
+  });
+
   it('refuses an empty or foreign partial product edit', async () => {
     const owner = await signUp(app, 'Patch Owner');
     const stranger = await signUp(app, 'Patch Stranger');

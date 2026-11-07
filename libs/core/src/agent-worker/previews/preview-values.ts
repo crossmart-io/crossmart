@@ -4,6 +4,7 @@ import type { AgentWorkerChange } from '../entities/agent-worker-views.js';
 import { displayValue } from '../rules/action-outcome.js';
 import { truncateWithNote } from '../rules/truncate-text.js';
 import {
+  COMPARE_AT_PRICE_LABEL,
   DEFAULT_VARIANT_NAME,
   LIST_SEPARATOR,
   NONE,
@@ -36,6 +37,11 @@ export function money(amount: unknown, currencyCode: string): string | null {
 /** "Price (Blue / Large)". */
 export function priceLabel(variant: string): string {
   return `${PRICE_LABEL} (${variant})`;
+}
+
+/** "Compare-at price (Blue / Large)". */
+export function compareAtPriceLabel(variant: string): string {
+  return `${COMPARE_AT_PRICE_LABEL} (${variant})`;
 }
 
 /** A variant by its SKU, else its options. */

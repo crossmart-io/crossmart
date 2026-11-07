@@ -74,4 +74,30 @@ describe('assessRisks', () => {
       }),
     ).toContain(AgentWorkerActionRisk.PriceChange);
   });
+
+  it('marks a variant price edit only as a price change, compare-at prices included', () => {
+    const edit = spec(AgentToolName.UpdateVariantPrice);
+    const preview = (label: string) => ({
+      target: 'Mug',
+      headline: 'Change the catalog price of MUG-1',
+      details: [],
+      changes: [{ label, before: '$48.00', after: '$43.00' }],
+    });
+    expect(
+      assessRisks({
+        spec: edit,
+        input: { price: '43.00' },
+        publishesInBatch: 0,
+        preview: preview('Price (MUG-1)'),
+      }),
+    ).toEqual([AgentWorkerActionRisk.PriceChange]);
+    expect(
+      assessRisks({
+        spec: edit,
+        input: { compareAtPrice: '43.00' },
+        publishesInBatch: 0,
+        preview: preview('Compare-at price (MUG-1)'),
+      }),
+    ).toEqual([AgentWorkerActionRisk.PriceChange]);
+  });
 });

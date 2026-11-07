@@ -18,7 +18,9 @@ const PRODUCT = {
   productType: null,
   tags: ['linen'],
   status: 'ACTIVE',
-  variants: [{ id: 'v1', sku: 'SHIRT-M', optionValues: ['M'], price: '24.00' }],
+  variants: [
+    { id: 'v1', sku: 'SHIRT-M', optionValues: ['M'], price: '48.00', compareAtPrice: null },
+  ],
 };
 const LISTING = {
   title: { product: 'Linen Shirt', effective: 'Linen Shirt – Outlet' },
@@ -143,8 +145,36 @@ describe('action preview formatters', () => {
     });
     expect(result.headline).toMatch(/left out are removed/);
     expect(result.changes).toEqual([
-      { label: 'Price (SHIRT-M)', before: '$24.00', after: '$19.00' },
+      { label: 'Price (SHIRT-M)', before: '$48.00', after: '$19.00' },
     ]);
+  });
+
+  it('shows one variant’s new prices as money, and a removed compare-at price as none', async () => {
+    const result = await preview(AgentToolName.UpdateVariantPrice, {
+      productId: PRODUCT_ID,
+      variantId: 'v1',
+      price: '43.00',
+      compareAtPrice: '48.00',
+    });
+    expect(result).toEqual({
+      target: 'Linen Shirt',
+      headline: 'Change the catalog price of SHIRT-M',
+      details: [],
+      changes: [
+        { label: 'Price (SHIRT-M)', before: '$48.00', after: '$43.00' },
+        { label: 'Compare-at price (SHIRT-M)', before: 'none', after: '$48.00' },
+      ],
+    });
+  });
+
+  it('refuses to preview a variant of another product', async () => {
+    await expect(
+      preview(AgentToolName.UpdateVariantPrice, {
+        productId: PRODUCT_ID,
+        variantId: 'v9',
+        price: '1.00',
+      }),
+    ).rejects.toThrow(/not one of/);
   });
 
   it.each([
