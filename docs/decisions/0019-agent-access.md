@@ -190,3 +190,35 @@ sandbox_claim_required`, the `restriction`, `claimExpiresAt`, and a message tell
   works in batches of 50 (at most 20 a run), and every write re-checks its conditions, so a second
   run changes nothing. Only the token's hash is stored, so the reminder carries a new link and the
   first one stops working; the reminder says so.
+
+## auth.md (added 2026-11-08)
+
+Crossmart publishes an [auth.md](https://github.com/workos/auth.md) file (WorkOS, MIT, profile
+v0.6.0) so agents that read documentation, rather than probe for 401s, find both ways in:
+OAuth for a person who has an account, and a sandbox account for one who has none.
+
+- **The file** is `https://crossmart.io/auth.md`, the path the profile names. The marketing site
+  builds it from its `src/data` constants, like `llms.txt`, and serves an identical copy at
+  `https://crossmart.io/.well-known/auth.md` for agents that look there. Both are
+  `text/markdown; charset=utf-8`. `llms.txt` links to it.
+- **`agent_auth` in the authorization server metadata.** Every copy of the RFC 8414 document
+  (`/.well-known/oauth-authorization-server`, with and without `/api/auth`, and
+  `/api/auth/.well-known/oauth-authorization-server`) carries the profile's block:
+  `skill` (the file's URL, `AGENT_AUTH_SKILL_URL`), `identity_types_supported: []`, and the
+  extension field `sandbox_account_endpoint` (`POST /api/v1/sandbox-accounts`). Revocation is the
+  standard top-level `revocation_endpoint` (RFC 7009) Better Auth already advertises.
+- **What is not implemented.** The profile's own registration surface (`/agent/identity` with
+  `anonymous`, `service_auth` or ID-JAG `identity_assertion`, its claim ceremony with a
+  `user_code`, the `jwt-bearer` and `urn:workos:agent-auth:grant-type:claim` grants, and the
+  Security Event Token receiver) does not exist here. Sandbox accounts differ from its anonymous
+  flow: they need the person's email, return an API key rather than an access token, and are
+  claimed from an emailed link. So the block lists no identity types, and agents that follow the
+  profile read `skill` instead of calling endpoints that are not there. Adopting the profile's
+  registration types would be a separate decision.
+- **Every 401 of the API now names a challenge**, as the MCP server's do:
+  `WWW-Authenticate: Bearer resource_metadata="<MCP server's Protected Resource Metadata>",
+scope="…"`, with `error="invalid_token"` when a key or token was sent and refused
+  (`BearerChallengeFilter`). It names the MCP server's metadata because the API accepts access
+  tokens issued for that resource. A client that insists the metadata's `resource` equal the URL
+  it called (RFC 9728 §3.3) will not use it; auth.md explains the way in for those. The challenge
+  is built once, in `@crossmart/core` (`bearerChallenge`), for both servers.

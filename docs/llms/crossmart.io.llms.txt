@@ -26,6 +26,7 @@ Do not state prices, plan limits, customers or numbers that are not on these pag
 - [Developer overview](https://docs.crossmart.io/developers/): authentication, workspaces, errors, pagination, rate limits
 - [Quickstart](https://docs.crossmart.io/developers/quickstart/): from product to store to order
 - [MCP server](https://docs.crossmart.io/developers/mcp/): connect Claude, ChatGPT, Cursor and other agents
+- [auth.md](https://crossmart.io/auth.md): how an AI agent signs in with OAuth, or opens a sandbox account for a person who has none
 - [API reference](https://docs.crossmart.io/developers/api/): every endpoint, from the OpenAPI spec
 - [OpenAPI spec](https://api.crossmart.io/api/docs-json)
 

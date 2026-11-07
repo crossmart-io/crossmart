@@ -122,6 +122,24 @@ days; an account still unclaimed after 14 days is deleted with everything in it.
 password from the link, or sign in and claim from the app) makes it a normal account, and the
 agent's key keeps working. `GET /api/v1/workspaces/{id}` shows `sandbox.claimExpiresAt` until then.
 
+### Discovery for agents
+
+An agent that knows nothing about Crossmart can find its way in from these documents:
+
+| Document                               | URL                                                                                                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| auth.md (how to sign up and sign in)   | [crossmart.io/auth.md](https://crossmart.io/auth.md), also at `https://crossmart.io/.well-known/auth.md`                 |
+| Protected Resource Metadata (RFC 9728) | `https://mcp.crossmart.io/.well-known/oauth-protected-resource/mcp`                                                      |
+| Authorization server (RFC 8414)        | `https://api.crossmart.io/.well-known/oauth-authorization-server/api/auth`, with auth.md's `agent_auth` block            |
+| A2A Agent Card                         | `https://api.crossmart.io/.well-known/agent-card.json` (see [A2A](a2a.md))                                               |
+| llms.txt                               | [crossmart.io/llms.txt](https://crossmart.io/llms.txt), [docs.crossmart.io/llms.txt](https://docs.crossmart.io/llms.txt) |
+
+Every `401` from the API and the MCP server carries
+`WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource/mcp", scope="…"`
+(with `error="invalid_token"` when the key or token sent was refused). The Protected Resource
+Metadata is the authoritative list of endpoints; auth.md explains them in prose
+([ADR 0019](../decisions/0019-agent-access.md#authmd-added-2026-11-08)).
+
 ### Sessions
 
 The dashboard signs people in with a session cookie (Better Auth, under `/api/auth`). Use API keys
@@ -137,7 +155,8 @@ Errors use the HTTP status and a JSON body:
 
 - **400**: invalid input. `message` is a list with one entry per problem:
   `["title should not be empty", "variants must contain at least 1 elements"]`.
-- **401**: the key or token is missing, wrong, revoked or expired.
+- **401**: the key or token is missing, wrong, revoked or expired. The `WWW-Authenticate` header
+  points to where an agent signs in (see [discovery](#discovery-for-agents)).
 - **402**: the plan doesn't allow it. The body adds a machine-readable `code`
   (`plan_limit_reached` or `plan_feature_not_included`), the `feature`, the `plan`, its `limit`
   and current `usage`, so you can tell the user what to upgrade. On Crossmart Cloud, `code:
