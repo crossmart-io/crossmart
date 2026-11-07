@@ -59,7 +59,8 @@ agent with the user's name. Members see and disconnect their agents under Settin
 | `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                    |
 | `webhooks:write`    | `list_webhook_endpoints`, `create_webhook_endpoint`                                                                                                                                         |
 
-`ask_crossmart` and `get_platform_health` need no scope: they read nothing of the workspace.
+`ask_crossmart`, `get_ask_escalation` and `get_platform_health` need no scope. `ask_crossmart` reads the
+workspace only through the lookups its connection's permissions allow (ADR 0025).
 
 **Or open a sandbox account** (ADR 0019, part 2). A local server started without
 `CROSSMART_API_KEY` adds `create_account` (`ANONYMOUS_TOOLS` in `tools/account.tools.ts`), which
@@ -106,7 +107,8 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
 | `list_webhook_endpoints`    | The URLs the workspace sends events to, and which events each gets     |        |
 | `create_webhook_endpoint`   | Adds a URL to send events to; returns its signing secret once          | Yes    |
-| `ask_crossmart`             | Answers a question about Crossmart from its public docs (ADR 0022)     |        |
+| `ask_crossmart`             | Answers about Crossmart (and, read-only, the workspace); can escalate  |        |
+| `get_ask_escalation`        | Reads the team's reply to an escalated question (ADR 0025)             |        |
 | `create_account`            | Opens a sandbox account; only offered without a credential (ADR 0019)  | Yes    |
 
 Tools that only read carry `readOnlyHint`; `replace_product`, `remove_product_from_store` and

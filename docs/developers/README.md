@@ -14,6 +14,7 @@ public REST API, so your scripts, integrations and AI agents can do it too.
   signed, with retries; verify them with the SDKs.
 - **[n8n](n8n.md):** the `n8n-nodes-crossmart` community nodes, with a trigger for new orders, stock changes and failed listings.
 - **[MCP server](mcp.md):** what AI agents can do with Crossmart, and its tools.
+- **[A2A](a2a.md):** Crossmart's Agent Card and its Agent2Agent (A2A 1.0) endpoint.
 - **[Connect your AI agent](agents/README.md):** setup guides for Claude, Cursor, VS Code, Codex,
   Gemini CLI, OpenClaw and more, plus the [Crossmart agent skill](../../skills/README.md).
 
@@ -188,9 +189,23 @@ curl https://api.crossmart.io/api/v1/ask -H 'content-type: application/json' \
 
 The answer has an `outcome` (`answered`, `unknown` or `out_of_scope`), the `answer`, its
 `citations` (`title`, `url`), a `confidence` and `handoff`, which is true when a person should take
-over at `supportEmail`. It never sees any workspace's data. Anonymous callers may ask 5 questions a
-minute and 50 a day per IP address; with an API key or a session, 20 and 500. AI agents can call it
-through the MCP tool `ask_crossmart`.
+over at `supportEmail`. Anonymous callers may ask 5 questions a minute and 50 a day per IP address;
+with an API key or a session, 20 and 500. AI agents can call it through the MCP tool
+`ask_crossmart`, or over [A2A](a2a.md).
+
+- **Follow-ups.** The answer has a `conversationId`; send it with the next question to continue
+  the conversation. Only you can continue it, for 24 hours after its last question.
+- **Your own workspace.** With an API key or an agent token (or a session and a `workspaceId`),
+  Ask can also look up that workspace, read-only and within your permissions: why a listing
+  failed, which stores are connected, your plan and usage. It never changes anything.
+- **A person.** When `escalation.offered` is true, `POST /api/v1/ask/escalations` with the
+  `conversationId` (and optionally `contactEmail` and an https `callbackUrl`) hands the
+  conversation to the Crossmart team, up to 5 times a day. Keep the returned ticket `id`: read the
+  reply with `GET /api/v1/ask/escalations/{id}`. The reply is also emailed, and POSTed to the
+  callback signed like a [webhook](webhooks.md) (event `ask.escalation.replied`) with the
+  `callbackSecret` returned once.
+- **Privacy.** Questions and answers are stored for 180 days so the team can improve the docs,
+  with obvious secrets and email addresses redacted and no IP address. Do not paste secrets.
 
 ## Asynchronous work
 

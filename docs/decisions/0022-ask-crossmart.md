@@ -1,6 +1,7 @@
 # ADR 0022: Ask Crossmart: grounded Q&A for sellers and agents
 
-- Status: Accepted
+- Status: Accepted, amended by [ADR 0025](0025-agent-to-agent.md) (conversations, stored questions,
+  escalation, account questions and A2A)
 - Date: 2026-11-06
 
 ## Context
