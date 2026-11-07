@@ -168,6 +168,15 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
     operation: 'Creating the workspace',
     describe: (entry) => `Created the workspace${named(entry)}`,
   },
+  [ActivityAction.SandboxCreated]: {
+    operation: 'Opening the sandbox account',
+    describe: (entry) =>
+      withDetail(`An AI agent opened${named(entry)} as a sandbox account`, entry),
+  },
+  [ActivityAction.SandboxClaimed]: {
+    operation: 'Claiming the sandbox account',
+    describe: (entry) => `Claimed the sandbox account${named(entry)}`,
+  },
   [ActivityAction.WorkspaceRenamed]: {
     operation: 'Renaming the workspace',
     describe: (entry) =>

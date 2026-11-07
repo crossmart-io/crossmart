@@ -121,6 +121,7 @@ suggestions). The agent is offered only the tools those scopes cover. The
 | `list_suggestions`          | Proposed changes with current and proposed value and rationale         |              |
 | `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   |     Yes      |
 | `ask_crossmart`             | Answers questions about Crossmart itself from its docs, with sources   |              |
+| `create_account`            | Opens a sandbox account for a user who has none (local server only)    |     Yes      |
 
 Read-only tools are marked `readOnlyHint`, and `replace_product`, `remove_product_from_store` and
 `save_item_specifics` are marked `destructiveHint`, so clients can ask before running them. When the
@@ -150,6 +151,21 @@ otherwise shows the merchant `displayReason`.
 
 Orders from every channel, eBay included, share one API: `list_orders` returns them all, each with
 its `channel`, and `connectionId` narrows them to one store.
+
+## No account yet?
+
+Started without a key, the local server (`CROSSMART_API_KEY` unset) also offers `create_account`:
+give it the user's email and a store name, and it opens a **sandbox account** for them, emails them
+a link to claim it, and from then on works in that account with the key it got. The answer's
+`apiKey` also works as `Authorization: Bearer <key>` with the remote server. In a sandbox the agent
+can build products (up to 100), stock and drafts; connecting stores, publishing, inviting people
+and Crossmart AI wait until the user claims it, and the tools say so (`sandbox_claim_required`).
+An unclaimed account is deleted after 14 days. If the email already has an account, nothing is
+opened: ask the user to sign in with OAuth. See
+[sandbox accounts](README.md#sandbox-accounts-for-ai-agents).
+
+The remote server (`https://mcp.crossmart.io/mcp`) does not offer `create_account`: without a
+token it answers 401, which is how MCP clients know to start the OAuth sign-in.
 
 ## What agents can't do
 

@@ -9,7 +9,8 @@ import {
   ASK_AUTHENTICATED_PER_DAY,
   ASK_AUTHENTICATED_PER_MINUTE,
 } from '../ask.constants.js';
-import { ASK_THROTTLERS, AskThrottlerGuard, clientIp } from './ask-throttler.guard.js';
+import { clientIp } from '../../common/throttling/client-ip.js';
+import { ASK_THROTTLERS, AskThrottlerGuard } from './ask-throttler.guard.js';
 
 class ExposedGuard extends AskThrottlerGuard {
   tracker(request: Partial<AuthenticatedRequest>): Promise<string> {

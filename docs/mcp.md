@@ -61,6 +61,14 @@ agent with the user's name. Members see and disconnect their agents under Settin
 
 `ask_crossmart` and `get_platform_health` need no scope: they read nothing of the workspace.
 
+**Or open a sandbox account** (ADR 0019, part 2). A local server started without
+`CROSSMART_API_KEY` adds `create_account` (`ANONYMOUS_TOOLS` in `tools/account.tools.ts`), which
+calls `POST /api/v1/sandbox-accounts`. On `outcome: created` the server adopts the returned API
+key (`CrossmartApiClient.adoptCredential`), so the session's other tools work in the new
+workspace. The remote server keeps answering 401 without a token: serving anonymous sessions there
+would stop MCP clients from starting OAuth, and every remote caller would share the MCP server's
+address for the API's per-caller limits.
+
 **Or use an API key**, for scripts and self-hosted setups: send it as `Authorization: Bearer <key>`
 or `x-api-key`. A key works in exactly one workspace, which the server finds with
 `GET /api/v1/api-key`, and every tool is offered; the key's role decides in the API.
@@ -99,6 +107,7 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `list_webhook_endpoints`    | The URLs the workspace sends events to, and which events each gets     |        |
 | `create_webhook_endpoint`   | Adds a URL to send events to; returns its signing secret once          | Yes    |
 | `ask_crossmart`             | Answers a question about Crossmart from its public docs (ADR 0022)     |        |
+| `create_account`            | Opens a sandbox account; only offered without a credential (ADR 0019)  | Yes    |
 
 Tools that only read carry `readOnlyHint`; `replace_product`, `remove_product_from_store` and
 `save_item_specifics` carry `destructiveHint`, so clients can ask before running them. When the API refuses a call, the

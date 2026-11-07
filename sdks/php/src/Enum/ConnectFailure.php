@@ -21,5 +21,6 @@ enum ConnectFailure: string
     case SessionRequired = 'session_required';
     case ChannelUnavailable = 'channel_unavailable';
     case PlanLimitReached = 'plan_limit_reached';
+    case SandboxClaimRequired = 'sandbox_claim_required';
     case Unexpected = 'unexpected';
 }

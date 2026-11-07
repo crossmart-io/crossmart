@@ -33,6 +33,7 @@ import { ListProductsQueryDto } from '../dto/list-products-query.dto.js';
 import { ProductPageDto } from '../dto/product-summary.dto.js';
 import { ProductDto } from '../dto/product.dto.js';
 import { UpdateProductDto } from '../dto/update-product.dto.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 @ApiTags(CATALOG_TAG)
 @Controller(PRODUCTS_ROUTE)
@@ -75,6 +76,7 @@ export class ProductsController {
   @RequirePermission(WorkspacePermission.EditProducts)
   @ApiOperation({ summary: 'Create a product with its variants' })
   @ApiCreatedResponse({ type: ProductDto })
+  @ApiSandboxRestrictedResponse()
   async create(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: CreateProductDto,

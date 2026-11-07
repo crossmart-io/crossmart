@@ -92,6 +92,33 @@ seller approved and to their own role, and to that workspace's routes. The SDK a
 `{ accessToken }`. Sellers see and disconnect their agents under **Settings → Connected agents**
 ([ADR 0019](../decisions/0019-agent-access.md)).
 
+### Sandbox accounts for AI agents
+
+An agent whose user has no Crossmart account yet can open one for them
+([ADR 0019](../decisions/0019-agent-access.md)), with no credentials:
+
+```bash
+curl -X POST https://api.crossmart.io/api/v1/sandbox-accounts \
+  -H 'content-type: application/json' \
+  -d '{"email": "ana@example.com", "storeName": "Ana Ceramics"}'
+```
+
+- `outcome: "created"`: the answer has `workspaceId`, an Editor `apiKey` (shown only now) and
+  `claimExpiresAt`. Crossmart emails the user a link to claim the account.
+- `outcome: "sign_in_required"`: nothing was opened and no email was sent. The answer is the same
+  for every address that already has an account, a customer's or another unclaimed sandbox's, so it
+  reveals nothing about who uses Crossmart. Ask the user to sign in and connect you with OAuth.
+- At most 5 calls an hour and 50 a day per caller address (`429` past those), and one unclaimed
+  sandbox per address.
+
+Until the user claims it, the account is a **sandbox**. Products (at most 100), stock and drafts
+work. Connecting a store, publishing, inviting people, adding workspaces and Crossmart AI answer
+`403` with `code: "sandbox_claim_required"`, the `restriction` and a message telling the agent to
+ask the user to claim the account. The claim email is sent again once, with a new link, after 3
+days; an account still unclaimed after 14 days is deleted with everything in it. Claiming (set a
+password from the link, or sign in and claim from the app) makes it a normal account, and the
+agent's key keeps working. `GET /api/v1/workspaces/{id}` shows `sandbox.claimExpiresAt` until then.
+
 ### Sessions
 
 The dashboard signs people in with a session cookie (Better Auth, under `/api/auth`). Use API keys
@@ -111,7 +138,9 @@ Errors use the HTTP status and a JSON body:
 - **402**: the plan doesn't allow it. The body adds a machine-readable `code`
   (`plan_limit_reached` or `plan_feature_not_included`), the `feature`, the `plan`, its `limit`
   and current `usage`, so you can tell the user what to upgrade.
-- **403**: the role lacks the permission.
+- **403**: the role lacks the permission, or (with `code: "sandbox_claim_required"`) the
+  workspace is an unclaimed [sandbox account](#sandbox-accounts-for-ai-agents) the user must
+  claim first.
 - **404**: not found, or not in this workspace.
 - **409**: conflicts with existing data, such as a duplicate SKU or handle.
 - **5xx**: a server problem. Safe requests (`GET`, `PUT`, `DELETE`) can be retried with backoff.

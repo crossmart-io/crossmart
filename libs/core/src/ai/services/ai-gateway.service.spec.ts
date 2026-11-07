@@ -10,6 +10,11 @@ import type { AiUsageService } from './ai-usage.service.js';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../entitlements/testing/sandbox-entitlements.js';
 
 const CONTEXT = { workspaceId: 'ws-1', feature: AiFeature.ContentGeneration };
 const REQUEST = {
@@ -29,6 +34,7 @@ function setup(provider = new FakeAiProvider()) {
     recordPlatform: vi.fn<AiUsageService['recordPlatform']>().mockResolvedValue(),
   };
   const entitlements = {
+    ...noSandboxEntitlements(),
     assertInWorkspace: vi.fn<EntitlementService['assertInWorkspace']>().mockResolvedValue(),
   };
   const gateway = new AiGateway(
@@ -91,6 +97,19 @@ describe('AiGateway', () => {
     await gateway.generate(CONTEXT, REQUEST);
 
     expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.AiCredits, 1);
+  });
+
+  it('serves no unclaimed sandbox account', async () => {
+    const { gateway, provider, entitlements } = setup();
+    entitlements.assertSandboxAllows.mockRejectedValueOnce(
+      sandboxRestricted(SandboxRestriction.GenerateContent),
+    );
+    const complete = vi.spyOn(provider, 'complete');
+
+    await expect(gateway.generate(CONTEXT, REQUEST)).rejects.toMatchObject({
+      refusal: { restriction: SandboxRestriction.GenerateContent },
+    });
+    expect(complete).not.toHaveBeenCalled();
   });
 
   it('calls no provider and meters nothing once the plan’s AI credits run out', async () => {

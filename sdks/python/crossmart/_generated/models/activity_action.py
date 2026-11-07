@@ -46,6 +46,8 @@ class ActivityAction(StrEnum):
     PRODUCT_UPDATED = "product_updated"
     PRODUCT_VIEW_CREATED = "product_view_created"
     PRODUCT_VIEW_DELETED = "product_view_deleted"
+    SANDBOX_CLAIMED = "sandbox_claimed"
+    SANDBOX_CREATED = "sandbox_created"
     STOCK_IMPORTED = "stock_imported"
     STOCK_OVERSOLD = "stock_oversold"
     SUGGESTIONS_BULK_APPROVED = "suggestions_bulk_approved"

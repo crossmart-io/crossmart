@@ -25,8 +25,18 @@ export class CrossmartApiClient {
 
   constructor(
     private readonly baseUrl: string,
-    private readonly credential: ApiCredential | undefined,
+    private credential: ApiCredential | undefined,
   ) {}
+
+  /**
+   * Starts calling with `credential` when the client has none yet, such as the key of a sandbox
+   * account the agent just opened. A client that already has one keeps it.
+   */
+  adoptCredential(credential: ApiCredential): void {
+    if (this.credential) return;
+    this.credential = credential;
+    this.workspaceId = undefined;
+  }
 
   async call(call: ApiCall): Promise<unknown> {
     const path = call.path.includes(WORKSPACE_PLACEHOLDER)

@@ -5,6 +5,7 @@ import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type { NewWorkspace } from '../repositories/workspace.repository.js';
 import type { WorkspaceChanges, WorkspaceInput } from '../entities/new-workspace.js';
@@ -16,7 +17,7 @@ import {
   type WorkspaceWithOrganization,
 } from '../repositories/workspace.repository.js';
 import { uniqueSlug } from '../rules/unique-slug.js';
-import { workspaceDisplayName } from '../rules/workspace-display-name.js';
+import { toWorkspaceAccess } from '../rules/workspace-access.js';
 import {
   DEFAULT_WORKSPACE_CURRENCY,
   MAX_WORKSPACES_PER_ORGANIZATION,
@@ -53,7 +54,7 @@ export class WorkspacesService {
     };
     const workspace = await this.workspaces.create(record);
     await this.record(workspace, Actor.user(ownerId), ActivityAction.WorkspaceCreated);
-    return toAccess(workspace, resolveRole(WorkspaceRole.OWNER, null));
+    return toWorkspaceAccess(workspace, resolveRole(WorkspaceRole.OWNER, null));
   }
 
   /** Renames the workspace or sets its time zone, recording each change. */
@@ -79,10 +80,14 @@ export class WorkspacesService {
         workspace.timeZone,
       );
     }
-    return toAccess(workspace, access);
+    return toWorkspaceAccess(workspace, access);
   }
 
   private async assertCanCreate(organizationId: string, userId: string): Promise<void> {
+    await this.entitlements.assertSandboxAllowsInOrganization(
+      organizationId,
+      SandboxRestriction.CreateWorkspace,
+    );
     if (!(await this.workspaces.isOrganizationOwner(organizationId, userId))) {
       throw new ForbiddenException('Only owners of a workspace here can create workspaces');
     }
@@ -107,10 +112,4 @@ export class WorkspacesService {
       ...(detail ? { detail } : {}),
     });
   }
-}
-
-function toAccess(workspace: WorkspaceWithOrganization, access: ResolvedRole): WorkspaceAccess {
-  const { id, organizationId, name, slug, currency, timeZone } = workspace;
-  const displayName = workspaceDisplayName(name, workspace.organization.name);
-  return { id, organizationId, name, displayName, slug, currency, timeZone, ...access };
 }

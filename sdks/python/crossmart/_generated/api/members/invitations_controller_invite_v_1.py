@@ -9,6 +9,7 @@ from ...client import AuthenticatedClient, Client
 from ...models.invitation_dto import InvitationDto
 from ...models.invite_member_dto import InviteMemberDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...types import Response
 
 
@@ -36,7 +37,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> InvitationDto | PlanLimitErrorDto | None:
+) -> InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
     if response.status_code == 201:
         response_201 = InvitationDto.from_dict(response.json())
 
@@ -47,6 +48,11 @@ def _parse_response(
 
         return response_402
 
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -55,7 +61,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[InvitationDto | PlanLimitErrorDto]:
+) -> Response[InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -69,7 +75,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: InviteMemberDto,
-) -> Response[InvitationDto | PlanLimitErrorDto]:
+) -> Response[InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
     """Invite someone by email
 
      Emails a link that works for 7 days. A new invitation to the same address replaces the pending one.
@@ -85,7 +91,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[InvitationDto | PlanLimitErrorDto]
+        Response[InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -105,7 +111,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: InviteMemberDto,
-) -> InvitationDto | PlanLimitErrorDto | None:
+) -> InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
     """Invite someone by email
 
      Emails a link that works for 7 days. A new invitation to the same address replaces the pending one.
@@ -121,7 +127,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        InvitationDto | PlanLimitErrorDto
+        InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
     """
 
     return sync_detailed(
@@ -136,7 +142,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: InviteMemberDto,
-) -> Response[InvitationDto | PlanLimitErrorDto]:
+) -> Response[InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
     """Invite someone by email
 
      Emails a link that works for 7 days. A new invitation to the same address replaces the pending one.
@@ -152,7 +158,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[InvitationDto | PlanLimitErrorDto]
+        Response[InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -170,7 +176,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: InviteMemberDto,
-) -> InvitationDto | PlanLimitErrorDto | None:
+) -> InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
     """Invite someone by email
 
      Emails a link that works for 7 days. A new invitation to the same address replaces the pending one.
@@ -186,7 +192,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        InvitationDto | PlanLimitErrorDto
+        InvitationDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
     """
 
     return (

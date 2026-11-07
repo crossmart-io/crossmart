@@ -1,4 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
+import { SandboxRestriction } from '../../../entitlements/enums/sandbox-restriction.enum.js';
+import type { EntitlementService } from '../../../entitlements/services/entitlement.service.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../../entitlements/testing/sandbox-entitlements.js';
 import type { CatalogFileParser, ImportIssue } from '../../entities/catalog-import.js';
 import type { ProductDraft } from '../../entities/product-draft.js';
 import { CatalogImportFormat } from '../../enums/catalog-import-format.enum.js';
@@ -29,12 +35,14 @@ function createStrategy(parsed: ProductDraft[], parseIssues: ImportIssue[] = [])
     parse: () => parseResult(parsed, parseIssues),
   };
   const products = repository as unknown as ProductRepository;
+  const entitlements = noSandboxEntitlements();
   const strategy = new CreateProductsStrategy(
     [parser],
     products,
     new CatalogConflictsService(products),
+    entitlements as unknown as EntitlementService,
   );
-  return { strategy, repository };
+  return { strategy, repository, entitlements };
 }
 
 describe('CreateProductsStrategy', () => {
@@ -72,6 +80,22 @@ describe('CreateProductsStrategy', () => {
     expect(repository.createAll).toHaveBeenCalledWith(WORKSPACE_ID, [
       expect.objectContaining({ handle: 'new' }),
     ]);
+  });
+
+  it('creates nothing when the new products would not fit an unclaimed sandbox', async () => {
+    const { strategy, repository, entitlements } = createStrategy([
+      productDraft('one', 'O-1'),
+      productDraft('two', 'T-1'),
+    ]);
+    entitlements.assertProductRoom.mockRejectedValue(
+      sandboxRestricted(SandboxRestriction.AddProducts),
+    );
+
+    await expect(
+      strategy.run(WORKSPACE_ID, importRequest(CatalogImportFormat.ShopifyCsv)),
+    ).rejects.toMatchObject({ refusal: { restriction: SandboxRestriction.AddProducts } });
+    expect(entitlements.assertProductRoom).toHaveBeenCalledWith(WORKSPACE_ID, 2);
+    expect(repository.createAll).not.toHaveBeenCalled();
   });
 
   it('writes nothing when every product is skipped', async () => {

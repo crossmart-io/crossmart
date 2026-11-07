@@ -1,5 +1,11 @@
 import type { ResolvedRole } from './role-assignment.js';
 
+/** An unclaimed sandbox account (ADR 0019): an AI agent opened it, and its owner must claim it. */
+export interface SandboxState {
+  /** When the claim link stops working and the account is deleted. */
+  claimExpiresAt: Date;
+}
+
 /** A workspace as seen by one member: the workspace plus that member's role and permissions. */
 export interface WorkspaceAccess extends ResolvedRole {
   id: string;
@@ -12,6 +18,8 @@ export interface WorkspaceAccess extends ResolvedRole {
   currency: string;
   /** IANA zone where the workspace's day starts, or null until someone sets it. */
   timeZone: string | null;
+  /** Set while the workspace is an unclaimed sandbox account; null for every other workspace. */
+  sandbox: SandboxState | null;
 }
 
 export interface WorkspaceMemberProfile extends ResolvedRole {

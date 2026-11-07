@@ -1,6 +1,6 @@
 import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
 import { accessTokenCredential, apiKeyCredential } from '../api/api-credential.js';
-import { ALL_TOOLS } from '../tools/index.js';
+import { ALL_TOOLS, ANONYMOUS_TOOLS } from '../tools/index.js';
 import { toolsFor } from './create-mcp-server.js';
 
 const names = (tools: ReturnType<typeof toolsFor>) => tools.map((tool) => tool.name);
@@ -8,6 +8,14 @@ const names = (tools: ReturnType<typeof toolsFor>) => tools.map((tool) => tool.n
 describe('toolsFor', () => {
   it('offers every tool to an API key', () => {
     expect(toolsFor(apiKeyCredential('cm_key'))).toEqual(ALL_TOOLS);
+  });
+
+  it('offers create_account only to a server started without a key', () => {
+    expect(toolsFor(undefined)).toEqual([...ALL_TOOLS, ...ANONYMOUS_TOOLS]);
+    expect(names(toolsFor(apiKeyCredential('cm_key')))).not.toContain('create_account');
+    expect(
+      names(toolsFor(accessTokenCredential('a.b.c', 'ws-1', [AgentScope.CatalogWrite]))),
+    ).not.toContain('create_account');
   });
 
   it('offers an agent only the tools its scopes cover', () => {

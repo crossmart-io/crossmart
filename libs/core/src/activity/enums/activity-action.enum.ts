@@ -47,6 +47,13 @@ export enum ActivityAction {
   /** A member removed themselves. */
   MemberLeft = 'member_left',
   WorkspaceCreated = 'workspace_created',
+  /**
+   * An AI agent opened the account as a sandbox for someone without one (ADR 0019); the actor is
+   * the API key it was given, and the detail the address the claim link went to.
+   */
+  SandboxCreated = 'sandbox_created',
+  /** The owner claimed the sandbox account, which is a normal workspace from then on. */
+  SandboxClaimed = 'sandbox_claimed',
   /** The detail names the previous name. */
   WorkspaceRenamed = 'workspace_renamed',
   /** The detail names the new time zone. */

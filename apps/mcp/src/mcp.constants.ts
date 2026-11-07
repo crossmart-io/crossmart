@@ -30,6 +30,8 @@ export const CURRENT_API_KEY_PATH = `${API_PREFIX}/api-key`;
 export const API_HEALTH_PATH = `${API_PREFIX}/health`;
 /** Ask Crossmart; it needs no workspace, and takes calls without a key. */
 export const ASK_PATH = `${API_PREFIX}/ask`;
+/** Opens a sandbox account for someone without one (ADR 0019); it takes calls without a key. */
+export const SANDBOX_ACCOUNTS_PATH = `${API_PREFIX}/sandbox-accounts`;
 export const API_KEY_HEADER = 'x-api-key';
 export const AUTHORIZATION_HEADER = 'authorization';
 export const BEARER_PREFIX = 'Bearer ';
@@ -53,6 +55,9 @@ export const JSON_INDENTATION = 2;
 export const MAX_PAGE_SIZE = 100;
 export const SEARCH_MAX_LENGTH = 200;
 export const NOTE_MAX_LENGTH = 500;
+/** Sandbox account input limits; the API's own. */
+export const EMAIL_MAX_LENGTH = 254;
+export const STORE_NAME_MAX_LENGTH = 200;
 /** Products one generate_content call may name; the API's own limit. */
 export const CONTENT_GENERATION_MAX_PRODUCTS = 100;
 

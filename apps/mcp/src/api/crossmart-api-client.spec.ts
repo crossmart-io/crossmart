@@ -97,4 +97,19 @@ describe('CrossmartApiClient', () => {
       code: 'plan_limit_reached',
     });
   });
+
+  it('adopts a credential only when it has none', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse({})));
+    vi.stubGlobal('fetch', fetchMock);
+    const anonymous = new CrossmartApiClient(API_URL, undefined);
+    const keyed = new CrossmartApiClient(API_URL, apiKeyCredential('cm_old'));
+
+    anonymous.adoptCredential(apiKeyCredential('cm_new'));
+    keyed.adoptCredential(apiKeyCredential('cm_new'));
+    await anonymous.call({ method: HttpMethod.Get, path: '/api/v1/x' });
+    await keyed.call({ method: HttpMethod.Get, path: '/api/v1/x' });
+
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ 'x-api-key': 'cm_new' });
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ 'x-api-key': 'cm_old' });
+  });
 });

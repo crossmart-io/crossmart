@@ -12,6 +12,7 @@ from ..models.workspace_role import WorkspaceRole
 
 if TYPE_CHECKING:
     from ..models.custom_role_ref_dto import CustomRoleRefDto
+    from ..models.sandbox_state_dto import SandboxStateDto
 
 
 T = TypeVar("T", bound="WorkspaceDto")
@@ -28,6 +29,8 @@ class WorkspaceDto:
         slug (str):
         currency (str): ISO 4217 code of the catalog prices Example: USD.
         time_zone (None | str): IANA time zone that reports follow; null until set Example: Asia/Jerusalem.
+        sandbox (None | SandboxStateDto): Set while the workspace is an unclaimed sandbox account an AI agent opened: it
+            cannot connect stores, publish or invite people until claimed. Null for every other workspace.
         role (WorkspaceRole): Your role here
         custom_role (CustomRoleRefDto | None): The workspace’s own role, when `role` is CUSTOM
         permissions (list[WorkspacePermission]): What your role lets you do here. Check these, not the role, to adapt a
@@ -41,6 +44,7 @@ class WorkspaceDto:
     slug: str
     currency: str
     time_zone: None | str
+    sandbox: None | SandboxStateDto
     role: WorkspaceRole
     custom_role: CustomRoleRefDto | None
     permissions: list[WorkspacePermission]
@@ -48,6 +52,7 @@ class WorkspaceDto:
 
     def to_dict(self) -> dict[str, Any]:
         from ..models.custom_role_ref_dto import CustomRoleRefDto
+        from ..models.sandbox_state_dto import SandboxStateDto
 
         id = str(self.id)
 
@@ -63,6 +68,12 @@ class WorkspaceDto:
 
         time_zone: None | str
         time_zone = self.time_zone
+
+        sandbox: dict[str, Any] | None
+        if isinstance(self.sandbox, SandboxStateDto):
+            sandbox = self.sandbox.to_dict()
+        else:
+            sandbox = self.sandbox
 
         role = self.role.value
 
@@ -88,6 +99,7 @@ class WorkspaceDto:
                 "slug": slug,
                 "currency": currency,
                 "timeZone": time_zone,
+                "sandbox": sandbox,
                 "role": role,
                 "customRole": custom_role,
                 "permissions": permissions,
@@ -99,6 +111,7 @@ class WorkspaceDto:
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         from ..models.custom_role_ref_dto import CustomRoleRefDto
+        from ..models.sandbox_state_dto import SandboxStateDto
 
         d = dict(src_dict)
         id = UUID(d.pop("id"))
@@ -119,6 +132,21 @@ class WorkspaceDto:
             return cast(None | str, data)
 
         time_zone = _parse_time_zone(d.pop("timeZone"))
+
+        def _parse_sandbox(data: object) -> None | SandboxStateDto:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                sandbox_type_0 = SandboxStateDto.from_dict(data)
+
+                return sandbox_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | SandboxStateDto, data)
+
+        sandbox = _parse_sandbox(d.pop("sandbox"))
 
         role = WorkspaceRole(d.pop("role"))
 
@@ -152,6 +180,7 @@ class WorkspaceDto:
             slug=slug,
             currency=currency,
             time_zone=time_zone,
+            sandbox=sandbox,
             role=role,
             custom_role=custom_role,
             permissions=permissions,

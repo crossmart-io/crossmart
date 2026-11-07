@@ -55,6 +55,8 @@ from .channel_product_state import ChannelProductState
 from .channel_type import ChannelType
 from .channel_variant_dto import ChannelVariantDto
 from .choose_channel_category_dto import ChooseChannelCategoryDto
+from .claim_sandbox_dto import ClaimSandboxDto
+from .claimed_sandbox_dto import ClaimedSandboxDto
 from .compare_at_mode import CompareAtMode
 from .connect_failure import ConnectFailure
 from .connection_sales_dto import ConnectionSalesDto
@@ -67,6 +69,7 @@ from .create_content_draft_dto import CreateContentDraftDto
 from .create_media_dto import CreateMediaDto
 from .create_product_dto import CreateProductDto
 from .create_product_view_dto import CreateProductViewDto
+from .create_sandbox_account_dto import CreateSandboxAccountDto
 from .create_variant_dto import CreateVariantDto
 from .create_webhook_endpoint_dto import CreateWebhookEndpointDto
 from .create_workspace_dto import CreateWorkspaceDto
@@ -259,6 +262,13 @@ from .sales_range import SalesRange
 from .sales_report_dto import SalesReportDto
 from .sales_store_dto import SalesStoreDto
 from .sales_totals_dto import SalesTotalsDto
+from .sandbox_account_dto import SandboxAccountDto
+from .sandbox_claim_preview_dto import SandboxClaimPreviewDto
+from .sandbox_claim_token_dto import SandboxClaimTokenDto
+from .sandbox_opening_outcome import SandboxOpeningOutcome
+from .sandbox_restricted_error_dto import SandboxRestrictedErrorDto
+from .sandbox_restriction import SandboxRestriction
+from .sandbox_state_dto import SandboxStateDto
 from .save_item_specifics_dto import SaveItemSpecificsDto
 from .selection_preview_dto import SelectionPreviewDto
 from .shopify_location_dto import ShopifyLocationDto
@@ -374,6 +384,8 @@ __all__ = (
     "ChannelType",
     "ChannelVariantDto",
     "ChooseChannelCategoryDto",
+    "ClaimSandboxDto",
+    "ClaimedSandboxDto",
     "CompareAtMode",
     "ConnectFailure",
     "ConnectionSalesDto",
@@ -386,6 +398,7 @@ __all__ = (
     "CreateMediaDto",
     "CreateProductDto",
     "CreateProductViewDto",
+    "CreateSandboxAccountDto",
     "CreateVariantDto",
     "CreateWebhookEndpointDto",
     "CreateWorkspaceDto",
@@ -534,6 +547,13 @@ __all__ = (
     "SalesReportDto",
     "SalesStoreDto",
     "SalesTotalsDto",
+    "SandboxAccountDto",
+    "SandboxClaimPreviewDto",
+    "SandboxClaimTokenDto",
+    "SandboxOpeningOutcome",
+    "SandboxRestrictedErrorDto",
+    "SandboxRestriction",
+    "SandboxStateDto",
     "SaveItemSpecificsDto",
     "SelectionPreviewDto",
     "ShopifyLocationDto",

@@ -21,6 +21,11 @@ import type { WorkspaceAccessService } from '../../tenancy/services/workspace-ac
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../entitlements/testing/sandbox-entitlements.js';
 import type { OAuthCallbackBrowser } from '../entities/oauth-state.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 import type { ChannelConnectionRepository } from '../repositories/channel-connection.repository.js';
@@ -57,6 +62,7 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
       .mockResolvedValue(false),
   };
   const entitlements = {
+    ...noSandboxEntitlements(),
     enforced: true,
     assertInWorkspace: vi.fn<EntitlementService['assertInWorkspace']>().mockResolvedValue(),
   };
@@ -178,6 +184,22 @@ describe('ChannelAuthorizationService', () => {
       expect(entitlements.assertInWorkspace).toHaveBeenCalledWith(
         WORKSPACE_ID,
         Feature.ChannelConnections,
+      );
+    });
+
+    it('refuses an unclaimed sandbox account, whatever the plan', async () => {
+      const { service, entitlements } = setup();
+      entitlements.enforced = false;
+      entitlements.assertSandboxAllows.mockRejectedValueOnce(
+        sandboxRestricted(SandboxRestriction.ConnectChannel),
+      );
+
+      await expect(
+        service.start(WORKSPACE_ID, USER_ID, { channel: ChannelType.Shopify, accountHandle: 'x' }),
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
+      expect(entitlements.assertSandboxAllows).toHaveBeenCalledWith(
+        WORKSPACE_ID,
+        SandboxRestriction.ConnectChannel,
       );
     });
 

@@ -1,9 +1,12 @@
 import { type ExecutionContext, Injectable, type OnModuleInit } from '@nestjs/common';
 import { ThrottlerGuard, type ThrottlerOptions } from '@nestjs/throttler';
-import { CLIENT_IP_HEADERS } from '../../auth/auth.constants.js';
 import type { AuthenticatedRequest } from '../../auth/entities/principal.js';
+import { clientIp } from '../../common/throttling/client-ip.js';
 import { principalTracker } from '../../common/throttling/principal-tracker.js';
-import { TRACKER_SEPARATOR } from '../../common/throttling/throttling.constants.js';
+import {
+  IP_TRACKER_KIND,
+  TRACKER_SEPARATOR,
+} from '../../common/throttling/throttling.constants.js';
 import {
   ASK_ANONYMOUS_PER_DAY,
   ASK_ANONYMOUS_PER_MINUTE,
@@ -13,8 +16,6 @@ import {
   ASK_DAY_WINDOW_MS,
   ASK_MINUTE_THROTTLER,
   ASK_MINUTE_WINDOW_MS,
-  IP_TRACKER_KIND,
-  UNKNOWN_CLIENT_IP,
 } from '../ask.constants.js';
 
 function isAuthenticated(context: ExecutionContext): boolean {
@@ -40,15 +41,6 @@ export const ASK_THROTTLERS: ThrottlerOptions[] = [
     limit: limitFor(ASK_ANONYMOUS_PER_DAY, ASK_AUTHENTICATED_PER_DAY),
   },
 ];
-
-/** The caller's address as the edge proxy reports it, else the socket's. */
-export function clientIp(request: AuthenticatedRequest): string {
-  for (const header of CLIENT_IP_HEADERS) {
-    const value = request.header(header);
-    if (value) return value.trim();
-  }
-  return request.ip ?? UNKNOWN_CLIENT_IP;
-}
 
 /**
  * Rate limits for Ask Crossmart. Anonymous callers are tracked by IP address, identified ones

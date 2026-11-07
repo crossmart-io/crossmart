@@ -35,6 +35,7 @@ model User {
   oauthRefreshTokens   OauthRefreshToken[]
   oauthAccessTokens    OauthAccessToken[]
   oauthConsents        OauthConsent[]
+  sandboxAccount       SandboxAccount?
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
@@ -299,6 +300,8 @@ model Organization {
   name         String
   workspaces   Workspace[]
   subscription OrganizationSubscription?
+  /// Set while an AI agent's sandbox account awaits its owner, and kept once claimed (ADR 0019).
+  sandbox      SandboxAccount?
   createdAt    DateTime                  @default(now()) @map("created_at")
   updatedAt    DateTime                  @updatedAt @map("updated_at")
 
@@ -331,6 +334,7 @@ model Workspace {
   webhookEndpoints  WebhookEndpoint[]
   webhookEvents     WebhookEvent[]
   webhookDeliveries WebhookDelivery[]
+  sandboxAccount    SandboxAccount?
   createdAt         DateTime              @default(now()) @map("created_at")
   updatedAt         DateTime              @updatedAt @map("updated_at")
 
@@ -427,6 +431,34 @@ model ApiKey {
 
   @@index([workspaceId])
   @@map("api_keys")
+}
+
+/// An account an AI agent opened for someone with no Crossmart account yet (ADR 0019): a user
+/// without a password, an organization and its one workspace, which is a sandbox until the person
+/// claims it. Only a SHA-256 hash of the claim link's token is stored. While `claimedAt` is null,
+/// `EntitlementService` refuses what a sandbox may not do, and the sweep deletes it all once
+/// `expiresAt` passes. The row stays after the claim, so a used link never works again.
+model SandboxAccount {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organizationId     String       @unique @map("organization_id") @db.Uuid
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workspaceId        String       @unique @map("workspace_id") @db.Uuid
+  workspace          Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// The person the account is for, who signs in once they claim it.
+  userId             String       @unique @map("user_id") @db.Uuid
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Replaced when the reminder is sent, so only the newest emailed link works.
+  claimTokenHash     String       @unique @map("claim_token_hash")
+  expiresAt          DateTime     @map("expires_at")
+  claimEmailSentAt   DateTime     @map("claim_email_sent_at")
+  /// When the one reminder went out; null until then.
+  claimEmailResentAt DateTime?    @map("claim_email_resent_at")
+  claimedAt          DateTime?    @map("claimed_at")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  @@index([claimedAt, expiresAt])
+  @@map("sandbox_accounts")
 }
 
 // ─── Plans and entitlements ───────────────────────────────────────────────────

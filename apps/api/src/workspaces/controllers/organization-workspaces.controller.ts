@@ -12,6 +12,7 @@ import {
   WORKSPACES_TAG,
 } from '../workspaces.constants.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 @ApiTags(WORKSPACES_TAG)
 @ApiCookieAuth()
@@ -28,6 +29,7 @@ export class OrganizationWorkspacesController {
   })
   @ApiCreatedResponse({ type: WorkspaceDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   async create(
     @Param(ORGANIZATION_ID_PARAM, ParseUUIDPipe) organizationId: string,
     @Body() body: CreateWorkspaceDto,

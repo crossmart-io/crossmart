@@ -25,7 +25,7 @@ from .._generated.models import (
     SortDirection,
     UpdateProductDto,
 )
-from .._response import ensure_success, translate_transport_errors, unwrap
+from .._response import ensure_success, translate_transport_errors, unwrap, unwrap_as
 from .._utils import Id, as_model, as_str, optional_uuid, or_unset
 from ..pagination import Page, aiterate_pages, iterate_pages
 
@@ -118,7 +118,7 @@ class Products(SyncResource):
             response = products_controller_create_v_1.sync_detailed(
                 self._workspace(), client=self._http, body=body
             )
-        return unwrap(response)
+        return unwrap_as(response, ProductDto)
 
     def update(self, product_id: Id, product: UpdateProductDto | Mapping[str, Any]) -> ProductDto:
         """Replaces a product (``PUT``).
@@ -187,7 +187,7 @@ class AsyncProducts(AsyncResource):
             response = await products_controller_create_v_1.asyncio_detailed(
                 await self._workspace(), client=self._http, body=body
             )
-        return unwrap(response)
+        return unwrap_as(response, ProductDto)
 
     async def update(
         self, product_id: Id, product: UpdateProductDto | Mapping[str, Any]

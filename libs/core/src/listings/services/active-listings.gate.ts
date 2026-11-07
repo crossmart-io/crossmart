@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@crossmart/database';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
 import type { EntitlementExceededException } from '../../entitlements/errors/entitlement-exceeded.exception.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import { ProductSelectionRepository } from '../repositories/product-selection.repository.js';
@@ -24,8 +25,12 @@ export class ActiveListingsGate {
     private readonly entitlements: EntitlementService,
   ) {}
 
-  /** Throws `EntitlementExceededException` (402) when publishing `where` would not fit. */
+  /**
+   * Throws `EntitlementExceededException` (402) when publishing `where` would not fit, and
+   * `SandboxRestrictedException` (403) in an unclaimed sandbox account, which publishes nothing.
+   */
   async assertRoomFor(scope: PublishScope, where: Prisma.ProductWhereInput): Promise<void> {
+    await this.entitlements.assertSandboxAllows(scope.workspaceId, SandboxRestriction.Publish);
     if (!this.entitlements.enforced) return;
     const goingLive = await this.products.count(goingLiveWhere(scope.connectionId, where));
     if (goingLive === 0) return;

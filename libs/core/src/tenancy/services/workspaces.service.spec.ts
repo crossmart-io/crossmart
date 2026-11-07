@@ -6,6 +6,11 @@ import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activ
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../entitlements/testing/sandbox-entitlements.js';
 import { resolveRole } from '../permissions/role-permissions.js';
 import type { NewWorkspace, WorkspaceRepository } from '../repositories/workspace.repository.js';
 import { MAX_WORKSPACES_PER_ORGANIZATION } from '../tenancy.constants.js';
@@ -37,7 +42,7 @@ function createService() {
     ),
   };
   const activity = new InMemoryActivityRecorder();
-  const entitlements = { assert: vi.fn().mockResolvedValue(undefined) };
+  const entitlements = { ...noSandboxEntitlements(), assert: vi.fn().mockResolvedValue(undefined) };
   const service = new WorkspacesService(
     workspaces as unknown as WorkspaceRepository,
     activity,
@@ -79,6 +84,17 @@ describe('WorkspacesService.create', () => {
     await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toBeInstanceOf(
       ConflictException,
     );
+    expect(workspaces.create).not.toHaveBeenCalled();
+  });
+
+  it('adds no workspace to an unclaimed sandbox account', async () => {
+    const { service, workspaces, entitlements } = createService();
+    entitlements.assertSandboxAllowsInOrganization.mockRejectedValueOnce(
+      sandboxRestricted(SandboxRestriction.CreateWorkspace),
+    );
+    await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toMatchObject({
+      status: HttpStatus.FORBIDDEN,
+    });
     expect(workspaces.create).not.toHaveBeenCalled();
   });
 

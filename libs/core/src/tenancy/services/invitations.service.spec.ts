@@ -12,6 +12,11 @@ import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activ
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../entitlements/testing/sandbox-entitlements.js';
 import type {
   CreatedInvitation,
   PendingInvitation,
@@ -59,7 +64,10 @@ function createService() {
     hasMember: vi.fn().mockResolvedValue(false),
     hasOrganizationMember: vi.fn().mockResolvedValue(false),
   };
-  const entitlements = { assertInWorkspace: vi.fn().mockResolvedValue(undefined) };
+  const entitlements = {
+    ...noSandboxEntitlements(),
+    assertInWorkspace: vi.fn().mockResolvedValue(undefined),
+  };
   const mailer = { send: vi.fn() };
   const activity = new InMemoryActivityRecorder();
   const repository = invitations as unknown as WorkspaceInvitationRepository;
@@ -130,6 +138,18 @@ describe('InvitationsService.invite and the plan', () => {
       status: HttpStatus.PAYMENT_REQUIRED,
     });
     expect(entitlements.assertInWorkspace).toHaveBeenCalledWith('ws-1', Feature.Members);
+    expect(invitations.replacePending).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
+  });
+
+  it('invites nobody into an unclaimed sandbox account', async () => {
+    const { service, invitations, entitlements, mailer } = createService();
+    entitlements.assertSandboxAllows.mockRejectedValueOnce(
+      sandboxRestricted(SandboxRestriction.InviteMember),
+    );
+    await expect(service.invite('ws-1', ADMIN, request, ACTOR)).rejects.toMatchObject({
+      status: HttpStatus.FORBIDDEN,
+    });
     expect(invitations.replacePending).not.toHaveBeenCalled();
     expect(mailer.send).not.toHaveBeenCalled();
   });

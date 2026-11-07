@@ -15,5 +15,7 @@ export enum ConnectFailure {
   ChannelUnavailable = 'channel_unavailable',
   /** The organization's plan has no room for another connected channel. */
   PlanLimitReached = 'plan_limit_reached',
+  /** The workspace is an unclaimed sandbox account, which connects no channel until claimed. */
+  SandboxClaimRequired = 'sandbox_claim_required',
   Unexpected = 'unexpected',
 }

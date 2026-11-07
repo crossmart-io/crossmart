@@ -1,11 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { toPermissionList, type WorkspaceAccess, WorkspacePermission } from '@crossmart/core';
+import {
+  type SandboxState,
+  toPermissionList,
+  type WorkspaceAccess,
+  WorkspacePermission,
+} from '@crossmart/core';
 import { WorkspaceRole } from '@crossmart/database';
 import {
   WORKSPACE_PERMISSION_SCHEMA_NAME,
   WORKSPACE_ROLE_SCHEMA_NAME,
 } from '../workspaces.constants.js';
 import { CUSTOM_ROLE_PROPERTY, CustomRoleRefDto } from './role-assignment.dto.js';
+
+/** An unclaimed sandbox account an AI agent opened (ADR 0019). */
+export class SandboxStateDto {
+  @ApiProperty({ description: 'When the claim link stops working and the account is deleted' })
+  claimExpiresAt: Date;
+}
 
 export class WorkspaceDto {
   @ApiProperty({ format: 'uuid' })
@@ -35,6 +46,15 @@ export class WorkspaceDto {
     description: 'IANA time zone that reports follow; null until set',
   })
   timeZone: string | null;
+
+  @ApiProperty({
+    type: SandboxStateDto,
+    nullable: true,
+    description:
+      'Set while the workspace is an unclaimed sandbox account an AI agent opened: it cannot ' +
+      'connect stores, publish or invite people until claimed. Null for every other workspace.',
+  })
+  sandbox: SandboxState | null;
 
   @ApiProperty({
     enum: WorkspaceRole,

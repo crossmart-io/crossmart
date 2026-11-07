@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { toCountedPage } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -19,8 +14,7 @@ import { toProductDetail, toProductSummary } from '../mappers/product-view.mappe
 import { ProductUpdateWriter } from '../repositories/product-update.writer.js';
 import { ProductRepository } from '../repositories/product.repository.js';
 import { normalizeDraft } from '../rules/normalize-draft.js';
-import { findDraftProblems } from '../rules/product-draft.rules.js';
-import { CatalogConflictsService } from './catalog-conflicts.service.js';
+import { ProductAdmission } from './product-admission.js';
 import { ProductChangeReporter } from './product-change.reporter.js';
 
 const PRODUCT_NOT_FOUND = 'Product not found';
@@ -31,7 +25,7 @@ export class ProductsService {
   constructor(
     private readonly products: ProductRepository,
     private readonly updateWriter: ProductUpdateWriter,
-    private readonly conflicts: CatalogConflictsService,
+    private readonly admission: ProductAdmission,
     private readonly changes: ProductChangeReporter,
   ) {}
 
@@ -57,8 +51,7 @@ export class ProductsService {
 
   async create(workspaceId: string, input: ProductDraft, actor: Actor): Promise<ProductDetail> {
     const draft = normalizeDraft(input);
-    this.assertValid(draft);
-    await this.assertNoConflicts(workspaceId, draft);
+    await this.admission.assertCreatable(workspaceId, draft);
     const product = toProductDetail(await this.products.create(workspaceId, draft));
     await this.changes.report(workspaceId, actor, {
       action: ActivityAction.ProductCreated,
@@ -75,9 +68,8 @@ export class ProductsService {
     actor: Actor,
   ): Promise<ProductDetail> {
     const draft = normalizeDraft(input);
-    this.assertValid(draft);
     await this.assertOwnVariants(workspaceId, productId, draft);
-    await this.assertNoConflicts(workspaceId, draft, productId);
+    await this.admission.assertUpdatable(workspaceId, productId, draft);
     await this.updateWriter.update(workspaceId, productId, draft, actor);
     const product = await this.get(workspaceId, productId);
     await this.changes.report(workspaceId, actor, {
@@ -98,29 +90,6 @@ export class ProductsService {
       action: ActivityAction.ProductDeleted,
       product: { id: productId, title: deleted.title },
     });
-  }
-
-  private assertValid(draft: ProductDraft): void {
-    const [problem] = findDraftProblems(draft);
-    if (problem) {
-      throw new BadRequestException(problem.message);
-    }
-  }
-
-  private async assertNoConflicts(
-    workspaceId: string,
-    draft: ProductDraft,
-    exceptProductId?: string,
-  ): Promise<void> {
-    const { existing, skuConflicts } = await this.conflicts.check(
-      workspaceId,
-      [draft],
-      exceptProductId,
-    );
-    const [conflict] = [...existing, ...skuConflicts];
-    if (conflict) {
-      throw new ConflictException(conflict.message);
-    }
   }
 
   /** A variant id from another product (or workspace) must never be accepted. */

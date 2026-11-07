@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ActivityModule } from '../activity/activity.module.js';
+import { EntitlementsModule } from '../entitlements/entitlements.module.js';
 import { EventsModule } from '../events/events.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import { WebhookOutboxModule } from '../webhooks/webhook-outbox.module.js';
@@ -28,6 +29,7 @@ import { BulkProductActionsService } from './services/bulk-product-actions.servi
 import { CatalogConflictsService } from './services/catalog-conflicts.service.js';
 import { CatalogImportService } from './services/catalog-import.service.js';
 import { ImportJobsService } from './services/import-jobs.service.js';
+import { ProductAdmission } from './services/product-admission.js';
 import { ProductViewsService } from './services/product-views.service.js';
 import { ProductChangeReporter } from './services/product-change.reporter.js';
 import { ProductsService } from './services/products.service.js';
@@ -37,7 +39,7 @@ import { ProductsService } from './services/products.service.js';
  * and an import mode by registering its strategy.
  */
 @Module({
-  imports: [ActivityModule, EventsModule, InventoryModule, WebhookOutboxModule],
+  imports: [ActivityModule, EntitlementsModule, EventsModule, InventoryModule, WebhookOutboxModule],
   providers: [
     ProductRepository,
     ProductWebhookEvents,
@@ -48,6 +50,7 @@ import { ProductsService } from './services/products.service.js';
     BulkProductActionsService,
     ProductViewsService,
     ProductChangeReporter,
+    ProductAdmission,
     ProductsService,
     ImportJobRepository,
     ImportJobsService,

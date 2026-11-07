@@ -25,6 +25,8 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   /** What the agent should do next when the API refuses the call with one of these statuses. */
   refusalHints?: Partial<Record<RefusalStatus, string>>;
   toCall: (input: z.infer<z.ZodObject<Shape>>) => ApiCall;
+  /** Runs after the API answered, such as to start using a credential the answer carries. */
+  afterCall?: (result: unknown, client: CrossmartApiClient) => void;
 }
 
 /** Keeps each spec's input type while collecting specs of different shapes in one list. */
@@ -51,6 +53,7 @@ async function run(
 ): Promise<CallToolResult> {
   try {
     const result = await client.call(spec.toCall(input as never));
+    spec.afterCall?.(result, client);
     return { content: [{ type: 'text', text: toText(result) }] };
   } catch (error) {
     if (!(error instanceof CrossmartApiError)) throw error;

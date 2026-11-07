@@ -40,6 +40,7 @@ import {
   RETRY_PATH,
 } from '../listings.constants.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 import { ListingOverrideDto, ListingOverridePatchDto } from '../dto/listing-override.dto.js';
 import { ListingRetryErrorDto } from '../dto/listing-retry-error.dto.js';
 import { ProductChannelParamsDto } from '../dto/product-channel-params.dto.js';
@@ -126,6 +127,7 @@ export class ProductChannelsController {
       'for it (`product_not_in_store`)',
   })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   async retry(
     @Param() target: ProductChannelParamsDto,
     @CurrentActor() actor: Actor,

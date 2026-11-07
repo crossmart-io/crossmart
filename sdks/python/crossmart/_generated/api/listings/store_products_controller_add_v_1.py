@@ -7,6 +7,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...models.store_products_dto import StoreProductsDto
 from ...models.store_products_result_dto import StoreProductsResultDto
 from ...types import Response
@@ -38,7 +39,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> PlanLimitErrorDto | StoreProductsResultDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto | None:
     if response.status_code == 200:
         response_200 = StoreProductsResultDto.from_dict(response.json())
 
@@ -49,6 +50,11 @@ def _parse_response(
 
         return response_402
 
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -57,7 +63,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[PlanLimitErrorDto | StoreProductsResultDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -72,7 +78,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: StoreProductsDto,
-) -> Response[PlanLimitErrorDto | StoreProductsResultDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto]:
     """Add products to the store
 
      They stay until removed and are published at once. Refused (402) without changes when the plan has
@@ -88,7 +94,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | StoreProductsResultDto]
+        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto]
     """
 
     kwargs = _get_kwargs(
@@ -110,7 +116,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: StoreProductsDto,
-) -> PlanLimitErrorDto | StoreProductsResultDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto | None:
     """Add products to the store
 
      They stay until removed and are published at once. Refused (402) without changes when the plan has
@@ -126,7 +132,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | StoreProductsResultDto
+        PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto
     """
 
     return sync_detailed(
@@ -143,7 +149,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: StoreProductsDto,
-) -> Response[PlanLimitErrorDto | StoreProductsResultDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto]:
     """Add products to the store
 
      They stay until removed and are published at once. Refused (402) without changes when the plan has
@@ -159,7 +165,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | StoreProductsResultDto]
+        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto]
     """
 
     kwargs = _get_kwargs(
@@ -179,7 +185,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: StoreProductsDto,
-) -> PlanLimitErrorDto | StoreProductsResultDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto | None:
     """Add products to the store
 
      They stay until removed and are published at once. Refused (402) without changes when the plan has
@@ -195,7 +201,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | StoreProductsResultDto
+        PlanLimitErrorDto | SandboxRestrictedErrorDto | StoreProductsResultDto
     """
 
     return (

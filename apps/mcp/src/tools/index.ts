@@ -10,6 +10,8 @@ import { STORE_TOOLS } from './stores.tools.js';
 import { SUGGESTION_TOOLS } from './suggestions.tools.js';
 import { WEBHOOK_TOOLS } from './webhooks.tools.js';
 
+export { ANONYMOUS_TOOLS } from './account.tools.js';
+
 /** Every tool the server offers, grouped by area. */
 export const ALL_TOOLS: readonly ApiToolSpec[] = [
   ...CATALOG_TOOLS,

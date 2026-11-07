@@ -1,4 +1,6 @@
 import { ChannelError, ChannelErrorCode, ChannelType } from '@crossmart/connectors';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import { sandboxRestricted } from '../../entitlements/testing/sandbox-entitlements.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 import { ChannelConnectError } from './channel-connect.error.js';
 
@@ -24,5 +26,12 @@ describe('ChannelConnectError', () => {
 
     expect(error.failure).toBe(ConnectFailure.Unexpected);
     expect(error.message).toBe('The channel could not be connected');
+  });
+
+  it('tells an unclaimed sandbox to claim the account first', () => {
+    const error = ChannelConnectError.from(sandboxRestricted(SandboxRestriction.ConnectChannel));
+
+    expect(error.failure).toBe(ConnectFailure.SandboxClaimRequired);
+    expect(error.message).toBe('Claim this account before connecting a store');
   });
 });

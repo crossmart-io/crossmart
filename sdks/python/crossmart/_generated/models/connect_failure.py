@@ -11,6 +11,7 @@ class ConnectFailure(StrEnum):
     MISSING_SCOPES = "missing_scopes"
     NOT_PERMITTED = "not_permitted"
     PLAN_LIMIT_REACHED = "plan_limit_reached"
+    SANDBOX_CLAIM_REQUIRED = "sandbox_claim_required"
     SESSION_REQUIRED = "session_required"
     UNEXPECTED = "unexpected"
 

@@ -3,7 +3,7 @@ import type { ApiCredential } from '../api/api-credential.js';
 import { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { MCP_SERVER_NAME } from '../mcp.constants.js';
 import { type ApiToolSpec, registerApiTool } from '../tools/api-tool.js';
-import { ALL_TOOLS } from '../tools/index.js';
+import { ALL_TOOLS, ANONYMOUS_TOOLS } from '../tools/index.js';
 
 const SERVER_VERSION = process.env.npm_package_version ?? '0.0.0';
 
@@ -17,9 +17,11 @@ const INSTRUCTIONS =
 /**
  * The tools a credential may use: every tool for an API key (its role decides in the API), and
  * for an agent only those its scopes cover, so it is never offered a tool it cannot call.
+ * Without a credential (a local server started without a key), `create_account` as well.
  */
 export function toolsFor(credential: ApiCredential | undefined): readonly ApiToolSpec[] {
-  const scopes = credential?.scopes;
+  if (!credential) return [...ALL_TOOLS, ...ANONYMOUS_TOOLS];
+  const scopes = credential.scopes;
   if (!scopes) return ALL_TOOLS;
   return ALL_TOOLS.filter((tool) => tool.scope === undefined || scopes.includes(tool.scope));
 }
