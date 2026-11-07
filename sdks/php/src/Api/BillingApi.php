@@ -28,7 +28,7 @@ final class BillingApi
     /**
      * The plans on offer, with what each includes and costs
      *
-     * Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through `salesEmail`. No plan charges a fee on sales.
+     * Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through `salesEmail`.
      *
      * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
      */

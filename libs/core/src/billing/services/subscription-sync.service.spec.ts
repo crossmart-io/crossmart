@@ -48,8 +48,25 @@ describe('SubscriptionSyncService', () => {
       currentPeriodEnd: new Date('2026-12-07T00:00:00.000Z'),
       trialEnd,
       cancelAtPeriodEnd: false,
+      cancelAt: null,
       pastDueSince: null,
     });
+  });
+
+  it('records a cancellation scheduled for the trial end, and clears it when undone', async () => {
+    const trialEnd = new Date('2026-11-14T00:00:00.000Z');
+    const { service, accounts } = setup(account({ externalSubscriptionId: 'sub_fake' }));
+    const trialing = { status: SubscriptionStatus.TRIALING, trialEnd };
+
+    await service.apply(
+      fakeSubscription({ ...trialing, cancelAtPeriodEnd: true, cancelAt: trialEnd }),
+      'org-1',
+    );
+    await service.apply(fakeSubscription(trialing), 'org-1');
+
+    const updates = accounts.applySubscription.mock.calls.map(([, update]) => update);
+    expect(updates[0]).toMatchObject({ cancelAtPeriodEnd: true, cancelAt: trialEnd });
+    expect(updates[1]).toMatchObject({ cancelAtPeriodEnd: false, cancelAt: null });
   });
 
   it('moves the organization to the latest version of the plan its price names', async () => {

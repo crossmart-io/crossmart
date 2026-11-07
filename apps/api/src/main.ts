@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppConfigService, OPENAPI_ONLY_FLAG } from '@crossmart/common';
 import { BACKFILL_UPLOADS_FLAG } from '@crossmart/core';
 import { ApiModule } from './api.module.js';
+import { isBillingResync, resyncSubscriptions } from './billing/resync-subscriptions.js';
 import { configureApplication } from './bootstrap/configure-application.js';
 import {
   buildOpenApiDocument,
@@ -16,6 +17,10 @@ const APP_VERSION = process.env.npm_package_version ?? '0.0.0';
 async function bootstrap(): Promise<void> {
   if (process.argv.includes(BACKFILL_UPLOADS_FLAG)) {
     await backfillUploads();
+    return;
+  }
+  if (isBillingResync(process.argv)) {
+    await resyncSubscriptions();
     return;
   }
 

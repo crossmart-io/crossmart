@@ -556,8 +556,11 @@ model OrganizationSubscription {
   billingInterval        BillingInterval?   @map("billing_interval")
   /// When the trial ends or ended. Set once a trial starts, so an organization trials only once.
   trialEnd               DateTime?          @map("trial_end")
-  /// The subscription ends at `currentPeriodEnd` instead of renewing.
+  /// A cancellation is scheduled: the subscription ends at `cancelAt` instead of renewing.
   cancelAtPeriodEnd      Boolean            @default(false) @map("cancel_at_period_end")
+  /// When a scheduled cancellation ends the subscription (the trial or period end); null when
+  /// it renews.
+  cancelAt               DateTime?          @map("cancel_at")
   /// When the subscription became past due; the grace period runs from here. Null otherwise.
   pastDueSince           DateTime?          @map("past_due_since")
   createdAt              DateTime           @default(now()) @map("created_at")

@@ -1,5 +1,5 @@
 import type Stripe from 'stripe';
-import type { BillingInterval, SubscriptionStatus } from '@crossmart/database';
+import { type BillingInterval, SubscriptionStatus } from '@crossmart/database';
 import { ORGANIZATION_ID_METADATA_KEY } from '../../billing.constants.js';
 import type { ProviderPrice } from '../../entities/provider-price.js';
 import type { ProviderSubscription } from '../../entities/provider-subscription.js';
@@ -43,21 +43,41 @@ function currentPeriodEndOf(subscription: Stripe.Subscription): Date | null {
   return ends.length > 0 ? fromUnixSeconds(Math.max(...ends)) : null;
 }
 
+/**
+ * When a scheduled cancellation takes effect; null when the subscription renews. The Customer
+ * Portal sets `cancel_at` (the trial or period end) and leaves `cancel_at_period_end` false, so
+ * both are read. Without `cancel_at`, the period end applies, or the trial end while trialing.
+ */
+function cancelAtOf(
+  subscription: Stripe.Subscription,
+  status: SubscriptionStatus,
+  currentPeriodEnd: Date | null,
+): Date | null {
+  const cancelAt = fromUnixSeconds(subscription.cancel_at);
+  if (cancelAt || !subscription.cancel_at_period_end) return cancelAt;
+  const trialEnd = fromUnixSeconds(subscription.trial_end);
+  return status === SubscriptionStatus.TRIALING && trialEnd ? trialEnd : currentPeriodEnd;
+}
+
 /** A Stripe subscription in Crossmart's terms. Throws on a status Crossmart does not know. */
 export function toProviderSubscription(subscription: Stripe.Subscription): ProviderSubscription {
   const planItem = planItemOf(subscription);
+  const status = statusOf(subscription);
+  const currentPeriodEnd = currentPeriodEndOf(subscription);
+  const cancelAt = cancelAtOf(subscription, status, currentPeriodEnd);
   return {
     id: subscription.id,
     customerId: stripeId(subscription.customer) ?? '',
     organizationId: subscription.metadata[ORGANIZATION_ID_METADATA_KEY] ?? null,
-    status: statusOf(subscription),
+    status,
     priceLookupKeys: subscription.items.data.flatMap((item) =>
       item.price.lookup_key ? [item.price.lookup_key] : [],
     ),
     interval: planItem ? intervalOf(planItem.price) : null,
-    currentPeriodEnd: currentPeriodEndOf(subscription),
+    currentPeriodEnd,
     trialEnd: fromUnixSeconds(subscription.trial_end),
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || cancelAt !== null,
+    cancelAt,
   };
 }
 

@@ -18,7 +18,7 @@ export class BillingPlansController {
     description:
       'Open to anyone. Prices come from the billing provider, monthly and annual; a plan with ' +
       'none (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold ' +
-      'through `salesEmail`. No plan charges a fee on sales.',
+      'through `salesEmail`.',
   })
   @ApiOkResponse({ type: BillingPlanCatalogDto })
   async list(): Promise<BillingPlanCatalogDto> {

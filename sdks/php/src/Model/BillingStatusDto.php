@@ -18,9 +18,10 @@ final class BillingStatusDto implements JsonSerializable
      * @param bool $enabled Whether this instance bills customers; false when self-hosting, where all is free
      * @param SubscriptionStatus|string $status `INCOMPLETE` until a plan is chosen; `ACTIVE` with no billing account is an organization from before billing
      * @param BillingInterval|string|null $interval How often the subscription renews; null before one starts
-     * @param DateTimeImmutable|null $currentPeriodEnd When the subscription renews, or ends when `cancelAtPeriodEnd` is true
-     * @param DateTimeImmutable|null $trialEnd When the trial ends (the card is charged then), or ended
-     * @param bool $cancelAtPeriodEnd The subscription ends at `currentPeriodEnd` instead of renewing
+     * @param DateTimeImmutable|null $currentPeriodEnd When the current period ends: the subscription renews then, unless `cancelAt` is set
+     * @param DateTimeImmutable|null $trialEnd When the trial ends, or ended. The card is charged then, unless `cancelAt` is set
+     * @param bool $cancelAtPeriodEnd Whether a cancellation is scheduled, so the subscription ends instead of renewing. Read `cancelAt` for when
+     * @param DateTimeImmutable|null $cancelAt When a scheduled cancellation ends the subscription (during a trial, the trial end, and nothing is charged); null when it renews
      * @param bool $hasBillingAccount Whether the billing portal can open (a plan was chosen before)
      * @param bool $trialAvailable Whether choosing a plan now starts with a free trial
      */
@@ -33,6 +34,7 @@ final class BillingStatusDto implements JsonSerializable
         public readonly ?DateTimeImmutable $currentPeriodEnd,
         public readonly ?DateTimeImmutable $trialEnd,
         public readonly bool $cancelAtPeriodEnd,
+        public readonly ?DateTimeImmutable $cancelAt,
         public readonly SubscriptionAccessDto $access,
         public readonly bool $hasBillingAccount,
         public readonly bool $trialAvailable,
@@ -57,6 +59,7 @@ final class BillingStatusDto implements JsonSerializable
             currentPeriodEnd: $payload->isNull('currentPeriodEnd') ? null : $payload->dateTime('currentPeriodEnd'),
             trialEnd: $payload->isNull('trialEnd') ? null : $payload->dateTime('trialEnd'),
             cancelAtPeriodEnd: $payload->bool('cancelAtPeriodEnd'),
+            cancelAt: $payload->isNull('cancelAt') ? null : $payload->dateTime('cancelAt'),
             access: $payload->model('access', SubscriptionAccessDto::fromArray(...)),
             hasBillingAccount: $payload->bool('hasBillingAccount'),
             trialAvailable: $payload->bool('trialAvailable'),
@@ -79,6 +82,7 @@ final class BillingStatusDto implements JsonSerializable
             'currentPeriodEnd' => $this->currentPeriodEnd === null ? null : Payload::formatDateTime($this->currentPeriodEnd),
             'trialEnd' => $this->trialEnd === null ? null : Payload::formatDateTime($this->trialEnd),
             'cancelAtPeriodEnd' => $this->cancelAtPeriodEnd,
+            'cancelAt' => $this->cancelAt === null ? null : Payload::formatDateTime($this->cancelAt),
             'access' => $this->access->toArray(),
             'hasBillingAccount' => $this->hasBillingAccount,
             'trialAvailable' => $this->trialAvailable,

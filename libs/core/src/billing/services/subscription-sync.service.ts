@@ -74,6 +74,7 @@ export class SubscriptionSyncService {
       // Kept once set: it is what makes a trial a one-time offer.
       trialEnd: subscription.trialEnd ?? account.trialEnd,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      cancelAt: subscription.cancelAt,
       pastDueSince: this.pastDueSince(account, subscription.status),
     };
   }

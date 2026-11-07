@@ -11,6 +11,7 @@ const BILLING_ACCOUNT_SELECT = {
   currentPeriodEnd: true,
   trialEnd: true,
   cancelAtPeriodEnd: true,
+  cancelAt: true,
   pastDueSince: true,
   planVersionId: true,
   planVersion: { select: { plan: { select: { code: true } } } },
@@ -52,6 +53,20 @@ export class BillingAccountRepository {
       select: { organizationId: true },
     });
     return row?.organizationId ?? null;
+  }
+
+  /** Organizations holding a provider subscription, by id, after `after`; for resyncing them. */
+  async findSubscribedOrganizationIds(after: string | null, take: number): Promise<string[]> {
+    const rows = await this.prisma.organizationSubscription.findMany({
+      where: {
+        externalSubscriptionId: { not: null },
+        ...(after ? { organizationId: { gt: after } } : {}),
+      },
+      orderBy: { organizationId: 'asc' },
+      take,
+      select: { organizationId: true },
+    });
+    return rows.map((row) => row.organizationId);
   }
 
   /**

@@ -28,10 +28,14 @@ class BillingStatusDto:
         plan (PlanDto):
         status (SubscriptionStatus):
         interval (BillingInterval | None): How often the subscription renews; null before one starts
-        current_period_end (datetime.datetime | None): When the subscription renews, or ends when `cancelAtPeriodEnd` is
-            true
-        trial_end (datetime.datetime | None): When the trial ends (the card is charged then), or ended
-        cancel_at_period_end (bool): The subscription ends at `currentPeriodEnd` instead of renewing
+        current_period_end (datetime.datetime | None): When the current period ends: the subscription renews then,
+            unless `cancelAt` is set
+        trial_end (datetime.datetime | None): When the trial ends, or ended. The card is charged then, unless `cancelAt`
+            is set
+        cancel_at_period_end (bool): Whether a cancellation is scheduled, so the subscription ends instead of renewing.
+            Read `cancelAt` for when
+        cancel_at (datetime.datetime | None): When a scheduled cancellation ends the subscription (during a trial, the
+            trial end, and nothing is charged); null when it renews
         access (SubscriptionAccessDto):
         has_billing_account (bool): Whether the billing portal can open (a plan was chosen before)
         trial_available (bool): Whether choosing a plan now starts with a free trial
@@ -45,6 +49,7 @@ class BillingStatusDto:
     current_period_end: datetime.datetime | None
     trial_end: datetime.datetime | None
     cancel_at_period_end: bool
+    cancel_at: datetime.datetime | None
     access: SubscriptionAccessDto
     has_billing_account: bool
     trial_available: bool
@@ -79,6 +84,12 @@ class BillingStatusDto:
 
         cancel_at_period_end = self.cancel_at_period_end
 
+        cancel_at: None | str
+        if isinstance(self.cancel_at, datetime.datetime):
+            cancel_at = self.cancel_at.isoformat()
+        else:
+            cancel_at = self.cancel_at
+
         access = self.access.to_dict()
 
         has_billing_account = self.has_billing_account
@@ -97,6 +108,7 @@ class BillingStatusDto:
                 "currentPeriodEnd": current_period_end,
                 "trialEnd": trial_end,
                 "cancelAtPeriodEnd": cancel_at_period_end,
+                "cancelAt": cancel_at,
                 "access": access,
                 "hasBillingAccount": has_billing_account,
                 "trialAvailable": trial_available,
@@ -166,6 +178,21 @@ class BillingStatusDto:
 
         cancel_at_period_end = d.pop("cancelAtPeriodEnd")
 
+        def _parse_cancel_at(data: object) -> datetime.datetime | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                cancel_at_type_0 = datetime.datetime.fromisoformat(data)
+
+                return cancel_at_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(datetime.datetime | None, data)
+
+        cancel_at = _parse_cancel_at(d.pop("cancelAt"))
+
         access = SubscriptionAccessDto.from_dict(d.pop("access"))
 
         has_billing_account = d.pop("hasBillingAccount")
@@ -181,6 +208,7 @@ class BillingStatusDto:
             current_period_end=current_period_end,
             trial_end=trial_end,
             cancel_at_period_end=cancel_at_period_end,
+            cancel_at=cancel_at,
             access=access,
             has_billing_account=has_billing_account,
             trial_available=trial_available,

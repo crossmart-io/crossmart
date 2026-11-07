@@ -10,6 +10,7 @@ import { BillingCheckoutService } from './services/billing-checkout.service.js';
 import { BillingPlansService } from './services/billing-plans.service.js';
 import { BillingStatusService } from './services/billing-status.service.js';
 import { BillingWebhookService } from './services/billing-webhook.service.js';
+import { SubscriptionResyncService } from './services/subscription-resync.service.js';
 import { SubscriptionSyncService } from './services/subscription-sync.service.js';
 
 /**
@@ -26,9 +27,9 @@ import { SubscriptionSyncService } from './services/subscription-sync.service.js
     BillingAccountService,
     BillingPlansService,
     BillingStatusService,
-    BillingAccountService,
     BillingCheckoutService,
     BillingWebhookService,
+    SubscriptionResyncService,
   ],
   exports: [
     BillingPlansService,
@@ -36,6 +37,7 @@ import { SubscriptionSyncService } from './services/subscription-sync.service.js
     BillingAccountService,
     BillingCheckoutService,
     BillingWebhookService,
+    SubscriptionResyncService,
   ],
 })
 export class BillingModule {}

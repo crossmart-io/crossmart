@@ -14,7 +14,10 @@ export interface BillingStatus {
   interval: BillingInterval | null;
   currentPeriodEnd: Date | null;
   trialEnd: Date | null;
+  /** A cancellation is scheduled; kept for clients that predate `cancelAt`. */
   cancelAtPeriodEnd: boolean;
+  /** When a scheduled cancellation ends the subscription; null when it renews. */
+  cancelAt: Date | null;
   access: SubscriptionAccess;
   /** Whether it has a customer at the provider, so the billing portal can open. */
   hasBillingAccount: boolean;

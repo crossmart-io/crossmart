@@ -10,6 +10,8 @@ import {
   EntitlementErrorCode,
   SandboxRestriction,
   SubscriptionAccessState,
+  SubscriptionResyncOutcome,
+  SubscriptionResyncService,
   type BillingWebhookEvent,
   type ProviderSubscription,
 } from '@crossmart/core';
@@ -349,6 +351,45 @@ describe('Billing (e2e)', () => {
       .set('Cookie', owner.cookie);
     expect(portal.body).toEqual({ url: FAKE_PORTAL_URL });
     expect(provider.portals.at(-1)).toBe(customerId);
+  });
+
+  it('shows a cancellation scheduled for the trial end, and a resync repairs a stale row', async () => {
+    const owner = await signUp(app, 'Owner');
+    const organizationId = await organizationOf(owner);
+    await startCheckout(owner);
+    const trialEnd = new Date('2026-11-14T00:00:00.000Z');
+    const trialing = fakeSubscription({
+      id: `sub_${randomUUID()}`,
+      customerId: `cus_${organizationId}`,
+      organizationId,
+      status: SubscriptionStatus.TRIALING,
+      trialEnd,
+    });
+    await providerHolds(trialing, organizationId);
+    expect((await billingOf(owner)).body).toMatchObject({
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+    });
+
+    // Cancelled in the portal, and the webhook says so.
+    const cancelled = { ...trialing, cancelAtPeriodEnd: true, cancelAt: trialEnd };
+    provider.subscriptions.set(trialing.id, cancelled);
+    expect((await deliver({ subscriptionId: trialing.id })).status).toBe(HttpStatus.OK);
+    expect((await billingOf(owner)).body).toMatchObject({
+      status: SubscriptionStatus.TRIALING,
+      trialEnd: trialEnd.toISOString(),
+      cancelAtPeriodEnd: true,
+      cancelAt: trialEnd.toISOString(),
+    });
+
+    // A row a missed webhook left behind is repaired from the provider, without one.
+    await prisma.organizationSubscription.update({
+      where: { organizationId },
+      data: { cancelAtPeriodEnd: false, cancelAt: null },
+    });
+    const result = await app.get(SubscriptionResyncService).resync(organizationId);
+    expect(result.outcome).toBe(SubscriptionResyncOutcome.Synced);
+    expect((await billingOf(owner)).body.cancelAt).toBe(trialEnd.toISOString());
   });
 
   it('handles a redelivered event once, and refuses unsigned deliveries', async () => {
