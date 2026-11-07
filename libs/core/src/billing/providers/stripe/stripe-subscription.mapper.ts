@@ -44,15 +44,17 @@ function currentPeriodEndOf(subscription: Stripe.Subscription): Date | null {
 }
 
 /**
- * When a scheduled cancellation takes effect; null when the subscription renews. The Customer
- * Portal sets `cancel_at` (the trial or period end) and leaves `cancel_at_period_end` false, so
- * both are read. Without `cancel_at`, the period end applies, or the trial end while trialing.
+ * When a scheduled cancellation takes effect; null when the subscription renews, or has already
+ * ended. The Customer Portal sets `cancel_at` (the trial or period end) and leaves
+ * `cancel_at_period_end` false, so both are read. Without `cancel_at`, the period end applies, or
+ * the trial end while trialing.
  */
 function cancelAtOf(
   subscription: Stripe.Subscription,
   status: SubscriptionStatus,
   currentPeriodEnd: Date | null,
 ): Date | null {
+  if (status === SubscriptionStatus.CANCELED) return null;
   const cancelAt = fromUnixSeconds(subscription.cancel_at);
   if (cancelAt || !subscription.cancel_at_period_end) return cancelAt;
   const trialEnd = fromUnixSeconds(subscription.trial_end);

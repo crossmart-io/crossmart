@@ -204,6 +204,16 @@ describe('StripeBillingProvider', () => {
     });
   });
 
+  it('reads no scheduled cancellation once the subscription has ended', async () => {
+    const { stripe, provider } = setup();
+    stripe.reply('subscription-canceled.json');
+
+    expect(await provider.getSubscription('sub_TestCrossmart01')).toMatchObject({
+      status: SubscriptionStatus.CANCELED,
+      cancelAt: null,
+    });
+  });
+
   it('reads no cancellation for a subscription that renews', async () => {
     const { stripe, provider } = setup();
     stripe.reply('subscription-active-annual.json');

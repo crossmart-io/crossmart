@@ -2,14 +2,14 @@
   "id": "sub_TestCrossmart01",
   "object": "subscription",
   "billing_cycle_anchor": 1794556800,
-  "cancel_at": null,
+  "cancel_at": 1794556800,
   "cancel_at_period_end": false,
-  "canceled_at": null,
+  "canceled_at": 1793952300,
   "collection_method": "charge_automatically",
   "created": 1793952000,
   "currency": "usd",
   "customer": "cus_TestCrossmart01",
-  "ended_at": null,
+  "ended_at": 1794556800,
   "items": {
     "object": "list",
     "data": [
