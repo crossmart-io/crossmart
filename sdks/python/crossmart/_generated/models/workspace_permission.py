@@ -3,6 +3,7 @@ from enum import StrEnum
 
 class WorkspacePermission(StrEnum):
     ACTIVITYVIEW = "activity:view"
+    AGENT_WORKERUSE = "agent_worker:use"
     AIGENERATE = "ai:generate"
     API_KEYSMANAGE = "api-keys:manage"
     BILLINGMANAGE = "billing:manage"

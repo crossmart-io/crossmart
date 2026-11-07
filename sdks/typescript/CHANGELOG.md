@@ -8,6 +8,12 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
 
 ### Added
 
+- Agent Worker (ADR 0026): conversations under
+  `/workspaces/{workspaceId}/agent-worker/conversations` (list, create, read, delete, cancel), and
+  the `messages` and `decision` routes, which answer with server-sent events
+  (`AgentWorkerStreamEventDto`); read them with an event-stream reader, not as JSON. New enums
+  for its turns, actions and events, the `agent_worker:use` permission and the `agent_worker` AI
+  feature.
 - Ask Crossmart conversations and escalations: `conversationId` and `channel` on a question,
   and `conversationId`, `turnId` and `escalation` on the answer; `POST /ask/escalations` to hand
   a conversation to a person and `GET /ask/escalations/{escalationId}` to read the reply; and the
