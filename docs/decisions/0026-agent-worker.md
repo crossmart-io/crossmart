@@ -29,6 +29,10 @@ Three tools join the shared layer, so MCP agents get them too:
   `PATCH /products/{id}` (additive; variants, prices, stock and images are untouched). It is not
   destructive, so a copy edit no longer needs the explicit confirmation `replace_product` does;
   the system prompt tells Agent Worker to prefer it for text.
+- `update_variant_price` changes only one variant's price and/or compare-at price through the new
+  `PATCH /products/{id}/variants/{variantId}` (additive, amounts validated and normalized; a null
+  compare-at price removes it). It is not destructive, but it is a price change, so approving it
+  still needs the explicit confirmation; the system prompt prefers it for catalog price edits.
 - `get_inventory_item` reads one variant's stock through the new `GET /inventory-items/{id}`.
 - `ask_crossmart` is built per channel. Agent Worker's version is read-only: it asks (channel
   `agent_worker` in Ask's log) but has no `escalate` input; the person contacts the team
@@ -142,8 +146,8 @@ are deleted with either. **Retention: 180 days** after the last message
 
 ## Cost
 
-Per model call the model reads the system prompt (about 750 tokens), 31 tool definitions (about
-8,500 tokens) and the conversation. A typical turn ("fix my failed eBay listings": two reads, then
+Per model call the model reads the system prompt (about 750 tokens), 32 tool definitions (about
+8,700 tokens) and the conversation. A typical turn ("fix my failed eBay listings": two reads, then
 a proposal) makes 3 calls, reading about 32,000 input tokens and writing about 1,000 to 2,000. On
 `claude-sonnet-5-5` ($2 in, $10 out per million) that is about 8 cents uncached; prompt caching of
 the tools, prompt and history (cache writes at 1.25×, reads at $0.20 per million) brings it to
