@@ -1,0 +1,27 @@
+{
+  "id": "evt_TestCheckoutCompleted",
+  "object": "event",
+  "api_version": "2026-09-30.endive",
+  "created": 1793952100,
+  "data": {
+    "object": {
+      "id": "cs_test_Crossmart01",
+      "object": "checkout.session",
+      "client_reference_id": "5f0c7c43-2f0a-4d8e-9a43-3b1f6c1d2e10",
+      "customer": "cus_TestCrossmart01",
+      "livemode": false,
+      "metadata": {},
+      "mode": "subscription",
+      "status": "complete",
+      "subscription": "sub_TestCrossmart01",
+      "url": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "checkout.session.completed"
+}

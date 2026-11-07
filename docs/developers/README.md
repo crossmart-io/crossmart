@@ -53,7 +53,8 @@ members. Almost every endpoint is scoped to a workspace:
 
 A workspace you can't access answers `404`, the same as one that doesn't exist, so ids don't leak.
 Plan limits (active listings, connected stores, API keys…) count across the organization's
-workspaces.
+workspaces. On Crossmart Cloud the organization's subscription is managed by its owners and
+admins under `/api/v1/organizations/{organizationId}/billing` (see [billing](../billing.md)).
 
 ## Authentication
 
@@ -137,7 +138,12 @@ Errors use the HTTP status and a JSON body:
 - **401**: the key or token is missing, wrong, revoked or expired.
 - **402**: the plan doesn't allow it. The body adds a machine-readable `code`
   (`plan_limit_reached` or `plan_feature_not_included`), the `feature`, the `plan`, its `limit`
-  and current `usage`, so you can tell the user what to upgrade.
+  and current `usage`, so you can tell the user what to upgrade. On Crossmart Cloud, `code:
+"subscription_inactive"` means the organization's subscription has lapsed (canceled, unpaid,
+  past due after the grace period, or never started), so it is read-only: reads still work, and
+  `state` says why. Tell the user to ask an owner or admin of the organization to fix it in
+  **Settings → Billing**; `GET /workspaces/{workspaceId}/billing-access` tells you beforehand.
+  Self-hosted Crossmart has no billing and never answers it.
 - **403**: the role lacks the permission, or (with `code: "sandbox_claim_required"`) the
   workspace is an unclaimed [sandbox account](#sandbox-accounts-for-ai-agents) the user must
   claim first.

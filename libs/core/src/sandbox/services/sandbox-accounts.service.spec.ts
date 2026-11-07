@@ -1,5 +1,5 @@
 import { hashSecret } from '@crossmart/common';
-import { ActivityActorType, WorkspaceRole } from '@crossmart/database';
+import { ActivityActorType, SubscriptionStatus, WorkspaceRole } from '@crossmart/database';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import type { OrganizationPlanService } from '../../entitlements/services/organization-plan.service.js';
@@ -26,9 +26,9 @@ function setup(emailHasAccount = false) {
       .mockResolvedValue({ workspaceId: 'ws-1', apiKeyId: 'key-1' }),
   };
   const plans = {
-    defaultPlanVersionId: vi
-      .fn<OrganizationPlanService['defaultPlanVersionId']>()
-      .mockResolvedValue('plan-v1'),
+    startingSubscription: vi
+      .fn<OrganizationPlanService['startingSubscription']>()
+      .mockResolvedValue({ planVersionId: 'plan-v1', status: SubscriptionStatus.INCOMPLETE }),
   };
   const mailer = { sendClaimLink: vi.fn<SandboxClaimMailer['sendClaimLink']>() };
   const activity = new InMemoryActivityRecorder();
@@ -58,7 +58,7 @@ describe('SandboxAccountsService', () => {
       email: 'ana@example.com',
       ownerName: 'ana',
       storeName: 'Ana Ceramics',
-      planVersionId: 'plan-v1',
+      subscription: { planVersionId: 'plan-v1', status: SubscriptionStatus.INCOMPLETE },
       agentKey: { name: SANDBOX_AGENT_KEY_NAME, hash: hashSecret(opening.apiKey) },
     });
     expect(SANDBOX_AGENT_KEY_ROLE).toBe(WorkspaceRole.EDITOR);

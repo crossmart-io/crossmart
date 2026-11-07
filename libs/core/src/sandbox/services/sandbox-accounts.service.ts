@@ -78,7 +78,7 @@ export class SandboxAccountsService {
       ownerName: sandboxOwnerName(email),
       storeName,
       workspaceSlug: slugify(DEFAULT_WORKSPACE_NAME),
-      planVersionId: await this.plans.defaultPlanVersionId(),
+      subscription: await this.plans.startingSubscription(),
       claimTokenHash: hashSecret(claimToken),
       expiresAt,
       agentKey: { name: SANDBOX_AGENT_KEY_NAME, prefix, hash },

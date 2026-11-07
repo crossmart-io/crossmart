@@ -36,6 +36,7 @@ import {
   WEBHOOK_ENDPOINTS_ROUTE,
   WEBHOOKS_TAG,
 } from '../webhooks.constants.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 const URL_REFUSED = 'The URL is not https (in production), or not a public address';
 const SECRETS_UNAVAILABLE = 'The server has no CREDENTIALS_MASTER_KEY to encrypt secrets with';
@@ -104,6 +105,7 @@ export class WebhookEndpointsController {
   }
 
   @Delete(ENDPOINT_PATH)
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a webhook endpoint and its delivery log' })
   @ApiNoContentResponse()

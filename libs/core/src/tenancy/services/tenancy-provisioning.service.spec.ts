@@ -1,15 +1,20 @@
+import { SubscriptionStatus } from '@crossmart/database';
 import type { OrganizationPlanService } from '../../entitlements/services/organization-plan.service.js';
 import type { OrganizationRepository } from '../repositories/organization.repository.js';
 import type { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
 import { DEFAULT_WORKSPACE_NAME } from '../tenancy.constants.js';
 import { TenancyProvisioningService } from './tenancy-provisioning.service.js';
 
+const STARTING_SUBSCRIPTION = {
+  planVersionId: 'plan-version-starter',
+  status: SubscriptionStatus.INCOMPLETE,
+};
 const NEW_USER = { id: 'user-1', name: 'Dana Seller', email: 'dana@example.com' };
 
 function createService(hasMembership: boolean) {
   const organizations = { createWithOwner: vi.fn().mockResolvedValue({ workspaceId: 'ws-1' }) };
   const members = { userHasAnyMembership: vi.fn().mockResolvedValue(hasMembership) };
-  const plans = { defaultPlanVersionId: vi.fn().mockResolvedValue('plan-version-free') };
+  const plans = { startingSubscription: vi.fn().mockResolvedValue(STARTING_SUBSCRIPTION) };
   const service = new TenancyProvisioningService(
     organizations as unknown as OrganizationRepository,
     members as unknown as WorkspaceMemberRepository,
@@ -29,7 +34,7 @@ describe('TenancyProvisioningService', () => {
       workspaceName: DEFAULT_WORKSPACE_NAME,
       workspaceSlug: 'default',
       ownerId: 'user-1',
-      planVersionId: 'plan-version-free',
+      subscription: STARTING_SUBSCRIPTION,
     });
   });
 

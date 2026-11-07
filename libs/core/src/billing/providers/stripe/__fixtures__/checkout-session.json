@@ -1,0 +1,12 @@
+{
+  "id": "cs_test_Crossmart01",
+  "object": "checkout.session",
+  "client_reference_id": "5f0c7c43-2f0a-4d8e-9a43-3b1f6c1d2e10",
+  "customer": "cus_TestCrossmart01",
+  "livemode": false,
+  "metadata": {},
+  "mode": "subscription",
+  "status": "open",
+  "subscription": null,
+  "url": "https://checkout.stripe.com/c/pay/cs_test_Crossmart01"
+}

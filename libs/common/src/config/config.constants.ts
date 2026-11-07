@@ -31,3 +31,11 @@ export const DEFAULT_ASK_DAILY_QUESTION_CAP = 1000;
 export const DEFAULT_ASK_SUPPORT_EMAIL = 'hello@crossmart.io';
 /** eBay's rule for the account deletion endpoint's verification token. */
 export const EBAY_VERIFICATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,80}$/;
+/** Stripe Tax needs setting up in the Stripe dashboard first, so checkout leaves tax off by default. */
+export const DEFAULT_STRIPE_AUTOMATIC_TAX = false;
+/** Days of the trial a first checkout starts, with the card collected up front. */
+export const DEFAULT_BILLING_TRIAL_DAYS = 7;
+/** Days a past-due organization keeps full access while the provider retries the payment. */
+export const DEFAULT_BILLING_PAST_DUE_GRACE_DAYS = 7;
+/** Where plans with no self-serve price (Enterprise) send people. */
+export const DEFAULT_BILLING_SALES_EMAIL = 'hello@crossmart.io';

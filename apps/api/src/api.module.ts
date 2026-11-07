@@ -6,6 +6,7 @@ import { AgentsApiModule } from './agents/agents-api.module.js';
 import { AiApiModule } from './ai/ai.module.js';
 import { AskApiModule } from './ask/ask.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { BillingApiModule } from './billing/billing-api.module.js';
 import { CatalogApiModule } from './catalog/catalog.module.js';
 import { EntitlementsApiModule } from './entitlements/entitlements.module.js';
 import { ChannelsApiModule } from './channels/channels.module.js';
@@ -32,6 +33,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     HealthModule,
     WorkspacesModule,
     EntitlementsApiModule,
+    BillingApiModule,
     CatalogApiModule,
     MediaMaintenanceModule,
     ActivityApiModule,

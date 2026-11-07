@@ -26,6 +26,7 @@ import { DeleteWorkspaceDto } from '../dto/delete-workspace.dto.js';
 import { UpdateWorkspaceDto } from '../dto/workspace-input.dto.js';
 import { WorkspaceDto } from '../dto/workspace.dto.js';
 import { WORKSPACE_ROUTE, WORKSPACES_TAG } from '../workspaces.constants.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 @ApiTags(WORKSPACES_TAG)
 @Controller(WORKSPACE_ROUTE)
@@ -62,6 +63,7 @@ export class WorkspacesController {
   }
 
   @Delete()
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission(WorkspacePermission.DeleteWorkspace)
   @ApiOperation({

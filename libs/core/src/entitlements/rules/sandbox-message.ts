@@ -10,6 +10,7 @@ const RESTRICTED_ACTIONS: Readonly<Record<SandboxRestriction, string>> = {
   [SandboxRestriction.CreateWorkspace]: 'add workspaces',
   [SandboxRestriction.GenerateContent]: 'generate content with Crossmart AI',
   [SandboxRestriction.AddProducts]: 'add more products',
+  [SandboxRestriction.Subscribe]: 'start a paid subscription',
 };
 
 /** An ISO timestamp's date part: "2026-11-21". */

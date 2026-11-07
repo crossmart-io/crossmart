@@ -7,6 +7,7 @@ import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import { SubscriptionAccessPolicy } from '../../entitlements/services/subscription-access-policy.js';
 import type { NewWorkspace } from '../repositories/workspace.repository.js';
 import type { WorkspaceChanges, WorkspaceInput } from '../entities/new-workspace.js';
 import type { WorkspaceAccess } from '../entities/workspace-access.js';
@@ -34,6 +35,7 @@ export class WorkspacesService {
     private readonly workspaces: WorkspaceRepository,
     private readonly activity: ActivityRecorder,
     private readonly entitlements: EntitlementService,
+    private readonly subscriptionAccess: SubscriptionAccessPolicy,
   ) {}
 
   async create(
@@ -91,6 +93,7 @@ export class WorkspacesService {
     if (!(await this.workspaces.isOrganizationOwner(organizationId, userId))) {
       throw new ForbiddenException('Only owners of a workspace here can create workspaces');
     }
+    await this.subscriptionAccess.assertWritable(organizationId);
     const count = await this.workspaces.countInOrganization(organizationId);
     if (count >= MAX_WORKSPACES_PER_ORGANIZATION) {
       throw new ConflictException(

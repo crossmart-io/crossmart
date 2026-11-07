@@ -8,6 +8,7 @@ import { EntitlementService } from './services/entitlement.service.js';
 import { OrganizationPlanService } from './services/organization-plan.service.js';
 import { PlanCatalogService } from './services/plan-catalog.service.js';
 import { SandboxPolicy } from './services/sandbox-policy.js';
+import { SubscriptionAccessPolicy } from './services/subscription-access-policy.js';
 import { SubscriptionService } from './services/subscription.service.js';
 import { UsageMeter } from './services/usage-meter.js';
 
@@ -23,6 +24,7 @@ import { UsageMeter } from './services/usage-meter.js';
     UsageRepository,
     SandboxStatusRepository,
     SandboxPolicy,
+    SubscriptionAccessPolicy,
     EntitlementEnforcement,
     UsageMeter,
     OrganizationPlanService,
@@ -30,6 +32,12 @@ import { UsageMeter } from './services/usage-meter.js';
     SubscriptionService,
     PlanCatalogService,
   ],
-  exports: [EntitlementService, OrganizationPlanService, SubscriptionService, PlanCatalogService],
+  exports: [
+    EntitlementService,
+    OrganizationPlanService,
+    SubscriptionService,
+    PlanCatalogService,
+    SubscriptionAccessPolicy,
+  ],
 })
 export class EntitlementsModule {}

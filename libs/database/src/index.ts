@@ -1,8 +1,10 @@
 export * from './database.module.js';
 export * from './prisma.service.js';
+export * from './prisma-errors.js';
 export {
   ActivityActorType,
   ActivityOutcome,
+  BillingInterval,
   ChannelConnectionStatus,
   ImportIssueOutcome,
   ImportJobStatus,

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PrismaService } from '@crossmart/database';
+import { isUniqueViolation, type Prisma, PrismaService } from '@crossmart/database';
 import { organizationWithOwnerData } from '../../tenancy/repositories/organization.repository.js';
 import { DEFAULT_WORKSPACE_NAME } from '../../tenancy/tenancy.constants.js';
 import type {
@@ -7,16 +7,10 @@ import type {
   NewSandboxAccount,
   SandboxClaimPreview,
 } from '../entities/sandbox-account.js';
-import { SANDBOX_AGENT_KEY_ROLE, UNIQUE_VIOLATION_CODE } from '../sandbox.constants.js';
+import { SANDBOX_AGENT_KEY_ROLE } from '../sandbox.constants.js';
 import { claimableWhere, hasPassword, SANDBOX_PREVIEW_SELECT } from './sandbox-account.queries.js';
 
 type Transaction = Prisma.TransactionClient;
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError && error.code === UNIQUE_VIOLATION_CODE
-  );
-}
 
 /** Opens sandbox accounts and reads them for the claim page. */
 @Injectable()
@@ -70,7 +64,7 @@ export class SandboxAccountRepository {
         workspaceName: DEFAULT_WORKSPACE_NAME,
         workspaceSlug: input.workspaceSlug,
         ownerId: user.id,
-        planVersionId: input.planVersionId,
+        subscription: input.subscription,
       }),
       select: { id: true, workspaces: { select: { id: true } } },
     });

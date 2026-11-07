@@ -31,6 +31,7 @@ those, not the role name, so they keep working when roles change.
 | `webhooks:manage`     | Add, change and delete webhook endpoints, see their deliveries       |   ✓   |   ✓   |        |          |        |
 | `workspace:manage`    | Change the workspace's settings                                      |   ✓   |   ✓   |        |          |        |
 | `billing:view`        | See the organization's plan and usage (in any of its workspaces)     |   ✓   |   ✓   |        |          |        |
+| `billing:manage`      | Choose a plan, open the billing portal (in any of its workspaces)    |   ✓   |   ✓   |        |          |        |
 | `workspace:delete`    | Delete the workspace and everything in it                            |   ✓   |       |        |          |        |
 
 ## AI agents

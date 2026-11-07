@@ -33,6 +33,7 @@ import {
 } from '../workspaces.constants.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 @ApiTags(MEMBERS_TAG)
 @Controller(WORKSPACE_INVITATIONS_ROUTE)
@@ -70,6 +71,7 @@ export class InvitationsController {
   }
 
   @Delete(`:${INVITATION_ID_PARAM}`)
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Revoke a pending invitation; its link stops working' })
   @ApiNoContentResponse()

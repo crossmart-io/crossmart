@@ -43,6 +43,7 @@ import { StartAuthorizationDto, StartedAuthorizationDto } from '../dto/start-aut
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
 import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 import { OAuthNonceCookie } from '../services/oauth-nonce.cookie.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 @ApiTags(CHANNELS_TAG)
 @ApiExtraModels(ChannelConnectRedirectDto)
@@ -109,6 +110,7 @@ export class ChannelConnectionsController {
   }
 
   @Post(DISCONNECT_PATH)
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.OK)
   @RequirePermission(WorkspacePermission.ManageChannels)
   @ApiOperation({

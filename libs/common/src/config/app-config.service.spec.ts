@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import { AppConfigService } from './app-config.service.js';
+import { BillingDriver } from './billing-driver.enum.js';
 import { DEFAULT_AI_MODEL } from './config.constants.js';
 import { EbayEnvironment } from './ebay-environment.enum.js';
 import type { EnvironmentVariables } from './environment-variables.js';
@@ -91,6 +92,47 @@ describe('AppConfigService', () => {
       expect(appConfig({ ASK_AI_MODEL: 'claude-haiku-5-5' }).askSettings.model).toBe(
         'claude-haiku-5-5',
       );
+    });
+  });
+
+  describe('billingSettings', () => {
+    const DEFAULTS = {
+      BILLING_TRIAL_DAYS: 7,
+      BILLING_PAST_DUE_GRACE_DAYS: 7,
+      BILLING_SALES_EMAIL: 'hello@crossmart.io',
+    };
+
+    it('is off with no Stripe settings when the driver is none', () => {
+      const config = appConfig({ ...DEFAULTS, BILLING_DRIVER: BillingDriver.None });
+
+      expect(config.billingEnabled).toBe(false);
+      expect(config.billingSettings).toMatchObject({ stripe: null, legacyAccessUntil: null });
+    });
+
+    it('reads the Stripe keys and the end of legacy access', () => {
+      const config = appConfig({
+        ...DEFAULTS,
+        BILLING_DRIVER: BillingDriver.Stripe,
+        STRIPE_SECRET_KEY: 'sk_test_example',
+        STRIPE_WEBHOOK_SECRET: '',
+        STRIPE_AUTOMATIC_TAX: false,
+        BILLING_LEGACY_ACCESS_UNTIL: '2026-12-31',
+      });
+
+      expect(config.billingEnabled).toBe(true);
+      expect(config.billingSettings).toEqual({
+        driver: BillingDriver.Stripe,
+        stripe: {
+          secretKey: 'sk_test_example',
+          webhookSecret: null,
+          automaticTax: false,
+          portalConfigurationId: null,
+        },
+        trialDays: 7,
+        pastDueGraceDays: 7,
+        legacyAccessUntil: new Date('2026-12-31'),
+        salesEmail: 'hello@crossmart.io',
+      });
     });
   });
 });

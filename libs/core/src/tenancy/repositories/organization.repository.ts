@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { type Prisma, PrismaService, WorkspaceRole } from '@crossmart/database';
+import type { StartingSubscription } from '../../entitlements/entities/starting-subscription.js';
 
 export interface NewOrganizationWithOwner {
   organizationName: string;
   workspaceName: string;
   workspaceSlug: string;
   ownerId: string;
-  /** The plan version the organization starts on. */
-  planVersionId: string;
+  /** The plan version and status the organization starts with. */
+  subscription: StartingSubscription;
 }
 
 /** The organization with its subscription, its first workspace and the owner's membership. */
@@ -16,7 +17,12 @@ export function organizationWithOwnerData(
 ): Prisma.OrganizationCreateInput {
   return {
     name: input.organizationName,
-    subscription: { create: { planVersionId: input.planVersionId } },
+    subscription: {
+      create: {
+        planVersionId: input.subscription.planVersionId,
+        status: input.subscription.status,
+      },
+    },
     workspaces: {
       create: {
         name: input.workspaceName,

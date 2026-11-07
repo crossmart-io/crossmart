@@ -4,6 +4,7 @@ import type {
   SubscriptionRecord,
   SubscriptionRepository,
 } from '../repositories/subscription.repository.js';
+import type { EntitlementEnforcement } from './entitlement-enforcement.js';
 import { OrganizationPlanService } from './organization-plan.service.js';
 
 function record(): SubscriptionRecord {
@@ -15,6 +16,10 @@ function record(): SubscriptionRecord {
     currentPeriodEnd: null,
     externalCustomerId: null,
     externalSubscriptionId: null,
+    billingInterval: null,
+    trialEnd: null,
+    cancelAtPeriodEnd: false,
+    pastDueSince: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     planVersion: {
@@ -25,7 +30,11 @@ function record(): SubscriptionRecord {
   };
 }
 
-function setup(subscribed: boolean, defaultVersion: string | null = 'pv-starter-2') {
+function setup(
+  subscribed: boolean,
+  defaultVersion: string | null = 'pv-starter-2',
+  billingEnabled = false,
+) {
   const subscriptions = {
     findForOrganization: vi
       .fn<SubscriptionRepository['findForOrganization']>()
@@ -35,7 +44,11 @@ function setup(subscribed: boolean, defaultVersion: string | null = 'pv-starter-
       .mockResolvedValue(defaultVersion),
     subscribe: vi.fn<SubscriptionRepository['subscribe']>().mockResolvedValue(record()),
   };
-  const service = new OrganizationPlanService(subscriptions as unknown as SubscriptionRepository);
+  const enforcement = { billingEnabled } as EntitlementEnforcement;
+  const service = new OrganizationPlanService(
+    subscriptions as unknown as SubscriptionRepository,
+    enforcement,
+  );
   return { service, subscriptions };
 }
 
@@ -65,6 +78,16 @@ describe('OrganizationPlanService', () => {
     const { service, subscriptions } = setup(false);
     await service.current('org-1');
     expect(subscriptions.subscribe).toHaveBeenCalledWith('org-1', 'pv-starter-2');
+  });
+
+  it('starts new organizations active with billing off, and incomplete until checkout with it on', async () => {
+    await expect(setup(false).service.startingSubscription()).resolves.toEqual({
+      planVersionId: 'pv-starter-2',
+      status: SubscriptionStatus.ACTIVE,
+    });
+    await expect(
+      setup(false, 'pv-starter-2', true).service.startingSubscription(),
+    ).resolves.toEqual({ planVersionId: 'pv-starter-2', status: SubscriptionStatus.INCOMPLETE });
   });
 
   it('fails loudly when no default plan was seeded', async () => {

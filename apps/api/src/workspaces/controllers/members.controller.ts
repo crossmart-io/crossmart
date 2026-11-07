@@ -40,6 +40,7 @@ import {
   MEMBERSHIP_ROUTE,
   WORKSPACE_MEMBERS_ROUTE,
 } from '../workspaces.constants.js';
+import { AllowedWhileReadOnly } from '../../billing/decorators/allowed-while-read-only.decorator.js';
 
 @ApiTags(MEMBERS_TAG)
 @Controller(WORKSPACE_MEMBERS_ROUTE)
@@ -82,6 +83,7 @@ export class MembersController {
   }
 
   @Delete(`:${MEMBER_USER_ID_PARAM}`)
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission(WorkspacePermission.ManageMembers)
   @ApiOperation({
@@ -106,6 +108,7 @@ export class MembershipController {
   constructor(private readonly membership: MembershipService) {}
 
   @Delete()
+  @AllowedWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission(WorkspacePermission.ViewWorkspace)
   @ApiOperation({

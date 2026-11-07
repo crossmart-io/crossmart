@@ -5,8 +5,11 @@ import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import type { SubscriptionAccessPolicy } from '../../entitlements/services/subscription-access-policy.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
 import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import { SubscriptionAccessState } from '../../entitlements/enums/subscription-access-state.enum.js';
+import { SubscriptionInactiveException } from '../../entitlements/errors/subscription-inactive.exception.js';
 import {
   noSandboxEntitlements,
   sandboxRestricted,
@@ -42,13 +45,20 @@ function createService() {
     ),
   };
   const activity = new InMemoryActivityRecorder();
-  const entitlements = { ...noSandboxEntitlements(), assert: vi.fn().mockResolvedValue(undefined) };
+  const entitlements = {
+    ...noSandboxEntitlements(),
+    assert: vi.fn().mockResolvedValue(undefined),
+  };
+  const subscriptionAccess = {
+    assertWritable: vi.fn<SubscriptionAccessPolicy['assertWritable']>().mockResolvedValue(),
+  };
   const service = new WorkspacesService(
     workspaces as unknown as WorkspaceRepository,
     activity,
     entitlements as unknown as EntitlementService,
+    subscriptionAccess as unknown as SubscriptionAccessPolicy,
   );
-  return { service, workspaces, activity, entitlements };
+  return { service, workspaces, activity, entitlements, subscriptionAccess };
 }
 
 describe('WorkspacesService.create', () => {
@@ -94,6 +104,21 @@ describe('WorkspacesService.create', () => {
     );
     await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toMatchObject({
       status: HttpStatus.FORBIDDEN,
+    });
+    expect(workspaces.create).not.toHaveBeenCalled();
+  });
+
+  it('adds no workspace to a read-only organization', async () => {
+    const { service, workspaces, subscriptionAccess } = createService();
+    subscriptionAccess.assertWritable.mockRejectedValueOnce(
+      new SubscriptionInactiveException({
+        state: SubscriptionAccessState.Canceled,
+        writable: false,
+        until: null,
+      }),
+    );
+    await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toMatchObject({
+      status: HttpStatus.PAYMENT_REQUIRED,
     });
     expect(workspaces.create).not.toHaveBeenCalled();
   });
