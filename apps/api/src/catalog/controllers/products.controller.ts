@@ -28,12 +28,18 @@ import {
 import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
-import { CATALOG_TAG, PRODUCT_ID_PARAM, PRODUCTS_ROUTE } from '../catalog.constants.js';
+import {
+  CATALOG_TAG,
+  PRODUCT_ID_PARAM,
+  PRODUCTS_ROUTE,
+  VARIANT_PATH,
+} from '../catalog.constants.js';
 import { CreateProductDto } from '../dto/create-product.dto.js';
 import { ListProductsQueryDto } from '../dto/list-products-query.dto.js';
 import { ProductPageDto } from '../dto/product-summary.dto.js';
 import { ProductDto } from '../dto/product.dto.js';
 import { UpdateProductContentDto } from '../dto/update-product-content.dto.js';
+import { UpdateVariantPriceDto, VariantParamsDto } from '../dto/variant-price.dto.js';
 import { UpdateProductDto } from '../dto/update-product.dto.js';
 import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
@@ -122,6 +128,23 @@ export class ProductsController {
     @CurrentActor() actor: Actor,
   ): Promise<ProductDto> {
     return ProductDto.from(await this.products.updateContent(workspaceId, productId, body, actor));
+  }
+
+  @Patch(VARIANT_PATH)
+  @RequirePermission(WorkspacePermission.EditProducts)
+  @ApiOperation({
+    summary: 'Change one variant’s price or compare-at price',
+    description:
+      'Changes only the prices sent; the rest of the product stays as it is. Connected stores ' +
+      'are updated like after any price edit. A null compare-at price removes it.',
+  })
+  @ApiOkResponse({ type: ProductDto })
+  async updateVariantPrice(
+    @Param() params: VariantParamsDto,
+    @Body() body: UpdateVariantPriceDto,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductDto> {
+    return ProductDto.from(await this.products.updateVariantPrice(params, body, actor));
   }
 
   @Delete(`:${PRODUCT_ID_PARAM}`)

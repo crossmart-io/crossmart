@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { sanitizeDescriptionHtml, toCountedPage } from '@crossmart/common';
+import { normalizeAmount, sanitizeDescriptionHtml, toCountedPage } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
 import type { ProductContentPatch } from '../entities/product-content-patch.js';
 import type { ProductDraft } from '../entities/product-draft.js';
+import type { VariantPricePatch, VariantRef } from '../entities/variant-price-patch.js';
 import type {
   CatalogStats,
   ProductDetail,
@@ -21,6 +22,9 @@ import { ProductChangeReporter } from './product-change.reporter.js';
 const PRODUCT_NOT_FOUND = 'Product not found';
 const CONTENT_PATCH_EMPTY = 'Give a title, a description, or both';
 const TITLE_EMPTY = 'The title cannot be empty';
+const VARIANT_NOT_FOUND = 'Variant not found';
+const PRICE_PATCH_EMPTY = 'Give a price, a compare-at price, or both';
+const AMOUNT_INVALID = 'Prices are non-negative amounts with at most two decimals, such as "19.90"';
 
 /** A content edit, trimmed and sanitized like a full one; an empty edit or title is refused. */
 function normalizePatch(patch: ProductContentPatch): ProductContentPatch {
@@ -34,6 +38,26 @@ function normalizePatch(patch: ProductContentPatch): ProductContentPatch {
     ...(patch.descriptionHtml === undefined
       ? {}
       : { descriptionHtml: sanitizeDescriptionHtml(patch.descriptionHtml) }),
+  };
+}
+
+function amountOf(input: string): string {
+  const amount = normalizeAmount(input);
+  if (amount === null) throw new BadRequestException(AMOUNT_INVALID);
+  return amount;
+}
+
+/** A price edit with its amounts normalized ("19.9" → "19.90"); an empty edit is refused. */
+function normalizePricePatch(patch: VariantPricePatch): VariantPricePatch {
+  if (patch.price === undefined && patch.compareAtPrice === undefined) {
+    throw new BadRequestException(PRICE_PATCH_EMPTY);
+  }
+  const { price, compareAtPrice } = patch;
+  return {
+    ...(price === undefined ? {} : { price: amountOf(price) }),
+    ...(compareAtPrice === undefined
+      ? {}
+      : { compareAtPrice: compareAtPrice === null ? null : amountOf(compareAtPrice) }),
   };
 }
 
@@ -116,6 +140,27 @@ export class ProductsService {
       action: ActivityAction.ProductUpdated,
       product,
       kinds: [CatalogChangeKind.Content],
+    });
+    return product;
+  }
+
+  /**
+   * Changes only one variant's price and compare-at price: the rest of the product stays as it
+   * is. Stores are synced like after any price edit.
+   */
+  async updateVariantPrice(
+    ref: VariantRef,
+    patch: VariantPricePatch,
+    actor: Actor,
+  ): Promise<ProductDetail> {
+    if (!(await this.updateWriter.updateVariantPrice(ref, normalizePricePatch(patch)))) {
+      throw new NotFoundException(VARIANT_NOT_FOUND);
+    }
+    const product = await this.get(ref.workspaceId, ref.productId);
+    await this.changes.report(ref.workspaceId, actor, {
+      action: ActivityAction.ProductUpdated,
+      product,
+      kinds: [CatalogChangeKind.Price],
     });
     return product;
   }
