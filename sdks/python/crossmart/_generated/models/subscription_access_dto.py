@@ -22,12 +22,15 @@ class SubscriptionAccessDto:
         enforced (bool): Whether a read-only organization is refused changes on this instance
         until (datetime.datetime | None): When the state ends on its own: the trial, the past-due grace period, or
             access for organizations from before billing. Null when it does not
+        cancel_at (datetime.datetime | None): When a scheduled cancellation ends a subscription that still has access
+            (during a trial, the trial end, and nothing is charged). Null when it renews, or has no access to lose
     """
 
     state: SubscriptionAccessState
     writable: bool
     enforced: bool
     until: datetime.datetime | None
+    cancel_at: datetime.datetime | None
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -43,6 +46,12 @@ class SubscriptionAccessDto:
         else:
             until = self.until
 
+        cancel_at: None | str
+        if isinstance(self.cancel_at, datetime.datetime):
+            cancel_at = self.cancel_at.isoformat()
+        else:
+            cancel_at = self.cancel_at
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -51,6 +60,7 @@ class SubscriptionAccessDto:
                 "writable": writable,
                 "enforced": enforced,
                 "until": until,
+                "cancelAt": cancel_at,
             }
         )
 
@@ -80,11 +90,27 @@ class SubscriptionAccessDto:
 
         until = _parse_until(d.pop("until"))
 
+        def _parse_cancel_at(data: object) -> datetime.datetime | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                cancel_at_type_0 = datetime.datetime.fromisoformat(data)
+
+                return cancel_at_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(datetime.datetime | None, data)
+
+        cancel_at = _parse_cancel_at(d.pop("cancelAt"))
+
         subscription_access_dto = cls(
             state=state,
             writable=writable,
             enforced=enforced,
             until=until,
+            cancel_at=cancel_at,
         )
 
         subscription_access_dto.additional_properties = d

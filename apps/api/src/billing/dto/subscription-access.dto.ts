@@ -35,6 +35,16 @@ export class SubscriptionAccessDto {
   })
   until: Date | null;
 
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description:
+      'When a scheduled cancellation ends a subscription that still has access (during a trial, ' +
+      'the trial end, and nothing is charged). Null when it renews, or has no access to lose',
+  })
+  cancelAt: Date | null;
+
   static from(access: SubscriptionAccess, enforced: boolean): SubscriptionAccessDto {
     return Object.assign(new SubscriptionAccessDto(), { ...access, enforced });
   }

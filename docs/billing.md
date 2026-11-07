@@ -15,6 +15,10 @@ restricts nothing.
   subscription gets a `BILLING_TRIAL_DAYS` trial (7) with the card collected; it is charged when
   the trial ends.
 - **Changes** (plan, interval, card, cancellation, invoices) happen in the Stripe Customer Portal.
+- **Cancellation.** The portal schedules a cancellation with Stripe's `cancel_at` (the trial end,
+  or the period end) and leaves `cancel_at_period_end` false. Crossmart reads both into
+  `cancelAt`, the date the subscription ends; `cancelAtPeriodEnd` is true whenever one is
+  scheduled. A trial cancelled this way ends without a charge.
 - **Webhooks** keep `organization_subscriptions` in line with Stripe: status, interval, period,
   trial, cancellation, and the plan version the price names. Limits follow, since
   `EntitlementService` reads the plan from that row.
@@ -85,6 +89,22 @@ Usage against limits stays at `GET /api/v1/organizations/{id}/subscription`.
    ```bash
    stripe listen --forward-to localhost:3000/api/v1/billing/webhooks/stripe
    ```
+
+## Resyncing from Stripe
+
+Webhooks keep each organization's row current. To repair a row a missed or misread webhook left
+behind, read the subscription from Stripe again and apply it as a webhook would. Run it where the
+API runs, so it has the API's database and Stripe key:
+
+```bash
+node dist/apps/api/main.js --billing-resync --org <organization id>   # repeat --org for more
+node dist/apps/api/main.js --billing-resync --all   # every organization with a subscription
+pnpm billing:resync -- --org <organization id>      # the same, from a built checkout
+```
+
+It logs one line per organization (`synced`, `no_subscription`, `not_found` or `failed`) and only
+writes what Stripe holds now, so it is safe to run again. With `--all`, an organization that fails
+is logged and the rest still run.
 
 ## Tests
 

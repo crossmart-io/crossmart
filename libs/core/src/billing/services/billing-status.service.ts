@@ -35,6 +35,7 @@ export class BillingStatusService {
       currentPeriodEnd: account.currentPeriodEnd,
       trialEnd: account.trialEnd,
       cancelAtPeriodEnd: account.cancelAtPeriodEnd,
+      cancelAt: account.cancelAt,
       access,
       hasBillingAccount: account.externalCustomerId !== null,
       trialAvailable: enabled && isTrialAvailable(account),

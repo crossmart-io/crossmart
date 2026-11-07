@@ -15,6 +15,7 @@ function standing(overrides: Partial<SubscriptionStanding>): SubscriptionStandin
     subscribed: true,
     trialEnd: null,
     pastDueSince: null,
+    cancelAt: null,
     ...overrides,
   };
 }
@@ -24,7 +25,22 @@ describe('subscriptionAccess', () => {
     const trialEnd = new Date('2026-11-25T00:00:00.000Z');
     expect(
       subscriptionAccess(standing({ status: SubscriptionStatus.TRIALING, trialEnd }), TERMS, NOW),
-    ).toEqual({ state: SubscriptionAccessState.Trialing, writable: true, until: trialEnd });
+    ).toEqual({
+      state: SubscriptionAccessState.Trialing,
+      writable: true,
+      until: trialEnd,
+      cancelAt: null,
+    });
+  });
+
+  it('says when a scheduled cancellation ends a live subscription', () => {
+    const cancelAt = new Date('2026-11-25T00:00:00.000Z');
+    const scheduled = (status: SubscriptionStatus) =>
+      subscriptionAccess(standing({ status, trialEnd: cancelAt, cancelAt }), TERMS, NOW);
+
+    expect(scheduled(SubscriptionStatus.TRIALING)).toMatchObject({ until: cancelAt, cancelAt });
+    expect(scheduled(SubscriptionStatus.ACTIVE)).toMatchObject({ cancelAt });
+    expect(scheduled(SubscriptionStatus.CANCELED)).toMatchObject({ cancelAt: null });
   });
 
   it('keeps full access for a paying subscription', () => {
@@ -32,6 +48,7 @@ describe('subscriptionAccess', () => {
       state: SubscriptionAccessState.Active,
       writable: true,
       until: null,
+      cancelAt: null,
     });
   });
 
@@ -48,6 +65,7 @@ describe('subscriptionAccess', () => {
       state: SubscriptionAccessState.Legacy,
       writable: true,
       until,
+      cancelAt: null,
     });
     expect(
       subscriptionAccess(legacy, { ...TERMS, legacyAccessUntil: new Date('2026-11-01') }, NOW),
@@ -66,6 +84,7 @@ describe('subscriptionAccess', () => {
       state: SubscriptionAccessState.PastDueGrace,
       writable: true,
       until: new Date('2026-11-25T12:00:00.000Z'),
+      cancelAt: null,
     });
     expect(pastDue('2026-11-10T12:00:00.000Z')).toMatchObject({
       state: SubscriptionAccessState.PastDue,
@@ -83,6 +102,7 @@ describe('subscriptionAccess', () => {
       state,
       writable: false,
       until: null,
+      cancelAt: null,
     });
   });
 });

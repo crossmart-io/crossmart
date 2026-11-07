@@ -46,7 +46,8 @@
     "prepare": "husky",
     "seed:demo": "tsx tools/demo-seed/main.ts",
     "knowledge:build": "tsx tools/knowledge-base/main.ts",
-    "billing:sync-stripe": "tsx tools/billing/main.ts"
+    "billing:sync-stripe": "tsx tools/billing/main.ts",
+    "billing:resync": "node dist/apps/api/main.js --billing-resync"
   },
   "lint-staged": {
     "*.ts": [

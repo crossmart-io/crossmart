@@ -164,6 +164,63 @@ describe('StripeBillingProvider', () => {
       currentPeriodEnd: new Date(1795161600 * 1000),
       trialEnd: new Date(1794556800 * 1000),
       cancelAtPeriodEnd: false,
+      cancelAt: null,
+    });
+  });
+
+  // The Customer Portal schedules a cancellation with `cancel_at` and leaves
+  // `cancel_at_period_end` false, during a trial and after it (confirmed in Stripe test mode).
+  it('reads a trial cancelled in the portal as ending at the trial end', async () => {
+    const { stripe, provider } = setup();
+    stripe.reply('subscription-trialing-cancel-at.json');
+
+    expect(await provider.getSubscription('sub_TestCrossmart01')).toMatchObject({
+      status: SubscriptionStatus.TRIALING,
+      trialEnd: new Date(1794556800 * 1000),
+      cancelAtPeriodEnd: true,
+      cancelAt: new Date(1794556800 * 1000),
+    });
+  });
+
+  it('reads a paid subscription cancelled in the portal as ending at the period end', async () => {
+    const { stripe, provider } = setup();
+    stripe.reply('subscription-active-cancel-at.json');
+
+    expect(await provider.getSubscription('sub_TestCrossmart01')).toMatchObject({
+      status: SubscriptionStatus.ACTIVE,
+      cancelAtPeriodEnd: true,
+      cancelAt: new Date(1825660800 * 1000),
+    });
+  });
+
+  it('dates a cancellation flagged only at the period end by the trial end while trialing', async () => {
+    const { stripe, provider } = setup();
+    stripe.reply('subscription-trialing-cancel-at-period-end.json');
+
+    expect(await provider.getSubscription('sub_TestCrossmart01')).toMatchObject({
+      currentPeriodEnd: new Date(1795161600 * 1000),
+      cancelAtPeriodEnd: true,
+      cancelAt: new Date(1794556800 * 1000),
+    });
+  });
+
+  it('reads no scheduled cancellation once the subscription has ended', async () => {
+    const { stripe, provider } = setup();
+    stripe.reply('subscription-canceled.json');
+
+    expect(await provider.getSubscription('sub_TestCrossmart01')).toMatchObject({
+      status: SubscriptionStatus.CANCELED,
+      cancelAt: null,
+    });
+  });
+
+  it('reads no cancellation for a subscription that renews', async () => {
+    const { stripe, provider } = setup();
+    stripe.reply('subscription-active-annual.json');
+
+    expect(await provider.getSubscription('sub_TestCrossmart01')).toMatchObject({
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
     });
   });
 
@@ -195,6 +252,7 @@ describe('StripeBillingProvider', () => {
     it.each([
       ['event-checkout-completed.json', BillingEventType.CheckoutCompleted, ORGANIZATION_ID],
       ['event-subscription-updated.json', BillingEventType.SubscriptionChanged, null],
+      ['event-subscription-cancel-scheduled.json', BillingEventType.SubscriptionChanged, null],
       ['event-subscription-deleted.json', BillingEventType.SubscriptionChanged, null],
       ['event-trial-will-end.json', BillingEventType.TrialWillEnd, null],
       ['event-invoice-paid.json', BillingEventType.InvoicePaid, null],

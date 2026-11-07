@@ -8,6 +8,11 @@ export interface SubscriptionAccess {
   writable: boolean;
   /** When the state ends on its own (a trial, a grace period, legacy access); null if never. */
   until: Date | null;
+  /**
+   * When a scheduled cancellation ends a subscription that still has access (trialing, active
+   * or in its grace period); null when it renews, or has no access to lose.
+   */
+  cancelAt: Date | null;
 }
 
 /** What the access rules read of a subscription. */
@@ -17,6 +22,8 @@ export interface SubscriptionStanding {
   subscribed: boolean;
   trialEnd: Date | null;
   pastDueSince: Date | null;
+  /** When a scheduled cancellation ends the subscription; null when it renews. */
+  cancelAt: Date | null;
 }
 
 /** The instance's billing terms the access rules apply. */

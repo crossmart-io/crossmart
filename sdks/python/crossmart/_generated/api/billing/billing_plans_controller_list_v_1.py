@@ -52,7 +52,7 @@ def sync_detailed(
 
      Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none
     (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through
-    `salesEmail`. No plan charges a fee on sales.
+    `salesEmail`.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -79,7 +79,7 @@ def sync(
 
      Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none
     (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through
-    `salesEmail`. No plan charges a fee on sales.
+    `salesEmail`.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -102,7 +102,7 @@ async def asyncio_detailed(
 
      Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none
     (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through
-    `salesEmail`. No plan charges a fee on sales.
+    `salesEmail`.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -127,7 +127,7 @@ async def asyncio(
 
      Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none
     (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through
-    `salesEmail`. No plan charges a fee on sales.
+    `salesEmail`.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

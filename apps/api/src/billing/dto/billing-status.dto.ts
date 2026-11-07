@@ -41,7 +41,8 @@ export class BillingStatusDto {
     type: String,
     format: 'date-time',
     nullable: true,
-    description: 'When the subscription renews, or ends when `cancelAtPeriodEnd` is true',
+    description:
+      'When the current period ends: the subscription renews then, unless `cancelAt` is set',
   })
   currentPeriodEnd: Date | null;
 
@@ -49,12 +50,27 @@ export class BillingStatusDto {
     type: String,
     format: 'date-time',
     nullable: true,
-    description: 'When the trial ends (the card is charged then), or ended',
+    description:
+      'When the trial ends, or ended. The card is charged then, unless `cancelAt` is set',
   })
   trialEnd: Date | null;
 
-  @ApiProperty({ description: 'The subscription ends at `currentPeriodEnd` instead of renewing' })
+  @ApiProperty({
+    description:
+      'Whether a cancellation is scheduled, so the subscription ends instead of renewing. ' +
+      'Read `cancelAt` for when',
+  })
   cancelAtPeriodEnd: boolean;
+
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description:
+      'When a scheduled cancellation ends the subscription (during a trial, the trial end, and ' +
+      'nothing is charged); null when it renews',
+  })
+  cancelAt: Date | null;
 
   @ApiProperty({ type: SubscriptionAccessDto })
   access: SubscriptionAccessDto;

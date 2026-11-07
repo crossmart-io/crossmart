@@ -352,7 +352,7 @@ export interface paths {
         };
         /**
          * The plans on offer, with what each includes and costs
-         * @description Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through `salesEmail`. No plan charges a fee on sales.
+         * @description Open to anyone. Prices come from the billing provider, monthly and annual; a plan with none (Enterprise, or every plan on a self-hosted instance) is not self-serve and is sold through `salesEmail`.
          */
         get: operations["BillingPlansController_list_v1"];
         put?: never;
@@ -2306,6 +2306,11 @@ export interface components {
              * @description When the state ends on its own: the trial, the past-due grace period, or access for organizations from before billing. Null when it does not
              */
             until: string | null;
+            /**
+             * Format: date-time
+             * @description When a scheduled cancellation ends a subscription that still has access (during a trial, the trial end, and nothing is charged). Null when it renews, or has no access to lose
+             */
+            cancelAt: string | null;
         };
         BillingStatusDto: {
             /** Format: uuid */
@@ -2319,16 +2324,21 @@ export interface components {
             interval: components["schemas"]["BillingInterval"] | null;
             /**
              * Format: date-time
-             * @description When the subscription renews, or ends when `cancelAtPeriodEnd` is true
+             * @description When the current period ends: the subscription renews then, unless `cancelAt` is set
              */
             currentPeriodEnd: string | null;
             /**
              * Format: date-time
-             * @description When the trial ends (the card is charged then), or ended
+             * @description When the trial ends, or ended. The card is charged then, unless `cancelAt` is set
              */
             trialEnd: string | null;
-            /** @description The subscription ends at `currentPeriodEnd` instead of renewing */
+            /** @description Whether a cancellation is scheduled, so the subscription ends instead of renewing. Read `cancelAt` for when */
             cancelAtPeriodEnd: boolean;
+            /**
+             * Format: date-time
+             * @description When a scheduled cancellation ends the subscription (during a trial, the trial end, and nothing is charged); null when it renews
+             */
+            cancelAt: string | null;
             access: components["schemas"]["SubscriptionAccessDto"];
             /** @description Whether the billing portal can open (a plan was chosen before) */
             hasBillingAccount: boolean;

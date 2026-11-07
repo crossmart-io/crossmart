@@ -10,6 +10,7 @@ export interface SubscriptionUpdate {
   currentPeriodEnd: Date | null;
   trialEnd: Date | null;
   cancelAtPeriodEnd: boolean;
+  cancelAt: Date | null;
   pastDueSince: Date | null;
 }
 

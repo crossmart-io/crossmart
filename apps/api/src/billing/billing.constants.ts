@@ -21,3 +21,18 @@ export const BILLING_INTERVAL_SCHEMA_NAME = 'BillingInterval';
 export const ALLOWED_WHILE_READ_ONLY_METADATA_KEY = 'crossmart:allowed-while-read-only';
 /** Methods that only read, which a read-only organization may always use. */
 export const READ_ONLY_HTTP_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * `node dist/apps/api/main.js --billing-resync --org <id> | --all` reads organizations'
+ * subscriptions from the billing provider and applies them, then exits.
+ */
+export const BILLING_RESYNC_FLAG = 'billing-resync';
+export const RESYNC_ORG_OPTION = 'org';
+export const RESYNC_ALL_OPTION = 'all';
+/** pnpm may pass on the `--` that separates a script's own arguments; it is not an option. */
+export const ARGUMENTS_SEPARATOR = '--';
+/** `process.argv` starts with the node binary and the script; the arguments follow. */
+export const SCRIPT_ARGUMENTS_START = 2;
+export const RESYNC_LOG_CONTEXT = 'BillingResync';
+export const RESYNC_USAGE =
+  'Usage: node dist/apps/api/main.js --billing-resync --org <organization id> [--org <id>...] | --all';

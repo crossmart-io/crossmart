@@ -14,6 +14,7 @@ export function billingAccount(
     currentPeriodEnd: null,
     trialEnd: null,
     cancelAtPeriodEnd: false,
+    cancelAt: null,
     pastDueSince: null,
     planVersionId: 'pv-starter-2',
     planVersion: { plan: { code: 'starter' } },

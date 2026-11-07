@@ -19,7 +19,8 @@ const ACCOUNT: BillingAccountRecord = {
   billingInterval: BillingInterval.ANNUAL,
   currentPeriodEnd: TRIAL_END,
   trialEnd: TRIAL_END,
-  cancelAtPeriodEnd: false,
+  cancelAtPeriodEnd: true,
+  cancelAt: TRIAL_END,
   pastDueSince: null,
   planVersionId: 'pv-starter-2',
   planVersion: { plan: { code: 'starter' } },
@@ -27,7 +28,12 @@ const ACCOUNT: BillingAccountRecord = {
 };
 
 it('BillingStatusService reports the plan, the provider’s view and what the organization may do', async () => {
-  const access = { state: SubscriptionAccessState.Trialing, writable: true, until: TRIAL_END };
+  const access = {
+    state: SubscriptionAccessState.Trialing,
+    writable: true,
+    until: TRIAL_END,
+    cancelAt: TRIAL_END,
+  };
   const service = new BillingStatusService(
     {
       findByOrganization: vi.fn().mockResolvedValue(ACCOUNT),
@@ -51,7 +57,8 @@ it('BillingStatusService reports the plan, the provider’s view and what the or
     interval: BillingInterval.ANNUAL,
     currentPeriodEnd: TRIAL_END,
     trialEnd: TRIAL_END,
-    cancelAtPeriodEnd: false,
+    cancelAtPeriodEnd: true,
+    cancelAt: TRIAL_END,
     access,
     hasBillingAccount: true,
     trialAvailable: false,

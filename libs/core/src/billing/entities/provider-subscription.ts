@@ -13,5 +13,8 @@ export interface ProviderSubscription {
   interval: BillingInterval | null;
   currentPeriodEnd: Date | null;
   trialEnd: Date | null;
+  /** True whenever a cancellation is scheduled, whether at the period end or at `cancelAt`. */
   cancelAtPeriodEnd: boolean;
+  /** When a scheduled cancellation ends the subscription; null when it renews. */
+  cancelAt: Date | null;
 }

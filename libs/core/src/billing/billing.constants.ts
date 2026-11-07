@@ -23,6 +23,9 @@ export const MONTHS_PER_YEAR = 12;
 export const ORGANIZATION_ID_METADATA_KEY = 'organization_id';
 export const PLAN_CODE_METADATA_KEY = 'plan_code';
 
+/** Organizations read per page when every subscription is resynced from the provider. */
+export const RESYNC_PAGE_SIZE = 100;
+
 /** How long plan prices read from the provider are reused before they are read again. */
 export const PRICE_CACHE_TTL_MS = 10 * 60 * 1000;
 

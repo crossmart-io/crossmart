@@ -19,6 +19,7 @@ function record(): SubscriptionRecord {
     billingInterval: null,
     trialEnd: null,
     cancelAtPeriodEnd: false,
+    cancelAt: null,
     pastDueSince: null,
     createdAt: new Date(),
     updatedAt: new Date(),
