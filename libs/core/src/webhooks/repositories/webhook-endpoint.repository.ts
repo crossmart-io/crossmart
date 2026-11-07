@@ -6,6 +6,7 @@ import {
   WebhookDeliveryStatus,
   type WebhookEndpoint,
 } from '@crossmart/database';
+import type { WebhookEndpointLastDelivery } from '../entities/webhook-endpoint-view.js';
 import { WEBHOOK_ENDPOINT_DISABLED_ERROR } from '../webhooks.constants.js';
 
 type Transaction = Prisma.TransactionClient;
@@ -102,6 +103,25 @@ export class WebhookEndpointRepository {
     await this.prisma.webhookEndpoint.updateMany({
       where: { id: endpointId, consecutiveFailures: { gt: 0 } },
       data: { consecutiveFailures: 0 },
+    });
+  }
+
+  /**
+   * Keeps the endpoint's latest attempt, unless a later one is already stored: deliveries run
+   * concurrently and may finish out of order.
+   */
+  async recordLastAttempt(endpointId: string, attempt: WebhookEndpointLastDelivery): Promise<void> {
+    await this.prisma.webhookEndpoint.updateMany({
+      where: {
+        id: endpointId,
+        OR: [{ lastAttemptAt: null }, { lastAttemptAt: { lte: attempt.attemptedAt } }],
+      },
+      data: {
+        lastAttemptAt: attempt.attemptedAt,
+        lastAttemptOutcome: attempt.outcome,
+        lastResponseStatus: attempt.responseStatus,
+        lastAttemptError: attempt.error,
+      },
     });
   }
 

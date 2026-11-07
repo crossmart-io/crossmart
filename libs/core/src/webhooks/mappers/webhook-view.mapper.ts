@@ -1,6 +1,9 @@
 import { findEnumValue } from '@crossmart/common';
 import type { WebhookEndpoint } from '@crossmart/database';
-import type { WebhookEndpointView } from '../entities/webhook-endpoint-view.js';
+import type {
+  WebhookEndpointLastDelivery,
+  WebhookEndpointView,
+} from '../entities/webhook-endpoint-view.js';
 import type {
   WebhookDeliveryDetail,
   WebhookDeliveryView,
@@ -17,6 +20,18 @@ function knownEventTypes(stored: readonly string[]): WebhookEventType[] {
   });
 }
 
+/** The endpoint's latest attempt, or null before its first one. */
+function lastDeliveryOf(endpoint: WebhookEndpoint): WebhookEndpointLastDelivery | null {
+  const { lastAttemptAt, lastAttemptOutcome } = endpoint;
+  if (lastAttemptAt === null || lastAttemptOutcome === null) return null;
+  return {
+    attemptedAt: lastAttemptAt,
+    outcome: lastAttemptOutcome,
+    responseStatus: endpoint.lastResponseStatus,
+    error: endpoint.lastAttemptError,
+  };
+}
+
 /** The endpoint as the API shows it, without any secret. */
 export function toWebhookEndpointView(endpoint: WebhookEndpoint): WebhookEndpointView {
   return {
@@ -28,6 +43,7 @@ export function toWebhookEndpointView(endpoint: WebhookEndpoint): WebhookEndpoin
     disabledReason: endpoint.disabledReason,
     disabledAt: endpoint.disabledAt,
     consecutiveFailures: endpoint.consecutiveFailures,
+    lastDelivery: lastDeliveryOf(endpoint),
     previousSecretExpiresAt: endpoint.previousSecretExpiresAt,
     createdAt: endpoint.createdAt,
     updatedAt: endpoint.updatedAt,

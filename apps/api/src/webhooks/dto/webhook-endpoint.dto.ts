@@ -1,14 +1,44 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   WebhookEventType,
+  type WebhookEndpointLastDelivery,
   type WebhookEndpointView,
   type WebhookEndpointWithSecret,
 } from '@crossmart/core';
-import { WebhookDisabledReason } from '@crossmart/database';
+import { WebhookAttemptOutcome, WebhookDisabledReason } from '@crossmart/database';
 import {
+  WEBHOOK_ATTEMPT_OUTCOME_SCHEMA_NAME,
   WEBHOOK_DISABLED_REASON_SCHEMA_NAME,
   WEBHOOK_EVENT_TYPE_SCHEMA_NAME,
 } from '../webhooks.constants.js';
+
+export class WebhookEndpointLastDeliveryDto implements WebhookEndpointLastDelivery {
+  @ApiProperty()
+  attemptedAt: Date;
+
+  @ApiProperty({
+    enum: WebhookAttemptOutcome,
+    enumName: WEBHOOK_ATTEMPT_OUTCOME_SCHEMA_NAME,
+    description: 'SUCCEEDED: the endpoint answered 2xx. FAILED: anything else, or no answer.',
+  })
+  outcome: WebhookAttemptOutcome;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 200,
+    description: 'Null when no response came: a timeout or a connection error',
+  })
+  responseStatus: number | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'The endpoint answered with HTTP 503',
+    description: 'Why the attempt failed; null on success',
+  })
+  error: string | null;
+}
 
 export class WebhookEndpointDto implements WebhookEndpointView {
   @ApiProperty({ format: 'uuid' })
@@ -39,6 +69,13 @@ export class WebhookEndpointDto implements WebhookEndpointView {
 
   @ApiProperty({ description: 'Failed attempts since the last delivery that went through' })
   consecutiveFailures: number;
+
+  @ApiProperty({
+    type: WebhookEndpointLastDeliveryDto,
+    nullable: true,
+    description: 'The latest delivery attempt, whatever event it carried; null before the first',
+  })
+  lastDelivery: WebhookEndpointLastDeliveryDto | null;
 
   @ApiProperty({
     type: Date,
