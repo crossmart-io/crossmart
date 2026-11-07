@@ -20,8 +20,10 @@ import { describeOutcome } from '../rules/action-outcome.js';
 
 const STORED_PREVIEW = z.object({
   target: z.string().nullable(),
+  headline: z.string(),
+  details: z.array(z.string()),
   changes: z.array(
-    z.object({ field: z.string(), before: z.string().nullable(), after: z.string().nullable() }),
+    z.object({ label: z.string(), before: z.string().nullable(), after: z.string().nullable() }),
   ),
 });
 

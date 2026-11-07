@@ -1,85 +1,58 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { z } from 'zod';
 import { describeError } from '@crossmart/common';
-import { AgentToolName } from '../../agent-tools/agent-tools.constants.js';
 import type { ApiToolSpec } from '../../agent-tools/tools/api-tool.js';
-import { ALL_TOOLS } from '../../agent-tools/tools/index.js';
 import type { AgentWorkerScope } from '../entities/agent-worker-owner.js';
 import type { AgentWorkerActionPreview } from '../entities/agent-worker-views.js';
-import {
-  inputChanges,
-  LISTING_PREVIEW_SOURCE,
-  listingChanges,
-  PRODUCT_PREVIEW_SOURCE,
-  productChanges,
-} from '../rules/action-preview.js';
+import type { ActionPreviewFormatter } from '../previews/action-preview-formatter.js';
+import { ACTION_PREVIEW_FORMATTERS } from '../previews/formatters/index.js';
+import { PreviewReader } from '../previews/preview-reader.js';
+import { change, humanize } from '../previews/preview-values.js';
 import { AgentToolExecutor } from '../tools/agent-tool-executor.js';
 
-const PRODUCT_ID_INPUT = 'productId';
-const CONNECTION_ID_INPUT = 'connectionId';
+const ID_SUFFIX = 'Id';
 
-function specNamed(name: AgentToolName): ApiToolSpec {
-  const spec = ALL_TOOLS.find((candidate) => candidate.name === name);
-  if (!spec) throw new Error(`No agent tool ${name}`);
-  return spec;
+/** For a tool without a formatter: its title, and the values the call sets, ids aside. */
+export function genericPreview(
+  spec: ApiToolSpec,
+  input: Record<string, unknown>,
+): AgentWorkerActionPreview {
+  const changes = Object.entries(input)
+    .filter(([field]) => !field.endsWith(ID_SUFFIX))
+    .flatMap(([field, value]) => change(humanize(field), null, value));
+  return { target: null, headline: spec.title, details: [], changes };
 }
 
 /**
- * Shows what a proposed change would do before anyone approves it: for listings and products,
- * the current values read through the API next to the proposed ones; for other tools, the
- * values the call sets. A preview that cannot be read falls back to the latter; it never blocks
- * the proposal.
+ * Shows what a proposed change would do before anyone approves it, in plain words: each write
+ * tool has a formatter that reads the current values through the API and describes the change.
+ * A preview that cannot be read falls back to the generic view; it never blocks the proposal.
  */
 @Injectable()
 export class AgentWorkerPreviewer {
   private readonly logger = new Logger(AgentWorkerPreviewer.name);
+  private readonly formatters = new Map<string, ActionPreviewFormatter>(
+    ACTION_PREVIEW_FORMATTERS.map((formatter) => [formatter.tool, formatter]),
+  );
 
   constructor(private readonly executor: AgentToolExecutor) {}
+
+  /** Whether the tool has its own plain-words preview. */
+  hasFormatter(toolName: string): boolean {
+    return this.formatters.has(toolName);
+  }
 
   async preview(
     scope: AgentWorkerScope,
     spec: ApiToolSpec,
     input: Record<string, unknown>,
   ): Promise<AgentWorkerActionPreview> {
+    const formatter = this.formatters.get(spec.name);
+    if (!formatter) return genericPreview(spec, input);
     try {
-      if (spec.name === AgentToolName.UpdateListing) return await this.listing(scope, input);
-      if (spec.name === AgentToolName.ReplaceProduct) return await this.product(scope, input);
+      return await formatter.preview(input, new PreviewReader(this.executor, scope));
     } catch (error) {
       this.logger.warn(`Could not preview ${spec.name}: ${describeError(error)}`);
+      return genericPreview(spec, input);
     }
-    return { target: null, changes: inputChanges(input) };
-  }
-
-  private async listing(
-    scope: AgentWorkerScope,
-    input: Record<string, unknown>,
-  ): Promise<AgentWorkerActionPreview> {
-    const ids = {
-      [PRODUCT_ID_INPUT]: input[PRODUCT_ID_INPUT],
-      [CONNECTION_ID_INPUT]: input[CONNECTION_ID_INPUT],
-    };
-    const source = await this.read(scope, AgentToolName.GetListing, ids, LISTING_PREVIEW_SOURCE);
-    const target = `${String(source.title.product)} on ${source.connection.displayName}`;
-    return { target, changes: listingChanges(source, input) };
-  }
-
-  private async product(
-    scope: AgentWorkerScope,
-    input: Record<string, unknown>,
-  ): Promise<AgentWorkerActionPreview> {
-    const ids = { [PRODUCT_ID_INPUT]: input[PRODUCT_ID_INPUT] };
-    const source = await this.read(scope, AgentToolName.GetProduct, ids, PRODUCT_PREVIEW_SOURCE);
-    return { target: source.title, changes: productChanges(source, input) };
-  }
-
-  private async read<Source>(
-    scope: AgentWorkerScope,
-    tool: AgentToolName,
-    input: Record<string, unknown>,
-    schema: z.ZodType<Source>,
-  ): Promise<Source> {
-    const result = await this.executor.execute(scope, specNamed(tool), input);
-    if (result.isError) throw new Error(result.text.split('\n')[0]);
-    return schema.parse(result.value);
   }
 }

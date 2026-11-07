@@ -24,8 +24,8 @@ import {
 import { AgentWorkerConversationDto } from './agent-worker-conversation.dto.js';
 
 export class AgentWorkerChangeDto implements AgentWorkerChange {
-  @ApiProperty({ example: 'title' })
-  field: string;
+  @ApiProperty({ example: 'Price (Medium)', description: 'What changes, for people' })
+  label: string;
 
   @ApiProperty({ type: String, nullable: true, description: 'The value now; null when unknown' })
   before: string | null;
@@ -37,6 +37,19 @@ export class AgentWorkerChangeDto implements AgentWorkerChange {
 export class AgentWorkerActionPreviewDto implements AgentWorkerActionPreview {
   @ApiProperty({ type: String, nullable: true, example: 'Linen Shirt on Outlet store' })
   target: string | null;
+
+  @ApiProperty({
+    example: 'Add 20 units (stock received)',
+    description: 'The change in one sentence',
+  })
+  headline: string;
+
+  @ApiProperty({
+    type: [String],
+    description: 'More lines to read, such as a note',
+    example: ['Note: Spring delivery'],
+  })
+  details: string[];
 
   @ApiProperty({ type: [AgentWorkerChangeDto] })
   changes: AgentWorkerChangeDto[];

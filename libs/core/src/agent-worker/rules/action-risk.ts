@@ -2,7 +2,7 @@ import type { ApiToolSpec } from '../../agent-tools/tools/api-tool.js';
 import { AGENT_WORKER_BULK_THRESHOLD } from '../agent-worker.constants.js';
 import type { AgentWorkerActionPreview } from '../entities/agent-worker-views.js';
 import { AgentWorkerActionRisk } from '../enums/agent-worker-action-risk.enum.js';
-import { PRICE_LABEL } from './action-preview.js';
+import { PRICE_LABEL } from '../previews/preview.constants.js';
 
 /** A proposed call and how many listings its confirmation publishes in all. */
 export interface RiskInput {
@@ -27,7 +27,7 @@ function namesManyItems(input: Record<string, unknown>): boolean {
 function changesPrices({ spec, input, preview }: RiskInput): boolean {
   const setsPrice = (spec.priceInputs ?? []).some((field) => input[field] !== undefined);
   if (!setsPrice || !preview?.target) return setsPrice;
-  return preview.changes.some((change) => change.field.startsWith(PRICE_LABEL));
+  return preview.changes.some((change) => change.label.startsWith(PRICE_LABEL));
 }
 
 /**

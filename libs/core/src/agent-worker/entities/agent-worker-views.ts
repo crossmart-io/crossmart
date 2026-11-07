@@ -19,17 +19,24 @@ export interface AgentWorkerConversationPage {
   total: number;
 }
 
-/** One field a proposed change touches: what it is now and what it would become. */
+/** One thing a proposed change touches: what it is now and what it would become. */
 export interface AgentWorkerChange {
-  field: string;
+  /** What it is, for people: "Title", "Price (Medium)", "On hand". */
+  label: string;
+  /** Null when the current value is not known. */
   before: string | null;
   after: string | null;
 }
 
-/** What a proposed change would do, for the approval card. */
+/** What a proposed change would do, in plain words, for the approval card. */
 export interface AgentWorkerActionPreview {
   /** What it changes, such as "Linen Shirt on Outlet store"; null when unknown. */
   target: string | null;
+  /** The change in one sentence: "Add 20 units (stock received)". */
+  headline: string;
+  /** More lines worth reading before approving, such as the note of an adjustment. */
+  details: string[];
+  /** Values before and after, for a diff. */
   changes: AgentWorkerChange[];
 }
 

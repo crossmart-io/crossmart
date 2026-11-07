@@ -48,11 +48,15 @@ describe('assessRisks', () => {
     const input = { variants: [{ id: 'v1', price: '20.00' }] };
     const unchanged = {
       target: 'Mug',
-      changes: [{ field: 'title', before: 'Mug', after: 'Big Mug' }],
+      headline: 'Replace',
+      details: [],
+      changes: [{ label: 'Title', before: 'Mug', after: 'Big Mug' }],
     };
     const changed = {
       target: 'Mug',
-      changes: [{ field: 'price (MUG-1)', before: '20.00', after: '22.00' }],
+      headline: 'Replace',
+      details: [],
+      changes: [{ label: 'Price (MUG-1)', before: '$20.00', after: '$22.00' }],
     };
     expect(assessRisks({ spec: replace, input, publishesInBatch: 0, preview: unchanged })).toEqual([
       AgentWorkerActionRisk.Destructive,
@@ -66,7 +70,7 @@ describe('assessRisks', () => {
         spec: replace,
         input,
         publishesInBatch: 0,
-        preview: { target: null, changes: [] },
+        preview: { target: null, headline: 'Replace', details: [], changes: [] },
       }),
     ).toContain(AgentWorkerActionRisk.PriceChange);
   });

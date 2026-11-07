@@ -9,6 +9,7 @@ import {
   AgentWorkerEventType,
   AgentWorkerTurnStatus,
   AiProvider,
+  AskChannel,
   type AiContentBlock,
   AiContentBlockType,
   EntitlementEnforcement,
@@ -20,6 +21,7 @@ import {
 import { FakeAiProvider } from '@crossmart/core/ai/testing/fake-ai.provider.js';
 import { API_KEY_HEADER } from '@crossmart/common';
 import { PrismaService, ProductStatus, WorkspaceRole } from '@crossmart/database';
+import { CITED_ANSWER } from './support/ask.js';
 import { createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 interface StreamEvent {
@@ -244,6 +246,83 @@ describe('Agent Worker (e2e)', () => {
       .get(`/api/v1/workspaces/${owner.workspaceId}/products/${product.id}`)
       .set('Cookie', owner.cookie);
     expect(renamed.body.title).toBe('Stoneware Mug – Handmade, 350 ml');
+  });
+
+  it('edits only a title through update_product_text, with no confirmation needed', async () => {
+    const owner = await signUp(app, 'Copy Editor');
+    const inventoryItemId = await createStockedProduct(owner);
+    const item = await request(server())
+      .get(`/api/v1/workspaces/${owner.workspaceId}/inventory-items/${inventoryItemId}`)
+      .set('Cookie', owner.cookie);
+    expect(item.body).toMatchObject({ productTitle: 'Stoneware Mug', onHand: 3 });
+    const productId = item.body.productId;
+    const conversationId = await startConversation(owner);
+    ai.replyWith([
+      toolUse('update_product_text', { productId, title: 'Stoneware Mug – 350 ml' }),
+    ]).replyWith([text('Renamed.')]);
+
+    const events = parseEvents((await send(owner, conversationId, 'Sharpen the title')).text);
+    const action = firstOf(events, AgentWorkerEventType.ActionProposed).action;
+    expect(action).toMatchObject({
+      risks: [],
+      preview: {
+        target: 'Stoneware Mug',
+        headline: 'Edit the title in the catalog',
+        changes: [{ label: 'Title', before: 'Stoneware Mug', after: 'Stoneware Mug – 350 ml' }],
+      },
+    });
+    await decide(owner, conversationId, [action?.id ?? '']);
+
+    const product = await request(server())
+      .get(`/api/v1/workspaces/${owner.workspaceId}/products/${productId}`)
+      .set('Cookie', owner.cookie);
+    expect(product.body.title).toBe('Stoneware Mug – 350 ml');
+    expect(product.body.variants[0]).toMatchObject({ price: '20.00', available: 3 });
+  });
+
+  it('refuses an empty or foreign partial product edit', async () => {
+    const owner = await signUp(app, 'Patch Owner');
+    const stranger = await signUp(app, 'Patch Stranger');
+    const inventoryItemId = await createStockedProduct(owner);
+    const item = await request(server())
+      .get(`/api/v1/workspaces/${owner.workspaceId}/inventory-items/${inventoryItemId}`)
+      .set('Cookie', owner.cookie);
+    const path = (user: SignedUpUser) =>
+      `/api/v1/workspaces/${user.workspaceId}/products/${item.body.productId}`;
+
+    const empty = await request(server()).patch(path(owner)).set('Cookie', owner.cookie).send({});
+    expect(empty.status).toBe(HttpStatus.BAD_REQUEST);
+    const foreign = await request(server())
+      .patch(path(stranger))
+      .set('Cookie', stranger.cookie)
+      .send({ title: 'Mine now' });
+    expect(foreign.status).toBe(HttpStatus.NOT_FOUND);
+  });
+
+  it('asks Crossmart questions as a read, on the Agent Worker channel', async () => {
+    const owner = await signUp(app, 'Curious');
+    const conversationId = await startConversation(owner);
+    ai.answerWith(CITED_ANSWER);
+    ai.replyWith([
+      toolUse('ask_crossmart', { question: 'What are the API rate limits?' }),
+    ]).replyWith([text('Past a limit the API answers 429.')]);
+
+    const events = parseEvents((await send(owner, conversationId, 'Any API limits?')).text);
+
+    expect(firstOf(events, AgentWorkerEventType.ToolFinished).action?.status).toBe(
+      AgentWorkerActionStatus.Succeeded,
+    );
+    const asked = await prisma.askConversation.findFirst({
+      where: {
+        userId: (
+          await prisma.user.findFirstOrThrow({
+            where: { name: 'Curious' },
+            orderBy: { createdAt: 'desc' },
+          })
+        ).id,
+      },
+    });
+    expect(asked).toMatchObject({ channel: AskChannel.AgentWorker });
   });
 
   it('keeps conversations to their owner and refuses API keys', async () => {

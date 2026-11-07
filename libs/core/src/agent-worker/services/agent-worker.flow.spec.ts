@@ -282,17 +282,49 @@ describe('Agent Worker turns', () => {
       expect(harness.executor.calls).toHaveLength(0);
     });
 
-    it('never offers webhooks, account or Ask tools', async () => {
+    it('never offers webhooks or account tools, and offers Ask without escalation', async () => {
       harness.setRole(harness.owner, WorkspaceRole.OWNER);
       harness.ai.replyWith([text('Hi')]);
       await harness.send(conversationId, 'Hello');
-      const offered = harness.ai.conversationRequests[0]?.tools.map((tool) => tool.name) ?? [];
-      expect(offered).not.toEqual(expect.arrayContaining(['create_webhook_endpoint']));
-      expect(
-        offered.some(
-          (name) => name.includes('webhook') || name.includes('ask') || name === 'create_account',
-        ),
-      ).toBe(false);
+      const tools = harness.ai.conversationRequests[0]?.tools ?? [];
+      const offered = tools.map((tool) => tool.name);
+      expect(offered.some((name) => name.includes('webhook') || name === 'create_account')).toBe(
+        false,
+      );
+      expect(offered).not.toContain('get_ask_escalation');
+      const ask = tools.find((tool) => tool.name === 'ask_crossmart');
+      expect(Object.keys(ask?.inputSchema.properties as object)).toEqual([
+        'question',
+        'conversationId',
+      ]);
+    });
+
+    it('runs Ask at once, as a read, on its own channel, even for a Viewer', async () => {
+      harness.setRole(harness.owner, WorkspaceRole.VIEWER);
+      harness.executor.answer('ask_crossmart', {
+        outcome: 'answered',
+        answer: 'Yes, Etsy is supported.',
+      });
+      harness.ai
+        .replyWith([toolUse('ask_crossmart', { question: 'Does Crossmart support Etsy?' })])
+        .replyWith([text('Yes.')]);
+
+      await harness.send(conversationId, 'Can I sell on Etsy?');
+
+      const [call] = harness.executor.callsTo('ask_crossmart');
+      expect(call?.input).toEqual({ question: 'Does Crossmart support Etsy?' });
+      expect(harness.tables.actions[0]?.status).toBe(AgentWorkerActionStatus.Succeeded);
+    });
+
+    it('refuses an escalation from Ask, which stays read-only', async () => {
+      harness.ai
+        .replyWith([
+          toolUse('ask_crossmart', { question: 'Help', escalate: { contactEmail: 'a@b.co' } }),
+        ])
+        .replyWith([text('I cannot escalate.')]);
+      await harness.send(conversationId, 'Get me a human');
+      expect(harness.executor.calls).toHaveLength(0);
+      expect(harness.tables.actions[0]?.status).toBe(AgentWorkerActionStatus.Refused);
     });
 
     it('answers 404 once the person left the workspace', async () => {

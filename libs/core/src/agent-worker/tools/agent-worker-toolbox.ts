@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import type { ApiToolSpec } from '../../agent-tools/tools/api-tool.js';
+import { askCrossmartTool } from '../../agent-tools/tools/ask.tools.js';
 import { ALL_TOOLS } from '../../agent-tools/tools/index.js';
+import { AskChannel } from '../../ask/enums/ask-channel.enum.js';
 import { scopePermissions } from '../../agents/permissions/agent-scope-permissions.js';
 import type { AiToolDefinition } from '../../ai/entities/ai-conversation.js';
 import type { WorkspacePermission } from '../../tenancy/enums/workspace-permission.enum.js';
@@ -34,15 +36,18 @@ function toTool(spec: ApiToolSpec): AgentWorkerTool {
 
 /**
  * The tools Agent Worker offers: the MCP server's own (`libs/core/src/agent-tools`), limited to
- * Agent Worker's scopes (no webhooks, no account or Ask tools) and to what the person's role
- * allows, so the model is never offered a tool the person could not use. The API still checks
- * every call.
+ * Agent Worker's scopes (no webhooks or account tools) and to what the person's role allows, so
+ * the model is never offered a tool the person could not use, plus `ask_crossmart` for questions
+ * about Crossmart itself, read-only (it cannot escalate). The API still checks every call.
  */
 @Injectable()
 export class AgentWorkerToolbox {
-  private readonly tools: readonly AgentWorkerTool[] = ALL_TOOLS.filter(
-    (spec) => spec.scope !== undefined && AGENT_WORKER_SCOPES.includes(spec.scope),
-  ).map(toTool);
+  private readonly tools: readonly AgentWorkerTool[] = [
+    ...ALL_TOOLS.filter(
+      (spec) => spec.scope !== undefined && AGENT_WORKER_SCOPES.includes(spec.scope),
+    ),
+    askCrossmartTool(AskChannel.AgentWorker, false),
+  ].map(toTool);
 
   constructor(private readonly workspaceAccess: WorkspaceAccessService) {}
 
@@ -56,7 +61,7 @@ export class AgentWorkerToolbox {
   toolsFor(permissions: ReadonlySet<WorkspacePermission>): AgentWorkerTool[] {
     return this.tools.filter(
       ({ spec }) =>
-        spec.scope !== undefined &&
+        spec.scope === undefined ||
         scopePermissions(spec.scope).some((permission) => permissions.has(permission)),
     );
   }
