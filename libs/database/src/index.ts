@@ -16,6 +16,7 @@ export {
   SubscriptionStatus,
   SuggestionCreatorType,
   SuggestionStatus,
+  WebhookAttemptOutcome,
   WebhookDeliveryStatus,
   WebhookDisabledReason,
   WorkspaceRole,

@@ -16,3 +16,4 @@ export const WEBHOOK_DELIVERY_PAGE_MAX_LIMIT = 100;
 export const WEBHOOK_EVENT_TYPE_SCHEMA_NAME = 'WebhookEventType';
 export const WEBHOOK_DELIVERY_STATUS_SCHEMA_NAME = 'WebhookDeliveryStatus';
 export const WEBHOOK_DISABLED_REASON_SCHEMA_NAME = 'WebhookDisabledReason';
+export const WEBHOOK_ATTEMPT_OUTCOME_SCHEMA_NAME = 'WebhookAttemptOutcome';
