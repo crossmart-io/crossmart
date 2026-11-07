@@ -2,7 +2,11 @@ import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { SuggestionStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
-import { CONTENT_GENERATION_MAX_PRODUCTS, WORKSPACE_PATH } from '../agent-tools.constants.js';
+import {
+  CONTENT_GENERATION_MAX_PRODUCTS,
+  WORKSPACE_PATH,
+  AgentToolName,
+} from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { ID_INPUT, PAGE_INPUT } from './tool-inputs.js';
 
@@ -11,7 +15,7 @@ const CONTENT_GENERATIONS_PATH = `${WORKSPACE_PATH}/ai/content-generations`;
 
 export const SUGGESTION_TOOLS = [
   defineTool({
-    name: 'generate_content',
+    name: AgentToolName.GenerateContent,
     title: 'Generate listing content with AI',
     description:
       'Ask Crossmart’s Content Generator to write a channel-optimised title and description ' +
@@ -47,7 +51,7 @@ export const SUGGESTION_TOOLS = [
     toCall: (input) => ({ method: HttpMethod.Get, path: SUGGESTIONS_PATH, query: input }),
   }),
   defineTool({
-    name: 'approve_suggestion',
+    name: AgentToolName.ApproveSuggestion,
     title: 'Approve a suggestion',
     description:
       'Apply a pending suggestion: the store’s listing changes and is synced. If the field ' +

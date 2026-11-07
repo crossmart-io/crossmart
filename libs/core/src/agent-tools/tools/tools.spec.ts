@@ -6,6 +6,9 @@ import {
   ASK_PATH,
   WORKSPACE_PATH,
 } from '../agent-tools.constants.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
+import { AskChannel } from '../../ask/enums/ask-channel.enum.js';
+import { askCrossmartTool } from './ask.tools.js';
 import { ALL_TOOLS } from './index.js';
 
 const SNAKE_CASE = /^[a-z]+(_[a-z]+)*$/;
@@ -95,6 +98,43 @@ describe('MCP tools', () => {
       method: HttpMethod.Put,
       path: `${WORKSPACE_PATH}/products/p-1`,
       body: { title: 'Mug', variants: [] },
+    });
+  });
+
+  it('requires the handle a replaced product keeps', () => {
+    const input = z.object(tool('replace_product').input);
+    const product = { productId: crypto.randomUUID(), title: 'Mug', variants: [{ price: '9.00' }] };
+    expect(input.safeParse(product).success).toBe(false);
+    expect(input.safeParse({ ...product, handle: 'mug' }).success).toBe(true);
+  });
+
+  it('edits only a product’s title or description, with PATCH, and removes nothing', () => {
+    const spec = tool('update_product_text');
+    expect(spec.destructive).toBeFalsy();
+    expect(spec.readOnly).toBe(false);
+    expect(spec.scope).toBe(AgentScope.CatalogWrite);
+    expect(spec.toCall({ productId: 'p-1', title: 'Big Mug' } as never)).toEqual({
+      method: HttpMethod.Patch,
+      path: `${WORKSPACE_PATH}/products/p-1`,
+      body: { title: 'Big Mug' },
+    });
+    expect(Object.keys(spec.input)).toEqual(['productId', 'title', 'descriptionHtml']);
+  });
+
+  it('reads one variant’s stock by its inventory item id', () => {
+    expect(tool('get_inventory_item').toCall({ inventoryItemId: 'i-1' } as never)).toEqual({
+      method: HttpMethod.Get,
+      path: `${WORKSPACE_PATH}/inventory-items/i-1`,
+    });
+  });
+
+  it('builds an Ask tool for Agent Worker that cannot escalate and names its channel', () => {
+    const spec = askCrossmartTool(AskChannel.AgentWorker, false);
+    expect(Object.keys(spec.input)).toEqual(['question', 'conversationId']);
+    expect(spec.toCall({ question: 'Etsy?' } as never)).toEqual({
+      method: HttpMethod.Post,
+      path: ASK_PATH,
+      body: { question: 'Etsy?', channel: AskChannel.AgentWorker },
     });
   });
 

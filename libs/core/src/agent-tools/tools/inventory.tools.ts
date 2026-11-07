@@ -4,7 +4,7 @@ import { StockAdjustmentMode } from '../../inventory/enums/stock-adjustment-mode
 import { StockLevel } from '../../inventory/enums/stock-level.enum.js';
 import { MANUAL_MOVEMENT_REASONS } from '../../inventory/inventory.constants.js';
 import { HttpMethod } from '../api/api-call.js';
-import { NOTE_MAX_LENGTH, WORKSPACE_PATH } from '../agent-tools.constants.js';
+import { NOTE_MAX_LENGTH, WORKSPACE_PATH, AgentToolName } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { ID_INPUT, PAGE_INPUT, SEARCH_INPUT } from './tool-inputs.js';
 
@@ -24,7 +24,21 @@ export const INVENTORY_TOOLS = [
     toCall: (input) => ({ method: HttpMethod.Get, path: INVENTORY_PATH, query: input }),
   }),
   defineTool({
-    name: 'adjust_stock',
+    name: AgentToolName.GetInventoryItem,
+    title: 'Get a variant’s stock',
+    description:
+      'One variant’s stock (on hand, held for orders, available) with its product and SKU, by ' +
+      'the inventoryItemId from list_inventory.',
+    input: { inventoryItemId: ID_INPUT.describe('From list_inventory') },
+    readOnly: true,
+    scope: AgentScope.CatalogRead,
+    toCall: ({ inventoryItemId }) => ({
+      method: HttpMethod.Get,
+      path: `${INVENTORY_PATH}/${inventoryItemId}`,
+    }),
+  }),
+  defineTool({
+    name: AgentToolName.AdjustStock,
     title: 'Adjust stock',
     description:
       'Change a variant’s stock on hand: add or remove units (mode "delta"), or set the counted ' +

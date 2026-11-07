@@ -7,8 +7,8 @@ import {
 } from '../../ask/ask.constants.js';
 import { AskChannel } from '../../ask/enums/ask-channel.enum.js';
 import { HttpMethod } from '../api/api-call.js';
-import { ASK_ESCALATIONS_PATH, ASK_PATH } from '../agent-tools.constants.js';
-import { defineTool } from './api-tool.js';
+import { ASK_ESCALATIONS_PATH, ASK_PATH, AgentToolName } from '../agent-tools.constants.js';
+import { type ApiToolSpec, defineTool } from './api-tool.js';
 
 const PATH_SEPARATOR = '/';
 
@@ -27,28 +27,46 @@ const escalateInput = z
       'user wants one.',
   );
 
-export const ASK_TOOLS = [
-  defineTool({
-    name: 'ask_crossmart',
+const ASK_DESCRIPTION =
+  'Answers a question about Crossmart itself (what it does, its plans and limits, and how ' +
+  'to use its dashboard, API, SDKs, MCP server and channels) from its public docs, with ' +
+  'the pages it used. With this connection’s key or token it can also look up the ' +
+  'workspace, read-only, to explain a failed listing, the stores or the plan. Pass the ' +
+  'returned conversationId to ask a follow-up. It never changes anything in Crossmart.';
+const ESCALATION_DESCRIPTION =
+  ' When the docs do not answer, outcome is "unknown" and escalation.offered is true: call ' +
+  'again with escalate (and the conversationId) to reach a person, then read the reply with ' +
+  'get_ask_escalation.';
+
+const QUESTION_INPUT = {
+  question: z.string().min(ASK_QUESTION_MIN_LENGTH).max(ASK_QUESTION_MAX_LENGTH),
+  conversationId: z
+    .string()
+    .max(ASK_TOKEN_MAX_LENGTH)
+    .optional()
+    .describe('The conversationId of an earlier answer, for a follow-up'),
+};
+
+/**
+ * `ask_crossmart` for a channel. The MCP server's version can also escalate to a person;
+ * Agent Worker's only asks, so it stays read-only and the person contacts the team themselves.
+ */
+export function askCrossmartTool(channel: AskChannel, canEscalate: boolean): ApiToolSpec {
+  if (!canEscalate) {
+    return defineTool({
+      name: AgentToolName.AskCrossmart,
+      title: 'Ask a question about Crossmart',
+      description: ASK_DESCRIPTION,
+      input: QUESTION_INPUT,
+      readOnly: true,
+      toCall: (input) => ({ method: HttpMethod.Post, path: ASK_PATH, body: { ...input, channel } }),
+    });
+  }
+  return defineTool({
+    name: AgentToolName.AskCrossmart,
     title: 'Ask a question about Crossmart',
-    description:
-      'Answers a question about Crossmart itself (what it does, its plans and limits, and how ' +
-      'to use its dashboard, API, SDKs, MCP server and channels) from its public docs, with ' +
-      'the pages it used. With this connection’s key or token it can also look up the ' +
-      'workspace, read-only, to explain a failed listing, the stores or the plan. Pass the ' +
-      'returned conversationId to ask a follow-up. When the docs do not answer, outcome is ' +
-      '"unknown" and escalation.offered is true: call again with escalate (and the ' +
-      'conversationId) to reach a person, then read the reply with get_ask_escalation. It ' +
-      'never changes anything in Crossmart.',
-    input: {
-      question: z.string().min(ASK_QUESTION_MIN_LENGTH).max(ASK_QUESTION_MAX_LENGTH),
-      conversationId: z
-        .string()
-        .max(ASK_TOKEN_MAX_LENGTH)
-        .optional()
-        .describe('The conversationId of an earlier answer, for a follow-up'),
-      escalate: escalateInput.optional(),
-    },
+    description: `${ASK_DESCRIPTION}${ESCALATION_DESCRIPTION}`,
+    input: { ...QUESTION_INPUT, escalate: escalateInput.optional() },
     readOnly: true,
     toCall: ({ question, conversationId, escalate }) =>
       escalate
@@ -57,12 +75,12 @@ export const ASK_TOOLS = [
             path: ASK_ESCALATIONS_PATH,
             body: { conversationId, ...escalate },
           }
-        : {
-            method: HttpMethod.Post,
-            path: ASK_PATH,
-            body: { question, conversationId, channel: AskChannel.Mcp },
-          },
-  }),
+        : { method: HttpMethod.Post, path: ASK_PATH, body: { question, conversationId, channel } },
+  });
+}
+
+export const ASK_TOOLS = [
+  askCrossmartTool(AskChannel.Mcp, true),
   defineTool({
     name: 'get_ask_escalation',
     title: 'Read the reply to an escalated question',

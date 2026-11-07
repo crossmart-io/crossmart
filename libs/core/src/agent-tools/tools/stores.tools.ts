@@ -1,5 +1,6 @@
 import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
+import { AgentToolName } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { productStorePath, STORES_PATH, storePath } from './store-paths.js';
 import { ID_INPUT } from './tool-inputs.js';
@@ -27,7 +28,7 @@ export const STORE_TOOLS = [
     toCall: () => ({ method: HttpMethod.Get, path: STORES_PATH }),
   }),
   defineTool({
-    name: 'get_store',
+    name: AgentToolName.GetStore,
     title: 'Get a store',
     description:
       'One connected store with its status, settings and publish readiness. Use it to tell ' +
@@ -55,7 +56,7 @@ export const STORE_TOOLS = [
     }),
   }),
   defineTool({
-    name: 'add_product_to_store',
+    name: AgentToolName.AddProductToStore,
     title: 'Add a product to a store',
     description:
       'List a product on a connected store. Crossmart publishes it and keeps it in sync. The ' +
@@ -70,7 +71,7 @@ export const STORE_TOOLS = [
     }),
   }),
   defineTool({
-    name: 'remove_product_from_store',
+    name: AgentToolName.RemoveProductFromStore,
     title: 'Remove a product from a store',
     description: 'Take a product off a store. It is archived there and keeps its order history.',
     input: { productId: ID_INPUT, connectionId: ID_INPUT },

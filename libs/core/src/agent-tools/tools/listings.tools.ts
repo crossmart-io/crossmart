@@ -12,6 +12,7 @@ import {
   ITEM_SPECIFIC_VALUES_MAX,
   ITEM_SPECIFICS_MAX,
   RefusalStatus,
+  AgentToolName,
 } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { LISTING_STATE_GUIDE } from './listing-guidance.js';
@@ -88,7 +89,7 @@ const STATE_TOOLS = [
     toCall: ({ productId }) => ({ method: HttpMethod.Get, path: productStoresPath(productId) }),
   }),
   defineTool({
-    name: 'retry_store_listing',
+    name: AgentToolName.RetryStoreListing,
     title: 'Retry publishing a product to a store',
     description:
       'Publish one product to one store again, after fixing what it lacked or when its last ' +
@@ -132,7 +133,7 @@ const CATEGORY_TOOLS = [
     }),
   }),
   defineTool({
-    name: 'set_store_category',
+    name: AgentToolName.SetStoreCategory,
     title: 'Set a product’s store category',
     description:
       'Choose the category a product is listed in on a store (eBay), from ' +
@@ -168,7 +169,7 @@ const ITEM_SPECIFICS_TOOLS = [
     }),
   }),
   defineTool({
-    name: 'save_item_specifics',
+    name: AgentToolName.SaveItemSpecifics,
     title: 'Save a listing’s item specifics',
     description:
       'Replace a product’s item specifics on one store: specifics left out are removed, so ' +

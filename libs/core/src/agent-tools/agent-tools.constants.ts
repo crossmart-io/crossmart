@@ -29,8 +29,10 @@ export const STORE_NAME_MAX_LENGTH = 200;
 /** Products one generate_content call may name; the API's own limit. */
 export const CONTENT_GENERATION_MAX_PRODUCTS = 100;
 
-/** A product's URL handle; the API's own limit. */
+/** A product's URL handle, title and description; the API's own limits. */
 export const PRODUCT_HANDLE_MAX_LENGTH = 255;
+export const PRODUCT_TITLE_MAX_LENGTH = 255;
+export const PRODUCT_DESCRIPTION_MAX_LENGTH = 65_535;
 
 /** Item specifics limits; the API's own (eBay's) limits. */
 export const ITEM_SPECIFICS_MAX = 60;
@@ -62,7 +64,20 @@ export const NO_CONTENT_STATUS = 204;
 /** Tools other code refers to by name, such as Agent Worker's before-and-after previews. */
 export enum AgentToolName {
   GetProduct = 'get_product',
+  CreateProduct = 'create_product',
   ReplaceProduct = 'replace_product',
+  UpdateProductText = 'update_product_text',
+  GetInventoryItem = 'get_inventory_item',
+  AdjustStock = 'adjust_stock',
+  GetStore = 'get_store',
+  AddProductToStore = 'add_product_to_store',
+  RemoveProductFromStore = 'remove_product_from_store',
+  RetryStoreListing = 'retry_store_listing',
+  SetStoreCategory = 'set_store_category',
+  SaveItemSpecifics = 'save_item_specifics',
+  GenerateContent = 'generate_content',
+  ApproveSuggestion = 'approve_suggestion',
+  AskCrossmart = 'ask_crossmart',
   GetListing = 'get_listing',
   UpdateListing = 'update_listing',
 }

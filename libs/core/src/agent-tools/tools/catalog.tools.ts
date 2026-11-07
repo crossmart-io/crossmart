@@ -4,7 +4,9 @@ import { OutOfStockPolicy, ProductStatus } from '@crossmart/database/generated/p
 import { HttpMethod } from '../api/api-call.js';
 import {
   AgentToolName,
+  PRODUCT_DESCRIPTION_MAX_LENGTH,
   PRODUCT_HANDLE_MAX_LENGTH,
+  PRODUCT_TITLE_MAX_LENGTH,
   WORKSPACE_PATH,
 } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
@@ -65,7 +67,7 @@ export const CATALOG_TOOLS = [
     toCall: ({ productId }) => ({ method: HttpMethod.Get, path: `${PRODUCTS_PATH}/${productId}` }),
   }),
   defineTool({
-    name: 'create_product',
+    name: AgentToolName.CreateProduct,
     title: 'Create a product',
     description:
       'Add a product with its variants. Each variant needs a price; give options when there ' +
@@ -79,7 +81,8 @@ export const CATALOG_TOOLS = [
     name: AgentToolName.ReplaceProduct,
     title: 'Replace a product',
     description:
-      'Save a product as given: fields and variants left out are removed. Read it with ' +
+      'Save a product as given: fields and variants left out are removed. To change only the ' +
+      'title or description, use update_product_text instead. Read it with ' +
       'get_product first, change what you need, and send the whole product back, keeping each ' +
       'variant’s id. A changed quantity is recorded as a stock adjustment, and a variant sent ' +
       'without one keeps its stock; to give a reason, such as a delivery, use adjust_stock instead.',
@@ -101,6 +104,30 @@ export const CATALOG_TOOLS = [
       method: HttpMethod.Put,
       path: `${PRODUCTS_PATH}/${productId}`,
       body: product,
+    }),
+  }),
+  defineTool({
+    name: AgentToolName.UpdateProductText,
+    title: 'Edit a product’s title or description',
+    description:
+      'Change only the catalog title and/or description of a product; variants, prices, stock ' +
+      'and images stay as they are, and connected stores are updated. Prefer it to ' +
+      'replace_product for copy edits. To change what one store shows, use update_listing.',
+    input: {
+      productId: ID_INPUT,
+      title: z.string().min(1).max(PRODUCT_TITLE_MAX_LENGTH).optional(),
+      descriptionHtml: z
+        .string()
+        .max(PRODUCT_DESCRIPTION_MAX_LENGTH)
+        .optional()
+        .describe('HTML; unsafe markup is removed'),
+    },
+    readOnly: false,
+    scope: AgentScope.CatalogWrite,
+    toCall: ({ productId, ...content }) => ({
+      method: HttpMethod.Patch,
+      path: `${PRODUCTS_PATH}/${productId}`,
+      body: content,
     }),
   }),
 ];
