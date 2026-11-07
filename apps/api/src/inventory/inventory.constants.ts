@@ -1,6 +1,7 @@
 export const INVENTORY_TAG = 'Inventory';
 export const INVENTORY_ITEMS_ROUTE = 'workspaces/:workspaceId/inventory-items';
 export const INVENTORY_ITEM_ID_PARAM = 'inventoryItemId';
+export const INVENTORY_ITEM_PATH = `:${INVENTORY_ITEM_ID_PARAM}`;
 export const ADJUSTMENTS_PATH = `:${INVENTORY_ITEM_ID_PARAM}/adjustments`;
 export const MOVEMENTS_PATH = `:${INVENTORY_ITEM_ID_PARAM}/movements`;
 

@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Put,
@@ -32,6 +33,7 @@ import { CreateProductDto } from '../dto/create-product.dto.js';
 import { ListProductsQueryDto } from '../dto/list-products-query.dto.js';
 import { ProductPageDto } from '../dto/product-summary.dto.js';
 import { ProductDto } from '../dto/product.dto.js';
+import { UpdateProductContentDto } from '../dto/update-product-content.dto.js';
 import { UpdateProductDto } from '../dto/update-product.dto.js';
 import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
@@ -102,6 +104,24 @@ export class ProductsController {
   ): Promise<ProductDto> {
     const draft = body.toDraft();
     return ProductDto.from(await this.products.update(workspaceId, productId, draft, actor));
+  }
+
+  @Patch(`:${PRODUCT_ID_PARAM}`)
+  @RequirePermission(WorkspacePermission.EditProducts)
+  @ApiOperation({
+    summary: 'Edit a product’s title or description',
+    description:
+      'Changes only the fields sent; variants, prices, stock and images stay as they are. ' +
+      'Connected stores are updated like after any content edit.',
+  })
+  @ApiOkResponse({ type: ProductDto })
+  async updateContent(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
+    @Body() body: UpdateProductContentDto,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductDto> {
+    return ProductDto.from(await this.products.updateContent(workspaceId, productId, body, actor));
   }
 
   @Delete(`:${PRODUCT_ID_PARAM}`)

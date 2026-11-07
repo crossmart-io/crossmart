@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { toCountedPage } from '@crossmart/common';
+import { sanitizeDescriptionHtml, toCountedPage } from '@crossmart/common';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { CatalogChangeKind } from '../../events/enums/catalog-change-kind.enum.js';
+import type { ProductContentPatch } from '../entities/product-content-patch.js';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type {
   CatalogStats,
@@ -18,6 +19,23 @@ import { ProductAdmission } from './product-admission.js';
 import { ProductChangeReporter } from './product-change.reporter.js';
 
 const PRODUCT_NOT_FOUND = 'Product not found';
+const CONTENT_PATCH_EMPTY = 'Give a title, a description, or both';
+const TITLE_EMPTY = 'The title cannot be empty';
+
+/** A content edit, trimmed and sanitized like a full one; an empty edit or title is refused. */
+function normalizePatch(patch: ProductContentPatch): ProductContentPatch {
+  if (patch.title === undefined && patch.descriptionHtml === undefined) {
+    throw new BadRequestException(CONTENT_PATCH_EMPTY);
+  }
+  const title = patch.title?.trim();
+  if (title === '') throw new BadRequestException(TITLE_EMPTY);
+  return {
+    ...(title === undefined ? {} : { title }),
+    ...(patch.descriptionHtml === undefined
+      ? {}
+      : { descriptionHtml: sanitizeDescriptionHtml(patch.descriptionHtml) }),
+  };
+}
 
 /** Products and their variants: the catalog every channel listing is built from. */
 @Injectable()
@@ -76,6 +94,28 @@ export class ProductsService {
       action: ActivityAction.ProductUpdated,
       product,
       kinds: [CatalogChangeKind.Content, CatalogChangeKind.Price, CatalogChangeKind.Stock],
+    });
+    return product;
+  }
+
+  /**
+   * Edits only the product's title and description, as an agent fixing copy would: variants,
+   * prices, stock and images stay as they are. Stores are synced like after any content edit.
+   */
+  async updateContent(
+    workspaceId: string,
+    productId: string,
+    patch: ProductContentPatch,
+    actor: Actor,
+  ): Promise<ProductDetail> {
+    if (!(await this.updateWriter.updateContent(workspaceId, productId, normalizePatch(patch)))) {
+      throw new NotFoundException(PRODUCT_NOT_FOUND);
+    }
+    const product = await this.get(workspaceId, productId);
+    await this.changes.report(workspaceId, actor, {
+      action: ActivityAction.ProductUpdated,
+      product,
+      kinds: [CatalogChangeKind.Content],
     });
     return product;
   }
