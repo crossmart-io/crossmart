@@ -8,6 +8,11 @@ All notable changes to `crossmart/crossmart-php` are documented here. The format
 
 ### Added
 
+- Billing types from the API: `BillingInterval`, `SubscriptionAccessState`, plans with prices,
+  the organization's billing status, and the `subscription_inactive` error code. Where billing
+  is on (Crossmart Cloud), a write to a read-only organization answers 402 with that code:
+  reading still works, and a billing admin of the organization renews the subscription.
+
 - `Crossmart\Webhook\WebhookSignature::verify()` checks a webhook delivery's `Crossmart-Signature`
   header against the raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation)
   and returns a `WebhookEvent`. It throws `WebhookSignatureException` when the delivery cannot be

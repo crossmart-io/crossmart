@@ -19,6 +19,7 @@ final class ApiClients
     public readonly RolesApi $roles;
     public readonly ApiKeysApi $apiKeys;
     public readonly PlansApi $plans;
+    public readonly BillingApi $billing;
     public readonly CatalogApi $catalog;
     public readonly ActivityApi $activity;
     public readonly InventoryApi $inventory;
@@ -41,6 +42,7 @@ final class ApiClients
         $this->roles = new RolesApi($transport);
         $this->apiKeys = new ApiKeysApi($transport);
         $this->plans = new PlansApi($transport);
+        $this->billing = new BillingApi($transport);
         $this->catalog = new CatalogApi($transport);
         $this->activity = new ActivityApi($transport);
         $this->inventory = new InventoryApi($transport);

@@ -6,6 +6,9 @@ namespace Crossmart\Exception;
 
 /**
  * 402: the organization's plan does not allow the action. Upgrading the plan resolves it.
+ *
+ * With the code `subscription_inactive`, the organization's subscription has lapsed and it is
+ * read-only until a billing admin renews it; the feature and plan are then null.
  */
 final class PlanLimitException extends ApiException
 {

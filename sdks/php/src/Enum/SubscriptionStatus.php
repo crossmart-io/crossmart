@@ -12,4 +12,7 @@ enum SubscriptionStatus: string
     case Trialing = 'TRIALING';
     case PastDue = 'PAST_DUE';
     case Canceled = 'CANCELED';
+    case Incomplete = 'INCOMPLETE';
+    case Unpaid = 'UNPAID';
+    case Paused = 'PAUSED';
 }

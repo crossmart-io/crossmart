@@ -11,6 +11,7 @@ from ...models.listing_retry_error_dto import ListingRetryErrorDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
 from ...models.product_channel_dto import ProductChannelDto
 from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
+from ...models.subscription_inactive_error_dto import SubscriptionInactiveErrorDto
 from ...types import Response
 
 
@@ -38,6 +39,7 @@ def _parse_response(
     Any
     | ListingRetryErrorDto
     | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
     | ProductChannelDto
     | SandboxRestrictedErrorDto
     | None
@@ -48,7 +50,25 @@ def _parse_response(
         return response_202
 
     if response.status_code == 402:
-        response_402 = PlanLimitErrorDto.from_dict(response.json())
+
+        def _parse_response_402(
+            data: object,
+        ) -> PlanLimitErrorDto | SubscriptionInactiveErrorDto:
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                response_402_type_0 = PlanLimitErrorDto.from_dict(data)
+
+                return response_402_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            if not isinstance(data, dict):
+                raise TypeError()
+            response_402_type_1 = SubscriptionInactiveErrorDto.from_dict(data)
+
+            return response_402_type_1
+
+        response_402 = _parse_response_402(response.json())
 
         return response_402
 
@@ -78,6 +98,7 @@ def _build_response(
     Any
     | ListingRetryErrorDto
     | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
     | ProductChannelDto
     | SandboxRestrictedErrorDto
 ]:
@@ -99,6 +120,7 @@ def sync_detailed(
     Any
     | ListingRetryErrorDto
     | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
     | ProductChannelDto
     | SandboxRestrictedErrorDto
 ]:
@@ -121,7 +143,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | ListingRetryErrorDto | PlanLimitErrorDto | ProductChannelDto | SandboxRestrictedErrorDto]
+        Response[Any | ListingRetryErrorDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | ProductChannelDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -147,6 +169,7 @@ def sync(
     Any
     | ListingRetryErrorDto
     | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
     | ProductChannelDto
     | SandboxRestrictedErrorDto
     | None
@@ -170,7 +193,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | ListingRetryErrorDto | PlanLimitErrorDto | ProductChannelDto | SandboxRestrictedErrorDto
+        Any | ListingRetryErrorDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | ProductChannelDto | SandboxRestrictedErrorDto
     """
 
     return sync_detailed(
@@ -191,6 +214,7 @@ async def asyncio_detailed(
     Any
     | ListingRetryErrorDto
     | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
     | ProductChannelDto
     | SandboxRestrictedErrorDto
 ]:
@@ -213,7 +237,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | ListingRetryErrorDto | PlanLimitErrorDto | ProductChannelDto | SandboxRestrictedErrorDto]
+        Response[Any | ListingRetryErrorDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | ProductChannelDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -237,6 +261,7 @@ async def asyncio(
     Any
     | ListingRetryErrorDto
     | PlanLimitErrorDto
+    | SubscriptionInactiveErrorDto
     | ProductChannelDto
     | SandboxRestrictedErrorDto
     | None
@@ -260,7 +285,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | ListingRetryErrorDto | PlanLimitErrorDto | ProductChannelDto | SandboxRestrictedErrorDto
+        Any | ListingRetryErrorDto | PlanLimitErrorDto | SubscriptionInactiveErrorDto | ProductChannelDto | SandboxRestrictedErrorDto
     """
 
     return (
