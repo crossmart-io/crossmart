@@ -5,7 +5,7 @@ import {
   ASK_ESCALATIONS_PATH,
   ASK_PATH,
   WORKSPACE_PATH,
-} from '../mcp.constants.js';
+} from '../agent-tools.constants.js';
 import { ALL_TOOLS } from './index.js';
 
 const SNAKE_CASE = /^[a-z]+(_[a-z]+)*$/;

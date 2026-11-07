@@ -4,10 +4,10 @@ import {
   ASK_QUESTION_MAX_LENGTH,
   ASK_QUESTION_MIN_LENGTH,
   ASK_TOKEN_MAX_LENGTH,
-} from '@crossmart/core/ask/ask.constants.js';
-import { AskChannel } from '@crossmart/core/ask/enums/ask-channel.enum.js';
+} from '../../ask/ask.constants.js';
+import { AskChannel } from '../../ask/enums/ask-channel.enum.js';
 import { HttpMethod } from '../api/api-call.js';
-import { ASK_ESCALATIONS_PATH, ASK_PATH } from '../mcp.constants.js';
+import { ASK_ESCALATIONS_PATH, ASK_PATH } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 
 const PATH_SEPARATOR = '/';

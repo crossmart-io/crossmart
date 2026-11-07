@@ -1,4 +1,4 @@
-import { WORKSPACE_PATH } from '../mcp.constants.js';
+import { WORKSPACE_PATH } from '../agent-tools.constants.js';
 
 /** API paths for stores (channel connections) and the products listed on them. */
 export const STORES_PATH = `${WORKSPACE_PATH}/channel-connections`;

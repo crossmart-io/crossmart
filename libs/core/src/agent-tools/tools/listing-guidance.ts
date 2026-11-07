@@ -1,5 +1,5 @@
 import { PublishRequirement } from '@crossmart/connectors/sdk/publishing/publish-requirement.enum.js';
-import { ListingDisplayState } from '@crossmart/core/listings/enums/listing-display-state.enum.js';
+import { ListingDisplayState } from '../../listings/enums/listing-display-state.enum.js';
 
 const MERCHANT_SETUP_STEP =
   'store setup only the merchant can finish in the Crossmart dashboard; tell them, then retry';

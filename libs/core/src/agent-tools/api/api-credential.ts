@@ -1,5 +1,5 @@
-import type { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
-import { API_KEY_HEADER, AUTHORIZATION_HEADER, BEARER_PREFIX } from '../mcp.constants.js';
+import type { AgentScope } from '../../agents/enums/agent-scope.enum.js';
+import { API_KEY_HEADER, AUTHORIZATION_HEADER, BEARER_PREFIX } from '../agent-tools.constants.js';
 
 /** How the server's calls to the API authenticate, and what that allows. */
 export interface ApiCredential {

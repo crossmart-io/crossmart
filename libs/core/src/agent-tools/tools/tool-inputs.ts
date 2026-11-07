@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_PAGE_SIZE, SEARCH_MAX_LENGTH } from '../mcp.constants.js';
+import { MAX_PAGE_SIZE, SEARCH_MAX_LENGTH } from '../agent-tools.constants.js';
 
 /** Input pieces several tools share. */
 export const PAGE_INPUT = {

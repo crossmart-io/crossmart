@@ -131,12 +131,15 @@ dashboard and the REST API.
 
 ## Adding a tool
 
-Each tool is a spec in `apps/mcp/src/tools/*.tools.ts`: a name, a description written for the
-agent, a zod input and the API call it makes (`defineTool`). Add it to the group's list; `ALL_TOOLS`
-registers it. Keep one tool per endpoint and describe what the agent should read first.
+Each tool is a spec in `libs/core/src/agent-tools/tools/*.tools.ts`: a name, a description written
+for the agent, a zod input and the API call it makes (`defineTool`). Add it to the group's list;
+`ALL_TOOLS` registers it. Keep one tool per endpoint and describe what the agent should read first.
+The specs are shared with [Agent Worker](agent-worker.md), the agent inside the web app, which
+offers the same tools and proposes every write for approval; mark `destructive`, `publishes` and
+`priceInputs` where they apply.
 
 A spec may add `refusalHints`: a next step per HTTP status, appended to the API's message when it
 refuses the call. Tools that return listings include `LISTING_STATE_GUIDE`
-(`tools/listing-guidance.ts`), which maps every `PublishRequirement` to the tool the agent uses next;
+(`agent-tools/tools/listing-guidance.ts`), which maps every `PublishRequirement` to the tool the agent uses next;
 a new requirement fails the typecheck until it has a step. The guide reads `displayRequirement`
 first, so it keeps working when the API adds that field.

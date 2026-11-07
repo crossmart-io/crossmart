@@ -1,10 +1,10 @@
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
-import { StockAdjustmentMode } from '@crossmart/core/inventory/enums/stock-adjustment-mode.enum.js';
-import { StockLevel } from '@crossmart/core/inventory/enums/stock-level.enum.js';
-import { MANUAL_MOVEMENT_REASONS } from '@crossmart/core/inventory/inventory.constants.js';
+import { StockAdjustmentMode } from '../../inventory/enums/stock-adjustment-mode.enum.js';
+import { StockLevel } from '../../inventory/enums/stock-level.enum.js';
+import { MANUAL_MOVEMENT_REASONS } from '../../inventory/inventory.constants.js';
 import { HttpMethod } from '../api/api-call.js';
-import { NOTE_MAX_LENGTH, WORKSPACE_PATH } from '../mcp.constants.js';
+import { NOTE_MAX_LENGTH, WORKSPACE_PATH } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { ID_INPUT, PAGE_INPUT, SEARCH_INPUT } from './tool-inputs.js';
 

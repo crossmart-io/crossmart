@@ -1,5 +1,5 @@
 import { PublishRequirement } from '@crossmart/connectors/sdk/publishing/publish-requirement.enum.js';
-import { ListingDisplayState } from '@crossmart/core/listings/enums/listing-display-state.enum.js';
+import { ListingDisplayState } from '../../listings/enums/listing-display-state.enum.js';
 import { ALL_TOOLS } from './index.js';
 import { LISTING_STATE_GUIDE, REQUIREMENT_NEXT_STEPS } from './listing-guidance.js';
 

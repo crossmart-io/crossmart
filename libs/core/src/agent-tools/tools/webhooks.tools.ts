@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
-import { WebhookEventType } from '@crossmart/core/webhooks/enums/webhook-event-type.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
+import { WebhookEventType } from '../../webhooks/enums/webhook-event-type.enum.js';
 import {
   WEBHOOK_DESCRIPTION_MAX_LENGTH,
   WEBHOOK_URL_MAX_LENGTH,
-} from '@crossmart/core/webhooks/webhooks.constants.js';
+} from '../../webhooks/webhooks.constants.js';
 import { HttpMethod } from '../api/api-call.js';
-import { WORKSPACE_PATH } from '../mcp.constants.js';
+import { WORKSPACE_PATH } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 
 const WEBHOOK_ENDPOINTS_PATH = `${WORKSPACE_PATH}/webhook-endpoints`;

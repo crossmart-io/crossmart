@@ -1,4 +1,4 @@
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { HttpMethod } from './api-call.js';
 import { accessTokenCredential, type ApiCredential, apiKeyCredential } from './api-credential.js';
 import { CrossmartApiClient } from './crossmart-api-client.js';

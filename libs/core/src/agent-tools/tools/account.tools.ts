@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SandboxOpeningOutcome } from '@crossmart/core/sandbox/enums/sandbox-opening-outcome.enum.js';
+import { SandboxOpeningOutcome } from '../../sandbox/enums/sandbox-opening-outcome.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { apiKeyCredential } from '../api/api-credential.js';
 import type { CrossmartApiClient } from '../api/crossmart-api-client.js';
@@ -7,7 +7,7 @@ import {
   EMAIL_MAX_LENGTH,
   SANDBOX_ACCOUNTS_PATH,
   STORE_NAME_MAX_LENGTH,
-} from '../mcp.constants.js';
+} from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 
 /** The part of `create_account`'s answer that carries the new workspace's key. */

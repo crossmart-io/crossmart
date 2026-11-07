@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
-import { ChannelProductState } from '@crossmart/core/listings/enums/channel-product-state.enum.js';
-import { ListingDisplayState } from '@crossmart/core/listings/enums/listing-display-state.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
+import { ChannelProductState } from '../../listings/enums/channel-product-state.enum.js';
+import { ListingDisplayState } from '../../listings/enums/listing-display-state.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import {
   CATEGORY_ID_MAX_LENGTH,
@@ -12,7 +12,7 @@ import {
   ITEM_SPECIFIC_VALUES_MAX,
   ITEM_SPECIFICS_MAX,
   RefusalStatus,
-} from '../mcp.constants.js';
+} from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { LISTING_STATE_GUIDE } from './listing-guidance.js';
 import { productStorePath, productStoresPath, storePath } from './store-paths.js';
@@ -96,6 +96,7 @@ const STATE_TOOLS = [
       'background, so check it later with get_product_stores. Only this listing is sent.',
     input: PRODUCT_ON_STORE_INPUT,
     readOnly: false,
+    publishes: true,
     scope: AgentScope.StoresWrite,
     refusalHints: {
       [RefusalStatus.Conflict]:

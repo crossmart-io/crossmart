@@ -1,10 +1,11 @@
-import { CURRENT_API_KEY_PATH } from '../mcp.constants.js';
+import {
+  CURRENT_API_KEY_PATH,
+  NO_CONTENT_STATUS,
+  WORKSPACE_PLACEHOLDER,
+} from '../agent-tools.constants.js';
 import type { ApiCredential } from './api-credential.js';
 import { type ApiCall, HttpMethod, type QueryValue } from './api-call.js';
 import { CrossmartApiError } from './crossmart-api.error.js';
-
-const WORKSPACE_PLACEHOLDER = '{workspaceId}';
-const NO_CONTENT = 204;
 
 interface CurrentApiKey {
   workspaceId: string;
@@ -75,7 +76,7 @@ export class CrossmartApiClient {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!response.ok) throw await this.toError(response);
-    return response.status === NO_CONTENT ? { done: true } : response.json();
+    return response.status === NO_CONTENT_STATUS ? { done: true } : response.json();
   }
 
   private async toError(response: Response): Promise<CrossmartApiError> {

@@ -1,4 +1,4 @@
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { defineTool } from './api-tool.js';
 import { productStorePath, STORES_PATH, storePath } from './store-paths.js';
@@ -62,6 +62,7 @@ export const STORE_TOOLS = [
       'answer shows its displayState there; on needs_details, see get_product_stores.',
     input: { productId: ID_INPUT, connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: false,
+    publishes: true,
     scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Post,

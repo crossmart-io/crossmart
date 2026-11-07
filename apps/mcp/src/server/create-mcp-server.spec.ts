@@ -1,6 +1,9 @@
 import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
-import { accessTokenCredential, apiKeyCredential } from '../api/api-credential.js';
-import { ALL_TOOLS, ANONYMOUS_TOOLS } from '../tools/index.js';
+import {
+  accessTokenCredential,
+  apiKeyCredential,
+} from '@crossmart/core/agent-tools/api/api-credential.js';
+import { ALL_TOOLS, ANONYMOUS_TOOLS } from '@crossmart/core/agent-tools/tools/index.js';
 import { toolsFor } from './create-mcp-server.js';
 
 const names = (tools: ReturnType<typeof toolsFor>) => tools.map((tool) => tool.name);

@@ -1,15 +1,14 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
-import type { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import type { z } from 'zod';
+import type { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import type { ApiCall } from '../api/api-call.js';
 import type { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { CrossmartApiError } from '../api/crossmart-api.error.js';
-import { JSON_INDENTATION, type RefusalStatus } from '../mcp.constants.js';
+import { JSON_INDENTATION, type RefusalStatus } from '../agent-tools.constants.js';
 
 /**
- * One MCP tool as data: its name, what it is for, its input, and the API call it makes.
- * Every tool is a thin, typed door onto one REST endpoint.
+ * One agent tool as data: its name, what it is for, its input, and the API call it makes. Every
+ * tool is a thin, typed door onto one REST endpoint. The MCP server and Agent Worker offer the
+ * same specs, so an agent meets the same validation, permissions and audit log either way.
  */
 export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   name: string;
@@ -20,6 +19,10 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   readOnly: boolean;
   /** True for tools that delete or take things off sale. */
   destructive?: boolean;
+  /** True for tools that publish a listing to a store (counted for bulk confirmation). */
+  publishes?: boolean;
+  /** Input fields that change what a buyer pays; a call that sets one changes prices. */
+  priceInputs?: readonly string[];
   /** The scope an agent needs to see the tool; absent for tools every connection may use. */
   scope?: AgentScope;
   /** What the agent should do next when the API refuses the call with one of these statuses. */
@@ -27,6 +30,16 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   toCall: (input: z.infer<z.ZodObject<Shape>>) => ApiCall;
   /** Runs after the API answered, such as to start using a credential the answer carries. */
   afterCall?: (result: unknown, client: CrossmartApiClient) => void;
+}
+
+/** What a tool call gave the agent: the API's answer as text, or its refusal. */
+export interface ApiToolResult {
+  isError: boolean;
+  text: string;
+  /** The parsed answer, when the API answered. */
+  value?: unknown;
+  /** The HTTP status of a refusal. */
+  status?: number;
 }
 
 /** Keeps each spec's input type while collecting specs of different shapes in one list. */
@@ -46,41 +59,21 @@ function toRefusalText(spec: ApiToolSpec, error: CrossmartApiError): string {
   return hint ? `${refusal}\n${hint}` : refusal;
 }
 
-async function run(
+/**
+ * Makes the tool's API call. A refusal by the API is a result the agent reads, not an error;
+ * anything else (the API unreachable) is thrown.
+ */
+export async function runApiTool(
   spec: ApiToolSpec,
   client: CrossmartApiClient,
   input: Record<string, unknown>,
-): Promise<CallToolResult> {
+): Promise<ApiToolResult> {
   try {
-    const result = await client.call(spec.toCall(input as never));
-    spec.afterCall?.(result, client);
-    return { content: [{ type: 'text', text: toText(result) }] };
+    const value = await client.call(spec.toCall(input as never));
+    spec.afterCall?.(value, client);
+    return { isError: false, text: toText(value), value };
   } catch (error) {
     if (!(error instanceof CrossmartApiError)) throw error;
-    return {
-      isError: true,
-      content: [{ type: 'text', text: toRefusalText(spec, error) }],
-    };
+    return { isError: true, text: toRefusalText(spec, error), status: error.status };
   }
-}
-
-export function registerApiTool(
-  server: McpServer,
-  spec: ApiToolSpec,
-  client: CrossmartApiClient,
-): void {
-  server.registerTool(
-    spec.name,
-    {
-      title: spec.title,
-      description: spec.description,
-      inputSchema: spec.input,
-      annotations: {
-        readOnlyHint: spec.readOnly,
-        destructiveHint: spec.destructive ?? false,
-        openWorldHint: false,
-      },
-    },
-    (input: Record<string, unknown>) => run(spec, client, input),
-  );
 }

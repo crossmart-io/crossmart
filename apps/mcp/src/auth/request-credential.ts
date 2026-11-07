@@ -3,7 +3,7 @@ import {
   accessTokenCredential,
   type ApiCredential,
   apiKeyCredential,
-} from '../api/api-credential.js';
+} from '@crossmart/core/agent-tools/api/api-credential.js';
 import { JWT_PART_COUNT, JWT_SEPARATOR } from '../mcp.constants.js';
 import { requestToken } from '../transports/request-token.js';
 import type { AccessTokenVerifier } from './access-token.verifier.js';

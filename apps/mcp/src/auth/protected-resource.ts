@@ -1,7 +1,7 @@
 import { AGENT_SCOPES } from '@crossmart/core/agents/agents.constants.js';
+import { BEARER_PREFIX } from '@crossmart/core/agent-tools/agent-tools.constants.js';
 import type { McpConfig } from '../config/mcp-config.js';
 import {
-  BEARER_PREFIX,
   PROTECTED_RESOURCE_METADATA_PATH,
   RESOURCE_NAME,
   SCOPE_SEPARATOR,

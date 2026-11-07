@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
-import { SalesRange } from '@crossmart/core/analytics/enums/sales-range.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
+import { SalesRange } from '../../analytics/enums/sales-range.enum.js';
 import { HttpMethod } from '../api/api-call.js';
-import { API_HEALTH_PATH, WORKSPACE_PATH } from '../mcp.constants.js';
+import { API_HEALTH_PATH, WORKSPACE_PATH } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 
 export const REPORT_TOOLS = [

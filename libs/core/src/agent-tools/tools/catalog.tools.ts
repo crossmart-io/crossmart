@@ -1,8 +1,12 @@
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { OutOfStockPolicy, ProductStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
-import { WORKSPACE_PATH } from '../mcp.constants.js';
+import {
+  AgentToolName,
+  PRODUCT_HANDLE_MAX_LENGTH,
+  WORKSPACE_PATH,
+} from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { AMOUNT_INPUT, ID_INPUT, PAGE_INPUT, SEARCH_INPUT } from './tool-inputs.js';
 
@@ -52,7 +56,7 @@ export const CATALOG_TOOLS = [
     toCall: (input) => ({ method: HttpMethod.Get, path: PRODUCTS_PATH, query: input }),
   }),
   defineTool({
-    name: 'get_product',
+    name: AgentToolName.GetProduct,
     title: 'Get a product',
     description: 'One product with every variant, its stock, prices, options and images.',
     input: { productId: ID_INPUT },
@@ -72,15 +76,25 @@ export const CATALOG_TOOLS = [
     toCall: (input) => ({ method: HttpMethod.Post, path: PRODUCTS_PATH, body: input }),
   }),
   defineTool({
-    name: 'replace_product',
+    name: AgentToolName.ReplaceProduct,
     title: 'Replace a product',
     description:
       'Save a product as given: fields and variants left out are removed. Read it with ' +
       'get_product first, change what you need, and send the whole product back, keeping each ' +
       'variant’s id. A changed quantity is recorded as a stock adjustment, and a variant sent ' +
       'without one keeps its stock; to give a reason, such as a delivery, use adjust_stock instead.',
-    input: { productId: ID_INPUT, ...PRODUCT_INPUT, variants: z.array(SAVED_VARIANT_INPUT).min(1) },
+    input: {
+      productId: ID_INPUT,
+      handle: z
+        .string()
+        .min(1)
+        .max(PRODUCT_HANDLE_MAX_LENGTH)
+        .describe('The product’s URL handle, from get_product; keep it unless asked to change it'),
+      ...PRODUCT_INPUT,
+      variants: z.array(SAVED_VARIANT_INPUT).min(1),
+    },
     readOnly: false,
+    priceInputs: ['variants'],
     scope: AgentScope.CatalogWrite,
     destructive: true,
     toCall: ({ productId, ...product }) => ({

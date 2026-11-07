@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { ListingVisibility } from '@crossmart/database/generated/prisma/enums.js';
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import {
   MAX_SHOWN_QUANTITY,
   OVERRIDE_DESCRIPTION_MAX_LENGTH,
   OVERRIDE_MAX_ITEMS,
   OVERRIDE_TEXT_MAX_LENGTH,
-} from '../mcp.constants.js';
+  AgentToolName,
+} from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { productStorePath } from './store-paths.js';
 import { AMOUNT_INPUT, ID_INPUT } from './tool-inputs.js';
@@ -73,7 +74,7 @@ const OVERRIDE_INPUT = {
 /** One product's listing on one store, field by field, as the listing editor shows it. */
 export const LISTING_EDITOR_TOOLS = [
   defineTool({
-    name: 'get_listing',
+    name: AgentToolName.GetListing,
     title: 'Get a product’s listing on a store',
     description:
       'Every field of one product on one store (title, description, vendor, tags, images, ' +
@@ -91,7 +92,7 @@ export const LISTING_EDITOR_TOOLS = [
     }),
   }),
   defineTool({
-    name: 'update_listing',
+    name: AgentToolName.UpdateListing,
     title: 'Override or revert fields of a listing',
     description:
       'Change how one product shows on one store without touching the catalog. Send only the ' +
@@ -100,6 +101,7 @@ export const LISTING_EDITOR_TOOLS = [
       'update is queued. Read the fields first with get_listing.',
     input: { ...PRODUCT_ON_STORE_INPUT, ...OVERRIDE_INPUT },
     readOnly: false,
+    priceInputs: ['variantPrices'],
     scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId, ...patch }) => ({
       method: HttpMethod.Patch,

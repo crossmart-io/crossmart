@@ -1,8 +1,8 @@
-import { AgentScope } from '@crossmart/core/agents/enums/agent-scope.enum.js';
+import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import { OrderStatus } from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
-import { WORKSPACE_PATH } from '../mcp.constants.js';
+import { WORKSPACE_PATH } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
 import { ID_INPUT, PAGE_INPUT, SEARCH_INPUT } from './tool-inputs.js';
 
