@@ -1,23 +1,42 @@
 import { VERSIONED_API_PATH } from '@crossmart/common';
-import { AGENT_AUTH_SKILL_URL } from '@crossmart/core';
+import { AGENT_AUTH_SKILL_URL, SANDBOX_CLAIM_PATH } from '@crossmart/core';
 import { SANDBOX_ACCOUNTS_ROUTE } from '../sandbox/sandbox.constants.js';
+import {
+  AgentAuthAssertionType,
+  AgentAuthCredentialType,
+  AgentAuthIdentityType,
+} from './enums/agent-auth.enums.js';
+
+/** The registration method of the `agent_auth` block: the agent asserts the user's email. */
+export interface AgentAuthIdentityAssertion {
+  assertion_types_supported: AgentAuthAssertionType[];
+  credential_types_supported: AgentAuthCredentialType[];
+}
 
 /**
- * The `agent_auth` block that auth.md (WorkOS, v0.6.0) adds to the authorization server metadata
- * (RFC 8414). The profile's own registration surface (`/agent/identity`, its claim ceremony and
- * the JWT-bearer and claim grants) is not implemented: agents sign in with OAuth (CIMD, or DCR as
- * a fallback), or open a sandbox account (ADR 0019). So the block names the auth.md file, lists no
- * profile identity types, and adds the sandbox endpoint as an extension field. Agents that follow
- * the profile ignore fields they do not know and read `skill`. Revocation is the standard
- * top-level `revocation_endpoint` (RFC 7009).
+ * The `agent_auth` block that auth.md (WorkOS) adds to the authorization server metadata
+ * (RFC 8414). It describes the sandbox account (ADR 0019) as the profile's verified-email
+ * registration: the agent gives the user's email, Crossmart emails them a claim link, and the
+ * agent gets an API key at once.
+ *
+ * The field names are the profile's v0.1.0 ones (`register_uri`, `claim_uri`,
+ * `credential_types_supported`, `verified_email`), which discovery scanners read. v0.2.0 renamed
+ * `register_uri` and `claim_uri` to `identity_endpoint` and `claim_endpoint`, and v0.6.0 moved the
+ * email path to a `service_auth` type; those are not advertised, because the sandbox endpoint
+ * takes Crossmart's own body (`email`, `storeName`), not the profile's, and the claim is a web
+ * page for the person, not an endpoint the agent calls. The auth.md file at `skill` documents
+ * both. No ID-JAG, revocation URI or security events: Crossmart supports none of them. Token
+ * revocation is the standard top-level `revocation_endpoint` (RFC 7009).
  */
 export interface AgentAuthMetadata {
   /** The auth.md file: how an agent signs up and authenticates here. */
   skill: string;
-  /** The profile's registration types (`anonymous`, `service_auth`, `identity_assertion`). */
-  identity_types_supported: string[];
-  /** Crossmart's extension: `POST` an email and a store name to open a sandbox account. */
-  sandbox_account_endpoint: string;
+  /** Where the agent opens a sandbox account: `POST` with `email` and `storeName`. */
+  register_uri: string;
+  /** The page where the person claims the account, from the link Crossmart emails them. */
+  claim_uri: string;
+  identity_types_supported: AgentAuthIdentityType[];
+  identity_assertion: AgentAuthIdentityAssertion;
 }
 
 /** The authorization server metadata with the `agent_auth` block. */
@@ -25,16 +44,27 @@ export interface AuthorizationServerMetadataWithAgentAuth {
   agent_auth: AgentAuthMetadata;
 }
 
+/** Where the API and the web app are reached. */
+export interface AgentAuthUrls {
+  apiPublicUrl: string;
+  webAppUrl: string;
+}
+
 type FetchHandler = (request: Request) => Promise<Response>;
 
-export function agentAuthMetadata(apiPublicUrl: string): AgentAuthMetadata {
+export function agentAuthMetadata({ apiPublicUrl, webAppUrl }: AgentAuthUrls): AgentAuthMetadata {
   return {
     skill: AGENT_AUTH_SKILL_URL,
-    identity_types_supported: [],
-    sandbox_account_endpoint: new URL(
+    register_uri: new URL(
       `${VERSIONED_API_PATH}/${SANDBOX_ACCOUNTS_ROUTE}`,
       apiPublicUrl,
     ).toString(),
+    claim_uri: new URL(SANDBOX_CLAIM_PATH, webAppUrl).toString(),
+    identity_types_supported: [AgentAuthIdentityType.IdentityAssertion],
+    identity_assertion: {
+      assertion_types_supported: [AgentAuthAssertionType.VerifiedEmail],
+      credential_types_supported: [AgentAuthCredentialType.ApiKey],
+    },
   };
 }
 

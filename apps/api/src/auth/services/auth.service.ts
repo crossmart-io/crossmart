@@ -47,7 +47,7 @@ export class AuthService {
     { accountEmails, rateLimitStorage }: BetterAuthServices,
   ) {
     this.trustedOrigins = new Set(appConfig.corsOrigins);
-    this.agentAuth = agentAuthMetadata(appConfig.apiPublicUrl);
+    this.agentAuth = agentAuthMetadata(appConfig);
     this.auth = createBetterAuth({
       appConfig,
       prisma,

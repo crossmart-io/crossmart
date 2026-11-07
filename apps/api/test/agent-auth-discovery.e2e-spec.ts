@@ -32,9 +32,15 @@ describe('Agent sign-up discovery: auth.md (ADR 0019)', () => {
       expect(response.status).toBe(HttpStatus.OK);
       expect(response.body.agent_auth).toEqual({
         skill: 'https://crossmart.io/auth.md',
-        identity_types_supported: [],
-        sandbox_account_endpoint: expect.stringMatching(/\/api\/v1\/sandbox-accounts$/),
+        register_uri: expect.stringMatching(/\/api\/v1\/sandbox-accounts$/),
+        claim_uri: expect.stringMatching(/\/claim$/),
+        identity_types_supported: ['identity_assertion'],
+        identity_assertion: {
+          assertion_types_supported: ['verified_email'],
+          credential_types_supported: ['api_key'],
+        },
       });
+      expect(response.body.issuer).toMatch(/\/api\/auth$/);
       expect(response.body.revocation_endpoint).toMatch(/\/api\/auth\/oauth2\/revoke$/);
       expect(response.body.client_id_metadata_document_supported).toBe(true);
     },
