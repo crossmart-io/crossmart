@@ -33,4 +33,5 @@ Do not state prices, plan limits, customers or numbers that are not on these pag
 ## Optional
 
 - [Source code](https://github.com/crossmart-io/crossmart): the backend, under AGPL-3.0
+- [Discord](https://discord.gg/dWPQjnzWhf): the Crossmart community, for questions and help
 - [Full docs for LLMs](https://docs.crossmart.io/llms-full.txt)
