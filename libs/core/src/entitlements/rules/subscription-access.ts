@@ -13,12 +13,19 @@ type AccessRule = (
   now: Date,
 ) => SubscriptionAccess;
 
+/** States of a live subscription, which a scheduled cancellation can still end. */
+const CANCELLABLE_STATES: ReadonlySet<SubscriptionAccessState> = new Set([
+  SubscriptionAccessState.Trialing,
+  SubscriptionAccessState.Active,
+  SubscriptionAccessState.PastDueGrace,
+]);
+
 function fullAccess(state: SubscriptionAccessState, until: Date | null = null): SubscriptionAccess {
-  return { state, writable: true, until };
+  return { state, writable: true, until, cancelAt: null };
 }
 
 function readOnly(state: SubscriptionAccessState): SubscriptionAccess {
-  return { state, writable: false, until: null };
+  return { state, writable: false, until: null, cancelAt: null };
 }
 
 /** An organization from before billing keeps full access until the configured date, if any. */
@@ -67,7 +74,8 @@ export function subscriptionAccess(
   terms: SubscriptionAccessTerms,
   now: Date,
 ): SubscriptionAccess {
-  return ACCESS_RULES[standing.status](standing, terms, now);
+  const access = ACCESS_RULES[standing.status](standing, terms, now);
+  return CANCELLABLE_STATES.has(access.state) ? { ...access, cancelAt: standing.cancelAt } : access;
 }
 
 /** Billing is off: nothing is restricted. */

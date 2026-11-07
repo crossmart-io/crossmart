@@ -380,7 +380,12 @@ describe('Billing (e2e)', () => {
       trialEnd: trialEnd.toISOString(),
       cancelAtPeriodEnd: true,
       cancelAt: trialEnd.toISOString(),
+      access: { state: SubscriptionAccessState.Trialing, cancelAt: trialEnd.toISOString() },
     });
+    const access = await request(server())
+      .get(`/api/v1/workspaces/${owner.workspaceId}/billing-access`)
+      .set('Cookie', owner.cookie);
+    expect(access.body.cancelAt).toBe(trialEnd.toISOString());
 
     // A row a missed webhook left behind is repaired from the provider, without one.
     await prisma.organizationSubscription.update({

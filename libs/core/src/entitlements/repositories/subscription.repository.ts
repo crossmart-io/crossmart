@@ -20,6 +20,7 @@ const STANDING_SELECT = {
   externalSubscriptionId: true,
   trialEnd: true,
   pastDueSince: true,
+  cancelAt: true,
 } as const satisfies Prisma.OrganizationSubscriptionSelect;
 
 export type StandingRecord = Prisma.OrganizationSubscriptionGetPayload<{

@@ -2306,6 +2306,11 @@ export interface components {
              * @description When the state ends on its own: the trial, the past-due grace period, or access for organizations from before billing. Null when it does not
              */
             until: string | null;
+            /**
+             * Format: date-time
+             * @description When a scheduled cancellation ends a subscription that still has access (during a trial, the trial end, and nothing is charged). Null when it renews, or has no access to lose
+             */
+            cancelAt: string | null;
         };
         BillingStatusDto: {
             /** Format: uuid */

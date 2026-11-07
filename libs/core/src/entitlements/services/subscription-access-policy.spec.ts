@@ -17,6 +17,7 @@ const CANCELED: StandingRecord = {
   externalSubscriptionId: 'sub_1',
   trialEnd: null,
   pastDueSince: null,
+  cancelAt: null,
 };
 
 interface Setup {

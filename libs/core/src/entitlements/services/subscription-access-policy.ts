@@ -21,12 +21,14 @@ const LEGACY_STANDING: SubscriptionStanding = {
   subscribed: false,
   trialEnd: null,
   pastDueSince: null,
+  cancelAt: null,
 };
 
 function toStanding(record: StandingRecord | null): SubscriptionStanding {
   if (!record) return LEGACY_STANDING;
-  const { status, trialEnd, pastDueSince } = record;
-  return { status, subscribed: record.externalSubscriptionId !== null, trialEnd, pastDueSince };
+  const { status, trialEnd, pastDueSince, cancelAt } = record;
+  const subscribed = record.externalSubscriptionId !== null;
+  return { status, subscribed, trialEnd, pastDueSince, cancelAt };
 }
 
 /**

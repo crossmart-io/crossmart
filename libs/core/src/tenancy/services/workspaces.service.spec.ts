@@ -115,6 +115,7 @@ describe('WorkspacesService.create', () => {
         state: SubscriptionAccessState.Canceled,
         writable: false,
         until: null,
+        cancelAt: null,
       }),
     );
     await expect(service.create('org-1', 'user-1', { name: 'X' })).rejects.toMatchObject({

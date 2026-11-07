@@ -18,12 +18,14 @@ final class SubscriptionAccessDto implements JsonSerializable
      * @param bool $writable False when the organization is read-only. Changes are refused (402 `subscription_inactive`) only while `enforced` is true
      * @param bool $enforced Whether a read-only organization is refused changes on this instance
      * @param DateTimeImmutable|null $until When the state ends on its own: the trial, the past-due grace period, or access for organizations from before billing. Null when it does not
+     * @param DateTimeImmutable|null $cancelAt When a scheduled cancellation ends a subscription that still has access (during a trial, the trial end, and nothing is charged). Null when it renews, or has no access to lose
      */
     public function __construct(
         public readonly SubscriptionAccessState|string $state,
         public readonly bool $writable,
         public readonly bool $enforced,
         public readonly ?DateTimeImmutable $until,
+        public readonly ?DateTimeImmutable $cancelAt,
     ) {
     }
 
@@ -41,6 +43,7 @@ final class SubscriptionAccessDto implements JsonSerializable
             writable: $payload->bool('writable'),
             enforced: $payload->bool('enforced'),
             until: $payload->isNull('until') ? null : $payload->dateTime('until'),
+            cancelAt: $payload->isNull('cancelAt') ? null : $payload->dateTime('cancelAt'),
         );
     }
 
@@ -56,6 +59,7 @@ final class SubscriptionAccessDto implements JsonSerializable
             'writable' => $this->writable,
             'enforced' => $this->enforced,
             'until' => $this->until === null ? null : Payload::formatDateTime($this->until),
+            'cancelAt' => $this->cancelAt === null ? null : Payload::formatDateTime($this->cancelAt),
         ];
     }
 

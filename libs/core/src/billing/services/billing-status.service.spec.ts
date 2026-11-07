@@ -28,7 +28,12 @@ const ACCOUNT: BillingAccountRecord = {
 };
 
 it('BillingStatusService reports the plan, the provider’s view and what the organization may do', async () => {
-  const access = { state: SubscriptionAccessState.Trialing, writable: true, until: TRIAL_END };
+  const access = {
+    state: SubscriptionAccessState.Trialing,
+    writable: true,
+    until: TRIAL_END,
+    cancelAt: TRIAL_END,
+  };
   const service = new BillingStatusService(
     {
       findByOrganization: vi.fn().mockResolvedValue(ACCOUNT),

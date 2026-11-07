@@ -13,8 +13,9 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
   is on (Crossmart Cloud), a write to a read-only organization answers 402 with that code:
   reading still works, and a billing admin of the organization renews the subscription.
 
-- The billing status's `cancelAt`: when a scheduled cancellation ends the subscription (during a
-  trial, the trial end, with nothing charged), or null when it renews.
+- `cancelAt` on the billing status and on the subscription access: when a scheduled cancellation
+  ends the subscription (during a trial, the trial end, with nothing charged), or null when it
+  renews.
 
 - `verifyWebhookSignature` checks a webhook delivery's `Crossmart-Signature` header against the
   raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation) and returns the
