@@ -1,3 +1,9 @@
+# Asks contributors to sign CLA.md and records signatures on the `cla-signatures` branch.
+#
+# It runs on `pull_request_target` so that it also works for pull requests from forks, as the
+# contributor-assistant action documents. That event runs with this repository's token, so this
+# workflow must never check out or run code from the pull request: it only reads comments and
+# writes the signature file.
 name: CLA
 
 on:
@@ -6,18 +12,24 @@ on:
   pull_request_target:
     types: [opened, synchronize, closed]
 
-permissions:
-  actions: write
-  contents: write
-  pull-requests: write
-  statuses: write
+permissions: {}
 
 jobs:
   cla:
+    name: CLA signed
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      (github.event.issue.pull_request &&
+        (github.event.comment.body == 'recheck' ||
+         github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA'))
+    permissions:
+      actions: write # re-runs the check after a contributor signs
+      contents: write # commits signatures to the cla-signatures branch
+      pull-requests: write # comments on the pull request
+      statuses: write # sets the commit status
     steps:
       - name: CLA Assistant
-        if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
         uses: contributor-assistant/github-action@v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
