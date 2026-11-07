@@ -39,7 +39,7 @@ describe('SuggestionsService', () => {
       createdBy: {
         type: SuggestionCreatorType.AGENT,
         agent: SuggestionAgent.ContentGenerator,
-        name: 'Yariv',
+        name: 'Dana Levin',
       },
       review: null,
     });

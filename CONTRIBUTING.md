@@ -10,24 +10,43 @@ Thanks for helping build Crossmart. This guide explains how to set up the projec
 
 ## Development setup
 
+You need Node.js 22 or 24 (`.nvmrc` pins 24), pnpm 10, and Docker or your own PostgreSQL 16+ and
+Redis 7+. The [README quick start](README.md#quick-start-development) explains each setting.
+
 ```bash
 pnpm install
-cp .env.example .env    # then set BETTER_AUTH_SECRET (openssl rand -base64 32), and
-                        # POSTGRES_PASSWORD / REDIS_PASSWORD (openssl rand -hex 24) in the URLs too
+cp .env.example .env    # then set BETTER_AUTH_SECRET and CREDENTIALS_MASTER_KEY (openssl rand -base64 32),
+                        # and POSTGRES_PASSWORD / REDIS_PASSWORD (openssl rand -hex 24) in the URLs too
 docker compose up -d postgres redis
-pnpm db:migrate
+pnpm db:generate        # the Prisma client; the build and typecheck need it
+pnpm db:deploy          # applies the existing migrations
 pnpm start:api
 ```
 
+Channel credentials and `ANTHROPIC_API_KEY` are optional for local development.
+
 Useful scripts:
 
-| Script                        | Purpose                                     |
-| ----------------------------- | ------------------------------------------- |
-| `pnpm lint` / `pnpm lint:fix` | oxlint with type-aware rules                |
-| `pnpm format`                 | Prettier                                    |
-| `pnpm typecheck`              | TypeScript across all apps and libraries    |
-| `pnpm test` / `pnpm test:e2e` | Unit and end-to-end tests (Vitest)          |
-| `pnpm db:migrate`             | Create and apply a migration in development |
+| Script                        | Purpose                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint` / `pnpm lint:fix` | oxlint with type-aware rules                                                                                        |
+| `pnpm format`                 | Prettier                                                                                                            |
+| `pnpm typecheck`              | TypeScript across all apps and libraries                                                                            |
+| `pnpm test`                   | Unit tests (Vitest)                                                                                                 |
+| `pnpm test:e2e`               | End-to-end tests (Vitest). They need a migrated database and Redis, see below                                       |
+| `pnpm db:generate`            | Generate the Prisma client. Run it after `pnpm install` and after every schema change                               |
+| `pnpm db:deploy`              | Apply pending migrations (`prisma migrate deploy`). Use it for first-time setup and after pulling                   |
+| `pnpm db:migrate`             | `prisma migrate dev`: create a migration from your schema change and apply it. Only when you change the schema      |
+| `pnpm openapi:generate`       | Write `openapi.json` from the built API (`pnpm build:api` first). The SDKs and the web client are generated from it |
+
+The e2e tests run the real API against `DATABASE_URL` and `REDIS_URL`, and leave the rows they
+create behind. Point them at a separate, migrated database rather than the one you develop with:
+
+```bash
+docker compose exec postgres createdb -U crossmart crossmart_e2e   # or createdb with your own PostgreSQL
+DATABASE_URL=postgresql://crossmart:<password>@localhost:5432/crossmart_e2e pnpm db:deploy
+DATABASE_URL=postgresql://crossmart:<password>@localhost:5432/crossmart_e2e pnpm test:e2e
+```
 
 ## Code standards
 

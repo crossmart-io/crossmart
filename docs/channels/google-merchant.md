@@ -7,6 +7,10 @@ the merchant saves a listing setup (country and product page address), and each 
 published as an offer. The connector declares `publish_listings` and `update_price`. See
 [ADR 0017](../decisions/0017-google-merchant-connector.md).
 
+**Status: in development.** The connector is not yet generally available. Until the instance has
+a Google Cloud OAuth client (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`), Google Merchant
+Center cannot be connected. See the [channel status](https://docs.crossmart.io/channels/).
+
 ## What Crossmart uses
 
 |             |                                                                                                   |

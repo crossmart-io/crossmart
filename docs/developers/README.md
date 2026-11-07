@@ -1,7 +1,8 @@
 # Crossmart for developers
 
 Crossmart keeps one catalog and one stock ledger, and publishes them to every store a seller
-connects (Shopify, eBay, Google Merchant and more). Everything the dashboard does goes through a
+connects: Shopify and eBay today, with Google Merchant and Etsy in development (see the
+[channel status](https://docs.crossmart.io/channels/)). Everything the dashboard does goes through a
 public REST API, so your scripts, integrations and AI agents can do it too.
 
 - **[Quickstart](quickstart.md):** create a product, publish it to a store, override it there, and read orders, with curl and the SDK.
