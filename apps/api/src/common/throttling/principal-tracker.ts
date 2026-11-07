@@ -18,5 +18,7 @@ function principalTrackerId(principal: Principal): string {
       return principal.apiKeyId;
     case PrincipalKind.Agent:
       return [principal.clientId, principal.userId].join(TRACKER_SEPARATOR);
+    case PrincipalKind.AgentWorker:
+      return principal.userId;
   }
 }

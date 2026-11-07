@@ -1,5 +1,6 @@
 import type {
   BetaMessage,
+  BetaMessageStreamParams,
   MessageCreateParamsNonStreaming,
 } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
@@ -7,6 +8,11 @@ import { APIError, AuthenticationError, PermissionDeniedError } from '@anthropic
 import { Injectable, Logger } from '@nestjs/common';
 import { AppConfigService } from '@crossmart/common';
 import type { AiCompletion, AiStructuredRequest } from '../../entities/ai-completion.js';
+import type {
+  AiConversationListener,
+  AiConversationReply,
+  AiConversationRequest,
+} from '../../entities/ai-conversation.js';
 import { AiProviderName } from '../../enums/ai-provider-name.enum.js';
 import { AiStopReason } from '../../enums/ai-stop-reason.enum.js';
 import {
@@ -17,6 +23,12 @@ import {
 import { AiProvider } from '../ai-provider.js';
 import { type AnthropicMessages, AnthropicClientFactory } from './anthropic-client.factory.js';
 import {
+  fromAnthropicMessage,
+  toAnthropicMessages,
+  toAnthropicTools,
+} from './anthropic-conversation.mapper.js';
+import {
+  ANTHROPIC_CONVERSATION_CACHE,
   ANTHROPIC_EFFORT,
   ANTHROPIC_STOP_REASONS,
   REFUSAL_FALLBACK_BETA,
@@ -59,6 +71,24 @@ export class AnthropicAiProvider extends AiProvider {
     }
   }
 
+  async converse(
+    request: AiConversationRequest,
+    listener: AiConversationListener,
+  ): Promise<AiConversationReply> {
+    if (!this.messages) {
+      throw new AiNotConfiguredError();
+    }
+    try {
+      const message = await this.messages.stream(this.toConversationParams(request), {
+        signal: request.signal,
+        onText: (delta) => listener.onTextDelta(delta),
+      });
+      return fromAnthropicMessage(message);
+    } catch (error) {
+      throw this.toError(error);
+    }
+  }
+
   /** The SDK's failures as errors callers understand. Never logs the request or the key. */
   private toError(error: unknown): unknown {
     if (!(error instanceof APIError)) return error;
@@ -85,7 +115,22 @@ export class AnthropicAiProvider extends AiProvider {
     };
   }
 
-  private refusalFallback(model: string): Partial<MessageCreateParamsNonStreaming> {
+  /** Streamed, so long answers never hit the HTTP timeout, and cached up to the newest message. */
+  private toConversationParams(request: AiConversationRequest): BetaMessageStreamParams {
+    const model = request.model ?? this.model;
+    return {
+      model,
+      max_tokens: request.maxOutputTokens,
+      system: request.system,
+      messages: toAnthropicMessages(request.messages),
+      tools: toAnthropicTools(request.tools),
+      cache_control: ANTHROPIC_CONVERSATION_CACHE,
+      output_config: { effort: ANTHROPIC_EFFORT },
+      ...this.refusalFallback(model),
+    };
+  }
+
+  private refusalFallback(model: string): Pick<BetaMessageStreamParams, 'betas' | 'fallbacks'> {
     return REFUSAL_FALLBACK_MODELS.has(model)
       ? { betas: [REFUSAL_FALLBACK_BETA], fallbacks: REFUSAL_FALLBACKS }
       : {};

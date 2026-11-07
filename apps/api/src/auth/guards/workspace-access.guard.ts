@@ -39,7 +39,7 @@ export class WorkspaceAccessGuard implements CanActivate {
     );
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     if (!permission) {
-      if (request.principal?.kind === PrincipalKind.Agent && !this.isOpenToAnyone(context)) {
+      if (this.isAgent(request.principal) && !this.isOpenToAnyone(context)) {
         throw new ForbiddenException('Agents can only use workspace routes');
       }
       return true;
@@ -59,6 +59,11 @@ export class WorkspaceAccessGuard implements CanActivate {
     return true;
   }
 
+  /** Connected agents and Agent Worker reach workspace routes only. */
+  private isAgent(principal: Principal | undefined): boolean {
+    return principal?.kind === PrincipalKind.Agent || principal?.kind === PrincipalKind.AgentWorker;
+  }
+
   private isOpenToAnyone(context: ExecutionContext): boolean {
     return Boolean(
       this.reflector.getAllAndOverride<boolean>(ALLOWS_ANONYMOUS_METADATA_KEY, [
@@ -68,12 +73,12 @@ export class WorkspaceAccessGuard implements CanActivate {
     );
   }
 
-  /** API keys and agents carry their resolved role; a user's comes from their membership. */
+  /** API keys and agents (connected ones and Agent Worker) carry their resolved role; a user's comes from their membership. */
   private async findAccess(
     principal: Principal,
     workspaceId: string,
   ): Promise<ResolvedRole | null> {
-    if (principal.kind === PrincipalKind.ApiKey || principal.kind === PrincipalKind.Agent) {
+    if (principal.kind !== PrincipalKind.User) {
       const { role, customRole, permissions } = principal;
       return principal.workspaceId === workspaceId ? { role, customRole, permissions } : null;
     }

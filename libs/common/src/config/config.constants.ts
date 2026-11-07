@@ -22,6 +22,8 @@ export const DEFAULT_ENTITLEMENTS_ENFORCED = false;
 export const DEFAULT_WEBHOOK_ALLOW_PRIVATE_URLS = false;
 /** The model the AI agents use unless `AI_MODEL` names another. */
 export const DEFAULT_AI_MODEL = 'claude-sonnet-5-5';
+/** The model Agent Worker's tool loop uses unless `AGENT_WORKER_MODEL` names another. */
+export const DEFAULT_AGENT_WORKER_MODEL = 'claude-sonnet-5-5';
 /**
  * Ask Crossmart's questions answered per UTC day across the platform, whoever asks. Crossmart
  * pays for these calls, so the cap bounds the bill whatever the traffic; 0 turns Ask off.

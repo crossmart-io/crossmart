@@ -24,6 +24,7 @@ those, not the role name, so they keep working when roles change.
 | `inventory:edit`      | Adjust stock and import stock files                                  |   ✓   |   ✓   |   ✓    |          |        |
 | `listings:edit`       | Add products to stores, remove them, override what one store shows   |   ✓   |   ✓   |   ✓    |          |        |
 | `ai:generate`         | Ask the AI agents for content (metered); results need approval       |   ✓   |   ✓   |   ✓    |          |        |
+| `agent_worker:use`    | Chat with Agent Worker (metered); its changes need approval          |   ✓   |   ✓   |   ✓    |          |        |
 | `suggestions:approve` | Approve (apply) or reject AI suggestions                             |   ✓   |   ✓   |        |    ✓     |        |
 | `channels:manage`     | Connect and disconnect stores, set pricing and selection rules, sync |   ✓   |   ✓   |        |          |        |
 | `members:manage`      | Invite, change roles and remove members                              |   ✓   |   ✓   |        |          |        |

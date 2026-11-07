@@ -4,7 +4,9 @@ import type { Job } from 'bullmq';
 import { QueueName } from '@crossmart/common';
 import {
   AGENT_CLIENT_SWEEP_JOB_NAME,
+  AGENT_WORKER_RETENTION_JOB_NAME,
   AgentClientSweeper,
+  AgentWorkerRetentionService,
   ASK_RETENTION_JOB_NAME,
   AskRetentionService,
   SANDBOX_SWEEP_JOB_NAME,
@@ -20,6 +22,7 @@ export class MaintenanceProcessor extends WorkerHost {
     private readonly agentClients: AgentClientSweeper,
     private readonly sandboxes: SandboxSweeper,
     private readonly askRetention: AskRetentionService,
+    private readonly agentWorkerRetention: AgentWorkerRetentionService,
   ) {
     super();
   }
@@ -32,6 +35,8 @@ export class MaintenanceProcessor extends WorkerHost {
         return this.sweepSandboxes();
       case ASK_RETENTION_JOB_NAME:
         return this.purgeAskConversations();
+      case AGENT_WORKER_RETENTION_JOB_NAME:
+        return this.purgeAgentWorkerConversations();
       default:
         this.logger.warn(`Skipped unknown maintenance job ${job.name}`);
     }
@@ -59,6 +64,13 @@ export class MaintenanceProcessor extends WorkerHost {
     const deleted = await this.askRetention.purge();
     if (deleted > 0) {
       this.logger.log(`Deleted ${deleted} Ask Crossmart conversations past their retention`);
+    }
+  }
+
+  private async purgeAgentWorkerConversations(): Promise<void> {
+    const deleted = await this.agentWorkerRetention.purge();
+    if (deleted > 0) {
+      this.logger.log(`Deleted ${deleted} Agent Worker conversations past their retention`);
     }
   }
 }

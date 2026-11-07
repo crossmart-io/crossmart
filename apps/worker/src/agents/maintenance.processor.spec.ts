@@ -2,6 +2,8 @@ import type { Job } from 'bullmq';
 import {
   AGENT_CLIENT_SWEEP_JOB_NAME,
   type AgentClientSweeper,
+  AGENT_WORKER_RETENTION_JOB_NAME,
+  type AgentWorkerRetentionService,
   ASK_RETENTION_JOB_NAME,
   type AskRetentionService,
   SANDBOX_SWEEP_JOB_NAME,
@@ -19,12 +21,16 @@ function setup() {
   const askRetention = {
     purge: vi.fn<AskRetentionService['purge']>(() => Promise.resolve(4)),
   };
+  const agentWorkerRetention = {
+    purge: vi.fn<AgentWorkerRetentionService['purge']>(() => Promise.resolve(2)),
+  };
   const processor = new MaintenanceProcessor(
     agentClients as unknown as AgentClientSweeper,
     sandboxes as unknown as SandboxSweeper,
     askRetention as unknown as AskRetentionService,
+    agentWorkerRetention as unknown as AgentWorkerRetentionService,
   );
-  return { agentClients, sandboxes, askRetention, processor };
+  return { agentClients, sandboxes, askRetention, agentWorkerRetention, processor };
 }
 
 describe('MaintenanceProcessor', () => {
@@ -47,6 +53,13 @@ describe('MaintenanceProcessor', () => {
     await processor.process({ name: ASK_RETENTION_JOB_NAME } as Job);
     expect(askRetention.purge).toHaveBeenCalled();
     expect(agentClients.sweep).not.toHaveBeenCalled();
+  });
+
+  it('purges Agent Worker conversations past their retention', async () => {
+    const { askRetention, agentWorkerRetention, processor } = setup();
+    await processor.process({ name: AGENT_WORKER_RETENTION_JOB_NAME } as Job);
+    expect(agentWorkerRetention.purge).toHaveBeenCalled();
+    expect(askRetention.purge).not.toHaveBeenCalled();
   });
 
   it('skips jobs it does not know', async () => {

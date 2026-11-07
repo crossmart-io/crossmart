@@ -1,4 +1,9 @@
 import type { AiCompletion, AiStructuredRequest } from '../entities/ai-completion.js';
+import type {
+  AiConversationListener,
+  AiConversationReply,
+  AiConversationRequest,
+} from '../entities/ai-conversation.js';
 import type { AiProviderName } from '../enums/ai-provider-name.enum.js';
 
 /**
@@ -16,4 +21,13 @@ export abstract class AiProvider {
 
   /** Asks for an answer following the request's schema. Never logs the prompt. */
   abstract complete<Output>(request: AiStructuredRequest<Output>): Promise<AiCompletion>;
+
+  /**
+   * One call of a conversation with tools, streaming the answer's text to `listener` as it is
+   * written. The reply's tool uses are for the caller to run (or not). Never logs the content.
+   */
+  abstract converse(
+    request: AiConversationRequest,
+    listener: AiConversationListener,
+  ): Promise<AiConversationReply>;
 }

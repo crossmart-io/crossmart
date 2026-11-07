@@ -51,4 +51,9 @@ export enum WorkspacePermission {
 
   /** Ask the AI agents for content, such as channel titles and descriptions. Metered. */
   GenerateContent = 'ai:generate',
+  /**
+   * Chat with Agent Worker (ADR 0026), which reads the workspace and proposes changes. Metered.
+   * What it changes still needs the person's own permission for that change, and their approval.
+   */
+  UseAgentWorker = 'agent_worker:use',
 }

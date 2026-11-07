@@ -35,5 +35,19 @@ export const ANTHROPIC_STOP_REASONS: Partial<Record<BetaStopReason, AiStopReason
   model_context_window_exceeded: AiStopReason.Truncated,
 };
 
+/** How Anthropic's stop reasons read in a conversation with tools. */
+export const ANTHROPIC_CONVERSATION_STOP_REASONS: Partial<Record<BetaStopReason, AiStopReason>> = {
+  ...ANTHROPIC_STOP_REASONS,
+  tool_use: AiStopReason.ToolUse,
+};
+
+/**
+ * Prompt caching for conversations: the tools, the system prompt and the history so far are
+ * cached, so each step of a tool loop pays full price only for what is new.
+ */
+export const ANTHROPIC_CONVERSATION_CACHE = { type: 'ephemeral' } as const;
+
 export const TEXT_BLOCK_TYPE = 'text';
+export const TOOL_USE_BLOCK_TYPE = 'tool_use';
+export const TOOL_RESULT_BLOCK_TYPE = 'tool_result';
 export const USER_ROLE = 'user';

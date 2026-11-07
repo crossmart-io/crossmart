@@ -41,6 +41,7 @@ export function toActivityEventInput(
     actorUserId: actor.userId,
     actorApiKeyId: actor.apiKeyId,
     actorOAuthClientId: actor.agentClientId,
+    actorAgentName: actor.agentName,
     action: entry.action,
     outcome: entry.outcome ?? ActivityOutcome.SUCCEEDED,
     subjectType: entry.subject?.type ?? null,

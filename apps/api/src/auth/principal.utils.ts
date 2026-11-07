@@ -27,7 +27,10 @@ export function requireApiKey(principal: Principal): ApiKeyPrincipal {
   return principal;
 }
 
-/** Who the activity log credits: the signed-in user, the API key itself, or the agent. */
+/**
+ * Who the activity log credits: the signed-in user, the API key itself, or the agent (a connected
+ * one, or Agent Worker) on behalf of its user.
+ */
 export function toActor(principal: Principal): Actor {
   switch (principal.kind) {
     case PrincipalKind.User:
@@ -36,5 +39,7 @@ export function toActor(principal: Principal): Actor {
       return Actor.apiKey(principal.apiKeyId);
     case PrincipalKind.Agent:
       return Actor.agent(principal.userId, principal.clientId);
+    case PrincipalKind.AgentWorker:
+      return Actor.agentWorker(principal.userId);
   }
 }

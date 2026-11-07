@@ -14,6 +14,13 @@ export const PASSWORD_RESET_TTL_SECONDS = 60 * 60;
  */
 export const CLIENT_IP_HEADERS = ['x-real-ip'];
 
+/** Addresses of a connection from this machine, the only ones Agent Worker's credential counts from. */
+export const LOOPBACK_ADDRESSES: ReadonlySet<string> = new Set([
+  '127.0.0.1',
+  '::1',
+  '::ffff:127.0.0.1',
+]);
+
 export const IS_PUBLIC_METADATA_KEY = 'crossmart:is-public';
 export const ALLOWS_ANONYMOUS_METADATA_KEY = 'crossmart:allows-anonymous';
 export const REQUIRED_PERMISSION_METADATA_KEY = 'crossmart:required-permission';

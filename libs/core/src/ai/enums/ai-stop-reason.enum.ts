@@ -5,4 +5,6 @@ export enum AiStopReason {
   Refused = 'refused',
   /** The answer hit the output limit and is cut off. */
   Truncated = 'truncated',
+  /** The model asked for tools to run before it goes on (conversations with tools only). */
+  ToolUse = 'tool_use',
 }

@@ -28,6 +28,7 @@ const CATALOG_WORK: readonly WorkspacePermission[] = [
   WorkspacePermission.EditInventory,
   WorkspacePermission.EditListings,
   WorkspacePermission.GenerateContent,
+  WorkspacePermission.UseAgentWorker,
 ];
 
 const ADMINISTRATION: readonly WorkspacePermission[] = [

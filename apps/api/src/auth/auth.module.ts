@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { RedisModule } from '@crossmart/common';
 import {
   AgentsModule,
+  AgentWorkerStorageModule,
   EntitlementsModule,
   NotificationsModule,
   TenancyModule,
@@ -13,9 +14,11 @@ import { WorkspaceAccessGuard } from './guards/workspace-access.guard.js';
 import { RedisAuthRateLimitStorage } from './rate-limit/redis-auth-rate-limit.storage.js';
 import { AgentAuthenticator } from './services/agent-authenticator.js';
 import { AgentTokenVerifier } from './services/agent-token.verifier.js';
+import { AgentWorkerAuthenticator } from './services/agent-worker-authenticator.js';
 import { AuthTenancyHooks } from './services/auth-tenancy.hooks.js';
 import { AuthService } from './services/auth.service.js';
 import { BetterAuthServices } from './services/better-auth-services.js';
+import { RequestCredentials } from './services/request-credentials.js';
 
 /**
  * Sessions (Better Auth, with its rate limits in Redis), API keys, agent access tokens and the
@@ -23,7 +26,14 @@ import { BetterAuthServices } from './services/better-auth-services.js';
  * then whether the organization's subscription lets it change anything (ADR 0024).
  */
 @Module({
-  imports: [RedisModule, TenancyModule, NotificationsModule, AgentsModule, EntitlementsModule],
+  imports: [
+    RedisModule,
+    TenancyModule,
+    NotificationsModule,
+    AgentsModule,
+    AgentWorkerStorageModule,
+    EntitlementsModule,
+  ],
   providers: [
     RedisAuthRateLimitStorage,
     BetterAuthServices,
@@ -31,6 +41,8 @@ import { BetterAuthServices } from './services/better-auth-services.js';
     AuthTenancyHooks,
     AgentTokenVerifier,
     AgentAuthenticator,
+    AgentWorkerAuthenticator,
+    RequestCredentials,
     { provide: APP_GUARD, useClass: AuthenticationGuard },
     { provide: APP_GUARD, useClass: WorkspaceAccessGuard },
     { provide: APP_GUARD, useClass: SubscriptionWriteGuard },
