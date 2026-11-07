@@ -1,7 +1,8 @@
 # Crossmart for developers
 
 Crossmart keeps one catalog and one stock ledger, and publishes them to every store a seller
-connects (Shopify, eBay, Google Merchant and more). Everything the dashboard does goes through a
+connects: Shopify and eBay today, with Google Merchant and Etsy in development (see the
+[channel status](https://docs.crossmart.io/channels/)). Everything the dashboard does goes through a
 public REST API, so your scripts, integrations and AI agents can do it too.
 
 - **[Quickstart](quickstart.md):** create a product, publish it to a store, override it there, and read orders, with curl and the SDK.
@@ -54,6 +55,10 @@ members. Almost every endpoint is scoped to a workspace:
 A workspace you can't access answers `404`, the same as one that doesn't exist, so ids don't leak.
 Plan limits (active listings, connected stores, API keys…) count across the organization's
 workspaces.
+
+> [!NOTE]
+> Paid plans are not live yet. Limits are computed and reported, but they only block requests
+> (with `402`) on an instance that sets `ENTITLEMENTS_ENFORCED=true`, which is off by default.
 
 ## Authentication
 
@@ -137,7 +142,8 @@ Errors use the HTTP status and a JSON body:
 - **401**: the key or token is missing, wrong, revoked or expired.
 - **402**: the plan doesn't allow it. The body adds a machine-readable `code`
   (`plan_limit_reached` or `plan_feature_not_included`), the `feature`, the `plan`, its `limit`
-  and current `usage`, so you can tell the user what to upgrade.
+  and current `usage`, so you can tell the user what to upgrade. Only returned when the instance
+  enforces plan limits, which is off by default while paid plans are not live.
 - **403**: the role lacks the permission, or (with `code: "sandbox_claim_required"`) the
   workspace is an unclaimed [sandbox account](#sandbox-accounts-for-ai-agents) the user must
   claim first.

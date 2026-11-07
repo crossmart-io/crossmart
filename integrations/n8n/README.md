@@ -1,12 +1,13 @@
 # n8n-nodes-crossmart
 
 n8n nodes for [Crossmart](https://crossmart.io), the open-source multichannel platform for sellers
-and their AI agents. Manage one catalog and one stock ledger, publish to Shopify, eBay, Google
-Merchant and Etsy, and start workflows the moment orders come in, stock changes, listings go live
+and their AI agents. Manage one catalog and one stock ledger, publish to Shopify and eBay (Google
+Merchant and Etsy are in development, see the [channel status](https://docs.crossmart.io/channels/)),
+and start workflows the moment orders come in, stock changes, listings go live
 or fail, or products change.
 
 [Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) ·
-[Triggers](#crossmart-trigger) · [Development](#development) · [Guide](../../docs/developers/n8n.md)
+[Triggers](#crossmart-trigger) · [Development](#development) · [Guide](https://docs.crossmart.io/integrations/n8n/)
 
 ## Installation
 
@@ -80,7 +81,7 @@ Pick one or more events:
 Each event is one item: the whole envelope, `{ id, type, createdAt, workspaceId, apiVersion, data }`,
 so expressions read `{{$json.type}}` and `{{$json.data.order.total}}`. Test events
 (`webhook.test`, from **Send test** in Crossmart) always start the workflow, whatever you picked.
-The full catalog is in [Webhooks](../../docs/developers/webhooks.md).
+The full catalog is in [Webhooks](https://github.com/crossmart-io/crossmart/blob/main/docs/developers/webhooks.md).
 
 - **Activating** the workflow creates a webhook endpoint in the workspace for this workflow's URL
   and the chosen events, and keeps its signing secret in the workflow. **Deactivating** it deletes

@@ -207,7 +207,8 @@ const { count } = await crossmart.listings.publishMany(store.id, [firstId, secon
 ```
 
 Your plan limits active listings. Past the limit the API answers `402` with
-`"code": "plan_limit_reached"`.
+`"code": "plan_limit_reached"`. Paid plans are not live yet, so limits are not enforced by
+default (`ENTITLEMENTS_ENFORCED=false`).
 
 ### Check the listing status
 
