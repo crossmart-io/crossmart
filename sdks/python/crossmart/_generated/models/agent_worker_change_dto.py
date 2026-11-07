@@ -13,18 +13,18 @@ T = TypeVar("T", bound="AgentWorkerChangeDto")
 class AgentWorkerChangeDto:
     """
     Attributes:
-        field (str):  Example: title.
+        label (str): What changes, for people Example: Price (Medium).
         before (None | str): The value now; null when unknown
         after (None | str): The value after the change
     """
 
-    field: str
+    label: str
     before: None | str
     after: None | str
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        field = self.field
+        label = self.label
 
         before: None | str
         before = self.before
@@ -36,7 +36,7 @@ class AgentWorkerChangeDto:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "field": field,
+                "label": label,
                 "before": before,
                 "after": after,
             }
@@ -47,7 +47,7 @@ class AgentWorkerChangeDto:
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         d = dict(src_dict)
-        field = d.pop("field")
+        label = d.pop("label")
 
         def _parse_before(data: object) -> None | str:
             if data is None:
@@ -64,7 +64,7 @@ class AgentWorkerChangeDto:
         after = _parse_after(d.pop("after"))
 
         agent_worker_change_dto = cls(
-            field=field,
+            label=label,
             before=before,
             after=after,
         )

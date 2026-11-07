@@ -27,6 +27,7 @@ use Crossmart\Model\ImportJobPageDto;
 use Crossmart\Model\ProductDto;
 use Crossmart\Model\ProductPageDto;
 use Crossmart\Model\ProductViewDto;
+use Crossmart\Model\UpdateProductContentDto;
 use Crossmart\Model\UpdateProductDto;
 
 /**
@@ -152,6 +153,28 @@ final class CatalogApi
             pathTemplate: '/api/v1/workspaces/{workspaceId}/products/{productId}',
             pathParameters: ['workspaceId' => $workspaceId, 'productId' => $productId],
         ));
+    }
+
+    /**
+     * Edit a product’s title or description
+     *
+     * Changes only the fields sent; variants, prices, stock and images stay as they are. Connected stores are updated like after any content edit.
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function productsControllerUpdateContentV1(
+        string $workspaceId,
+        string $productId,
+        UpdateProductContentDto $body,
+    ): ProductDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Patch,
+            pathTemplate: '/api/v1/workspaces/{workspaceId}/products/{productId}',
+            pathParameters: ['workspaceId' => $workspaceId, 'productId' => $productId],
+            body: $body->toArray(),
+        ));
+
+        return ProductDto::fromArray($response->object());
     }
 
     /**

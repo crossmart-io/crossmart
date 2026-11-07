@@ -58,6 +58,24 @@ final class InventoryApi
     }
 
     /**
+     * One variant’s stock, with its product
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function inventoryItemsControllerGetV1(
+        string $workspaceId,
+        string $inventoryItemId,
+    ): InventoryItemDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Get,
+            pathTemplate: '/api/v1/workspaces/{workspaceId}/inventory-items/{inventoryItemId}',
+            pathParameters: ['workspaceId' => $workspaceId, 'inventoryItemId' => $inventoryItemId],
+        ));
+
+        return InventoryItemDto::fromArray($response->object());
+    }
+
+    /**
      * Adjust the stock on hand of a variant
      *
      * Adds or removes units, or sets the counted stock, and records the change in the ledger with its reason and author. Reserved units are not changed.

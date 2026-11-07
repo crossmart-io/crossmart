@@ -354,6 +354,7 @@ from .update_etsy_listing_setup_dto import UpdateEtsyListingSetupDto
 from .update_google_listing_setup_dto import UpdateGoogleListingSetupDto
 from .update_member_role_dto import UpdateMemberRoleDto
 from .update_pricing_dto import UpdatePricingDto
+from .update_product_content_dto import UpdateProductContentDto
 from .update_product_dto import UpdateProductDto
 from .update_product_selection_dto import UpdateProductSelectionDto
 from .update_variant_dto import UpdateVariantDto
@@ -690,6 +691,7 @@ __all__ = (
     "UpdateGoogleListingSetupDto",
     "UpdateMemberRoleDto",
     "UpdatePricingDto",
+    "UpdateProductContentDto",
     "UpdateProductDto",
     "UpdateProductSelectionDto",
     "UpdateVariantDto",

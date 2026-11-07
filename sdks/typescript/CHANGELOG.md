@@ -14,6 +14,9 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
   (`AgentWorkerStreamEventDto`); read them with an event-stream reader, not as JSON. New enums
   for its turns, actions and events, the `agent_worker:use` permission and the `agent_worker` AI
   feature.
+- `PATCH /workspaces/{workspaceId}/products/{productId}` edits only a product's title and/or
+  description, and `GET /workspaces/{workspaceId}/inventory-items/{inventoryItemId}` reads one
+  variant's stock. The Ask channel `agent_worker`.
 - Ask Crossmart conversations and escalations: `conversationId` and `channel` on a question,
   and `conversationId`, `turnId` and `escalation` on the answer; `POST /ask/escalations` to hand
   a conversation to a person and `GET /ask/escalations/{escalationId}` to read the reply; and the

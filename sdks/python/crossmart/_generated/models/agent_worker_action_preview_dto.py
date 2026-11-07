@@ -18,16 +18,24 @@ class AgentWorkerActionPreviewDto:
     """
     Attributes:
         target (None | str):  Example: Linen Shirt on Outlet store.
+        headline (str): The change in one sentence Example: Add 20 units (stock received).
+        details (list[str]): More lines to read, such as a note Example: ['Note: Spring delivery'].
         changes (list[AgentWorkerChangeDto]):
     """
 
     target: None | str
+    headline: str
+    details: list[str]
     changes: list[AgentWorkerChangeDto]
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         target: None | str
         target = self.target
+
+        headline = self.headline
+
+        details = self.details
 
         changes = []
         for changes_item_data in self.changes:
@@ -39,6 +47,8 @@ class AgentWorkerActionPreviewDto:
         field_dict.update(
             {
                 "target": target,
+                "headline": headline,
+                "details": details,
                 "changes": changes,
             }
         )
@@ -58,6 +68,10 @@ class AgentWorkerActionPreviewDto:
 
         target = _parse_target(d.pop("target"))
 
+        headline = d.pop("headline")
+
+        details = cast(list[str], d.pop("details"))
+
         changes = []
         _changes = d.pop("changes")
         for changes_item_data in _changes:
@@ -67,6 +81,8 @@ class AgentWorkerActionPreviewDto:
 
         agent_worker_action_preview_dto = cls(
             target=target,
+            headline=headline,
+            details=details,
             changes=changes,
         )
 

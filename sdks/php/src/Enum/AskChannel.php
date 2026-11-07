@@ -15,4 +15,5 @@ enum AskChannel: string
     case AppWidget = 'app_widget';
     case Api = 'api';
     case Mcp = 'mcp';
+    case AgentWorker = 'agent_worker';
 }

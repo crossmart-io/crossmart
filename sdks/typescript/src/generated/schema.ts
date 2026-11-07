@@ -483,7 +483,11 @@ export interface paths {
         delete: operations["ProductsController_delete_v1"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit a product’s title or description
+         * @description Changes only the fields sent; variants, prices, stock and images stay as they are. Connected stores are updated like after any content edit.
+         */
+        patch: operations["ProductsController_updateContent_v1"];
         trace?: never;
     };
     "/api/v1/workspaces/{workspaceId}/product-bulk-actions": {
@@ -681,6 +685,23 @@ export interface paths {
         };
         /** Stock of every variant, by product title */
         get: operations["InventoryItemsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inventory-items/{inventoryItemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One variant’s stock, with its product */
+        get: operations["InventoryItemsController_get_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2858,6 +2879,12 @@ export interface components {
             handle: string;
             variants: components["schemas"]["UpdateVariantDto"][];
         };
+        UpdateProductContentDto: {
+            /** @example Linen Shirt – Relaxed Fit */
+            title?: string;
+            /** @description HTML; unsafe markup is removed */
+            descriptionHtml?: string;
+        };
         /** @enum {string} */
         BulkProductAction: BulkProductAction;
         BulkProductActionDto: {
@@ -4505,8 +4532,11 @@ export interface components {
          */
         AgentWorkerActionRisk: AgentWorkerActionRisk;
         AgentWorkerChangeDto: {
-            /** @example title */
-            field: string;
+            /**
+             * @description What changes, for people
+             * @example Price (Medium)
+             */
+            label: string;
             /** @description The value now; null when unknown */
             before: string | null;
             /** @description The value after the change */
@@ -4515,6 +4545,18 @@ export interface components {
         AgentWorkerActionPreviewDto: {
             /** @example Linen Shirt on Outlet store */
             target: string | null;
+            /**
+             * @description The change in one sentence
+             * @example Add 20 units (stock received)
+             */
+            headline: string;
+            /**
+             * @description More lines to read, such as a note
+             * @example [
+             *       "Note: Spring delivery"
+             *     ]
+             */
+            details: string[];
             changes: components["schemas"]["AgentWorkerChangeDto"][];
         };
         AgentWorkerActionDto: {
@@ -6181,6 +6223,32 @@ export interface operations {
             };
         };
     };
+    ProductsController_updateContent_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductContentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDto"];
+                };
+            };
+        };
+    };
     ProductBulkActionsController_apply_v1: {
         parameters: {
             query?: never;
@@ -6515,6 +6583,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InventoryPageDto"];
+                };
+            };
+        };
+    };
+    InventoryItemsController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                inventoryItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryItemDto"];
                 };
             };
         };
@@ -9534,7 +9624,8 @@ export enum AskChannel {
     web_widget = "web_widget",
     app_widget = "app_widget",
     api = "api",
-    mcp = "mcp"
+    mcp = "mcp",
+    agent_worker = "agent_worker"
 }
 export enum AskOutcome {
     answered = "answered",
