@@ -301,12 +301,14 @@ from .update_workspace_dto import UpdateWorkspaceDto
 from .uploaded_image_dto import UploadedImageDto
 from .variant_dto import VariantDto
 from .variant_price_override_dto import VariantPriceOverrideDto
+from .webhook_attempt_outcome import WebhookAttemptOutcome
 from .webhook_delivery_detail_dto import WebhookDeliveryDetailDto
 from .webhook_delivery_dto import WebhookDeliveryDto
 from .webhook_delivery_page_dto import WebhookDeliveryPageDto
 from .webhook_delivery_status import WebhookDeliveryStatus
 from .webhook_disabled_reason import WebhookDisabledReason
 from .webhook_endpoint_dto import WebhookEndpointDto
+from .webhook_endpoint_last_delivery_dto import WebhookEndpointLastDeliveryDto
 from .webhook_endpoint_with_secret_dto import WebhookEndpointWithSecretDto
 from .webhook_envelope_dto import WebhookEnvelopeDto
 from .webhook_envelope_dto_data import WebhookEnvelopeDtoData
@@ -574,12 +576,14 @@ __all__ = (
     "UploadedImageDto",
     "VariantDto",
     "VariantPriceOverrideDto",
+    "WebhookAttemptOutcome",
     "WebhookDeliveryDetailDto",
     "WebhookDeliveryDto",
     "WebhookDeliveryPageDto",
     "WebhookDeliveryStatus",
     "WebhookDisabledReason",
     "WebhookEndpointDto",
+    "WebhookEndpointLastDeliveryDto",
     "WebhookEndpointWithSecretDto",
     "WebhookEnvelopeDto",
     "WebhookEnvelopeDtoData",
