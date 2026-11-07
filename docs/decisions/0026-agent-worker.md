@@ -23,6 +23,17 @@ and the REST call it makes), with the API client that calls it. The MCP server r
 MCP tools; Agent Worker offers the same specs to the model. Two new spec fields describe risk:
 `publishes` (it publishes a listing) and `priceInputs` (inputs that change what buyers pay).
 
+Three tools join the shared layer, so MCP agents get them too:
+
+- `update_product_text` edits only a product's title and/or description through the new
+  `PATCH /products/{id}` (additive; variants, prices, stock and images are untouched). It is not
+  destructive, so a copy edit no longer needs the explicit confirmation `replace_product` does;
+  the system prompt tells Agent Worker to prefer it for text.
+- `get_inventory_item` reads one variant's stock through the new `GET /inventory-items/{id}`.
+- `ask_crossmart` is built per channel. Agent Worker's version is read-only: it asks (channel
+  `agent_worker` in Ask's log) but has no `escalate` input; the person contacts the team
+  themselves. `replace_product` now sends the `handle` the API requires.
+
 ### 2. Tools run through the REST API, over loopback
 
 Agent Worker never touches the database for a tool. `LoopbackToolExecutor` calls the API on
@@ -48,14 +59,19 @@ read-only subscription guard, sandbox rules, validation and the activity log.
 
 - **Reads run at once.** Their results go back to the model.
 - **Writes never run from the model.** Every call to a non-read-only tool becomes a _proposed
-  action_ in the chat with a before/after preview. They are shown in the chat rather than the
+  action_ in the chat with a preview in plain words: a typed formatter per write tool
+  (`libs/core/src/agent-worker/previews`) reads the current values through the API and gives a
+  headline ("Add 20 units (stock received)"), the product and store it touches, labelled values
+  before and after ("Price (M): €24.00 → €19.00", in the store's or workspace's currency) and
+  details such as a note. A tool without a formatter falls back to the values the call sets. They are shown in the chat rather than the
   suggestions inbox: suggestions only model a content field on one listing, while Agent Worker
   proposes any tool call (stock, listings, categories, publishing). The suggestions inbox stays
   for background agents.
 - **One confirmation per answer.** Every change waiting in a conversation is decided in one call:
   the listed ones are approved, the others rejected. A new message expires what still waits.
 - **Explicit confirmation for risky changes.** A proposal is tagged `destructive` (the tool
-  deletes or takes off sale), `price_change` (it sets a price input) or `bulk` (it names more
+  deletes or takes off sale), `price_change` (it sets a price input that, per the preview, really
+  changes) or `bulk` (it names more
   than 5 items, or the confirmation publishes more than 5 listings). Approving any of them also
   needs `confirmHighRisk: true`; the API refuses with 400 otherwise.
 - **On approval** each action is claimed with a conditional update (so it runs once), executed
@@ -122,12 +138,12 @@ are deleted with either. **Retention: 180 days** after the last message
 - Autonomy (letting some changes apply without approval, `Feature.AutonomousAgents`) can later
   auto-approve proposals by policy, using the same decision path.
 - Not in this version: attaching to a turn running in another tab, conversation search, sharing a
-  conversation, Ask Crossmart and webhook tools inside Agent Worker.
+  conversation, webhook tools inside Agent Worker, and escalating to a person from it.
 
 ## Cost
 
-Per model call the model reads the system prompt (about 750 tokens), 28 tool definitions (about
-8,000 tokens) and the conversation. A typical turn ("fix my failed eBay listings": two reads, then
+Per model call the model reads the system prompt (about 750 tokens), 31 tool definitions (about
+8,500 tokens) and the conversation. A typical turn ("fix my failed eBay listings": two reads, then
 a proposal) makes 3 calls, reading about 32,000 input tokens and writing about 1,000 to 2,000. On
 `claude-sonnet-5-5` ($2 in, $10 out per million) that is about 8 cents uncached; prompt caching of
 the tools, prompt and history (cache writes at 1.25×, reads at $0.20 per million) brings it to

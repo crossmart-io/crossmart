@@ -72,8 +72,11 @@ during a turn arrive as an `error` event with a `code` (`credits_exhausted`, `ai
 Add it to `libs/core/src/agent-tools/tools` like any MCP tool. Agent Worker offers it when its
 `scope` is one of `AGENT_WORKER_SCOPES` and the person's role holds a permission of that scope.
 Mark `destructive`, `publishes` or `priceInputs` where they apply, so its proposals get the right
-risks. For a before-and-after preview, add a reader to `AgentWorkerPreviewer`; otherwise the card
-shows the values the call sets.
+risks. Give every write tool a preview formatter in
+`libs/core/src/agent-worker/previews/formatters` (an `ActionPreviewFormatter` with its headline,
+target, labelled before/after values and details, reading through `PreviewReader`) and add it to
+`ACTION_PREVIEW_FORMATTERS`; a test fails for a write tool without one. Without a formatter the
+card shows the values the call sets, labelled from their field names.
 
 ## Testing
 
