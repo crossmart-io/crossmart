@@ -33,7 +33,7 @@ export function suggestionRecord(overrides: Partial<SuggestionRecord> = {}): Sug
     updatedAt: AT,
     product: { title: 'Mug', media: [{ url: 'https://cdn.example.com/1.jpg' }] },
     connection: { id: CONNECTION_ID, channel: ChannelType.Ebay, displayName: 'eBay US' },
-    requestedByUser: { name: 'Yariv' },
+    requestedByUser: { name: 'Dana Levin' },
     requestedByApiKey: null,
     reviewedByUser: null,
     reviewedByApiKey: null,
