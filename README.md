@@ -11,10 +11,17 @@ on the way, from one dashboard or straight from Claude & ChatGPT.
 
 </div>
 
-> [!WARNING]
-> Crossmart is in early development. APIs and data models will change, and it is not ready for production use yet.
+> [!NOTE]
+> Crossmart is young and moving fast. Shopify and eBay are live, and more channels are on the way. Until 1.0, APIs may change; breaking changes are announced and versioned under `/api/v1`.
 
-<!-- screenshots -->
+![The Crossmart overview: sales over time, sales by store and top products](docs/images/01-dashboard.png)
+
+| | |
+|---|---|
+| ![One catalog with Shopify and eBay listings, stock and prices](docs/images/02-products.png) | ![A product published to Shopify and eBay from the listing editor](docs/images/03-product-channels.png) |
+| One catalog for every channel | Publish a product to every store |
+| ![Channels: Shopify and eBay live, more coming](docs/images/04-channels.png) | ![AI agents such as Claude and Cursor connected over MCP](docs/images/05-connected-agents.png) |
+| Connect your stores | Let your AI agents work through MCP |
 
 ## Why Crossmart
 
