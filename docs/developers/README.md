@@ -126,13 +126,13 @@ agent's key keeps working. `GET /api/v1/workspaces/{id}` shows `sandbox.claimExp
 
 An agent that knows nothing about Crossmart can find its way in from these documents:
 
-| Document                               | URL                                                                                                                      |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| auth.md (how to sign up and sign in)   | [crossmart.io/auth.md](https://crossmart.io/auth.md), also at `https://crossmart.io/.well-known/auth.md`                 |
-| Protected Resource Metadata (RFC 9728) | `https://mcp.crossmart.io/.well-known/oauth-protected-resource/mcp`                                                      |
-| Authorization server (RFC 8414)        | `https://api.crossmart.io/.well-known/oauth-authorization-server/api/auth`, with auth.md's `agent_auth` block            |
-| A2A Agent Card                         | `https://api.crossmart.io/.well-known/agent-card.json` (see [A2A](a2a.md))                                               |
-| llms.txt                               | [crossmart.io/llms.txt](https://crossmart.io/llms.txt), [docs.crossmart.io/llms.txt](https://docs.crossmart.io/llms.txt) |
+| Document                               | URL                                                                                                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| auth.md (how to sign up and sign in)   | [crossmart.io/auth.md](https://crossmart.io/auth.md), also at `https://crossmart.io/.well-known/auth.md`                                               |
+| Protected Resource Metadata (RFC 9728) | `https://mcp.crossmart.io/.well-known/oauth-protected-resource/mcp` (a copy at `https://crossmart.io/.well-known/oauth-protected-resource`)            |
+| Authorization server (RFC 8414)        | `https://api.crossmart.io/.well-known/oauth-authorization-server/api/auth`, with auth.md's `agent_auth` block (`register_uri` is the sandbox endpoint) |
+| A2A Agent Card                         | `https://api.crossmart.io/.well-known/agent-card.json` (see [A2A](a2a.md))                                                                             |
+| llms.txt                               | [crossmart.io/llms.txt](https://crossmart.io/llms.txt), [docs.crossmart.io/llms.txt](https://docs.crossmart.io/llms.txt)                               |
 
 Every `401` from the API and the MCP server carries
 `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource/mcp", scope="…"`

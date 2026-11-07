@@ -203,18 +203,30 @@ OAuth for a person who has an account, and a sandbox account for one who has non
   `text/markdown; charset=utf-8`. `llms.txt` links to it.
 - **`agent_auth` in the authorization server metadata.** Every copy of the RFC 8414 document
   (`/.well-known/oauth-authorization-server`, with and without `/api/auth`, and
-  `/api/auth/.well-known/oauth-authorization-server`) carries the profile's block:
-  `skill` (the file's URL, `AGENT_AUTH_SKILL_URL`), `identity_types_supported: []`, and the
-  extension field `sandbox_account_endpoint` (`POST /api/v1/sandbox-accounts`). Revocation is the
-  standard top-level `revocation_endpoint` (RFC 7009) Better Auth already advertises.
-- **What is not implemented.** The profile's own registration surface (`/agent/identity` with
-  `anonymous`, `service_auth` or ID-JAG `identity_assertion`, its claim ceremony with a
-  `user_code`, the `jwt-bearer` and `urn:workos:agent-auth:grant-type:claim` grants, and the
-  Security Event Token receiver) does not exist here. Sandbox accounts differ from its anonymous
-  flow: they need the person's email, return an API key rather than an access token, and are
-  claimed from an emailed link. So the block lists no identity types, and agents that follow the
-  profile read `skill` instead of calling endpoints that are not there. Adopting the profile's
-  registration types would be a separate decision.
+  `/api/auth/.well-known/oauth-authorization-server`) carries the block. It describes the sandbox
+  account as the profile's verified-email registration: the agent asserts the user's email,
+  Crossmart verifies it by emailing a claim link, and the agent gets an API key at once.
+  `skill` (`AGENT_AUTH_SKILL_URL`), `register_uri` (`POST /api/v1/sandbox-accounts`),
+  `claim_uri` (the web app's `/claim` page), `identity_types_supported: ["identity_assertion"]`,
+  and `identity_assertion` with `assertion_types_supported: ["verified_email"]` and
+  `credential_types_supported: ["api_key"]`. No ID-JAG, `revocation_uri` or `events_supported`:
+  Crossmart supports none of them. Token revocation is the standard top-level
+  `revocation_endpoint` (RFC 7009) Better Auth already advertises.
+- **Field names.** These are the profile's v0.1.0 names, which discovery scanners (such as
+  isitagentready.com) read. v0.2.0 renamed `register_uri` and `claim_uri` to `identity_endpoint`
+  and `claim_endpoint`, and v0.6.0 moved the email path from `verified_email` to a `service_auth`
+  type. The current names are not advertised, because they promise the profile's request bodies.
+- **What is not implemented.** The profile's own registration surface (`/agent/identity` and its
+  `type`/`assertion` or `login_hint` bodies, the `user_code` claim ceremony, the `jwt-bearer` and
+  `urn:workos:agent-auth:grant-type:claim` grants, and the Security Event Token receiver) does not
+  exist here. `register_uri` takes Crossmart's own body (`email`, `storeName`) and returns an API
+  key, and `claim_uri` is a page for the person, opened from the emailed link, not an endpoint the
+  agent calls. An agent that builds the request from the metadata alone, without reading `skill`,
+  gets a `400`. Accepting the profile's bodies would be a separate decision.
+- **crossmart.io also serves the MCP server's Protected Resource Metadata** at
+  `/.well-known/oauth-protected-resource`, since agents and scanners start from the site root. Its
+  `resource` is the MCP server, not crossmart.io, which protects nothing; a client that insists the
+  two match (RFC 9728 §3.3) ignores it and follows the 401 or auth.md instead.
 - **Every 401 of the API now names a challenge**, as the MCP server's do:
   `WWW-Authenticate: Bearer resource_metadata="<MCP server's Protected Resource Metadata>",
 scope="…"`, with `error="invalid_token"` when a key or token was sent and refused
