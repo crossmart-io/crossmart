@@ -13,6 +13,10 @@ All notable changes to `crossmart/crossmart-php` are documented here. The format
   and returns a `WebhookEvent`. It throws `WebhookSignatureException` when the delivery cannot be
   trusted.
 
+### Changed
+
+- The SDK is licensed under [MIT](LICENSE), copyright YIOT LLC, instead of AGPL-3.0-only.
+
 ## [0.1.0] - not yet released
 
 ### Added

@@ -12,6 +12,10 @@ All notable changes to the `crossmart` Python package are documented here. The f
   raw body (HMAC-SHA256, constant-time, five-minute tolerance, secret rotation) and returns the
   parsed `WebhookEvent`. It raises `WebhookSignatureError` when the delivery cannot be trusted.
 
+### Changed
+
+- The SDK is licensed under [MIT](LICENSE), copyright YIOT LLC, instead of AGPL-3.0-only.
+
 ## [0.1.0] - not yet released
 
 ### Added

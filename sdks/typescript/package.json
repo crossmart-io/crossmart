@@ -21,7 +21,7 @@
   "bugs": {
     "url": "https://github.com/crossmart-io/crossmart/issues"
   },
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.18.3",
   "engines": {
@@ -56,7 +56,6 @@
     "test:watch": "vitest",
     "generate": "node scripts/generate-schema.mjs",
     "check:drift": "node scripts/generate-schema.mjs --check",
-    "prepack": "cp ../../LICENSE LICENSE",
     "prepublishOnly": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {

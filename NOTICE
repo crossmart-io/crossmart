@@ -1,0 +1,27 @@
+Crossmart
+Copyright (c) 2026 YIOT LLC
+
+Crossmart is free software: you can redistribute it and/or modify it under the terms of the
+GNU Affero General Public License, version 3 only (AGPL-3.0-only). The full text is in LICENSE.
+
+The following parts of this repository are licensed differently, as stated in their own
+license files:
+
+  sdks/typescript     MIT       sdks/typescript/LICENSE
+  sdks/python         MIT       sdks/python/LICENSE
+  sdks/php            MIT       sdks/php/LICENSE
+  integrations/n8n    MIT       integrations/n8n/LICENSE.md
+  skills/crossmart    MIT-0     skills/crossmart/LICENSE
+
+Contributions are accepted under the Contributor License Agreement in CLA.md.
+
+Trademarks
+
+"Crossmart" and the Crossmart logo are trademarks of YIOT LLC. The licenses above cover the
+code only; they do not grant permission to use the Crossmart name or logo, except as needed to
+describe the origin of the software.
+
+Shopify, eBay, Etsy, Google, Amazon, n8n and other third-party names and logos that appear in
+this repository are trademarks of their respective owners. They are used only to identify the
+channels and services Crossmart connects to, and their use does not imply endorsement by or
+affiliation with those owners.

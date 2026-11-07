@@ -345,4 +345,5 @@ Packagist picks the tag up through the webhook within a minute. See [sdks/RELEAS
 
 ## License
 
-[AGPL-3.0-only](LICENSE), like the rest of Crossmart.
+[MIT](LICENSE), copyright YIOT LLC. The Crossmart platform itself is
+[AGPL-3.0](https://github.com/crossmart-io/crossmart/blob/main/LICENSE).
