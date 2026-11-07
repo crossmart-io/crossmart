@@ -8,6 +8,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.create_workspace_dto import CreateWorkspaceDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...models.workspace_dto import WorkspaceDto
 from ...types import Response
 
@@ -36,7 +37,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> PlanLimitErrorDto | WorkspaceDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto | None:
     if response.status_code == 201:
         response_201 = WorkspaceDto.from_dict(response.json())
 
@@ -47,6 +48,11 @@ def _parse_response(
 
         return response_402
 
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -55,7 +61,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[PlanLimitErrorDto | WorkspaceDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -69,7 +75,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient,
     body: CreateWorkspaceDto,
-) -> Response[PlanLimitErrorDto | WorkspaceDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto]:
     """Create a workspace
 
      For owners of a workspace in the organization, such as one per client or brand. You own the new
@@ -84,7 +90,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | WorkspaceDto]
+        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto]
     """
 
     kwargs = _get_kwargs(
@@ -104,7 +110,7 @@ def sync(
     *,
     client: AuthenticatedClient,
     body: CreateWorkspaceDto,
-) -> PlanLimitErrorDto | WorkspaceDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto | None:
     """Create a workspace
 
      For owners of a workspace in the organization, such as one per client or brand. You own the new
@@ -119,7 +125,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | WorkspaceDto
+        PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto
     """
 
     return sync_detailed(
@@ -134,7 +140,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
     body: CreateWorkspaceDto,
-) -> Response[PlanLimitErrorDto | WorkspaceDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto]:
     """Create a workspace
 
      For owners of a workspace in the organization, such as one per client or brand. You own the new
@@ -149,7 +155,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | WorkspaceDto]
+        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto]
     """
 
     kwargs = _get_kwargs(
@@ -167,7 +173,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     body: CreateWorkspaceDto,
-) -> PlanLimitErrorDto | WorkspaceDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto | None:
     """Create a workspace
 
      For owners of a workspace in the organization, such as one per client or brand. You own the new
@@ -182,7 +188,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | WorkspaceDto
+        PlanLimitErrorDto | SandboxRestrictedErrorDto | WorkspaceDto
     """
 
     return (

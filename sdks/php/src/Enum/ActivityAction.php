@@ -35,6 +35,8 @@ enum ActivityAction: string
     case MemberRemoved = 'member_removed';
     case MemberLeft = 'member_left';
     case WorkspaceCreated = 'workspace_created';
+    case SandboxCreated = 'sandbox_created';
+    case SandboxClaimed = 'sandbox_claimed';
     case WorkspaceRenamed = 'workspace_renamed';
     case WorkspaceTimeZoneChanged = 'workspace_time_zone_changed';
     case CustomRoleCreated = 'custom_role_created';

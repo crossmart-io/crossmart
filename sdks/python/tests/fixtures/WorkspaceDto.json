@@ -6,6 +6,7 @@
   "slug": "sample",
   "currency": "sample",
   "timeZone": "sample",
+  "sandbox": null,
   "role": "OWNER",
   "customRole": null,
   "permissions": []

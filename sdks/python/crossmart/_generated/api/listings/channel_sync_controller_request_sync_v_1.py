@@ -7,6 +7,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...models.sync_request_result_dto import SyncRequestResultDto
 from ...types import Response
 
@@ -29,7 +30,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> PlanLimitErrorDto | SyncRequestResultDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto | None:
     if response.status_code == 202:
         response_202 = SyncRequestResultDto.from_dict(response.json())
 
@@ -40,6 +41,11 @@ def _parse_response(
 
         return response_402
 
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -48,7 +54,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[PlanLimitErrorDto | SyncRequestResultDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -62,7 +68,7 @@ def sync_detailed(
     connection_id: str,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[PlanLimitErrorDto | SyncRequestResultDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto]:
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
@@ -80,7 +86,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | SyncRequestResultDto]
+        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto]
     """
 
     kwargs = _get_kwargs(
@@ -100,7 +106,7 @@ def sync(
     connection_id: str,
     *,
     client: AuthenticatedClient | Client,
-) -> PlanLimitErrorDto | SyncRequestResultDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto | None:
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
@@ -118,7 +124,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | SyncRequestResultDto
+        PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto
     """
 
     return sync_detailed(
@@ -133,7 +139,7 @@ async def asyncio_detailed(
     connection_id: str,
     *,
     client: AuthenticatedClient | Client,
-) -> Response[PlanLimitErrorDto | SyncRequestResultDto]:
+) -> Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto]:
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
@@ -151,7 +157,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[PlanLimitErrorDto | SyncRequestResultDto]
+        Response[PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto]
     """
 
     kwargs = _get_kwargs(
@@ -169,7 +175,7 @@ async def asyncio(
     connection_id: str,
     *,
     client: AuthenticatedClient | Client,
-) -> PlanLimitErrorDto | SyncRequestResultDto | None:
+) -> PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto | None:
     """Publish the selected products and sync the connection
 
      Queues every selected product to be published (or updated when the channel has it) and every listing
@@ -187,7 +193,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        PlanLimitErrorDto | SyncRequestResultDto
+        PlanLimitErrorDto | SandboxRestrictedErrorDto | SyncRequestResultDto
     """
 
     return (

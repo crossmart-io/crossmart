@@ -9,6 +9,7 @@ from ...client import AuthenticatedClient, Client
 from ...models.content_generation_receipt_dto import ContentGenerationReceiptDto
 from ...models.generate_content_dto import GenerateContentDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...types import Response
 
 
@@ -36,7 +37,13 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Any | ContentGenerationReceiptDto | PlanLimitErrorDto | None:
+) -> (
+    Any
+    | ContentGenerationReceiptDto
+    | PlanLimitErrorDto
+    | SandboxRestrictedErrorDto
+    | None
+):
     if response.status_code == 202:
         response_202 = ContentGenerationReceiptDto.from_dict(response.json())
 
@@ -46,6 +53,11 @@ def _parse_response(
         response_402 = PlanLimitErrorDto.from_dict(response.json())
 
         return response_402
+
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
 
     if response.status_code == 429:
         response_429 = cast(Any, None)
@@ -59,7 +71,9 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]:
+) -> Response[
+    Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
+]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -73,7 +87,9 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]:
+) -> Response[
+    Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
+]:
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
@@ -90,7 +106,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]
+        Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -110,7 +126,13 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> Any | ContentGenerationReceiptDto | PlanLimitErrorDto | None:
+) -> (
+    Any
+    | ContentGenerationReceiptDto
+    | PlanLimitErrorDto
+    | SandboxRestrictedErrorDto
+    | None
+):
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
@@ -127,7 +149,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | ContentGenerationReceiptDto | PlanLimitErrorDto
+        Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
     """
 
     return sync_detailed(
@@ -142,7 +164,9 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]:
+) -> Response[
+    Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
+]:
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
@@ -159,7 +183,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto]
+        Response[Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -177,7 +201,13 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: GenerateContentDto,
-) -> Any | ContentGenerationReceiptDto | PlanLimitErrorDto | None:
+) -> (
+    Any
+    | ContentGenerationReceiptDto
+    | PlanLimitErrorDto
+    | SandboxRestrictedErrorDto
+    | None
+):
     """Generate channel content with AI
 
      Queues the Content Generator for each product: it writes a title and description fitted to the
@@ -194,7 +224,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | ContentGenerationReceiptDto | PlanLimitErrorDto
+        Any | ContentGenerationReceiptDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
     """
 
     return (

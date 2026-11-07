@@ -1582,6 +1582,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sandbox-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open a sandbox account for someone without one
+         * @description For AI agents: no credentials needed. Opens an account for `email` with a workspace named `storeName`, returns an Editor API key for it, and emails the person a link to claim it. Until claimed it is a sandbox: products (at most 100), stock and drafts work, but connecting stores, publishing, inviting people and Crossmart AI answer 403 `sandbox_claim_required`. Unclaimed accounts are deleted after 14 days. When the address already has an account, nothing is created and no email is sent, and the answer is the same whoever owns it: `sign_in_required`. At most 5 calls an hour and 50 a day per caller address; 429 past those.
+         */
+        post: operations["SandboxAccountsController_create_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sandbox-claims/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What a claim link is for
+         * @description Open to anyone with the link, so the claim page can show it before signing in.
+         */
+        post: operations["SandboxClaimsController_preview_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sandbox-claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim a sandbox account with a new password
+         * @description Sets the password the person signs in with and makes the workspace a normal one. The link works once. Sign in with the returned email and the password afterwards. 409 when the person already has a password: they sign in and claim from the app instead.
+         */
+        post: operations["SandboxClaimsController_claim_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/sandbox/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim this sandbox account as its owner
+         * @description For the person the sandbox was opened for, signed in (a password reset link is the only other way in, and it proves the address too). Makes the workspace a normal one. API keys and agents get 403; anyone else, or a workspace with nothing to claim, 404.
+         */
+        post: operations["WorkspaceSandboxController_claim_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/webhook-endpoints": {
         parameters: {
             query?: never;
@@ -1726,6 +1806,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        SandboxStateDto: {
+            /**
+             * Format: date-time
+             * @description When the claim link stops working and the account is deleted
+             */
+            claimExpiresAt: string;
+        };
         /**
          * @description Your role here
          * @enum {string}
@@ -1760,6 +1847,8 @@ export interface components {
              * @example Asia/Jerusalem
              */
             timeZone: string | null;
+            /** @description Set while the workspace is an unclaimed sandbox account an AI agent opened: it cannot connect stores, publish or invite people until claimed. Null for every other workspace. */
+            sandbox: components["schemas"]["SandboxStateDto"] | null;
             /** @description Your role here */
             role: components["schemas"]["WorkspaceRole"];
             /** @description The workspace’s own role, when `role` is CUSTOM */
@@ -1825,6 +1914,24 @@ export interface components {
             usage: number;
             /** @description How many more the request asked for */
             requested: number;
+        };
+        /** @enum {string} */
+        SandboxRestriction: SandboxRestriction;
+        SandboxRestrictedErrorDto: {
+            /** @example 403 */
+            statusCode: number;
+            /** @example Forbidden */
+            error: string;
+            /** @example sandbox_claim_required */
+            code: components["schemas"]["EntitlementErrorCode"];
+            /** @example This Crossmart account is an unclaimed sandbox, so it cannot connect a store. Ask the user to claim it with the link Crossmart emailed them (it works until 2026-11-21). Once claimed, you can connect a store. */
+            message: string;
+            restriction: components["schemas"]["SandboxRestriction"];
+            /**
+             * Format: date-time
+             * @description When the claim link stops working and the sandbox is deleted
+             */
+            claimExpiresAt: string;
         };
         WorkspaceMemberDto: {
             /** Format: uuid */
@@ -3979,6 +4086,62 @@ export interface components {
             /** Format: email */
             supportEmail: string;
         };
+        CreateSandboxAccountDto: {
+            /**
+             * @description The person the account is for. The claim link goes to this address.
+             * @example ana@example.com
+             */
+            email: string;
+            /**
+             * @description What to call the store; the person can rename it later
+             * @example Ana Ceramics
+             */
+            storeName: string;
+        };
+        /** @enum {string} */
+        SandboxOpeningOutcome: SandboxOpeningOutcome;
+        SandboxAccountDto: {
+            outcome: components["schemas"]["SandboxOpeningOutcome"];
+            /** @description What the agent should do next */
+            nextStep: string;
+            /** Format: uuid */
+            workspaceId: string | null;
+            /** @description An Editor API key for the new workspace, shown only now. Send it as `Authorization: Bearer <key>` or `x-api-key`. */
+            apiKey: string | null;
+            /**
+             * Format: date-time
+             * @description When the claim link stops working and the unclaimed account is deleted
+             */
+            claimExpiresAt: string | null;
+        };
+        SandboxClaimTokenDto: {
+            token: string;
+        };
+        SandboxClaimPreviewDto: {
+            /** Format: uuid */
+            workspaceId: string;
+            /** @description The address the account is for; the person signs in with it */
+            email: string;
+            storeName: string;
+            /**
+             * Format: date-time
+             * @description When the link stops working and the account is deleted
+             */
+            claimExpiresAt: string;
+            /** @description True when the person already has a password: they sign in and claim from the app instead of choosing one */
+            passwordSet: boolean;
+        };
+        ClaimSandboxDto: {
+            token: string;
+            /** @description The password the person signs in with from now on */
+            password: string;
+        };
+        ClaimedSandboxDto: {
+            /** Format: uuid */
+            workspaceId: string;
+            /** @description The address to sign in with */
+            email: string;
+        };
         /** @enum {string} */
         WebhookEventType: WebhookEventType;
         /**
@@ -4424,6 +4587,15 @@ export interface operations {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
                 };
             };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
         };
     };
     MembersController_list_v1: {
@@ -4563,6 +4735,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
         };
@@ -4912,6 +5093,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProductDto"];
                 };
             };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
         };
     };
     ProductsController_get_v1: {
@@ -5100,6 +5290,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogImportResultDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
         };
@@ -5418,6 +5617,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
         };
@@ -5773,6 +5981,15 @@ export interface operations {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
                 };
             };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
         };
     };
     ChannelSelectionController_previewSelection_v1: {
@@ -5856,6 +6073,15 @@ export interface operations {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
                 };
             };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
         };
     };
     ChannelSyncController_listListings_v1: {
@@ -5917,6 +6143,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
         };
@@ -6043,6 +6278,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
             /** @description The product or the store is not in the workspace */
@@ -6599,6 +6843,15 @@ export interface operations {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
                 };
             };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
             /** @description Too many AI requests from you in this workspace. Wait a minute and try again. */
             429: {
                 headers: {
@@ -6638,6 +6891,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanLimitErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
             /** @description Too many AI requests from you in this workspace. Wait a minute and try again. */
@@ -6770,6 +7032,131 @@ export interface operations {
             };
             /** @description AI is not configured, Ask is turned off, or today’s questions are spent */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SandboxAccountsController_create_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSandboxAccountDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxAccountDto"];
+                };
+            };
+            /** @description Too many sandbox accounts opened from here. Ask the user to sign up at https://app.crossmart.io, or try again later. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SandboxClaimsController_preview_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SandboxClaimTokenDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxClaimPreviewDto"];
+                };
+            };
+            /** @description The link is unknown, used or expired */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SandboxClaimsController_claim_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimSandboxDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimedSandboxDto"];
+                };
+            };
+            /** @description The link is unknown, used or expired */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The account has a password already; sign in to claim it */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WorkspaceSandboxController_claim_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimedSandboxDto"];
+                };
+            };
+            /** @description Nothing here for you to claim */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7121,7 +7508,8 @@ export enum WorkspacePermission {
 }
 export enum EntitlementErrorCode {
     plan_limit_reached = "plan_limit_reached",
-    plan_feature_not_included = "plan_feature_not_included"
+    plan_feature_not_included = "plan_feature_not_included",
+    sandbox_claim_required = "sandbox_claim_required"
 }
 export enum Feature {
     active_listings = "active_listings",
@@ -7133,6 +7521,14 @@ export enum Feature {
     ai_credits = "ai_credits",
     autonomous_agents = "autonomous_agents",
     bring_your_own_key = "bring_your_own_key"
+}
+export enum SandboxRestriction {
+    connect_channel = "connect_channel",
+    publish = "publish",
+    invite_member = "invite_member",
+    create_workspace = "create_workspace",
+    generate_content = "generate_content",
+    add_products = "add_products"
 }
 export enum SubscriptionStatus {
     ACTIVE = "ACTIVE",
@@ -7296,6 +7692,8 @@ export enum ActivityAction {
     member_removed = "member_removed",
     member_left = "member_left",
     workspace_created = "workspace_created",
+    sandbox_created = "sandbox_created",
+    sandbox_claimed = "sandbox_claimed",
     workspace_renamed = "workspace_renamed",
     workspace_time_zone_changed = "workspace_time_zone_changed",
     custom_role_created = "custom_role_created",
@@ -7389,6 +7787,7 @@ export enum ConnectFailure {
     session_required = "session_required",
     channel_unavailable = "channel_unavailable",
     plan_limit_reached = "plan_limit_reached",
+    sandbox_claim_required = "sandbox_claim_required",
     unexpected = "unexpected"
 }
 export enum ChannelConnectionStatus {
@@ -7591,6 +7990,10 @@ export enum AskConfidence {
     high = "high",
     medium = "medium",
     low = "low"
+}
+export enum SandboxOpeningOutcome {
+    created = "created",
+    sign_in_required = "sign_in_required"
 }
 export enum WebhookEventType {
     order_created = "order.created",

@@ -8,6 +8,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.channel_connection_dto import ChannelConnectionDto
 from ...models.plan_limit_error_dto import PlanLimitErrorDto
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...models.update_product_selection_dto import UpdateProductSelectionDto
 from ...types import Response
 
@@ -38,7 +39,7 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> ChannelConnectionDto | PlanLimitErrorDto | None:
+) -> ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
     if response.status_code == 200:
         response_200 = ChannelConnectionDto.from_dict(response.json())
 
@@ -49,6 +50,11 @@ def _parse_response(
 
         return response_402
 
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
+
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
@@ -57,7 +63,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[ChannelConnectionDto | PlanLimitErrorDto]:
+) -> Response[ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -72,7 +78,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: UpdateProductSelectionDto,
-) -> Response[ChannelConnectionDto | PlanLimitErrorDto]:
+) -> Response[ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
     """Set the store’s automatic rule
 
      Applies at once: products the rule now adds are published, and products it now drops are delisted.
@@ -89,7 +95,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ChannelConnectionDto | PlanLimitErrorDto]
+        Response[ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -111,7 +117,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: UpdateProductSelectionDto,
-) -> ChannelConnectionDto | PlanLimitErrorDto | None:
+) -> ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
     """Set the store’s automatic rule
 
      Applies at once: products the rule now adds are published, and products it now drops are delisted.
@@ -128,7 +134,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ChannelConnectionDto | PlanLimitErrorDto
+        ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
     """
 
     return sync_detailed(
@@ -145,7 +151,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: UpdateProductSelectionDto,
-) -> Response[ChannelConnectionDto | PlanLimitErrorDto]:
+) -> Response[ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]:
     """Set the store’s automatic rule
 
      Applies at once: products the rule now adds are published, and products it now drops are delisted.
@@ -162,7 +168,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ChannelConnectionDto | PlanLimitErrorDto]
+        Response[ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -182,7 +188,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: UpdateProductSelectionDto,
-) -> ChannelConnectionDto | PlanLimitErrorDto | None:
+) -> ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto | None:
     """Set the store’s automatic rule
 
      Applies at once: products the rule now adds are published, and products it now drops are delisted.
@@ -199,7 +205,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ChannelConnectionDto | PlanLimitErrorDto
+        ChannelConnectionDto | PlanLimitErrorDto | SandboxRestrictedErrorDto
     """
 
     return (

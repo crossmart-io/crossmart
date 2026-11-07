@@ -10,4 +10,5 @@ enum EntitlementErrorCode: string
 {
     case PlanLimitReached = 'plan_limit_reached';
     case PlanFeatureNotIncluded = 'plan_feature_not_included';
+    case SandboxClaimRequired = 'sandbox_claim_required';
 }

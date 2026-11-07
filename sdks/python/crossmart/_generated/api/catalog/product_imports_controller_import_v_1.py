@@ -10,6 +10,7 @@ from ...models.catalog_import_result_dto import CatalogImportResultDto
 from ...models.product_imports_controller_import_v1_body import (
     ProductImportsControllerImportV1Body,
 )
+from ...models.sandbox_restricted_error_dto import SandboxRestrictedErrorDto
 from ...types import Response
 
 
@@ -37,11 +38,16 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> CatalogImportResultDto | None:
+) -> CatalogImportResultDto | SandboxRestrictedErrorDto | None:
     if response.status_code == 201:
         response_201 = CatalogImportResultDto.from_dict(response.json())
 
         return response_201
+
+    if response.status_code == 403:
+        response_403 = SandboxRestrictedErrorDto.from_dict(response.json())
+
+        return response_403
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
@@ -51,7 +57,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[CatalogImportResultDto]:
+) -> Response[CatalogImportResultDto | SandboxRestrictedErrorDto]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -65,7 +71,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: ProductImportsControllerImportV1Body,
-) -> Response[CatalogImportResultDto]:
+) -> Response[CatalogImportResultDto | SandboxRestrictedErrorDto]:
     """Import products or stock from a file
 
      In `create` mode, products whose handle is already in the catalog are skipped, never overwritten. In
@@ -85,7 +91,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[CatalogImportResultDto]
+        Response[CatalogImportResultDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -105,7 +111,7 @@ def sync(
     *,
     client: AuthenticatedClient | Client,
     body: ProductImportsControllerImportV1Body,
-) -> CatalogImportResultDto | None:
+) -> CatalogImportResultDto | SandboxRestrictedErrorDto | None:
     """Import products or stock from a file
 
      In `create` mode, products whose handle is already in the catalog are skipped, never overwritten. In
@@ -125,7 +131,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        CatalogImportResultDto
+        CatalogImportResultDto | SandboxRestrictedErrorDto
     """
 
     return sync_detailed(
@@ -140,7 +146,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
     body: ProductImportsControllerImportV1Body,
-) -> Response[CatalogImportResultDto]:
+) -> Response[CatalogImportResultDto | SandboxRestrictedErrorDto]:
     """Import products or stock from a file
 
      In `create` mode, products whose handle is already in the catalog are skipped, never overwritten. In
@@ -160,7 +166,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[CatalogImportResultDto]
+        Response[CatalogImportResultDto | SandboxRestrictedErrorDto]
     """
 
     kwargs = _get_kwargs(
@@ -178,7 +184,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient | Client,
     body: ProductImportsControllerImportV1Body,
-) -> CatalogImportResultDto | None:
+) -> CatalogImportResultDto | SandboxRestrictedErrorDto | None:
     """Import products or stock from a file
 
      In `create` mode, products whose handle is already in the catalog are skipped, never overwritten. In
@@ -198,7 +204,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        CatalogImportResultDto
+        CatalogImportResultDto | SandboxRestrictedErrorDto
     """
 
     return (
