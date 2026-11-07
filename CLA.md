@@ -1,8 +1,6 @@
 # Crossmart Individual Contributor License Agreement
 
-> **Draft:** this agreement will be reviewed by legal counsel before the project accepts external contributions.
-
-Thank you for your interest in contributing to Crossmart ("the Project"), owned and maintained by the Crossmart project owner ("the Maintainer"). This agreement documents the rights you grant when you contribute. It is based on the widely used Apache-style individual CLA.
+Thank you for your interest in contributing to Crossmart ("the Project"), owned and maintained by YIOT LLC, a Delaware limited liability company ("the Maintainer"). This agreement documents the rights you grant when you contribute. It is a license grant, not an assignment: you keep the copyright to your Contributions. It is based on the widely used Apache-style individual CLA.
 
 By signing (by commenting on your pull request as instructed by the CLA bot), you accept the following terms for your present and future Contributions to the Project.
 
