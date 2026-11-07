@@ -52,7 +52,7 @@ agent with the user's name. Members see and disconnect their agents under Settin
 | Scope               | Tools                                                                                                                                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `get_inventory_item`, `get_store`, `list_store_products`, `get_product_stores`, `get_listing`, `get_sync_progress`, `list_suggestions` |
-| `catalog:write`     | `create_product`, `replace_product`, `update_product_text`, `adjust_stock`                                                                                                                              |
+| `catalog:write`     | `create_product`, `replace_product`, `update_product_text`, `update_variant_price`, `adjust_stock`                                                                                                      |
 | `orders:read`       | `list_orders`, `get_order`                                                                                                                                                                              |
 | `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics`, `update_listing`             |
 | `reports:read`      | `get_sales_report`, `get_inventory_report`, `get_listing_health_report`                                                                                                                                 |
@@ -83,6 +83,7 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `create_product`            | Adds a product with its variants (a draft unless `ACTIVE`)             | Yes    |
 | `replace_product`           | Saves a whole product; variants left out are removed                   | Yes    |
 | `update_product_text`       | Changes only a product's title and/or description                      | Yes    |
+| `update_variant_price`      | Changes only one variant's price and/or compare-at price               | Yes    |
 | `list_inventory`            | Stock per variant: on hand, held for orders, available                 |        |
 | `get_inventory_item`        | One variant's stock with its product                                   |        |
 | `adjust_stock`              | Adds, removes or sets stock, with a reason                             | Yes    |

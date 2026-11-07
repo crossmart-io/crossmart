@@ -121,6 +121,29 @@ describe('MCP tools', () => {
     expect(Object.keys(spec.input)).toEqual(['productId', 'title', 'descriptionHtml']);
   });
 
+  it('changes one variant’s prices with PATCH, marked as a price change and nothing removed', () => {
+    const spec = tool('update_variant_price');
+    expect(spec.destructive).toBeFalsy();
+    expect(spec.scope).toBe(AgentScope.CatalogWrite);
+    expect(spec.priceInputs).toEqual(['price', 'compareAtPrice']);
+    expect(
+      spec.toCall({
+        productId: 'p-1',
+        variantId: 'v-1',
+        price: '43.00',
+        compareAtPrice: null,
+      } as never),
+    ).toEqual({
+      method: HttpMethod.Patch,
+      path: `${WORKSPACE_PATH}/products/p-1/variants/v-1`,
+      body: { price: '43.00', compareAtPrice: null },
+    });
+    const input = z.object(spec.input);
+    const ids = { productId: crypto.randomUUID(), variantId: crypto.randomUUID() };
+    expect(input.safeParse({ ...ids, price: '43' }).success).toBe(true);
+    expect(input.safeParse({ ...ids, price: '-1' }).success).toBe(false);
+  });
+
   it('reads one variant’s stock by its inventory item id', () => {
     expect(tool('get_inventory_item').toCall({ inventoryItemId: 'i-1' } as never)).toEqual({
       method: HttpMethod.Get,

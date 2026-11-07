@@ -82,7 +82,8 @@ export const CATALOG_TOOLS = [
     title: 'Replace a product',
     description:
       'Save a product as given: fields and variants left out are removed. To change only the ' +
-      'title or description, use update_product_text instead. Read it with ' +
+      'title or description, use update_product_text; only a price, update_variant_price. ' +
+      'Read it with ' +
       'get_product first, change what you need, and send the whole product back, keeping each ' +
       'variant’s id. A changed quantity is recorded as a stock adjustment, and a variant sent ' +
       'without one keeps its stock; to give a reason, such as a delivery, use adjust_stock instead.',
@@ -128,6 +129,31 @@ export const CATALOG_TOOLS = [
       method: HttpMethod.Patch,
       path: `${PRODUCTS_PATH}/${productId}`,
       body: content,
+    }),
+  }),
+  defineTool({
+    name: AgentToolName.UpdateVariantPrice,
+    title: 'Change a variant’s price',
+    description:
+      'Change only the catalog price and/or compare-at price of one variant; everything else ' +
+      'stays as it is, and connected stores are updated. Prefer it to replace_product for price ' +
+      'edits. Find the variantId with get_product. To change what one store charges, use ' +
+      'update_listing.',
+    input: {
+      productId: ID_INPUT,
+      variantId: ID_INPUT.describe('From get_product'),
+      price: AMOUNT_INPUT.optional().describe('In the workspace currency'),
+      compareAtPrice: AMOUNT_INPUT.nullable()
+        .optional()
+        .describe('The "was" price buyers see struck through; null removes it'),
+    },
+    readOnly: false,
+    scope: AgentScope.CatalogWrite,
+    priceInputs: ['price', 'compareAtPrice'],
+    toCall: ({ productId, variantId, ...prices }) => ({
+      method: HttpMethod.Patch,
+      path: `${PRODUCTS_PATH}/${productId}/variants/${variantId}`,
+      body: prices,
     }),
   }),
 ];
