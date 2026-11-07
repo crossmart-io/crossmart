@@ -3,11 +3,13 @@ import type { FeatureGrant } from '../entities/plan-snapshot.js';
 import { EntitlementExceededException } from '../errors/entitlement-exceeded.exception.js';
 import { FeatureKind } from '../enums/feature-kind.enum.js';
 import { Feature } from '../enums/feature.enum.js';
+import { SandboxRestriction } from '../enums/sandbox-restriction.enum.js';
 import type { OrganizationScope } from '../repositories/usage.repository.js';
 import { planSnapshot } from '../testing/entitlement.fixtures.js';
 import type { EntitlementEnforcement } from './entitlement-enforcement.js';
 import { EntitlementService } from './entitlement.service.js';
 import type { OrganizationPlanService } from './organization-plan.service.js';
+import type { SandboxPolicy } from './sandbox-policy.js';
 import type { UsageMeter } from './usage-meter.js';
 
 const SCOPE: OrganizationScope = { organizationId: 'org-1', workspaceIds: ['ws-1', 'ws-2'] };
@@ -28,12 +30,17 @@ function setup(enforced = true, inUse = 2) {
     organizationIdOf: vi.fn<UsageMeter['organizationIdOf']>().mockResolvedValue('org-1'),
   };
   const enforcement = { enforced } as EntitlementEnforcement;
+  const sandbox = {
+    assertAllows: vi.fn<SandboxPolicy['assertAllows']>().mockResolvedValue(),
+    assertProductRoom: vi.fn<SandboxPolicy['assertProductRoom']>().mockResolvedValue(),
+  };
   const service = new EntitlementService(
     plans as unknown as OrganizationPlanService,
     meter as unknown as UsageMeter,
     enforcement,
+    sandbox as unknown as SandboxPolicy,
   );
-  return { service, plans, meter };
+  return { service, plans, meter, sandbox };
 }
 
 describe('EntitlementService', () => {
@@ -111,5 +118,22 @@ describe('EntitlementService', () => {
     await expect(
       reporting.service.assertInWorkspace('ws-1', Feature.AiCredits),
     ).resolves.toBeUndefined();
+  });
+
+  it('leaves sandbox rules to the sandbox policy, by workspace or organization', async () => {
+    const { service, sandbox } = setup(false);
+    await service.assertSandboxAllows('ws-1', SandboxRestriction.ConnectChannel);
+    await service.assertSandboxAllowsInOrganization('org-1', SandboxRestriction.CreateWorkspace);
+    await service.assertProductRoom('ws-1', 3);
+
+    expect(sandbox.assertAllows).toHaveBeenCalledWith(
+      { workspaceId: 'ws-1' },
+      SandboxRestriction.ConnectChannel,
+    );
+    expect(sandbox.assertAllows).toHaveBeenCalledWith(
+      { organizationId: 'org-1' },
+      SandboxRestriction.CreateWorkspace,
+    );
+    expect(sandbox.assertProductRoom).toHaveBeenCalledWith('ws-1', 3);
   });
 });

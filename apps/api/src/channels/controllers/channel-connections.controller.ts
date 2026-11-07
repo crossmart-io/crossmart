@@ -41,6 +41,7 @@ import { ChannelConnectRedirectDto } from '../dto/channel-connect-redirect.dto.j
 import { ChannelConnectionDto } from '../dto/channel-connection.dto.js';
 import { StartAuthorizationDto, StartedAuthorizationDto } from '../dto/start-authorization.dto.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 import { OAuthNonceCookie } from '../services/oauth-nonce.cookie.js';
 
 @ApiTags(CHANNELS_TAG)
@@ -79,6 +80,7 @@ export class ChannelConnectionsController {
   })
   @ApiCreatedResponse({ type: StartedAuthorizationDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   async startAuthorization(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @CurrentPrincipal() principal: Principal,

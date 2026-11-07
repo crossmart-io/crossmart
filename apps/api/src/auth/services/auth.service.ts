@@ -106,6 +106,15 @@ export class AuthService {
     return true;
   }
 
+  /**
+   * A password hashed the way sign-in checks it, for logins created outside Better Auth's own
+   * routes, such as claiming a sandbox account (ADR 0019).
+   */
+  async hashPassword(password: string): Promise<string> {
+    const context = await this.auth.$context;
+    return context.password.hash(password);
+  }
+
   /** The issuer and public signing keys of agent access tokens. */
   async agentTokenKeys(): Promise<AgentTokenKeys> {
     const [metadata, jwks] = await Promise.all([

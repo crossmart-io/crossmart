@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { generateSecureToken, hashSecret } from '@crossmart/common';
+import { hashSecret } from '@crossmart/common';
 import type { ApiKey } from '@crossmart/database';
 import type { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
@@ -19,10 +19,9 @@ import { ApiKeyRepository, type ApiKeyWithRole } from '../repositories/api-key.r
 import {
   API_KEY_ASSIGNABLE_ROLES,
   API_KEY_LAST_USED_THROTTLE_MS,
-  API_KEY_SECRET_BYTES,
   API_KEY_TOKEN_PREFIX,
-  API_KEY_VISIBLE_PREFIX_LENGTH,
 } from '../tenancy.constants.js';
+import { newApiKeySecret } from '../rules/api-key-secret.js';
 import { RoleResolver } from './role-resolver.js';
 
 const API_KEY_NOT_FOUND = 'API key not found';
@@ -51,15 +50,15 @@ export class ApiKeysService {
   ): Promise<IssuedApiKey> {
     await this.assertAssignable(workspaceId, issuer, request);
     await this.entitlements.assertInWorkspace(workspaceId, Feature.ApiKeys);
-    const secret = `${API_KEY_TOKEN_PREFIX}${generateSecureToken(API_KEY_SECRET_BYTES)}`;
+    const { secret, prefix, hash } = newApiKeySecret();
     const apiKey = await this.apiKeys.create({
       workspaceId,
       createdById: issuer.userId,
       name: request.name,
       role: request.role,
       customRoleId: request.customRoleId ?? null,
-      prefix: secret.slice(0, API_KEY_VISIBLE_PREFIX_LENGTH),
-      hash: hashSecret(secret),
+      prefix,
+      hash,
       expiresAt: request.expiresAt,
     });
     await this.recordChange(workspaceId, actor, ActivityAction.ApiKeyCreated, apiKey);

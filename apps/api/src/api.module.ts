@@ -15,6 +15,7 @@ import { ListingsApiModule } from './listings/listings.module.js';
 import { MediaMaintenanceModule } from './media/media-maintenance.module.js';
 import { AnalyticsApiModule } from './analytics/analytics.module.js';
 import { OrdersApiModule } from './orders/orders.module.js';
+import { SandboxApiModule } from './sandbox/sandbox-api.module.js';
 import { SuggestionsApiModule } from './suggestions/suggestions.module.js';
 import { WebhooksApiModule } from './webhooks/webhooks.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
@@ -43,6 +44,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     AiApiModule,
     AgentsApiModule,
     AskApiModule,
+    SandboxApiModule,
     WebhooksApiModule,
   ],
 })

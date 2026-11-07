@@ -43,3 +43,8 @@ export const NO_DEFAULT_PLAN = 'No default plan is set up. Run the database migr
  * size; pricing by tokens may replace it later, metered from the same `ai_usage` records.
  */
 export const AI_CREDITS_PER_CALL = 1;
+
+/** The reason phrase of HTTP 403, as NestJS errors carry it in `error`. */
+export const FORBIDDEN_ERROR = 'Forbidden';
+/** The most products an unclaimed sandbox account may hold (ADR 0019); claiming lifts it. */
+export const SANDBOX_MAX_PRODUCTS = 100;

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { ChannelType } from '@crossmart/connectors';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import {
   type AccountRef,
@@ -10,6 +11,7 @@ import {
 /**
  * Keeps connected channels within the plan's `Feature.ChannelConnections` limit. Connecting an
  * account the workspace already holds (a re-auth) takes no new slot, so it is never refused.
+ * An unclaimed sandbox account connects nothing (ADR 0019).
  */
 @Injectable()
 export class ChannelConnectionQuota {
@@ -24,6 +26,7 @@ export class ChannelConnectionQuota {
    * repairing counts as a reconnect; the callback checks the exact account.
    */
   async assertCanStart(workspaceId: string, channel: ChannelType, handle: string): Promise<void> {
+    await this.assertNotSandbox(workspaceId);
     if (!this.entitlements.enforced) return;
     if (await this.connections.hasReconnectCandidate(workspaceId, channel, handle)) return;
     await this.entitlements.assertInWorkspace(workspaceId, Feature.ChannelConnections);
@@ -31,8 +34,13 @@ export class ChannelConnectionQuota {
 
   /** Before an authorized account is stored. */
   async assertCanConnect(workspaceId: string, account: AccountRef): Promise<void> {
+    await this.assertNotSandbox(workspaceId);
     if (!this.entitlements.enforced) return;
     if (await this.connections.holdsSlot(workspaceId, account)) return;
     await this.entitlements.assertInWorkspace(workspaceId, Feature.ChannelConnections);
+  }
+
+  private assertNotSandbox(workspaceId: string): Promise<void> {
+    return this.entitlements.assertSandboxAllows(workspaceId, SandboxRestriction.ConnectChannel);
   }
 }

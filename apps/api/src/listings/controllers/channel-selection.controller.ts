@@ -35,6 +35,7 @@ import {
   UpdateProductSelectionDto,
 } from '../dto/product-selection.dto.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 /** A store's automatic rule, applied at once, with a preview of what it changes. */
 @ApiTags(LISTINGS_TAG)
@@ -58,6 +59,7 @@ export class ChannelSelectionController {
   })
   @ApiOkResponse({ type: ChannelConnectionDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   async updateSelection(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,

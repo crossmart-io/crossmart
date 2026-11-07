@@ -5,11 +5,18 @@ import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
 import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activity-recorder.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../entitlements/testing/sandbox-entitlements.js';
 import type { ProductDraft } from '../entities/product-draft.js';
 import type { ProductDetailRecord, ProductSummaryRecord } from '../repositories/product.queries.js';
 import type { ProductUpdateWriter } from '../repositories/product-update.writer.js';
 import type { ProductRepository } from '../repositories/product.repository.js';
 import { CatalogConflictsService } from './catalog-conflicts.service.js';
+import { ProductAdmission } from './product-admission.js';
 import { ProductChangeReporter } from './product-change.reporter.js';
 import { ProductsService } from './products.service.js';
 import { ProductSort } from '../enums/product-store-filter.enum.js';
@@ -92,13 +99,18 @@ function createService(records: ProductSummaryRecord[] = []) {
   const products = repository as unknown as ProductRepository;
   const activity = new InMemoryActivityRecorder();
   const events = new CatalogEventBus();
+  const entitlements = noSandboxEntitlements();
   const service = new ProductsService(
     products,
     writer as unknown as ProductUpdateWriter,
-    new CatalogConflictsService(products),
+    new ProductAdmission(
+      new CatalogConflictsService(products),
+      entitlements as unknown as EntitlementService,
+    ),
     new ProductChangeReporter(activity, events),
   );
   return {
+    entitlements,
     events,
     productsChanged: vi.spyOn(events, 'productsChanged'),
     stockChanged: vi.spyOn(events, 'stockChanged'),
@@ -151,6 +163,19 @@ describe('ProductsService.create', () => {
     repository.findExistingSkus.mockResolvedValue(new Set(['MUG-1']));
 
     await expect(service.create(WORKSPACE_ID, DRAFT, ACTOR)).rejects.toThrow(ConflictException);
+  });
+
+  it('refuses a product past an unclaimed sandbox’s cap', async () => {
+    const { service, repository, entitlements } = createService();
+    entitlements.assertProductRoom.mockRejectedValue(
+      sandboxRestricted(SandboxRestriction.AddProducts),
+    );
+
+    await expect(service.create(WORKSPACE_ID, DRAFT, ACTOR)).rejects.toMatchObject({
+      refusal: { restriction: SandboxRestriction.AddProducts },
+    });
+    expect(entitlements.assertProductRoom).toHaveBeenCalledWith(WORKSPACE_ID);
+    expect(repository.create).not.toHaveBeenCalled();
   });
 });
 

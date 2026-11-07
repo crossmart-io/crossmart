@@ -4,7 +4,7 @@ import type { ResolvedRole } from '../entities/role-assignment.js';
 import type { WorkspacePermission } from '../enums/workspace-permission.enum.js';
 import { WorkspaceMemberRepository } from '../repositories/workspace-member.repository.js';
 import { WorkspaceRepository } from '../repositories/workspace.repository.js';
-import { workspaceDisplayName } from '../rules/workspace-display-name.js';
+import { toWorkspaceAccess } from '../rules/workspace-access.js';
 
 /** Answers who belongs to which workspace, with which role and permissions. */
 @Injectable()
@@ -43,9 +43,7 @@ export class WorkspaceAccessService {
     if (!workspace) {
       throw new NotFoundException('Workspace not found');
     }
-    const { id, organizationId, name, slug, currency, timeZone } = workspace;
-    const displayName = workspaceDisplayName(name, workspace.organization.name);
-    return { id, organizationId, name, displayName, slug, currency, timeZone, ...access };
+    return toWorkspaceAccess(workspace, access);
   }
 
   listWorkspacesForUser(userId: string): Promise<WorkspaceAccess[]> {

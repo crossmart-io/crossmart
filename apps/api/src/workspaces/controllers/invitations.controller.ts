@@ -32,6 +32,7 @@ import {
   WORKSPACE_INVITATIONS_ROUTE,
 } from '../workspaces.constants.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 @ApiTags(MEMBERS_TAG)
 @Controller(WORKSPACE_INVITATIONS_ROUTE)
@@ -59,6 +60,7 @@ export class InvitationsController {
   })
   @ApiCreatedResponse({ type: InvitationDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   async invite(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: InviteMemberDto,

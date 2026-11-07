@@ -1,6 +1,11 @@
 import { Feature } from '../../entitlements/enums/feature.enum.js';
 import type { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import { planLimitReached } from '../../entitlements/testing/entitlement.fixtures.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
+import {
+  noSandboxEntitlements,
+  sandboxRestricted,
+} from '../../entitlements/testing/sandbox-entitlements.js';
 import type { ProductSelectionRepository } from '../repositories/product-selection.repository.js';
 import { goingLiveWhere } from '../rules/listing-visibility.js';
 import { ActiveListingsGate } from './active-listings.gate.js';
@@ -13,6 +18,7 @@ function setup(enforced = true, goingLive = 3) {
     count: vi.fn<ProductSelectionRepository['count']>().mockResolvedValue(goingLive),
   };
   const entitlements = {
+    ...noSandboxEntitlements(),
     enforced,
     assertInWorkspace: vi.fn<EntitlementService['assertInWorkspace']>().mockResolvedValue(),
     violationInWorkspace: vi
@@ -27,6 +33,22 @@ function setup(enforced = true, goingLive = 3) {
 }
 
 describe('ActiveListingsGate', () => {
+  it('refuses any publish in an unclaimed sandbox, even while plans are not enforced', async () => {
+    const { gate, products, entitlements } = setup(false);
+    entitlements.assertSandboxAllows.mockRejectedValueOnce(
+      sandboxRestricted(SandboxRestriction.Publish),
+    );
+
+    await expect(
+      gate.assertRoomFor({ workspaceId: 'ws-1', connectionId: 'c-1' }, {}),
+    ).rejects.toMatchObject({ refusal: { restriction: SandboxRestriction.Publish } });
+    expect(entitlements.assertSandboxAllows).toHaveBeenCalledWith(
+      'ws-1',
+      SandboxRestriction.Publish,
+    );
+    expect(products.count).not.toHaveBeenCalled();
+  });
+
   it('asks the plan for room for every listing a publish would make live', async () => {
     const { gate, products, entitlements } = setup();
     await gate.assertRoomFor(STORE, SELECTED);

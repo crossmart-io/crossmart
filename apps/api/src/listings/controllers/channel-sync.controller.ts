@@ -33,6 +33,7 @@ import {
   SyncRequestResultDto,
 } from '../dto/channel-listing.dto.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 /** Publishing a connection's selected products, and the listings it holds. */
 @ApiTags(LISTINGS_TAG)
@@ -58,6 +59,7 @@ export class ChannelSyncController {
   })
   @ApiAcceptedResponse({ type: SyncRequestResultDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   async requestSync(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Param(CONNECTION_ID_PARAM, ParseUUIDPipe) connectionId: string,

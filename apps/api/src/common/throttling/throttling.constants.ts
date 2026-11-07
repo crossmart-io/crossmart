@@ -5,6 +5,10 @@ export const THROTTLE_KEY_PREFIX = `${REDIS_KEY_PREFIX}throttle:`;
 /** Separates the parts of a rate-limit tracker: `<workspaceId>:<principal kind>:<id>`. */
 export const TRACKER_SEPARATOR = ':';
 export const MS_PER_SECOND = 1000;
+/** How a rate-limit tracker names a caller known only by address: `ip:<address>`. */
+export const IP_TRACKER_KIND = 'ip';
+/** The address of a request whose socket has none, such as in tests. */
+export const UNKNOWN_CLIENT_IP = 'unknown';
 /** The tracker of a request outside a workspace route, which these limits never guard. */
 export const NO_WORKSPACE = 'none';
 

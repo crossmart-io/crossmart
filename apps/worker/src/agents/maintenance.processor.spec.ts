@@ -1,24 +1,45 @@
 import type { Job } from 'bullmq';
-import { AGENT_CLIENT_SWEEP_JOB_NAME, type AgentClientSweeper } from '@crossmart/core';
+import {
+  AGENT_CLIENT_SWEEP_JOB_NAME,
+  type AgentClientSweeper,
+  SANDBOX_SWEEP_JOB_NAME,
+  type SandboxSweeper,
+} from '@crossmart/core';
 import { MaintenanceProcessor } from './maintenance.processor.js';
 
 function setup() {
-  const sweeper = {
+  const agentClients = {
     sweep: vi.fn<AgentClientSweeper['sweep']>(() => Promise.resolve({ neverUsed: 0, stale: 0 })),
   };
-  return { sweeper, processor: new MaintenanceProcessor(sweeper as unknown as AgentClientSweeper) };
+  const sandboxes = {
+    sweep: vi.fn<SandboxSweeper['sweep']>(() => Promise.resolve({ reminded: 1, deleted: 2 })),
+  };
+  const processor = new MaintenanceProcessor(
+    agentClients as unknown as AgentClientSweeper,
+    sandboxes as unknown as SandboxSweeper,
+  );
+  return { agentClients, sandboxes, processor };
 }
 
 describe('MaintenanceProcessor', () => {
   it('sweeps unused agent clients', async () => {
-    const { sweeper, processor } = setup();
+    const { agentClients, sandboxes, processor } = setup();
     await processor.process({ name: AGENT_CLIENT_SWEEP_JOB_NAME } as Job);
-    expect(sweeper.sweep).toHaveBeenCalled();
+    expect(agentClients.sweep).toHaveBeenCalled();
+    expect(sandboxes.sweep).not.toHaveBeenCalled();
+  });
+
+  it('sweeps sandbox accounts', async () => {
+    const { agentClients, sandboxes, processor } = setup();
+    await processor.process({ name: SANDBOX_SWEEP_JOB_NAME } as Job);
+    expect(sandboxes.sweep).toHaveBeenCalled();
+    expect(agentClients.sweep).not.toHaveBeenCalled();
   });
 
   it('skips jobs it does not know', async () => {
-    const { sweeper, processor } = setup();
+    const { agentClients, sandboxes, processor } = setup();
     await processor.process({ name: 'something-else' } as Job);
-    expect(sweeper.sweep).not.toHaveBeenCalled();
+    expect(agentClients.sweep).not.toHaveBeenCalled();
+    expect(sandboxes.sweep).not.toHaveBeenCalled();
   });
 });

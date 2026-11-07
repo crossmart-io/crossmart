@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AI_CREDITS_PER_CALL } from '../../entitlements/entitlements.constants.js';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type {
   AiCallContext,
@@ -50,9 +51,12 @@ export class AiGateway {
 
   /**
    * Throws `EntitlementExceededException` (HTTP 402, `plan_limit_reached`) when plans are
-   * enforced and the organization's AI credits this month do not cover `calls` more calls.
+   * enforced and the organization's AI credits this month do not cover `calls` more calls, and
+   * `SandboxRestrictedException` (403) in an unclaimed sandbox account, which Crossmart's AI
+   * does not serve.
    */
-  assertCredits(workspaceId: string, calls = ONE_CALL): Promise<void> {
+  async assertCredits(workspaceId: string, calls = ONE_CALL): Promise<void> {
+    await this.entitlements.assertSandboxAllows(workspaceId, SandboxRestriction.GenerateContent);
     return this.entitlements.assertInWorkspace(
       workspaceId,
       Feature.AiCredits,

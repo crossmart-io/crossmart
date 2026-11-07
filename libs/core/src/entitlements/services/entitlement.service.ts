@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import type { EntitlementCheck } from '../entities/entitlement-check.js';
 import type { FeatureGrant, PlanSnapshot } from '../entities/plan-snapshot.js';
 import type { Feature } from '../enums/feature.enum.js';
+import type { SandboxRestriction } from '../enums/sandbox-restriction.enum.js';
 import { EntitlementExceededException } from '../errors/entitlement-exceeded.exception.js';
 import { evaluateEntitlement } from '../rules/evaluate-entitlement.js';
 import { EntitlementEnforcement } from './entitlement-enforcement.js';
 import { OrganizationPlanService } from './organization-plan.service.js';
+import { SandboxPolicy } from './sandbox-policy.js';
 import { UsageMeter } from './usage-meter.js';
 
 const ONE_MORE = 1;
@@ -22,6 +24,7 @@ function grantOf(snapshot: PlanSnapshot, feature: Feature): FeatureGrant {
  * Answers every plan question: what an organization's plan allows of a feature, what it uses,
  * and whether it may use more. Callers never read plan names or numbers themselves.
  * `assert` blocks only while `ENTITLEMENTS_ENFORCED` is on; `check` always tells the truth.
+ * Unclaimed sandbox accounts (ADR 0019) have rules of their own, which always apply.
  */
 @Injectable()
 export class EntitlementService {
@@ -29,6 +32,7 @@ export class EntitlementService {
     private readonly plans: OrganizationPlanService,
     private readonly meter: UsageMeter,
     private readonly enforcement: EntitlementEnforcement,
+    private readonly sandbox: SandboxPolicy,
   ) {}
 
   get enforced(): boolean {
@@ -99,5 +103,26 @@ export class EntitlementService {
   ): Promise<void> {
     const violation = await this.violationInWorkspace(workspaceId, feature, increment);
     if (violation) throw violation;
+  }
+
+  /**
+   * Throws `SandboxRestrictedException` (HTTP 403, `sandbox_claim_required`) when the workspace
+   * is an unclaimed sandbox account, which may not do `restriction` until its owner claims it.
+   */
+  assertSandboxAllows(workspaceId: string, restriction: SandboxRestriction): Promise<void> {
+    return this.sandbox.assertAllows({ workspaceId }, restriction);
+  }
+
+  /** `assertSandboxAllows` for an organization, for actions outside any one workspace. */
+  assertSandboxAllowsInOrganization(
+    organizationId: string,
+    restriction: SandboxRestriction,
+  ): Promise<void> {
+    return this.sandbox.assertAllows({ organizationId }, restriction);
+  }
+
+  /** Throws `SandboxRestrictedException` when `increment` more products exceed a sandbox's cap. */
+  assertProductRoom(workspaceId: string, increment = ONE_MORE): Promise<void> {
+    return this.sandbox.assertProductRoom(workspaceId, increment);
   }
 }

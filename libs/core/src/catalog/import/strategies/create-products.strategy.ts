@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EntitlementService } from '../../../entitlements/services/entitlement.service.js';
 import { CATALOG_FILE_PARSERS, IMPORT_PRODUCT_BATCH_SIZE } from '../../catalog.constants.js';
 import type {
   CatalogFileParser,
@@ -17,7 +18,8 @@ import { emptyOutcome, withRows } from '../import-issues.js';
 
 /**
  * Adds the file's new products. Products already in the catalog (same handle) are skipped,
- * never overwritten; invalid products are reported and the rest are created.
+ * never overwritten; invalid products are reported and the rest are created. A file that would
+ * take an unclaimed sandbox account past its product cap creates nothing.
  */
 @Injectable()
 export class CreateProductsStrategy implements CatalogImportStrategy {
@@ -27,6 +29,7 @@ export class CreateProductsStrategy implements CatalogImportStrategy {
     @Inject(CATALOG_FILE_PARSERS) private readonly parsers: CatalogFileParser[],
     private readonly products: ProductRepository,
     private readonly conflicts: CatalogConflictsService,
+    private readonly entitlements: EntitlementService,
   ) {}
 
   supports(format: CatalogImportFormat): boolean {
@@ -38,6 +41,7 @@ export class CreateProductsStrategy implements CatalogImportStrategy {
     const { products, issues, rowByHandle } = findParser(this.parsers, format).parse(content);
     const drafts = products.map((draft) => normalizeDraft(draft));
     const { accepted, existing, skuConflicts } = await this.conflicts.check(workspaceId, drafts);
+    await this.entitlements.assertProductRoom(workspaceId, accepted.length);
     const productIds = await this.createInBatches(workspaceId, accepted);
     return {
       ...emptyOutcome(),

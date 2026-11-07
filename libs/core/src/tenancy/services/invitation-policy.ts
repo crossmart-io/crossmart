@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Feature } from '../../entitlements/enums/feature.enum.js';
+import { SandboxRestriction } from '../../entitlements/enums/sandbox-restriction.enum.js';
 import { EntitlementService } from '../../entitlements/services/entitlement.service.js';
 import type { ResolvedRole } from '../entities/role-assignment.js';
 import type { MembershipManager, NewInvitation } from '../entities/workspace-invitation.js';
@@ -14,9 +15,10 @@ export function normalizeEmail(email: string): string {
 }
 
 /**
- * Who may be invited, with which role: the manager must hold every permission the role grants,
- * the address must not be a member yet, the workspace must have room for another pending
- * invitation, and a newcomer to the organization needs a seat in the plan (`Feature.Members`).
+ * Who may be invited, with which role: the workspace must not be an unclaimed sandbox, the
+ * manager must hold every permission the role grants, the address must not be a member yet, the
+ * workspace must have room for another pending invitation, and a newcomer to the organization
+ * needs a seat in the plan (`Feature.Members`).
  */
 @Injectable()
 export class InvitationPolicy {
@@ -33,6 +35,7 @@ export class InvitationPolicy {
     request: NewInvitation,
     now: Date,
   ): Promise<ResolvedRole> {
+    await this.entitlements.assertSandboxAllows(workspaceId, SandboxRestriction.InviteMember);
     const granted = await this.roles.resolve(workspaceId, request);
     if (!permissionsCover(manager.permissions, granted.permissions)) {
       throw new ForbiddenException('You cannot invite someone with more access than you have');

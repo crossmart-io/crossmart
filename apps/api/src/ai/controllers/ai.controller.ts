@@ -34,6 +34,7 @@ import { WORKSPACE_ID_PARAM } from '../../auth/auth.constants.js';
 import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import { ApiPlanLimitResponse } from '../../entitlements/decorators/api-plan-limit-response.decorator.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 import { RateLimitMessage } from '../../common/throttling/rate-limit-message.decorator.js';
 import { WorkspacePrincipalThrottlerGuard } from '../../common/throttling/workspace-principal-throttler.guard.js';
 import {
@@ -107,6 +108,7 @@ export class AiController {
   })
   @ApiAcceptedResponse({ type: ContentGenerationReceiptDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   @ApiTooManyRequestsResponse({ description: AI_RATE_LIMITED_MESSAGE })
   async generateContent(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
@@ -137,6 +139,7 @@ export class AiController {
   })
   @ApiOkResponse({ type: ContentDraftDto })
   @ApiPlanLimitResponse()
+  @ApiSandboxRestrictedResponse()
   @ApiTooManyRequestsResponse({ description: AI_RATE_LIMITED_MESSAGE })
   async draftContent(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,

@@ -3,10 +3,8 @@ import { PrismaService, WorkspaceRole } from '@crossmart/database';
 import type { WorkspaceAccess, WorkspaceMemberProfile } from '../entities/workspace-access.js';
 import type { ResolvedRole, StoredCustomRole } from '../entities/role-assignment.js';
 import { resolveRole } from '../permissions/role-permissions.js';
-import { workspaceDisplayName } from '../rules/workspace-display-name.js';
+import { toWorkspaceAccess, WORKSPACE_ACCESS_INCLUDE } from '../rules/workspace-access.js';
 import { CUSTOM_ROLE_SELECT } from './custom-role.repository.js';
-
-const ORGANIZATION_NAME = { organization: { select: { name: true } } } as const;
 
 const MEMBER_PROFILE = {
   role: true,
@@ -60,19 +58,16 @@ export class WorkspaceMemberRepository {
   async listWorkspacesForUser(userId: string): Promise<WorkspaceAccess[]> {
     const memberships = await this.prisma.workspaceMember.findMany({
       where: { userId },
-      select: { role: true, ...CUSTOM_ROLE_SELECT, workspace: { include: ORGANIZATION_NAME } },
+      select: {
+        role: true,
+        ...CUSTOM_ROLE_SELECT,
+        workspace: { include: WORKSPACE_ACCESS_INCLUDE },
+      },
       orderBy: { createdAt: 'asc' },
     });
-    return memberships.map(({ role, customRole, workspace }) => ({
-      id: workspace.id,
-      organizationId: workspace.organizationId,
-      name: workspace.name,
-      displayName: workspaceDisplayName(workspace.name, workspace.organization.name),
-      slug: workspace.slug,
-      currency: workspace.currency,
-      timeZone: workspace.timeZone,
-      ...resolveRole(role, customRole),
-    }));
+    return memberships.map(({ role, customRole, workspace }) =>
+      toWorkspaceAccess(workspace, resolveRole(role, customRole)),
+    );
   }
 
   async listMembers(workspaceId: string): Promise<WorkspaceMemberProfile[]> {

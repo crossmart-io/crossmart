@@ -40,6 +40,7 @@ import {
   UPLOAD_FILE_NAME_CHARSET,
 } from '../catalog.constants.js';
 import { CatalogImportResultDto, ImportProductsDto } from '../dto/catalog-import.dto.js';
+import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 const MULTIPART_FORM_DATA = 'multipart/form-data';
 
@@ -86,6 +87,7 @@ export class ProductImportsController {
       '`inventory:edit`.',
   })
   @ApiCreatedResponse({ type: CatalogImportResultDto })
+  @ApiSandboxRestrictedResponse()
   async import(
     @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
     @Body() body: ImportProductsDto,

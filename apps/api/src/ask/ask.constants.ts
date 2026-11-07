@@ -22,8 +22,3 @@ export const ASK_DAY_THROTTLER = 'ask-day';
 
 export const ASK_RATE_LIMITED_MESSAGE =
   'Too many questions from you. Wait a little and try again, or browse https://docs.crossmart.io.';
-
-/** How a rate-limit tracker names the kind of caller: `ip:<address>`, `user:<id>`, `api-key:<id>`,
- * `agent:<client id>:<user id>`. */
-export const IP_TRACKER_KIND = 'ip';
-export const UNKNOWN_CLIENT_IP = 'unknown';

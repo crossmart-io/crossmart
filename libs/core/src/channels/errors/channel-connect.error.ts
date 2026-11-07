@@ -1,5 +1,6 @@
 import { ChannelError, ChannelErrorCode } from '@crossmart/connectors';
 import { EntitlementExceededException } from '../../entitlements/errors/entitlement-exceeded.exception.js';
+import { SandboxRestrictedException } from '../../entitlements/errors/sandbox-restricted.exception.js';
 import { ConnectFailure } from '../enums/connect-failure.enum.js';
 
 const FAILURE_MESSAGES: Record<ConnectFailure, string> = {
@@ -14,6 +15,7 @@ const FAILURE_MESSAGES: Record<ConnectFailure, string> = {
     'You were not signed in to Crossmart when the channel sent you back. Sign in and start again.',
   [ConnectFailure.ChannelUnavailable]: 'The channel is not responding. Try again in a moment.',
   [ConnectFailure.PlanLimitReached]: 'The plan has no room for another connected channel',
+  [ConnectFailure.SandboxClaimRequired]: 'Claim this account before connecting a store',
   [ConnectFailure.Unexpected]: 'The channel could not be connected',
 };
 
@@ -53,6 +55,9 @@ export class ChannelConnectError extends Error {
     }
     if (error instanceof EntitlementExceededException) {
       return new ChannelConnectError(ConnectFailure.PlanLimitReached);
+    }
+    if (error instanceof SandboxRestrictedException) {
+      return new ChannelConnectError(ConnectFailure.SandboxClaimRequired);
     }
     if (!(error instanceof ChannelError)) {
       return new ChannelConnectError(ConnectFailure.Unexpected);

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService, type Workspace, WorkspaceRole } from '@crossmart/database';
+import { PrismaService, WorkspaceRole } from '@crossmart/database';
+import {
+  WORKSPACE_ACCESS_INCLUDE,
+  type WorkspaceWithOrganization,
+} from '../rules/workspace-access.js';
 
-export interface WorkspaceWithOrganization extends Workspace {
-  organization: { name: string };
-}
+export type { WorkspaceWithOrganization } from '../rules/workspace-access.js';
 
 export interface NewWorkspace {
   organizationId: string;
@@ -14,8 +16,6 @@ export interface NewWorkspace {
   ownerId: string;
 }
 
-const ORGANIZATION_NAME = { organization: { select: { name: true } } } as const;
-
 @Injectable()
 export class WorkspaceRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -23,7 +23,7 @@ export class WorkspaceRepository {
   findById(workspaceId: string): Promise<WorkspaceWithOrganization | null> {
     return this.prisma.workspace.findUnique({
       where: { id: workspaceId },
-      include: ORGANIZATION_NAME,
+      include: WORKSPACE_ACCESS_INCLUDE,
     });
   }
 
@@ -53,7 +53,7 @@ export class WorkspaceRepository {
     const { ownerId, ...workspace } = input;
     return this.prisma.workspace.create({
       data: { ...workspace, members: { create: { userId: ownerId, role: WorkspaceRole.OWNER } } },
-      include: ORGANIZATION_NAME,
+      include: WORKSPACE_ACCESS_INCLUDE,
     });
   }
 
@@ -64,7 +64,7 @@ export class WorkspaceRepository {
     return this.prisma.workspace.update({
       where: { id: workspaceId },
       data: changes,
-      include: ORGANIZATION_NAME,
+      include: WORKSPACE_ACCESS_INCLUDE,
     });
   }
 }
