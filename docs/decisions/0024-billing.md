@@ -4,7 +4,7 @@
 - Date: 2026-11-07
 - Builds on: plans as data and `EntitlementService` ([ADR 0015](0015-plans-and-entitlements.md)),
   the plan lineup ([ADR 0020](0020-plan-lineup.md)), sandbox accounts
-  ([ADR 0019](0019-agent-access.md)), and the Cloud billing rules of ADR 0018.
+  ([ADR 0019](0019-agent-access.md)).
 
 ## Context
 
