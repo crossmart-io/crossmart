@@ -50,3 +50,5 @@ export * from './redis/redis.module.js';
 export * from './time/utc-month.js';
 export * from './net/guarded-lookup.js';
 export * from './net/public-address.js';
+export * from './package/package.constants.js';
+export * from './package/package-version.js';

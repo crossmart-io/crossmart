@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { crossmartVersion } from '@crossmart/common/package/package-version.js';
 import type { ApiCredential } from '@crossmart/core/agent-tools/api/api-credential.js';
 import { CrossmartApiClient } from '@crossmart/core/agent-tools/api/crossmart-api-client.js';
 import { MCP_SERVER_NAME } from '../mcp.constants.js';
@@ -6,7 +7,8 @@ import type { ApiToolSpec } from '@crossmart/core/agent-tools/tools/api-tool.js'
 import { registerApiTool } from '../tools/register-api-tool.js';
 import { ALL_TOOLS, ANONYMOUS_TOOLS } from '@crossmart/core/agent-tools/tools/index.js';
 
-const SERVER_VERSION = process.env.npm_package_version ?? '0.0.0';
+/** Read once from `package.json`, since `npm_package_version` is unset under plain `node`. */
+export const SERVER_VERSION = crossmartVersion();
 
 const INSTRUCTIONS =
   'Crossmart keeps one catalog and one stock count for a seller and publishes them to their ' +
