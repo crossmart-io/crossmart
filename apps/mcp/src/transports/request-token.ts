@@ -1,5 +1,8 @@
 import type { IncomingHttpHeaders } from 'node:http';
-import { API_KEY_HEADER, BEARER_PREFIX } from '../mcp.constants.js';
+import {
+  API_KEY_HEADER,
+  BEARER_PREFIX,
+} from '@crossmart/core/agent-tools/agent-tools.constants.js';
 
 /**
  * The token a remote request carries: `Authorization: Bearer <token>` (an agent's access token or

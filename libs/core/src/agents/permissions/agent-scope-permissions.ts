@@ -26,6 +26,11 @@ const SCOPE_PERMISSIONS: Readonly<Record<AgentScope, readonly WorkspacePermissio
   [AgentScope.WebhooksWrite]: [WorkspacePermission.ManageWebhooks],
 };
 
+/** The permissions a scope can unlock, before the user's role narrows them. */
+export function scopePermissions(scope: AgentScope): readonly WorkspacePermission[] {
+  return SCOPE_PERMISSIONS[scope];
+}
+
 /** The Crossmart scopes in an OAuth `scope` value or list; unknown and OpenID scopes drop out. */
 export function parseAgentScopes(scopes: string | readonly string[]): AgentScope[] {
   const values = typeof scopes === 'string' ? scopes.split(SCOPE_SEPARATOR) : scopes;

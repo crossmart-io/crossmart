@@ -26,6 +26,10 @@ export {
 export { Prisma } from './generated/prisma/client.js';
 export type {
   ActivityEvent,
+  AgentWorkerAction,
+  AgentWorkerConversation,
+  AgentWorkerMessage,
+  AgentWorkerTurn,
   AiUsage,
   ApiKey,
   AskConversation,

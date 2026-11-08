@@ -69,6 +69,7 @@ describe('ContentGenerationService', () => {
           userId: null,
           apiKeyId: 'key-1',
           agentClientId: null,
+          agentName: null,
         },
       },
     ]);

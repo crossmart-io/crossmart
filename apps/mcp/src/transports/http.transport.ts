@@ -1,7 +1,7 @@
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Request, Response } from 'express';
-import type { ApiCredential } from '../api/api-credential.js';
+import type { ApiCredential } from '@crossmart/core/agent-tools/api/api-credential.js';
 import { AccessTokenVerifier } from '../auth/access-token.verifier.js';
 import {
   bearerChallenge,

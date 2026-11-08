@@ -27,6 +27,7 @@ import { ListMovementsQueryDto } from '../dto/list-movements-query.dto.js';
 import {
   ADJUSTMENTS_PATH,
   INVENTORY_ITEM_ID_PARAM,
+  INVENTORY_ITEM_PATH,
   INVENTORY_ITEMS_ROUTE,
   INVENTORY_TAG,
   MOVEMENTS_PATH,
@@ -49,6 +50,17 @@ export class InventoryItemsController {
     @Query() query: ListInventoryQueryDto,
   ): Promise<InventoryPageDto> {
     return InventoryPageDto.from(await this.inventory.list(workspaceId, query));
+  }
+
+  @Get(INVENTORY_ITEM_PATH)
+  @RequirePermission(WorkspacePermission.ViewInventory)
+  @ApiOperation({ summary: 'One variant’s stock, with its product' })
+  @ApiOkResponse({ type: InventoryItemDto })
+  async get(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(INVENTORY_ITEM_ID_PARAM, ParseUUIDPipe) inventoryItemId: string,
+  ): Promise<InventoryItemDto> {
+    return InventoryItemDto.from(await this.inventory.get(workspaceId, inventoryItemId));
   }
 
   @Post(ADJUSTMENTS_PATH)

@@ -49,15 +49,15 @@ settings or billing. It only sees the tools its scopes cover. The activity log s
 agent with the user's name. Members see and disconnect their agents under Settings (`GET/DELETE
 /api/v1/workspaces/{id}/agent-connections`), and disconnecting stops the agent at once.
 
-| Scope               | Tools                                                                                                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `get_store`, `list_store_products`, `get_product_stores`, `get_listing`, `get_sync_progress`, `list_suggestions`           |
-| `catalog:write`     | `create_product`, `replace_product`, `adjust_stock`                                                                                                                                         |
-| `orders:read`       | `list_orders`, `get_order`                                                                                                                                                                  |
-| `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics`, `update_listing` |
-| `reports:read`      | `get_sales_report`, `get_inventory_report`, `get_listing_health_report`                                                                                                                     |
-| `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                    |
-| `webhooks:write`    | `list_webhook_endpoints`, `create_webhook_endpoint`                                                                                                                                         |
+| Scope               | Tools                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog:read`      | `list_products`, `get_product`, `list_inventory`, `list_stores`, `get_inventory_item`, `get_store`, `list_store_products`, `get_product_stores`, `get_listing`, `get_sync_progress`, `list_suggestions` |
+| `catalog:write`     | `create_product`, `replace_product`, `update_product_text`, `update_variant_price`, `adjust_stock`                                                                                                      |
+| `orders:read`       | `list_orders`, `get_order`                                                                                                                                                                              |
+| `stores:write`      | `add_product_to_store`, `remove_product_from_store`, `retry_store_listing`, `suggest_store_categories`, `set_store_category`, `get_item_specifics`, `save_item_specifics`, `update_listing`             |
+| `reports:read`      | `get_sales_report`, `get_inventory_report`, `get_listing_health_report`                                                                                                                                 |
+| `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                                |
+| `webhooks:write`    | `list_webhook_endpoints`, `create_webhook_endpoint`                                                                                                                                                     |
 
 `ask_crossmart`, `get_ask_escalation` and `get_platform_health` need no scope. `ask_crossmart` reads the
 workspace only through the lookups its connection's permissions allow (ADR 0025).
@@ -82,7 +82,10 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `get_product`               | One product with its variants, stock, options and images               |        |
 | `create_product`            | Adds a product with its variants (a draft unless `ACTIVE`)             | Yes    |
 | `replace_product`           | Saves a whole product; variants left out are removed                   | Yes    |
+| `update_product_text`       | Changes only a product's title and/or description                      | Yes    |
+| `update_variant_price`      | Changes only one variant's price and/or compare-at price               | Yes    |
 | `list_inventory`            | Stock per variant: on hand, held for orders, available                 |        |
+| `get_inventory_item`        | One variant's stock with its product                                   |        |
 | `adjust_stock`              | Adds, removes or sets stock, with a reason                             | Yes    |
 | `list_orders`, `get_order`  | Orders from every store, without buyer details                         |        |
 | `list_stores`, `get_store`  | Connected stores with their status and publish readiness               |        |
@@ -131,12 +134,15 @@ dashboard and the REST API.
 
 ## Adding a tool
 
-Each tool is a spec in `apps/mcp/src/tools/*.tools.ts`: a name, a description written for the
-agent, a zod input and the API call it makes (`defineTool`). Add it to the group's list; `ALL_TOOLS`
-registers it. Keep one tool per endpoint and describe what the agent should read first.
+Each tool is a spec in `libs/core/src/agent-tools/tools/*.tools.ts`: a name, a description written
+for the agent, a zod input and the API call it makes (`defineTool`). Add it to the group's list;
+`ALL_TOOLS` registers it. Keep one tool per endpoint and describe what the agent should read first.
+The specs are shared with [Agent Worker](agent-worker.md), the agent inside the web app, which
+offers the same tools and proposes every write for approval; mark `destructive`, `publishes` and
+`priceInputs` where they apply.
 
 A spec may add `refusalHints`: a next step per HTTP status, appended to the API's message when it
 refuses the call. Tools that return listings include `LISTING_STATE_GUIDE`
-(`tools/listing-guidance.ts`), which maps every `PublishRequirement` to the tool the agent uses next;
+(`agent-tools/tools/listing-guidance.ts`), which maps every `PublishRequirement` to the tool the agent uses next;
 a new requirement fails the typecheck until it has a step. The guide reads `displayRequirement`
 first, so it keeps working when the API adds that field.

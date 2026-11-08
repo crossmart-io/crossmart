@@ -7,6 +7,8 @@ export const PRODUCT_BULK_ACTIONS_ROUTE = 'workspaces/:workspaceId/product-bulk-
 export const PRODUCT_VIEWS_ROUTE = 'workspaces/:workspaceId/product-views';
 export const PRODUCT_ID_PARAM = 'productId';
 export const VIEW_ID_PARAM = 'viewId';
+/** One variant of a product; named `variantId` in `VariantParamsDto`. */
+export const VARIANT_PATH = `:${PRODUCT_ID_PARAM}/variants/:variantId`;
 /** Multipart field that carries an uploaded file (catalog import or image). */
 export const UPLOAD_FILE_FIELD = 'file';
 /** Browsers send file names as UTF-8; multer would otherwise read them as Latin-1. */

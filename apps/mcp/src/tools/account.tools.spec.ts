@@ -1,11 +1,11 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { HttpMethod } from '../api/api-call.js';
-import { CrossmartApiClient } from '../api/crossmart-api-client.js';
-import { SANDBOX_ACCOUNTS_PATH } from '../mcp.constants.js';
-import { ANONYMOUS_TOOLS } from './account.tools.js';
-import { registerApiTool } from './api-tool.js';
+import { HttpMethod } from '@crossmart/core/agent-tools/api/api-call.js';
+import { CrossmartApiClient } from '@crossmart/core/agent-tools/api/crossmart-api-client.js';
+import { SANDBOX_ACCOUNTS_PATH } from '@crossmart/core/agent-tools/agent-tools.constants.js';
+import { ANONYMOUS_TOOLS } from '@crossmart/core/agent-tools/tools/account.tools.js';
+import { registerApiTool } from './register-api-tool.js';
 
 const API_URL = 'https://api.example.com';
 const INPUT = { email: 'ana@example.com', storeName: 'Ana Ceramics' };

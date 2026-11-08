@@ -1,5 +1,5 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { apiKeyCredential } from '../api/api-credential.js';
+import { apiKeyCredential } from '@crossmart/core/agent-tools/api/api-credential.js';
 import type { McpConfig } from '../config/mcp-config.js';
 import { createMcpServer } from '../server/create-mcp-server.js';
 

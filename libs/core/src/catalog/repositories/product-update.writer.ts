@@ -3,7 +3,9 @@ import { InventoryMovementReason, type Prisma, PrismaService } from '@crossmart/
 import type { Actor } from '../../activity/entities/actor.js';
 import type { LockedStock } from '../../inventory/entities/inventory-ledger.js';
 import { InventoryLedger } from '../../inventory/repositories/inventory-ledger.js';
+import type { ProductContentPatch } from '../entities/product-content-patch.js';
 import type { ProductDraft, VariantDraft } from '../entities/product-draft.js';
+import type { VariantPricePatch, VariantRef } from '../entities/variant-price-patch.js';
 import {
   toMediaInputs,
   toNewVariantInput,
@@ -66,6 +68,41 @@ export class ProductUpdateWriter {
         data: toProductFields(draft),
       });
       await this.webhookEvents.updated(tx, workspaceId, [productId]);
+    });
+  }
+
+  /**
+   * Changes only the product's title and description, leaving variants, stock and media as
+   * they are. Returns false when the product is not in the workspace.
+   */
+  async updateContent(
+    workspaceId: string,
+    productId: string,
+    patch: ProductContentPatch,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.product.updateMany({
+        where: { id: productId, workspaceId },
+        data: patch,
+      });
+      if (count > 0) await this.webhookEvents.updated(tx, workspaceId, [productId]);
+      return count > 0;
+    });
+  }
+
+  /**
+   * Changes only one variant's prices, leaving the rest of the product as it is. Returns false
+   * when the variant is not one of the product's in the workspace.
+   */
+  async updateVariantPrice(ref: VariantRef, patch: VariantPricePatch): Promise<boolean> {
+    const { workspaceId, productId, variantId } = ref;
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.variant.updateMany({
+        where: { id: variantId, productId, workspaceId },
+        data: patch,
+      });
+      if (count > 0) await this.webhookEvents.updated(tx, workspaceId, [productId]);
+      return count > 0;
     });
   }
 

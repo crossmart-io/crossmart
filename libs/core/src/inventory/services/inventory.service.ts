@@ -4,6 +4,7 @@ import type {
   InventoryListQuery,
   InventoryMovementPage,
   InventoryPage,
+  InventoryRow,
   MovementListQuery,
 } from '../entities/inventory-views.js';
 import { INVENTORY_ITEM_NOT_FOUND } from '../inventory.constants.js';
@@ -25,6 +26,13 @@ export class InventoryService {
       query.limit,
     );
     return { items: rows.map((record) => toInventoryRow(record)), nextCursor, total };
+  }
+
+  /** One variant's stock, with its product. */
+  async get(workspaceId: string, inventoryItemId: string): Promise<InventoryRow> {
+    const record = await this.items.findRow(workspaceId, inventoryItemId);
+    if (!record) throw new NotFoundException(INVENTORY_ITEM_NOT_FOUND);
+    return toInventoryRow(record);
   }
 
   async history(

@@ -33,4 +33,5 @@ enum WorkspacePermission: string
     case BillingView = 'billing:view';
     case BillingManage = 'billing:manage';
     case AiGenerate = 'ai:generate';
+    case AgentWorkerUse = 'agent_worker:use';
 }

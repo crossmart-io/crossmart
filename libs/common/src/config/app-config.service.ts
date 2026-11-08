@@ -5,6 +5,7 @@ import { BillingDriver } from './billing-driver.enum.js';
 import { StorageDriver } from '../storage/storage-driver.enum.js';
 import {
   CORS_ORIGINS_SEPARATOR,
+  DEFAULT_AGENT_WORKER_MODEL,
   DEFAULT_AI_MODEL,
   PLATFORM_ADMIN_EMAILS_SEPARATOR,
 } from './config.constants.js';
@@ -250,6 +251,13 @@ export class AppConfigService {
       anthropicApiKey: this.configService.get('ANTHROPIC_API_KEY', { infer: true }) || null,
       model: this.configService.get('AI_MODEL', { infer: true }) ?? DEFAULT_AI_MODEL,
     };
+  }
+
+  /** The model Agent Worker's tool loop calls (`AGENT_WORKER_MODEL`). */
+  get agentWorkerModel(): string {
+    return (
+      this.configService.get('AGENT_WORKER_MODEL', { infer: true }) ?? DEFAULT_AGENT_WORKER_MODEL
+    );
   }
 
   /** Ask Crossmart's daily cap, model and support address. */

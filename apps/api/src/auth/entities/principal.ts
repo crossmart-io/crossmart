@@ -1,5 +1,10 @@
 import type { Request } from 'express';
-import type { AgentIdentity, ApiKeyIdentity, ResolvedRole } from '@crossmart/core';
+import type {
+  AgentIdentity,
+  AgentWorkerScope,
+  ApiKeyIdentity,
+  ResolvedRole,
+} from '@crossmart/core';
 import type { PrincipalKind } from '../enums/principal-kind.enum.js';
 
 /** A signed-in person, authenticated by a Better Auth session. */
@@ -28,7 +33,16 @@ export interface AgentPrincipal extends AgentIdentity {
   kind: PrincipalKind.Agent;
 }
 
-export type Principal = UserPrincipal | ApiKeyPrincipal | AgentPrincipal;
+/**
+ * Agent Worker (ADR 0026) calling the API from inside the server for the person it chats with,
+ * with a short-lived credential only the API mints. Like an agent, it reaches workspace routes
+ * only, and its permissions are its scopes narrowed by the person's role at this moment.
+ */
+export interface AgentWorkerPrincipal extends AgentWorkerScope, ResolvedRole {
+  kind: PrincipalKind.AgentWorker;
+}
+
+export type Principal = UserPrincipal | ApiKeyPrincipal | AgentPrincipal | AgentWorkerPrincipal;
 
 export interface AuthenticatedRequest extends Request {
   principal?: Principal;

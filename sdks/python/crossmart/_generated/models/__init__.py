@@ -15,6 +15,27 @@ from .agent_client_dto import AgentClientDto
 from .agent_client_registration import AgentClientRegistration
 from .agent_connection_dto import AgentConnectionDto
 from .agent_scope import AgentScope
+from .agent_worker_action_dto import AgentWorkerActionDto
+from .agent_worker_action_preview_dto import AgentWorkerActionPreviewDto
+from .agent_worker_action_risk import AgentWorkerActionRisk
+from .agent_worker_action_status import AgentWorkerActionStatus
+from .agent_worker_cancel_result_dto import AgentWorkerCancelResultDto
+from .agent_worker_change_dto import AgentWorkerChangeDto
+from .agent_worker_context_view import AgentWorkerContextView
+from .agent_worker_conversation_detail_dto import AgentWorkerConversationDetailDto
+from .agent_worker_conversation_dto import AgentWorkerConversationDto
+from .agent_worker_conversation_page_dto import AgentWorkerConversationPageDto
+from .agent_worker_error_code import AgentWorkerErrorCode
+from .agent_worker_error_dto import AgentWorkerErrorDto
+from .agent_worker_event_type import AgentWorkerEventType
+from .agent_worker_message_dto import AgentWorkerMessageDto
+from .agent_worker_page_context_dto import AgentWorkerPageContextDto
+from .agent_worker_role import AgentWorkerRole
+from .agent_worker_stream_event_dto import AgentWorkerStreamEventDto
+from .agent_worker_tool_kind import AgentWorkerToolKind
+from .agent_worker_turn_dto import AgentWorkerTurnDto
+from .agent_worker_turn_status import AgentWorkerTurnStatus
+from .agent_worker_turn_trigger import AgentWorkerTurnTrigger
 from .ai_feature import AiFeature
 from .ai_status_dto import AiStatusDto
 from .ai_usage_line_dto import AiUsageLineDto
@@ -81,6 +102,7 @@ from .connection_summary_dto import ConnectionSummaryDto
 from .content_draft_dto import ContentDraftDto
 from .content_field import ContentField
 from .content_generation_receipt_dto import ContentGenerationReceiptDto
+from .create_agent_worker_conversation_dto import CreateAgentWorkerConversationDto
 from .create_api_key_dto import CreateApiKeyDto
 from .create_ask_escalation_dto import CreateAskEscalationDto
 from .create_content_draft_dto import CreateContentDraftDto
@@ -95,6 +117,7 @@ from .current_api_key_dto import CurrentApiKeyDto
 from .custom_role_dto import CustomRoleDto
 from .custom_role_input_dto import CustomRoleInputDto
 from .custom_role_ref_dto import CustomRoleRefDto
+from .decide_agent_worker_actions_dto import DecideAgentWorkerActionsDto
 from .delete_workspace_dto import DeleteWorkspaceDto
 from .ebay_business_policies_dto import EbayBusinessPoliciesDto
 from .ebay_condition import EbayCondition
@@ -294,6 +317,7 @@ from .sandbox_restriction import SandboxRestriction
 from .sandbox_state_dto import SandboxStateDto
 from .save_item_specifics_dto import SaveItemSpecificsDto
 from .selection_preview_dto import SelectionPreviewDto
+from .send_agent_worker_message_dto import SendAgentWorkerMessageDto
 from .shopify_location_dto import ShopifyLocationDto
 from .shopify_settings_dto import ShopifySettingsDto
 from .sort_direction import SortDirection
@@ -330,9 +354,11 @@ from .update_etsy_listing_setup_dto import UpdateEtsyListingSetupDto
 from .update_google_listing_setup_dto import UpdateGoogleListingSetupDto
 from .update_member_role_dto import UpdateMemberRoleDto
 from .update_pricing_dto import UpdatePricingDto
+from .update_product_content_dto import UpdateProductContentDto
 from .update_product_dto import UpdateProductDto
 from .update_product_selection_dto import UpdateProductSelectionDto
 from .update_variant_dto import UpdateVariantDto
+from .update_variant_price_dto import UpdateVariantPriceDto
 from .update_webhook_endpoint_dto import UpdateWebhookEndpointDto
 from .update_workspace_dto import UpdateWorkspaceDto
 from .uploaded_image_dto import UploadedImageDto
@@ -371,6 +397,27 @@ __all__ = (
     "AgentClientRegistration",
     "AgentConnectionDto",
     "AgentScope",
+    "AgentWorkerActionDto",
+    "AgentWorkerActionPreviewDto",
+    "AgentWorkerActionRisk",
+    "AgentWorkerActionStatus",
+    "AgentWorkerCancelResultDto",
+    "AgentWorkerChangeDto",
+    "AgentWorkerContextView",
+    "AgentWorkerConversationDetailDto",
+    "AgentWorkerConversationDto",
+    "AgentWorkerConversationPageDto",
+    "AgentWorkerErrorCode",
+    "AgentWorkerErrorDto",
+    "AgentWorkerEventType",
+    "AgentWorkerMessageDto",
+    "AgentWorkerPageContextDto",
+    "AgentWorkerRole",
+    "AgentWorkerStreamEventDto",
+    "AgentWorkerToolKind",
+    "AgentWorkerTurnDto",
+    "AgentWorkerTurnStatus",
+    "AgentWorkerTurnTrigger",
     "AiFeature",
     "AiStatusDto",
     "AiUsageLineDto",
@@ -437,6 +484,7 @@ __all__ = (
     "ContentDraftDto",
     "ContentField",
     "ContentGenerationReceiptDto",
+    "CreateAgentWorkerConversationDto",
     "CreateApiKeyDto",
     "CreateAskEscalationDto",
     "CreateContentDraftDto",
@@ -451,6 +499,7 @@ __all__ = (
     "CustomRoleDto",
     "CustomRoleInputDto",
     "CustomRoleRefDto",
+    "DecideAgentWorkerActionsDto",
     "DeleteWorkspaceDto",
     "EbayBusinessPoliciesDto",
     "EbayCondition",
@@ -606,6 +655,7 @@ __all__ = (
     "SandboxStateDto",
     "SaveItemSpecificsDto",
     "SelectionPreviewDto",
+    "SendAgentWorkerMessageDto",
     "ShopifyLocationDto",
     "ShopifySettingsDto",
     "SortDirection",
@@ -642,9 +692,11 @@ __all__ = (
     "UpdateGoogleListingSetupDto",
     "UpdateMemberRoleDto",
     "UpdatePricingDto",
+    "UpdateProductContentDto",
     "UpdateProductDto",
     "UpdateProductSelectionDto",
     "UpdateVariantDto",
+    "UpdateVariantPriceDto",
     "UpdateWebhookEndpointDto",
     "UpdateWorkspaceDto",
     "UploadedImageDto",

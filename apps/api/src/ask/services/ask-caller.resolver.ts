@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
+  AGENT_WORKER_NAME,
   type AskCaller,
   AskCallerKeys,
   type AskCallerIdentity,
@@ -83,11 +84,13 @@ export class AskCallerResolver {
           workspace: accessOf(principal.workspaceId, principal.permissions),
         };
       case PrincipalKind.Agent:
+      case PrincipalKind.AgentWorker:
         this.assertOwnWorkspace(principal.workspaceId, workspaceId);
         return {
           type: AskCallerType.Agent,
           principalKey,
-          clientName: principal.clientName,
+          clientName:
+            principal.kind === PrincipalKind.Agent ? principal.clientName : AGENT_WORKER_NAME,
           userId: principal.userId,
           workspace: accessOf(principal.workspaceId, principal.permissions),
         };

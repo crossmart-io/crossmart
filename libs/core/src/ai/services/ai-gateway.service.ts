@@ -11,6 +11,12 @@ import type {
   AiStatus,
   AiStructuredRequest,
 } from '../entities/ai-completion.js';
+import type {
+  AiConversationContext,
+  AiConversationListener,
+  AiConversationReply,
+  AiConversationRequest,
+} from '../entities/ai-conversation.js';
 import type { AiFeature } from '../enums/ai-feature.enum.js';
 import { AiNotConfiguredError, AiOutputRejectedError } from '../errors/ai.errors.js';
 import { AiProvider } from '../providers/ai-provider.js';
@@ -73,6 +79,29 @@ export class AiGateway {
     const completion = await this.provider.complete(request);
     await this.meter(context, completion);
     return this.validate(context.feature, completion, request);
+  }
+
+  /**
+   * One call of a conversation with tools (Agent Worker), streamed. Like `generate` it needs a
+   * credit left and is metered, one credit per call; the reply's tool uses are the caller's to
+   * validate and run, since no schema can vouch for what a model asks for.
+   */
+  async converse(
+    context: AiConversationContext,
+    request: AiConversationRequest,
+    listener: AiConversationListener,
+  ): Promise<AiConversationReply> {
+    this.assertConfigured();
+    await this.assertCredits(context.workspaceId);
+    const reply = await this.provider.converse(request, listener);
+    await this.usage.record({
+      workspaceId: context.workspaceId,
+      feature: context.feature,
+      provider: this.provider.name,
+      model: reply.model,
+      ...reply.usage,
+    });
+    return reply;
   }
 
   /**

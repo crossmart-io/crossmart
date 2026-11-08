@@ -15,30 +15,31 @@ datasource db {
 // ─── Identity (owned by Better Auth; field names follow its schema) ───────────
 
 model User {
-  id                   String                @id @default(uuid()) @db.Uuid
-  name                 String
-  email                String                @unique
-  emailVerified        Boolean               @default(false) @map("email_verified")
-  image                String?
-  sessions             Session[]
-  accounts             Account[]
-  memberships          WorkspaceMember[]
-  apiKeys              ApiKey[]
-  activity             ActivityEvent[]
-  stockMoves           InventoryMovement[]
-  importJobs           ImportJob[]
-  connections          ChannelConnection[]
-  invitations          WorkspaceInvitation[]
-  suggestionsRequested Suggestion[]          @relation("SuggestionRequestedBy")
-  suggestionsReviewed  Suggestion[]          @relation("SuggestionReviewedBy")
-  oauthClients         OauthClient[]
-  oauthRefreshTokens   OauthRefreshToken[]
-  oauthAccessTokens    OauthAccessToken[]
-  oauthConsents        OauthConsent[]
-  sandboxAccount       SandboxAccount?
-  askConversations     AskConversation[]
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
+  id                       String                    @id @default(uuid()) @db.Uuid
+  name                     String
+  email                    String                    @unique
+  emailVerified            Boolean                   @default(false) @map("email_verified")
+  image                    String?
+  sessions                 Session[]
+  accounts                 Account[]
+  memberships              WorkspaceMember[]
+  apiKeys                  ApiKey[]
+  activity                 ActivityEvent[]
+  stockMoves               InventoryMovement[]
+  importJobs               ImportJob[]
+  connections              ChannelConnection[]
+  invitations              WorkspaceInvitation[]
+  suggestionsRequested     Suggestion[]              @relation("SuggestionRequestedBy")
+  suggestionsReviewed      Suggestion[]              @relation("SuggestionReviewedBy")
+  oauthClients             OauthClient[]
+  oauthRefreshTokens       OauthRefreshToken[]
+  oauthAccessTokens        OauthAccessToken[]
+  oauthConsents            OauthConsent[]
+  sandboxAccount           SandboxAccount?
+  askConversations         AskConversation[]
+  agentWorkerConversations AgentWorkerConversation[]
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -310,35 +311,36 @@ model Organization {
 }
 
 model Workspace {
-  id                String                @id @default(uuid()) @db.Uuid
-  organizationId    String                @map("organization_id") @db.Uuid
-  organization      Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name              String
-  slug              String
+  id                       String                    @id @default(uuid()) @db.Uuid
+  organizationId           String                    @map("organization_id") @db.Uuid
+  organization             Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                     String
+  slug                     String
   /// ISO 4217 code the catalog's prices are in.
-  currency          String                @default("USD") @db.Char(3)
+  currency                 String                    @default("USD") @db.Char(3)
   /// IANA zone that sets where a day starts for reports, such as "Asia/Jerusalem". Null until set.
-  timeZone          String?               @map("time_zone")
-  members           WorkspaceMember[]
-  invitations       WorkspaceInvitation[]
-  customRoles       CustomRole[]
-  apiKeys           ApiKey[]
-  products          Product[]
-  productViews      ProductView[]
-  activity          ActivityEvent[]
-  importJobs        ImportJob[]
-  orders            Order[]
-  dataKey           WorkspaceDataKey?
-  connections       ChannelConnection[]
-  suggestions       Suggestion[]
-  aiUsage           AiUsage[]
-  webhookEndpoints  WebhookEndpoint[]
-  webhookEvents     WebhookEvent[]
-  webhookDeliveries WebhookDelivery[]
-  sandboxAccount    SandboxAccount?
-  askConversations  AskConversation[]
-  createdAt         DateTime              @default(now()) @map("created_at")
-  updatedAt         DateTime              @updatedAt @map("updated_at")
+  timeZone                 String?                   @map("time_zone")
+  members                  WorkspaceMember[]
+  invitations              WorkspaceInvitation[]
+  customRoles              CustomRole[]
+  apiKeys                  ApiKey[]
+  products                 Product[]
+  productViews             ProductView[]
+  activity                 ActivityEvent[]
+  importJobs               ImportJob[]
+  orders                   Order[]
+  dataKey                  WorkspaceDataKey?
+  connections              ChannelConnection[]
+  suggestions              Suggestion[]
+  aiUsage                  AiUsage[]
+  webhookEndpoints         WebhookEndpoint[]
+  webhookEvents            WebhookEvent[]
+  webhookDeliveries        WebhookDelivery[]
+  sandboxAccount           SandboxAccount?
+  askConversations         AskConversation[]
+  agentWorkerConversations AgentWorkerConversation[]
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -1460,32 +1462,32 @@ model WebhookDelivery {
 
 /// One conversation with Ask Crossmart, from any channel. Kept for `ASK_RETENTION_DAYS`.
 model AskConversation {
-  id                String            @id @default(uuid(7)) @db.Uuid
+  id                String          @id @default(uuid(7)) @db.Uuid
   /// The unguessable id the caller continues the conversation with (`conv_…`, the A2A
   /// `contextId`). Only the caller it is bound to (`ownerKey`) can continue it.
-  publicId          String            @unique @map("public_id")
+  publicId          String          @unique @map("public_id")
   /// An `AskChannel`: web_widget, app_widget, api, mcp or a2a.
   channel           String
   /// An `AskCallerType`: anonymous, user, api_key or agent.
-  callerType        String            @map("caller_type")
+  callerType        String          @map("caller_type")
   /// The agent's client name, for agents.
-  clientName        String?           @map("client_name")
+  clientName        String?         @map("client_name")
   /// Salted hash of who may continue the conversation (the principal, or the client fingerprint).
-  ownerKey          String            @map("owner_key")
+  ownerKey          String          @map("owner_key")
   /// Salted hash of the caller's IP address and user agent; never the raw values.
-  clientFingerprint String            @map("client_fingerprint")
-  workspaceId       String?           @map("workspace_id") @db.Uuid
-  workspace         Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  userId            String?           @map("user_id") @db.Uuid
-  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  turnCount         Int               @default(0) @map("turn_count")
+  clientFingerprint String          @map("client_fingerprint")
+  workspaceId       String?         @map("workspace_id") @db.Uuid
+  workspace         Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  userId            String?         @map("user_id") @db.Uuid
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  turnCount         Int             @default(0) @map("turn_count")
   /// When a turn was last added; the conversation expires `ASK_CONVERSATION_IDLE_MS` after it.
-  lastActivityAt    DateTime          @default(now()) @map("last_activity_at")
+  lastActivityAt    DateTime        @default(now()) @map("last_activity_at")
   /// When it was first escalated to a person; null while it was not.
-  escalatedAt       DateTime?         @map("escalated_at")
+  escalatedAt       DateTime?       @map("escalated_at")
   turns             AskTurn[]
   escalations       AskEscalation[]
-  createdAt         DateTime          @default(now()) @map("created_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
 
   @@index([createdAt])
   @@index([lastActivityAt])
@@ -1495,31 +1497,31 @@ model AskConversation {
 
 /// One question and its answer. The question is stored with obvious secrets redacted.
 model AskTurn {
-  id                String          @id @default(uuid(7)) @db.Uuid
-  conversationId    String          @map("conversation_id") @db.Uuid
-  conversation      AskConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  id               String          @id @default(uuid(7)) @db.Uuid
+  conversationId   String          @map("conversation_id") @db.Uuid
+  conversation     AskConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   /// 1 for the first question of the conversation.
-  position          Int
-  question          String
+  position         Int
+  question         String
   /// SHA-256 of the normalised, redacted question, to count questions asked alike.
-  questionHash      String          @map("question_hash")
-  answer            String
+  questionHash     String          @map("question_hash")
+  answer           String
   /// An `AskOutcome`.
-  outcome           String
+  outcome          String
   /// An `AskConfidence`.
-  confidence        String
+  confidence       String
   /// `[{ title, url }]`: the pages (or account data) the answer cites.
-  citations         Json
+  citations        Json
   /// Which `AccountLookupKind`s ran for this answer; empty for docs-only answers.
-  accountLookups    String[]        @map("account_lookups")
+  accountLookups   String[]        @map("account_lookups")
   /// Why a person was offered (an `AskEscalationReason`); null when none was.
-  escalationReason  String?         @map("escalation_reason")
-  latencyMs         Int             @map("latency_ms")
+  escalationReason String?         @map("escalation_reason")
+  latencyMs        Int             @map("latency_ms")
   /// The model that answered; null when no model was called (cache, no relevant docs).
-  model             String?
+  model            String?
   /// True when the answer came from the answer cache.
-  cached            Boolean         @default(false)
-  createdAt         DateTime        @default(now()) @map("created_at")
+  cached           Boolean         @default(false)
+  createdAt        DateTime        @default(now()) @map("created_at")
 
   @@unique([conversationId, position])
   @@index([createdAt])
@@ -1555,4 +1557,114 @@ model AskEscalation {
   @@index([conversationId])
   @@index([status, createdAt])
   @@map("ask_escalations")
+}
+
+// ─── Agent Worker (ADR 0026) ─────────────────────────────────────────────────
+
+/// A chat between one person and Agent Worker in one workspace. Only that person can read it.
+model AgentWorkerConversation {
+  id                   String               @id @default(uuid(7)) @db.Uuid
+  workspaceId          String               @map("workspace_id") @db.Uuid
+  workspace            Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId               String               @map("user_id") @db.Uuid
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                String
+  /// The turn running now; set with a conditional update so only one runs at a time.
+  runningTurnId        String?              @map("running_turn_id") @db.Uuid
+  /// When the running turn started; a turn older than `AGENT_WORKER_TURN_STALE_MS` is abandoned.
+  runningTurnStartedAt DateTime?            @map("running_turn_started_at")
+  /// When a message was last added; the conversation is deleted `AGENT_WORKER_RETENTION_DAYS` after.
+  lastActivityAt       DateTime             @default(now()) @map("last_activity_at")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  turns                AgentWorkerTurn[]
+  messages             AgentWorkerMessage[]
+  actions              AgentWorkerAction[]
+
+  @@index([workspaceId, userId, lastActivityAt(sort: Desc)])
+  @@index([lastActivityAt])
+  @@map("agent_worker_conversations")
+}
+
+/// One run of the agent loop, started by a message or by a decision on proposed actions.
+model AgentWorkerTurn {
+  id                String                  @id @default(uuid(7)) @db.Uuid
+  conversationId    String                  @map("conversation_id") @db.Uuid
+  conversation      AgentWorkerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  /// An `AgentWorkerTurnTrigger`: message or decision.
+  trigger           String
+  /// An `AgentWorkerTurnStatus`.
+  status            String
+  /// The model that answered last; null until the model was called.
+  model             String?
+  modelCalls        Int                     @default(0) @map("model_calls")
+  inputTokens       Int                     @default(0) @map("input_tokens")
+  outputTokens      Int                     @default(0) @map("output_tokens")
+  /// A short, user-facing reason for a failed turn. Never holds secrets.
+  failureReason     String?                 @map("failure_reason")
+  cancelRequestedAt DateTime?               @map("cancel_requested_at")
+  startedAt         DateTime                @default(now()) @map("started_at")
+  finishedAt        DateTime?               @map("finished_at")
+
+  @@index([conversationId, startedAt])
+  @@map("agent_worker_turns")
+}
+
+/// A message of the conversation: the person's, or one model answer of the loop.
+model AgentWorkerMessage {
+  id             String                  @id @default(uuid(7)) @db.Uuid
+  conversationId String                  @map("conversation_id") @db.Uuid
+  conversation   AgentWorkerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  turnId         String                  @map("turn_id") @db.Uuid
+  /// 1 for the first message of the conversation.
+  position       Int
+  /// An `AgentWorkerRole`: user or assistant.
+  role           String
+  /// The text shown in the chat.
+  text           String
+  /// The message as the model reads it again: provider-neutral content blocks (text, tool calls,
+  /// and the provider's own blocks it needs replayed). Tool results come from the actions.
+  content        Json
+  actions        AgentWorkerAction[]
+  createdAt      DateTime                @default(now()) @map("created_at")
+
+  @@unique([conversationId, position])
+  @@map("agent_worker_messages")
+}
+
+/// One tool call the model made: a read that ran at once, or a write proposed for approval.
+model AgentWorkerAction {
+  id               String                  @id @default(uuid(7)) @db.Uuid
+  conversationId   String                  @map("conversation_id") @db.Uuid
+  conversation     AgentWorkerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messageId        String                  @map("message_id") @db.Uuid
+  message          AgentWorkerMessage      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  /// The model's id for the call, which its result answers.
+  toolUseId        String                  @map("tool_use_id")
+  toolName         String                  @map("tool_name")
+  /// An `AgentWorkerToolKind`: read or write.
+  kind             String
+  /// An `AgentWorkerActionStatus`.
+  status           String
+  /// The input the model gave, validated against the tool's schema.
+  input            Json
+  /// `AgentWorkerActionRisk` values that make the change need an explicit confirmation.
+  risks            String[]
+  /// A one-line description for the chat.
+  summary          String
+  /// Before and after values of what the change touches, for the approval card.
+  preview          Json?
+  /// What the model is told about the call (the API's answer or refusal), truncated.
+  result           String?
+  resultIsError    Boolean                 @default(false) @map("result_is_error")
+  /// True when untrusted text the agent read in this turn looked like instructions.
+  untrustedWarning Boolean                 @default(false) @map("untrusted_warning")
+  decidedByUserId  String?                 @map("decided_by_user_id") @db.Uuid
+  decidedAt        DateTime?               @map("decided_at")
+  executedAt       DateTime?               @map("executed_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+
+  @@unique([messageId, toolUseId])
+  @@index([conversationId, status])
+  @@map("agent_worker_actions")
 }

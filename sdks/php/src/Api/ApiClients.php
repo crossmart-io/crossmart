@@ -29,6 +29,7 @@ final class ApiClients
     public readonly AnalyticsApi $analytics;
     public readonly SuggestionsApi $suggestions;
     public readonly AiApi $ai;
+    public readonly AgentWorkerApi $agentWorker;
     public readonly AgentsApi $agents;
     public readonly AskCrossmartApi $askCrossmart;
     public readonly AskCrossmartAdminApi $askCrossmartAdmin;
@@ -53,6 +54,7 @@ final class ApiClients
         $this->analytics = new AnalyticsApi($transport);
         $this->suggestions = new SuggestionsApi($transport);
         $this->ai = new AiApi($transport);
+        $this->agentWorker = new AgentWorkerApi($transport);
         $this->agents = new AgentsApi($transport);
         $this->askCrossmart = new AskCrossmartApi($transport);
         $this->askCrossmartAdmin = new AskCrossmartAdminApi($transport);

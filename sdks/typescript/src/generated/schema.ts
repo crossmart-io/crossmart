@@ -483,7 +483,31 @@ export interface paths {
         delete: operations["ProductsController_delete_v1"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit a product’s title or description
+         * @description Changes only the fields sent; variants, prices, stock and images stay as they are. Connected stores are updated like after any content edit.
+         */
+        patch: operations["ProductsController_updateContent_v1"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/products/{productId}/variants/{variantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change one variant’s price or compare-at price
+         * @description Changes only the prices sent; the rest of the product stays as it is. Connected stores are updated like after any price edit. A null compare-at price removes it.
+         */
+        patch: operations["ProductsController_updateVariantPrice_v1"];
         trace?: never;
     };
     "/api/v1/workspaces/{workspaceId}/product-bulk-actions": {
@@ -681,6 +705,23 @@ export interface paths {
         };
         /** Stock of every variant, by product title */
         get: operations["InventoryItemsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/inventory-items/{inventoryItemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One variant’s stock, with its product */
+        get: operations["InventoryItemsController_get_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1576,6 +1617,105 @@ export interface paths {
          * @description Rewrites the fields asked for, for the catalog or for one store, optionally following an instruction. The answer is a draft for the editor: nothing is stored until the merchant saves it. Uses one AI credit: answers 402 when the plan has none left this month (while plans are enforced), 429 past the rate limit, and 503 while AI is not configured.
          */
         post: operations["AiController_draftContent_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-worker/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your Agent Worker conversations, most recently active first */
+        get: operations["AgentWorkerController_list_v1"];
+        put?: never;
+        /** Start a conversation with Agent Worker */
+        post: operations["AgentWorkerController_create_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-worker/conversations/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A conversation with its messages, tool calls and proposed changes
+         * @description Answers 404 for an unknown id and for anyone else’s conversation.
+         */
+        get: operations["AgentWorkerController_get_v1"];
+        put?: never;
+        post?: never;
+        /** Delete a conversation, with its messages and proposed changes */
+        delete: operations["AgentWorkerController_delete_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-worker/conversations/{conversationId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a message and stream Agent Worker’s turn
+         * @description Agent Worker reads what it needs right away and proposes changes, which wait for `POST …/decision`. Changes still waiting are dropped (expired) by a new message. Each model call uses one AI credit: answers 402 when the plan has none left (while plans are enforced), 403 in an unclaimed sandbox, 409 while a turn runs, 429 past the rate limit, and 503 while AI is not configured. A read-only subscription still allows reading; Agent Worker then proposes no changes.
+         */
+        post: operations["AgentWorkerController_sendMessage_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-worker/conversations/{conversationId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject the changes waiting in a conversation, and stream the result
+         * @description Approves the listed actions and rejects every other waiting one, in one step. Approved changes are made through the API as "Agent Worker on behalf of" you, then Agent Worker goes on with their results. Actions with `risks` (deletions, price changes, bulk changes) also need `confirmHighRisk`: 400 without it. 409 when nothing waits or a turn runs.
+         */
+        post: operations["AgentWorkerController_decide_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-worker/conversations/{conversationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop the running turn
+         * @description The model call is aborted; what already ran stays, and nothing more runs.
+         */
+        post: operations["AgentWorkerController_cancel_v1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2758,6 +2898,24 @@ export interface components {
             media?: components["schemas"]["CreateMediaDto"][];
             handle: string;
             variants: components["schemas"]["UpdateVariantDto"][];
+        };
+        UpdateProductContentDto: {
+            /** @example Linen Shirt – Relaxed Fit */
+            title?: string;
+            /** @description HTML; unsafe markup is removed */
+            descriptionHtml?: string;
+        };
+        UpdateVariantPriceDto: {
+            /**
+             * @description In the workspace currency
+             * @example 19.90
+             */
+            price?: string;
+            /**
+             * @description The "was" price buyers see struck through; null removes it
+             * @example 24.90
+             */
+            compareAtPrice?: string | null;
         };
         /** @enum {string} */
         BulkProductAction: BulkProductAction;
@@ -4372,6 +4530,197 @@ export interface components {
             /** @description Null when not asked for */
             descriptionHtml: string | null;
         };
+        /** @enum {string} */
+        AgentWorkerEventType: AgentWorkerEventType;
+        /** @enum {string} */
+        AgentWorkerTurnTrigger: AgentWorkerTurnTrigger;
+        /** @enum {string} */
+        AgentWorkerTurnStatus: AgentWorkerTurnStatus;
+        AgentWorkerTurnDto: {
+            /** Format: uuid */
+            id: string;
+            trigger: components["schemas"]["AgentWorkerTurnTrigger"];
+            status: components["schemas"]["AgentWorkerTurnStatus"];
+            /** @description Model calls so far; each uses one AI credit */
+            modelCalls: number;
+            inputTokens: number;
+            outputTokens: number;
+            /** @description Why it failed or stopped early */
+            failureReason: string | null;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            finishedAt: string | null;
+        };
+        /** @enum {string} */
+        AgentWorkerRole: AgentWorkerRole;
+        /** @enum {string} */
+        AgentWorkerToolKind: AgentWorkerToolKind;
+        /** @enum {string} */
+        AgentWorkerActionStatus: AgentWorkerActionStatus;
+        /**
+         * @description Why approving it also needs `confirmHighRisk`; empty for ordinary changes
+         * @enum {string}
+         */
+        AgentWorkerActionRisk: AgentWorkerActionRisk;
+        AgentWorkerChangeDto: {
+            /**
+             * @description What changes, for people
+             * @example Price (Medium)
+             */
+            label: string;
+            /** @description The value now; null when unknown */
+            before: string | null;
+            /** @description The value after the change */
+            after: string | null;
+        };
+        AgentWorkerActionPreviewDto: {
+            /** @example Linen Shirt on Outlet store */
+            target: string | null;
+            /**
+             * @description The change in one sentence
+             * @example Add 20 units (stock received)
+             */
+            headline: string;
+            /**
+             * @description More lines to read, such as a note
+             * @example [
+             *       "Note: Spring delivery"
+             *     ]
+             */
+            details: string[];
+            changes: components["schemas"]["AgentWorkerChangeDto"][];
+        };
+        AgentWorkerActionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            messageId: string;
+            /**
+             * @description The MCP tool it calls
+             * @example retry_store_listing
+             */
+            toolName: string;
+            /** @example Retry publishing a product to a store */
+            toolTitle: string;
+            kind: components["schemas"]["AgentWorkerToolKind"];
+            status: components["schemas"]["AgentWorkerActionStatus"];
+            /** @example Override or revert fields of a listing: Linen Shirt on Outlet store */
+            summary: string;
+            /** @description Why approving it also needs `confirmHighRisk`; empty for ordinary changes */
+            risks: components["schemas"]["AgentWorkerActionRisk"][];
+            preview: components["schemas"]["AgentWorkerActionPreviewDto"] | null;
+            /** @example 12 found */
+            outcome: string | null;
+            isError: boolean;
+            /** @description Text read in the same turn looked like instructions to an AI: review with care */
+            untrustedWarning: boolean;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** Format: date-time */
+            executedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AgentWorkerMessageDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            turnId: string;
+            role: components["schemas"]["AgentWorkerRole"];
+            /** @description Plain text; the agent may use simple Markdown lists */
+            text: string;
+            /** @description Tool calls of this answer */
+            actions: components["schemas"]["AgentWorkerActionDto"][];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        AgentWorkerErrorCode: AgentWorkerErrorCode;
+        AgentWorkerErrorDto: {
+            code: components["schemas"]["AgentWorkerErrorCode"];
+            /** @description Safe to show to the person */
+            message: string;
+        };
+        AgentWorkerStreamEventDto: {
+            type: components["schemas"]["AgentWorkerEventType"];
+            /** @description turn_started, turn_finished */
+            turn?: components["schemas"]["AgentWorkerTurnDto"];
+            /** @description text_delta: the next piece of the answer */
+            delta?: string;
+            /** @description message */
+            message?: components["schemas"]["AgentWorkerMessageDto"];
+            /** @description tool_started, tool_finished, action_proposed, action_decided */
+            action?: components["schemas"]["AgentWorkerActionDto"];
+            /** @description error */
+            error?: components["schemas"]["AgentWorkerErrorDto"];
+        };
+        AgentWorkerConversationDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Fix my failed eBay listings */
+            title: string;
+            /** @description Changes waiting for approval */
+            pendingActionCount: number;
+            /** Format: date-time */
+            lastActivityAt: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AgentWorkerConversationPageDto: {
+            /** @description Most recently active first */
+            items: components["schemas"]["AgentWorkerConversationDto"][];
+            total: number;
+        };
+        CreateAgentWorkerConversationDto: {
+            /** @description Taken from the first message when left out */
+            title?: string;
+        };
+        AgentWorkerConversationDetailDto: {
+            conversation: components["schemas"]["AgentWorkerConversationDto"];
+            /** @description Oldest first */
+            messages: components["schemas"]["AgentWorkerMessageDto"][];
+            /** @description The turn running or waiting for approval; null when the agent is idle */
+            activeTurn: components["schemas"]["AgentWorkerTurnDto"] | null;
+        };
+        /**
+         * @description The page the person wrote from
+         * @enum {string}
+         */
+        AgentWorkerContextView: AgentWorkerContextView;
+        AgentWorkerPageContextDto: {
+            /** @description The page the person wrote from */
+            view?: components["schemas"]["AgentWorkerContextView"];
+            /**
+             * Format: uuid
+             * @description The product on screen
+             */
+            productId?: string;
+            /**
+             * Format: uuid
+             * @description The store on screen
+             */
+            connectionId?: string;
+        };
+        SendAgentWorkerMessageDto: {
+            /** @example Fix my failed eBay listings */
+            text: string;
+            /** @description Where the person is in the app, so "this product" means something */
+            context?: components["schemas"]["AgentWorkerPageContextDto"];
+        };
+        DecideAgentWorkerActionsDto: {
+            /** @description The waiting actions to approve; every other waiting action of the conversation is rejected. Empty rejects them all. */
+            approvedActionIds: string[];
+            /**
+             * @description Required (true) to approve an action with `risks`: a deletion, a price change or a bulk change
+             * @default false
+             */
+            confirmHighRisk?: boolean;
+        };
+        AgentWorkerCancelResultDto: {
+            /** @description False when no turn was running */
+            cancelled: boolean;
+        };
         /**
          * @description `metadata_document`: Crossmart fetched the agent’s metadata from its HTTPS client id. `dynamic`: the agent registered itself, and its name and site are unverified.
          * @enum {string}
@@ -5906,6 +6255,59 @@ export interface operations {
             };
         };
     };
+    ProductsController_updateContent_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductContentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDto"];
+                };
+            };
+        };
+    };
+    ProductsController_updateVariantPrice_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVariantPriceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDto"];
+                };
+            };
+        };
+    };
     ProductBulkActionsController_apply_v1: {
         parameters: {
             query?: never;
@@ -6240,6 +6642,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InventoryPageDto"];
+                };
+            };
+        };
+    };
+    InventoryItemsController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                inventoryItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryItemDto"];
                 };
             };
         };
@@ -7645,6 +8069,206 @@ export interface operations {
             };
         };
     };
+    AgentWorkerController_list_v1: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number, for tables with page numbers. It wins over `cursor`. */
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkerConversationPageDto"];
+                };
+            };
+        };
+    };
+    AgentWorkerController_create_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAgentWorkerConversationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkerConversationDto"];
+                };
+            };
+        };
+    };
+    AgentWorkerController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkerConversationDetailDto"];
+                };
+            };
+        };
+    };
+    AgentWorkerController_delete_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentWorkerController_sendMessage_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendAgentWorkerMessageDto"];
+            };
+        };
+        responses: {
+            /** @description A stream of server-sent events, one `AgentWorkerStreamEventDto` per event as JSON in its `data` field (the event name is the `type`). It starts with `turn_started` and ends with `turn_finished`; the turn status there says how it ended. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["AgentWorkerStreamEventDto"];
+                };
+            };
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
+            /** @description Agent Worker is getting too many requests in this workspace. Wait a minute and try again. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentWorkerController_decide_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideAgentWorkerActionsDto"];
+            };
+        };
+        responses: {
+            /** @description A stream of server-sent events, one `AgentWorkerStreamEventDto` per event as JSON in its `data` field (the event name is the `type`). It starts with `turn_started` and ends with `turn_finished`; the turn status there says how it ended. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["AgentWorkerStreamEventDto"];
+                };
+            };
+            /** @description Agent Worker is getting too many requests in this workspace. Wait a minute and try again. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentWorkerController_cancel_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkerCancelResultDto"];
+                };
+            };
+        };
+    };
     AgentAuthorizationController_findClient_v1: {
         parameters: {
             query: {
@@ -8491,7 +9115,8 @@ export enum WorkspacePermission {
     suggestions_approve = "suggestions:approve",
     billing_view = "billing:view",
     billing_manage = "billing:manage",
-    ai_generate = "ai:generate"
+    ai_generate = "ai:generate",
+    agent_worker_use = "agent_worker:use"
 }
 export enum EntitlementErrorCode {
     plan_limit_reached = "plan_limit_reached",
@@ -8971,11 +9596,75 @@ export enum SuggestionAgent {
 export enum AiFeature {
     content_generation = "content_generation",
     content_draft = "content_draft",
-    ask = "ask"
+    ask = "ask",
+    agent_worker = "agent_worker"
 }
 export enum ContentField {
     title = "title",
     description = "description"
+}
+export enum AgentWorkerEventType {
+    turn_started = "turn_started",
+    text_delta = "text_delta",
+    message = "message",
+    tool_started = "tool_started",
+    tool_finished = "tool_finished",
+    action_proposed = "action_proposed",
+    action_decided = "action_decided",
+    turn_finished = "turn_finished",
+    error = "error"
+}
+export enum AgentWorkerTurnTrigger {
+    message = "message",
+    decision = "decision"
+}
+export enum AgentWorkerTurnStatus {
+    running = "running",
+    completed = "completed",
+    awaiting_approval = "awaiting_approval",
+    cancelled = "cancelled",
+    failed = "failed"
+}
+export enum AgentWorkerRole {
+    user = "user",
+    assistant = "assistant"
+}
+export enum AgentWorkerToolKind {
+    read = "read",
+    write = "write"
+}
+export enum AgentWorkerActionStatus {
+    running = "running",
+    succeeded = "succeeded",
+    failed = "failed",
+    proposed = "proposed",
+    refused = "refused",
+    rejected = "rejected",
+    expired = "expired",
+    cancelled = "cancelled",
+    executing = "executing",
+    executed = "executed",
+    execution_failed = "execution_failed"
+}
+export enum AgentWorkerActionRisk {
+    destructive = "destructive",
+    price_change = "price_change",
+    bulk = "bulk"
+}
+export enum AgentWorkerErrorCode {
+    credits_exhausted = "credits_exhausted",
+    ai_unavailable = "ai_unavailable",
+    sandbox_claim_required = "sandbox_claim_required",
+    answer_unusable = "answer_unusable",
+    internal = "internal"
+}
+export enum AgentWorkerContextView {
+    channel_map = "channel_map",
+    product_map = "product_map",
+    products = "products",
+    listings = "listings",
+    orders = "orders",
+    inventory = "inventory"
 }
 export enum AgentClientRegistration {
     metadata_document = "metadata_document",
@@ -8994,7 +9683,8 @@ export enum AskChannel {
     web_widget = "web_widget",
     app_widget = "app_widget",
     api = "api",
-    mcp = "mcp"
+    mcp = "mcp",
+    agent_worker = "agent_worker"
 }
 export enum AskOutcome {
     answered = "answered",

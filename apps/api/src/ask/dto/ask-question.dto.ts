@@ -20,6 +20,7 @@ export const CALLER_CHANNELS: readonly AskChannel[] = [
   AskChannel.AppWidget,
   AskChannel.Api,
   AskChannel.Mcp,
+  AskChannel.AgentWorker,
 ];
 
 export class AskQuestionDto {

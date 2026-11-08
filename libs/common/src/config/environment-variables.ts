@@ -233,6 +233,12 @@ export class EnvironmentVariables {
   @MinLength(1)
   AI_MODEL?: string;
 
+  /** The model Agent Worker's tool loop uses (ADR 0026). Defaults to `DEFAULT_AGENT_WORKER_MODEL`. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  AGENT_WORKER_MODEL?: string;
+
   /**
    * Ask Crossmart questions answered per UTC day, across every caller. Crossmart pays for them,
    * so this caps the bill; once reached, Ask answers 503 until midnight UTC. 0 turns Ask off.
