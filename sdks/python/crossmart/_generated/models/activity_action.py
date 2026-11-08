@@ -50,6 +50,8 @@ class ActivityAction(StrEnum):
     SANDBOX_CREATED = "sandbox_created"
     STOCK_IMPORTED = "stock_imported"
     STOCK_OVERSOLD = "stock_oversold"
+    STOCK_RECONCILED = "stock_reconciled"
+    STOCK_SYNC_FAILED = "stock_sync_failed"
     SUGGESTIONS_BULK_APPROVED = "suggestions_bulk_approved"
     SUGGESTION_APPROVED = "suggestion_approved"
     SUGGESTION_REJECTED = "suggestion_rejected"

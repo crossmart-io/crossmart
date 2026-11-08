@@ -31,6 +31,7 @@ class ActivityEventDto:
         subject (ActivitySubjectDto | None):
         item_count (float | None): Items the action covered, such as products changed in bulk
         failure_reason (None | str): Why a failed action failed
+        connection_id (None | UUID): The store (channel connection) it happened on, such as where a listing failed
         created_at (datetime.datetime):
     """
 
@@ -42,6 +43,7 @@ class ActivityEventDto:
     subject: ActivitySubjectDto | None
     item_count: float | None
     failure_reason: None | str
+    connection_id: None | UUID
     created_at: datetime.datetime
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -70,6 +72,12 @@ class ActivityEventDto:
         failure_reason: None | str
         failure_reason = self.failure_reason
 
+        connection_id: None | str
+        if isinstance(self.connection_id, UUID):
+            connection_id = str(self.connection_id)
+        else:
+            connection_id = self.connection_id
+
         created_at = self.created_at.isoformat()
 
         field_dict: dict[str, Any] = {}
@@ -84,6 +92,7 @@ class ActivityEventDto:
                 "subject": subject,
                 "itemCount": item_count,
                 "failureReason": failure_reason,
+                "connectionId": connection_id,
                 "createdAt": created_at,
             }
         )
@@ -135,6 +144,21 @@ class ActivityEventDto:
 
         failure_reason = _parse_failure_reason(d.pop("failureReason"))
 
+        def _parse_connection_id(data: object) -> None | UUID:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                connection_id_type_0 = UUID(data)
+
+                return connection_id_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | UUID, data)
+
+        connection_id = _parse_connection_id(d.pop("connectionId"))
+
         created_at = datetime.datetime.fromisoformat(d.pop("createdAt"))
 
         activity_event_dto = cls(
@@ -146,6 +170,7 @@ class ActivityEventDto:
             subject=subject,
             item_count=item_count,
             failure_reason=failure_reason,
+            connection_id=connection_id,
             created_at=created_at,
         )
 

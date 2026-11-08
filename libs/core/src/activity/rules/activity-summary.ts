@@ -17,6 +17,7 @@ const PRODUCT_NOUN: Noun = { one: 'product', other: 'products' };
 const VARIANT_NOUN: Noun = { one: 'variant', other: 'variants' };
 const SUGGESTION_NOUN: Noun = { one: 'suggestion', other: 'suggestions' };
 const UNUSED_AGENT_NOUN: Noun = { one: 'unused agent', other: 'unused agents' };
+const ITEM_NOUN: Noun = { one: 'item', other: 'items' };
 const pluralRules = new Intl.PluralRules('en');
 
 function countOf(noun: Noun, entry: ActivityEntry): string {
@@ -227,6 +228,15 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.StockOversold]: {
     operation: 'Reserving an order’s stock',
     describe: (entry) => withDetail(`Oversold${named(entry)}`, entry),
+  },
+  [ActivityAction.StockReconciled]: {
+    operation: 'Reconciling stock',
+    describe: (entry) =>
+      `Corrected the stock of ${countOf(ITEM_NOUN, entry)} of${named(entry)}${onStore(entry)}`,
+  },
+  [ActivityAction.StockSyncFailed]: {
+    operation: 'Syncing stock',
+    describe: (entry) => `Could not sync the stock of${named(entry)}${onStore(entry)}`,
   },
   [ActivityAction.ListingSyncFailed]: {
     operation: 'Syncing a listing',

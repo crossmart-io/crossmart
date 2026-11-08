@@ -49,9 +49,10 @@ export class AgentWorkerActionRepository {
 
   finish(actionId: string, outcome: AgentWorkerActionOutcome): Promise<AgentWorkerAction> {
     const executed = outcome.status === AgentWorkerActionStatus.Executed;
+    const finishedAt = new Date();
     return this.prisma.agentWorkerAction.update({
       where: { id: actionId },
-      data: { ...outcome, ...(executed ? { executedAt: new Date() } : {}) },
+      data: { ...outcome, finishedAt, ...(executed ? { executedAt: finishedAt } : {}) },
     });
   }
 

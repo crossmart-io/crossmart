@@ -12,7 +12,15 @@ export interface ActorRef {
 }
 
 /** The built-in agent of ADR 0026, credited in the activity log as acting for its user. */
-export const AGENT_WORKER_NAME = 'Agent Worker';
+export const AGENT_WORKER_NAME = 'Crossmart Agent';
+
+/** The name the built-in agent had before it was renamed; older events and jobs still carry it. */
+export const LEGACY_AGENT_WORKER_NAME = 'Agent Worker';
+
+/** The built-in agent's current name for a stored one, so older events read like new ones. */
+export function builtInAgentName(stored: string | null): string | null {
+  return stored === LEGACY_AGENT_WORKER_NAME ? AGENT_WORKER_NAME : stored;
+}
 
 /** Who an actor is, by type; ids that do not apply are null. */
 interface ActorFields {
@@ -75,7 +83,9 @@ export class Actor {
 
   private static agentFrom(ref: ActorRef, userId: string): Actor {
     if (ref.agentClientId) return Actor.agent(userId, ref.agentClientId);
-    return ref.agentName === AGENT_WORKER_NAME ? Actor.agentWorker(userId) : Actor.system();
+    return builtInAgentName(ref.agentName ?? null) === AGENT_WORKER_NAME
+      ? Actor.agentWorker(userId)
+      : Actor.system();
   }
 
   /** The actor as plain data, to put in a background job. */

@@ -21,8 +21,20 @@ export class ServerSentEvents {
     this.heartbeat = setInterval(() => this.write(SSE_HEARTBEAT), SSE_HEARTBEAT_INTERVAL_MS);
   }
 
-  send(event: string, data: unknown): void {
-    this.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  /** A named event; with `id`, a client that reconnects sends it back as `Last-Event-ID`. */
+  send(event: string, data: unknown, id?: string): void {
+    const idLine = id === undefined ? '' : `id: ${id}\n`;
+    this.write(`${idLine}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  }
+
+  /** How long a client waits before it reconnects after the stream ends. */
+  retryAfter(milliseconds: number): void {
+    this.write(`retry: ${milliseconds}\n\n`);
+  }
+
+  /** Whether the client is still there to read. */
+  get isOpen(): boolean {
+    return !this.response.writableEnded && !this.response.destroyed;
   }
 
   /** Calls `listener` once the client is gone, whether it left early or the stream ended. */
@@ -36,6 +48,6 @@ export class ServerSentEvents {
   }
 
   private write(chunk: string): void {
-    if (!this.response.writableEnded && !this.response.destroyed) this.response.write(chunk);
+    if (this.isOpen) this.response.write(chunk);
   }
 }

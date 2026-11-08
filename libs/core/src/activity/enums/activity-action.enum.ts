@@ -98,6 +98,13 @@ export enum ActivityAction {
   ChannelSyncRequested = 'channel_sync_requested',
   /** The merchant asked to publish one product to one store again; the detail names the store. */
   ListingRetryRequested = 'listing_retry_requested',
+  /**
+   * Stock reconciliation found a store showing the wrong quantity for some of a product's items
+   * and corrected them; the detail names the store and the count says how many items.
+   */
+  StockReconciled = 'stock_reconciled',
+  /** A store refused some of a product's stock levels; the listing shows why. */
+  StockSyncFailed = 'stock_sync_failed',
   /** An order took more units than were left: they were sold twice and need resolving. */
   StockOversold = 'stock_oversold',
   /** Someone asked the Content Generator for channel content; the detail names the store. */

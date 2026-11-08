@@ -35,6 +35,7 @@ final class ApiClients
     public readonly AskCrossmartAdminApi $askCrossmartAdmin;
     public readonly SandboxAccountsApi $sandboxAccounts;
     public readonly WebhooksApi $webhooks;
+    public readonly EventsApi $events;
 
     public function __construct(TransportInterface $transport)
     {
@@ -60,5 +61,6 @@ final class ApiClients
         $this->askCrossmartAdmin = new AskCrossmartAdminApi($transport);
         $this->sandboxAccounts = new SandboxAccountsApi($transport);
         $this->webhooks = new WebhooksApi($transport);
+        $this->events = new EventsApi($transport);
     }
 }

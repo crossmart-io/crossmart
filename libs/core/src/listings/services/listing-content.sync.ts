@@ -129,6 +129,7 @@ export class ListingContentSync {
   ): Promise<void> {
     const product = {
       workspaceId: job.workspaceId,
+      connectionId: job.connectionId,
       productId: job.productId,
       productTitle: deleted.productTitle,
       storeName: connection.view.displayName,

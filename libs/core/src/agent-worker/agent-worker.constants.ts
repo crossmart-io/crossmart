@@ -72,15 +72,15 @@ export const AGENT_WORKER_RETENTION_SCHEDULER_ID = 'agent-worker-retention';
 /** Messages shown to people. */
 export const AGENT_WORKER_CONVERSATION_NOT_FOUND = 'Conversation not found';
 export const AGENT_WORKER_TURN_IN_PROGRESS =
-  'Agent Worker is still working on this conversation. Wait for it, or stop it first.';
+  'Crossmart Agent is still working on this conversation. Wait for it, or stop it first.';
 export const AGENT_WORKER_NO_PENDING_ACTIONS =
   'Nothing in this conversation is waiting for approval';
 export const AGENT_WORKER_UNKNOWN_ACTIONS = 'Some of these actions are not waiting for approval';
 export const AGENT_WORKER_HIGH_RISK_NOT_CONFIRMED =
   'This includes a deletion, a price change or a bulk change. Confirm it explicitly to go on.';
 export const AGENT_WORKER_STEP_LIMIT_REACHED =
-  'Agent Worker stopped after its step limit for one message. Ask it to go on if needed.';
-export const AGENT_WORKER_TURN_FAILED = 'Agent Worker could not finish. Try again in a moment.';
+  'Crossmart Agent stopped after its step limit for one message. Ask it to go on if needed.';
+export const AGENT_WORKER_TURN_FAILED = 'Crossmart Agent could not finish. Try again in a moment.';
 export const AGENT_WORKER_ANSWER_REFUSED = 'The model declined to answer this request.';
 export const AGENT_WORKER_ANSWER_TRUNCATED = 'The answer was too long and was cut off.';
 export const AGENT_WORKER_CANCELLED = 'Stopped.';

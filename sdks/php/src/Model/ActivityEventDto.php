@@ -17,6 +17,7 @@ final class ActivityEventDto implements JsonSerializable
     /**
      * @param int|float|null $itemCount Items the action covered, such as products changed in bulk
      * @param string|null $failureReason Why a failed action failed
+     * @param string|null $connectionId The store (channel connection) it happened on, such as where a listing failed
      */
     public function __construct(
         public readonly string $id,
@@ -27,6 +28,7 @@ final class ActivityEventDto implements JsonSerializable
         public readonly ?ActivitySubjectDto $subject,
         public readonly int|float|null $itemCount,
         public readonly ?string $failureReason,
+        public readonly ?string $connectionId,
         public readonly DateTimeImmutable $createdAt,
     ) {
     }
@@ -49,6 +51,7 @@ final class ActivityEventDto implements JsonSerializable
             subject: $payload->isNull('subject') ? null : $payload->model('subject', ActivitySubjectDto::fromArray(...)),
             itemCount: $payload->isNull('itemCount') ? null : $payload->number('itemCount'),
             failureReason: $payload->isNull('failureReason') ? null : $payload->string('failureReason'),
+            connectionId: $payload->isNull('connectionId') ? null : $payload->string('connectionId'),
             createdAt: $payload->dateTime('createdAt'),
         );
     }
@@ -69,6 +72,7 @@ final class ActivityEventDto implements JsonSerializable
             'subject' => $this->subject?->toArray(),
             'itemCount' => $this->itemCount,
             'failureReason' => $this->failureReason,
+            'connectionId' => $this->connectionId,
             'createdAt' => Payload::formatDateTime($this->createdAt),
         ];
     }

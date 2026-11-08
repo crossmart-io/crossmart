@@ -11,7 +11,7 @@ import type { AgentWorkerErrorView } from '../entities/agent-worker-stream.js';
 import { AgentWorkerErrorCode } from '../enums/agent-worker-error-code.enum.js';
 
 export const AGENT_WORKER_CREDITS_EXHAUSTED =
-  'Your plan’s AI credits for this month are used up, so Agent Worker cannot answer. An owner ' +
+  'Your plan’s AI credits for this month are used up, so Crossmart Agent cannot answer. An owner ' +
   'or admin can upgrade the plan under Settings, Billing; credits renew on the 1st (UTC).';
 
 /** The message an HTTP refusal carries, whether its body is text or an object. */

@@ -17,6 +17,8 @@ export interface StoreProduct {
   workspaceId: string;
   productId: string;
   productTitle: string;
+  /** The store, so the activity log and the event stream can point at it. */
+  connectionId: string;
   storeName: string;
 }
 
@@ -83,6 +85,7 @@ export class ListingSyncFailures {
         label: listing.productTitle,
       },
       detail: listing.storeName,
+      connectionId: listing.connectionId,
       failureReason: reason,
     });
   }

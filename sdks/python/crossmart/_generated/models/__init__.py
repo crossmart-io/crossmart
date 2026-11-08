@@ -19,6 +19,7 @@ from .agent_worker_action_dto import AgentWorkerActionDto
 from .agent_worker_action_preview_dto import AgentWorkerActionPreviewDto
 from .agent_worker_action_risk import AgentWorkerActionRisk
 from .agent_worker_action_status import AgentWorkerActionStatus
+from .agent_worker_action_targets_dto import AgentWorkerActionTargetsDto
 from .agent_worker_cancel_result_dto import AgentWorkerCancelResultDto
 from .agent_worker_change_dto import AgentWorkerChangeDto
 from .agent_worker_context_view import AgentWorkerContextView
@@ -377,6 +378,14 @@ from .webhook_envelope_dto import WebhookEnvelopeDto
 from .webhook_envelope_dto_data import WebhookEnvelopeDtoData
 from .webhook_event_type import WebhookEventType
 from .workspace_dto import WorkspaceDto
+from .workspace_event_actor_dto import WorkspaceEventActorDto
+from .workspace_event_category import WorkspaceEventCategory
+from .workspace_event_dto import WorkspaceEventDto
+from .workspace_event_page_dto import WorkspaceEventPageDto
+from .workspace_event_refs_dto import WorkspaceEventRefsDto
+from .workspace_event_severity import WorkspaceEventSeverity
+from .workspace_event_stream_ready_dto import WorkspaceEventStreamReadyDto
+from .workspace_event_type import WorkspaceEventType
 from .workspace_member_dto import WorkspaceMemberDto
 from .workspace_permission import WorkspacePermission
 from .workspace_role import WorkspaceRole
@@ -401,6 +410,7 @@ __all__ = (
     "AgentWorkerActionPreviewDto",
     "AgentWorkerActionRisk",
     "AgentWorkerActionStatus",
+    "AgentWorkerActionTargetsDto",
     "AgentWorkerCancelResultDto",
     "AgentWorkerChangeDto",
     "AgentWorkerContextView",
@@ -715,6 +725,14 @@ __all__ = (
     "WebhookEnvelopeDtoData",
     "WebhookEventType",
     "WorkspaceDto",
+    "WorkspaceEventActorDto",
+    "WorkspaceEventCategory",
+    "WorkspaceEventDto",
+    "WorkspaceEventPageDto",
+    "WorkspaceEventRefsDto",
+    "WorkspaceEventSeverity",
+    "WorkspaceEventStreamReadyDto",
+    "WorkspaceEventType",
     "WorkspaceMemberDto",
     "WorkspacePermission",
     "WorkspaceRole",

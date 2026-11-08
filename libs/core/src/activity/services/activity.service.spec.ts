@@ -28,6 +28,7 @@ function record(id: string, overrides: Partial<ActivityEventRecord> = {}): Activ
     subjectIds: ['p-1'],
     itemCount: null,
     failureReason: null,
+    connectionId: null,
     summary: 'Updated product “Mug”',
     createdAt: CREATED_AT,
     ...overrides,

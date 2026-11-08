@@ -35,6 +35,8 @@ export interface ActivityEventView {
   subject: ActivitySubjectView | null;
   itemCount: number | null;
   failureReason: string | null;
+  /** The store it happened on, when it happened on one. */
+  connectionId: string | null;
   createdAt: Date;
 }
 

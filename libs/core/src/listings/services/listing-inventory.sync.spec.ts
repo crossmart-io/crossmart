@@ -3,7 +3,10 @@ import { InMemoryActivityRecorder } from '../../activity/testing/in-memory-activ
 import type { ChannelConnectionRepository } from '../../channels/repositories/channel-connection.repository.js';
 import type { ListingStockRecord } from '../repositories/listing-sync.queries.js';
 import type { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
+import { ActivityOutcome } from '@crossmart/database';
+import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import {
+  CONNECTION_ID,
   type ConnectorDouble,
   LISTING_ID,
   syncConnection,
@@ -22,9 +25,12 @@ const LISTING_REF = expect.objectContaining({ workspaceId: WORKSPACE_ID, listing
 function stockRecord(
   count: number,
   override: ListingStockRecord['override'] = null,
+  lastError: string | null = null,
 ): ListingStockRecord {
   return {
     id: LISTING_ID,
+    lastError,
+    product: { title: 'Mug' },
     override,
     variants: Array.from({ length: count }, (_, index) => ({
       externalInventoryId: `item-${index}`,
@@ -69,7 +75,13 @@ function setup(held: ListingStockRecord[], maxBatchSize = 2) {
       new ListingSyncFailures(repository, activity),
     ),
   );
-  return { sync, setQuantities, listings, connector: connector as unknown as InventorySync };
+  return {
+    sync,
+    setQuantities,
+    listings,
+    activity,
+    connector: connector as unknown as InventorySync,
+  };
 }
 
 describe('ListingInventorySync', () => {
@@ -104,6 +116,30 @@ describe('ListingInventorySync', () => {
     expect(listings.recordSynced).not.toHaveBeenCalled();
   });
 
+  it('logs a refused stock level once, not again while the listing shows the same reason', async () => {
+    const first = setup([stockRecord(3)]);
+    const again = setup([stockRecord(3, null, 'Not stocked here')]);
+    for (const { setQuantities } of [first, again]) {
+      setQuantities.mockResolvedValueOnce([
+        { externalInventoryId: 'item-0', message: 'Not stocked here' },
+      ]);
+    }
+
+    await first.sync.run(syncJob(SyncJobKind.Inventory));
+    await again.sync.run(syncJob(SyncJobKind.Inventory));
+
+    expect(first.activity.entries).toEqual([
+      expect.objectContaining({
+        action: ActivityAction.StockSyncFailed,
+        outcome: ActivityOutcome.FAILED,
+        failureReason: 'Not stocked here',
+        connectionId: CONNECTION_ID,
+        subject: expect.objectContaining({ label: 'Mug' }),
+      }),
+    ]);
+    expect(again.activity.entries).toEqual([]);
+  });
+
   it('does nothing for listings the channel does not hold', async () => {
     const { sync, setQuantities } = setup([]);
 
@@ -134,5 +170,36 @@ describe('ListingInventorySync', () => {
       ],
     ]);
     expect(connector.readQuantities).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs what reconciliation corrected, and nothing when the store was right', async () => {
+    const { sync, connector, activity, listings } = setup([stockRecord(3)]);
+    connector.readQuantities = vi
+      .fn<NonNullable<InventorySync['readQuantities']>>()
+      .mockResolvedValueOnce(
+        new Map([
+          ['item-0', 10],
+          ['item-2', 4],
+        ]),
+      )
+      .mockResolvedValueOnce(
+        new Map([
+          ['item-0', 10],
+          ['item-2', 10],
+        ]),
+      );
+
+    await sync.run({ ...syncJob(SyncJobKind.Inventory), reconcile: true });
+    await sync.run({ ...syncJob(SyncJobKind.Inventory), reconcile: true });
+
+    expect(activity.entries).toEqual([
+      expect.objectContaining({
+        action: ActivityAction.StockReconciled,
+        itemCount: 1,
+        detail: expect.any(String),
+        connectionId: CONNECTION_ID,
+      }),
+    ]);
+    expect(listings.recordSynced).toHaveBeenCalledTimes(2);
   });
 });

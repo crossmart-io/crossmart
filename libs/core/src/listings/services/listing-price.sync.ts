@@ -32,6 +32,7 @@ export class ListingPriceSync {
       await this.outcomes.failed(
         {
           workspaceId: job.workspaceId,
+          connectionId: job.connectionId,
           listingId: target.listing.id,
           productId: job.productId,
           productTitle: target.product.title,

@@ -26,7 +26,7 @@ export const AGENT_WORKER_CONTEXT_VIEW_SCHEMA_NAME = 'AgentWorkerContextView';
 export const AGENT_WORKER_THROTTLE_WINDOW_MS = MS_PER_MINUTE;
 export const AGENT_WORKER_TURNS_PER_WINDOW = 20;
 export const AGENT_WORKER_RATE_LIMITED_MESSAGE =
-  'Agent Worker is getting too many requests in this workspace. Wait a minute and try again.';
+  'Crossmart Agent is getting too many requests in this workspace. Wait a minute and try again.';
 
 /** The event stream a turn answers with. */
 export const EVENT_STREAM_CONTENT_TYPE = 'text/event-stream';

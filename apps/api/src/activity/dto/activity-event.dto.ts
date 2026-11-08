@@ -99,6 +99,14 @@ export class ActivityEventDto implements ActivityEventView {
   @ApiProperty({ type: String, nullable: true, description: 'Why a failed action failed' })
   failureReason: string | null;
 
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'The store (channel connection) it happened on, such as where a listing failed',
+  })
+  connectionId: string | null;
+
   @ApiProperty()
   createdAt: Date;
 

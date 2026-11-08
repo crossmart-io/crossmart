@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { PublishedListing } from '@crossmart/connectors';
-import { ListingStatus } from '@crossmart/database';
+import { ActivityOutcome, ListingStatus } from '@crossmart/database';
+import type { ActivityEntry } from '../../activity/entities/activity-entry.js';
 import { Actor } from '../../activity/entities/actor.js';
 import { ActivityAction } from '../../activity/enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../../activity/enums/activity-subject-type.enum.js';
@@ -14,7 +15,7 @@ import {
 } from './listing-sync-failures.js';
 
 /** A listing a content sync wrote to, named for the activity log. */
-export type SyncedListing = FailedListing & { connectionId: string; wasPublished: boolean };
+export type SyncedListing = FailedListing & { wasPublished: boolean };
 
 /** Stores what a content sync did, on the listing, the connection and the activity log. */
 @Injectable()
@@ -78,6 +79,33 @@ export class ListingSyncOutcomes {
     await this.listings.recordFailure(listing, reason);
   }
 
+  /**
+   * A store refused some stock levels: the listing shows the first reason, and the activity log
+   * says so once, not again while the listing already shows the same reason.
+   */
+  async stockPartlyFailed(
+    listing: FailedListing,
+    reason: string,
+    previousError: string | null,
+  ): Promise<void> {
+    await this.listings.recordFailure(listing, reason);
+    if (previousError === reason) return;
+    await this.activity.record(listing.workspaceId, Actor.system(), {
+      ...this.entryFor(listing, ActivityAction.StockSyncFailed),
+      outcome: ActivityOutcome.FAILED,
+      failureReason: reason,
+    });
+  }
+
+  /** Reconciliation corrected `itemCount` items the store showed wrongly. */
+  async reconciled(listing: FailedListing, itemCount: number): Promise<void> {
+    await this.synced(listing);
+    await this.activity.record(listing.workspaceId, Actor.system(), {
+      ...this.entryFor(listing, ActivityAction.StockReconciled),
+      itemCount,
+    });
+  }
+
   /** Crossmart itself refused the sync (the plan's limit); nothing was sent to the channel. */
   refused(listing: FailedListing, reason: string): Promise<void> {
     return this.failures.reject(listing, reason);
@@ -88,7 +116,16 @@ export class ListingSyncOutcomes {
   }
 
   private record(listing: StoreProduct, action: ActivityAction): Promise<void> {
-    return this.activity.record(listing.workspaceId, Actor.system(), {
+    return this.activity.record(
+      listing.workspaceId,
+      Actor.system(),
+      this.entryFor(listing, action),
+    );
+  }
+
+  /** An event about a product on a store: the product, named, and the store. */
+  private entryFor(listing: StoreProduct, action: ActivityAction): ActivityEntry {
+    return {
       action,
       subject: {
         type: ActivitySubjectType.Product,
@@ -96,6 +133,7 @@ export class ListingSyncOutcomes {
         label: listing.productTitle,
       },
       detail: listing.storeName,
-    });
+      connectionId: listing.connectionId,
+    };
   }
 }
