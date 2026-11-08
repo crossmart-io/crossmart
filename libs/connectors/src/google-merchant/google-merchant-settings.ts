@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ChannelSettings } from '../sdk/channel-settings.js';
 import { ChannelType } from '../sdk/channel-type.enum.js';
-import { GoogleTargetCountry } from './google-merchant-country.js';
+import { GOOGLE_COUNTRY_MARKETS, GoogleTargetCountry } from './google-merchant-country.js';
 import {
   MERCHANT_ACCOUNT_ID_PATTERN,
   PRODUCT_URL_HANDLE_PLACEHOLDER,
@@ -85,7 +85,19 @@ export const googleMerchantSettingsSchema = z
 export type GoogleMerchantSettings = z.infer<typeof googleMerchantSettingsSchema> & ChannelSettings;
 
 export function parseGoogleMerchantSettings(raw: unknown): GoogleMerchantSettings {
-  return googleMerchantSettingsSchema.parse(raw);
+  return withListingMarket(googleMerchantSettingsSchema.parse(raw));
+}
+
+/**
+ * Once the merchant has chosen where listings sell, the account sells in that country's currency
+ * and language. A reconnect reads the account's business country again; it never wins over the
+ * setup, or prices would be converted to one currency and labelled with another.
+ */
+function withListingMarket(settings: GoogleMerchantSettings): GoogleMerchantSettings {
+  if (!settings.listingSetup) return settings;
+  const { country } = settings.listingSetup;
+  const { currencyCode, contentLanguage } = GOOGLE_COUNTRY_MARKETS[country];
+  return { ...settings, country, currencyCode, contentLanguage };
 }
 
 export function isGoogleMerchantSettings(
