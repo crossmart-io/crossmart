@@ -40,9 +40,9 @@ work end to end, but APIs and data models can still change between releases.
 | ----------------------------------- | --------------------------------------------------------------- |
 | Shopify                             | Live                                                            |
 | eBay                                | Live (a self-hosted instance uses eBay sandbox keys by default) |
-| Google Merchant (Google Shopping)   | In development                                                  |
-| Etsy                                | In development                                                  |
-| Amazon, Walmart                     | Planned                                                         |
+| Google Shopping (Merchant Center)   | Coming soon                                                     |
+| Etsy                                | Coming soon                                                     |
+| Amazon, Walmart, TikTok Shop        | Planned                                                         |
 | WooCommerce, BigCommerce and others | Community contributions welcome                                 |
 
 The [channel status page](https://docs.crossmart.io/channels/) is kept up to date as connectors
