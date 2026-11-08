@@ -8,6 +8,7 @@ import {
   EAN_LENGTH,
   EBAY_DESCRIPTION_MAX_LENGTH,
   EBAY_MAX_IMAGES,
+  EBAY_MAX_VARIATION_IMAGES,
   EBAY_TITLE_MAX_LENGTH,
   EBAY_UNTRACKED_QUANTITY,
   HTTPS_PROTOCOL,
@@ -38,12 +39,25 @@ export function isHttps(url: string): boolean {
   return URL.canParse(url) && new URL(url).protocol === HTTPS_PROTOCOL;
 }
 
-/** eBay downloads images itself: only public https URLs, at most 24. */
-export function listingImageUrls(draft: ListingDraft): string[] {
+/** A product with more than one variant is listed through an inventory item group. */
+export function isVariationListing(draft: ListingDraft): boolean {
+  return draft.variants.length > 1;
+}
+
+/**
+ * eBay downloads images itself: only public https URLs, the first `limit` in order. A listing
+ * takes 24; each inventory item in a variation group takes 12.
+ */
+export function listingImageUrls(draft: ListingDraft, limit = EBAY_MAX_IMAGES): string[] {
   return draft.product.images
     .map((image) => image.url)
     .filter(isHttps)
-    .slice(0, EBAY_MAX_IMAGES);
+    .slice(0, limit);
+}
+
+/** The pictures one inventory item may carry: fewer when it belongs to a variation group. */
+function inventoryItemImageLimit(draft: ListingDraft): number {
+  return isVariationListing(draft) ? EBAY_MAX_VARIATION_IMAGES : EBAY_MAX_IMAGES;
 }
 
 /** A 12-digit barcode is a UPC and a 13-digit one an EAN; others are not sent. */
@@ -60,18 +74,22 @@ export function listedQuantity(variant: ListingDraftVariant): number {
   return Math.max(variant.available ?? 0, 0);
 }
 
-function productDetails(draft: ListingDraft, aspects: EbayAspects): EbayProductDetails {
+function productDetails(
+  draft: ListingDraft,
+  aspects: EbayAspects,
+  imageLimit: number,
+): EbayProductDetails {
   const brand = listingBrand(draft);
   return {
     title: listingTitle(draft.product.title),
     description: listingDescription(draft),
-    imageUrls: listingImageUrls(draft),
+    imageUrls: listingImageUrls(draft, imageLimit),
     aspects,
     ...(brand ? { brand } : {}),
   };
 }
 
-/** The inventory item of one variant. */
+/** The inventory item of one variant, with at most 12 images when it is part of a group. */
 export function toInventoryItem(
   draft: ListingDraft,
   variant: ListingDraftVariant,
@@ -81,7 +99,7 @@ export function toInventoryItem(
     availability: { shipToLocationAvailability: { quantity: listedQuantity(variant) } },
     condition,
     product: {
-      ...productDetails(draft, variantAspects(draft, variant)),
+      ...productDetails(draft, variantAspects(draft, variant), inventoryItemImageLimit(draft)),
       ...barcodeFields(variant.barcode),
     },
   };
@@ -95,12 +113,15 @@ function specifications(draft: ListingDraft): EbaySpecification[] {
   }));
 }
 
-/** The group a multi-variant product is listed through; its variants differ by its options. */
+/**
+ * The group a multi-variant product is listed through; its variants differ by its options. The
+ * group's images are the listing's, so it takes up to 24.
+ */
 export function toInventoryItemGroup(
   draft: ListingDraft,
   skus: ReadonlyMap<string, string>,
 ): EbayInventoryItemGroupBody {
-  const { aspects, ...details } = productDetails(draft, productAspects(draft));
+  const { aspects, ...details } = productDetails(draft, productAspects(draft), EBAY_MAX_IMAGES);
   return {
     title: details.title,
     description: details.description,

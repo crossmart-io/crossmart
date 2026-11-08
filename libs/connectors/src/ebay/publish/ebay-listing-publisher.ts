@@ -21,7 +21,12 @@ import { ebayListingUrl } from './ebay-listing-url.js';
 import { EbayOfferClient } from './ebay-offer.client.js';
 import { toOfferDetails } from './ebay-offer.mapper.js';
 import type { EbayOfferTerms } from './ebay-offer.types.js';
-import { listingImageUrls, toInventoryItem, toInventoryItemGroup } from './ebay-product.mapper.js';
+import {
+  isVariationListing,
+  listingImageUrls,
+  toInventoryItem,
+  toInventoryItemGroup,
+} from './ebay-product.mapper.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
 import {
   EBAY_INACTIVE_PRODUCT,
@@ -115,8 +120,9 @@ export class EbayListingPublisher implements Omit<ListingPublisher, 'updatePrice
 
   private async list(session: ChannelSession, draft: ListingDraft): Promise<PublishedListing> {
     const plan = await this.plan(session, draft);
-    const listingId =
-      draft.variants.length > 1 ? await this.listGroup(plan) : await this.listSingle(plan);
+    const listingId = isVariationListing(draft)
+      ? await this.listGroup(plan)
+      : await this.listSingle(plan);
     return this.toPublished(plan.account, draft, plan.skus, {
       listingId,
       active: true,

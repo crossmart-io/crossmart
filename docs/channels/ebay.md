@@ -195,17 +195,21 @@ with "Set where items ship from in this eBay connection's listing defaults." Nei
    Department. Add them in the listing’s item specifics." When the aspects cannot be read, the
    listing is sent anyway, and eBay's own message names a missing aspect.
 2. **Inventory items.** `PUT /inventory_item/{sku}` per variant: title (cut to 80 characters
-   on whole characters), description (HTML, the title when empty, at most 500,000), up to 24
-   https image URLs, `condition`, `availability.shipToLocationAvailability.quantity` (the shown
-   stock, never below 0; untracked variants list 1 unit), and `aspects`: `Brand` from the
-   vendor (`Unbranded` without one), then the merchant's item specifics, which replace it, then
-   the variant's option values (`Size: ["M"]`). The `brand` field follows the Brand item
+   on whole characters), description (HTML, the title when empty, at most 500,000), the
+   product's https image URLs in order (the first 24, or the first 12 when the item belongs to
+   a multi-variant group, eBay's per-item limit for variations), `condition`,
+   `availability.shipToLocationAvailability.quantity` (the shown stock, never below 0;
+   untracked variants list 1 unit), and `aspects`: `Brand` from the vendor (`Unbranded`
+   without one), then the merchant's item specifics, which replace it, then the variant's
+   option values (`Size: ["M"]`). The `brand` field follows the Brand item
    specific when there is one. A 12-digit barcode is sent as a UPC, a 13-digit one as an EAN.
 3. **Groups.** A product with more than one variant is listed as one multi-variant listing
    through `PUT /inventory_item_group/{groupKey}`, with `variantSKUs` and
    `variesBy.specifications` built from the product's option names and values, and the
-   product's aspects (Brand and the merchant's item specifics). The group key
-   is `CM` followed by the product id's 32 hex digits.
+   product's aspects (Brand and the merchant's item specifics). The group carries the
+   listing's first 24 images, so a product with more than 12 photos keeps up to 24 on the
+   listing even though each variant's item has only the first 12. The group key is `CM`
+   followed by the product id's 32 hex digits.
 4. **Offers.** One per SKU: `GET /offer?sku=…&marketplace_id=…` finds an existing offer, which
    is replaced with `PUT /offer/{offerId}`; otherwise `POST /offer` creates one (`FIXED_PRICE`,
    category, policies, `merchantLocationKey`, price in the marketplace currency). Prices arrive

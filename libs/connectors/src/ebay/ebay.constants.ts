@@ -127,7 +127,10 @@ export const EBAY_DESCRIPTION_MAX_LENGTH = 500_000;
  * far beyond what buyers read on a phone, so generated descriptions aim for this.
  */
 export const EBAY_DESCRIPTION_TARGET_LENGTH = 4_000;
+/** Pictures in one listing, and per inventory item of a single-variation listing. */
 export const EBAY_MAX_IMAGES = 24;
+/** Pictures per inventory item that belongs to an inventory item group (multi-variation). */
+export const EBAY_MAX_VARIATION_IMAGES = 12;
 export const EBAY_SKU_MAX_LENGTH = 50;
 export const EBAY_BULK_PRICE_MAX_SKUS = 25;
 /** Merchant SKUs eBay accepts as they are; others get one derived from the variant id. */
