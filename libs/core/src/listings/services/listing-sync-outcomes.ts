@@ -60,6 +60,11 @@ export class ListingSyncOutcomes {
     await this.record(listing, ActivityAction.ListingDelisted);
   }
 
+  /** A listing the channel never received was taken out of the store: no call, no webhook. */
+  async withdrawn(listing: SyncedListing): Promise<void> {
+    await this.listings.markWithdrawn(listing);
+  }
+
   /** A deleted product was taken off the store; its listing went with it. */
   deletedDelisted(product: StoreProduct): Promise<void> {
     return this.record(product, ActivityAction.ListingDelisted);

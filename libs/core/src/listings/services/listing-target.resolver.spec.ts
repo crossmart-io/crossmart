@@ -50,21 +50,27 @@ describe('ListingTargetResolver', () => {
     expect(listings.ensurePrimary).toHaveBeenCalled();
   });
 
-  it('delists an unselected product the channel holds, and skips one it does not', async () => {
+  it('delists an unselected product the channel holds, and withdraws one it never received', async () => {
     const held = setup({ selected: false, listing: publishedListing() });
-    const notHeld = setup({ selected: false });
+    const neverSent = setup({
+      selected: false,
+      listing: listingRecord({ status: ListingStatus.ERROR }),
+    });
     const delisted = setup({
       selected: false,
       listing: publishedListing({ status: ListingStatus.DELISTED }),
     });
+    const noListing = setup({ selected: false });
+    noListing.listings.findPrimary.mockResolvedValue(null);
 
     expect((await held.resolver.forPublish(syncJob(), connection)).action).toBe(
       ListingTargetAction.Delist,
     );
-    expect((await notHeld.resolver.forPublish(syncJob(), connection)).action).toBe(
-      ListingTargetAction.Skip,
+    expect((await neverSent.resolver.forDelist(syncJob())).action).toBe(
+      ListingTargetAction.Withdraw,
     );
     expect((await delisted.resolver.forDelist(syncJob())).action).toBe(ListingTargetAction.Skip);
+    expect((await noListing.resolver.forDelist(syncJob())).action).toBe(ListingTargetAction.Skip);
     expect(held.listings.ensurePrimary).not.toHaveBeenCalled();
   });
 

@@ -114,6 +114,18 @@ describe('ListingSyncRepository writes', () => {
     ]);
   });
 
+  it('withdraws a listing the channel never received, without sending listing.removed', async () => {
+    const { repository, listing, outbox } = setup(1);
+
+    await repository.markWithdrawn(LISTING);
+
+    expect(listing.updateMany).toHaveBeenCalledWith({
+      where: { id: 'listing-1', workspaceId: 'ws-1' },
+      data: { status: ListingStatus.DELISTED, lastError: null, missingRequirement: null },
+    });
+    expect(outbox.published).toEqual([]);
+  });
+
   it('queues a failed or delisted listing for a retry, clearing its error', async () => {
     const { repository, listing } = setup(1);
 

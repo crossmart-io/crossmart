@@ -21,6 +21,11 @@ export type ListingTarget =
     }
   | { action: ListingTargetAction.Skip }
   | {
+      action: ListingTargetAction.Withdraw;
+      product: ProductDetail | null;
+      listing: ListingSyncRecord;
+    }
+  | {
       action: ListingTargetAction.Blocked;
       product: ProductDetail;
       listing: ListingSyncRecord;
@@ -79,10 +84,12 @@ export class ListingTargetResolver {
       job.connectionId,
       job.productId,
     );
-    if (!isOnChannel(listing)) return SKIP;
+    if (!listing || listing.status === ListingStatus.DELISTED) return SKIP;
     const product =
       known === undefined ? await this.products.find(job.workspaceId, job.productId) : known;
-    return { action: ListingTargetAction.Delist, product, listing };
+    return isOnChannel(listing)
+      ? { action: ListingTargetAction.Delist, product, listing }
+      : { action: ListingTargetAction.Withdraw, product, listing };
   }
 
   private async publishOrBlock(

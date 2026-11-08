@@ -330,6 +330,18 @@ export class ListingSyncRepository {
     });
   }
 
+  /**
+   * A listing the channel never received is out of the store: it reads as removed, without
+   * the error of the publish that never went through. No `listing.removed`: nothing was listed.
+   */
+  markWithdrawn(listing: ListingRef): Promise<void> {
+    return this.updateListing(this.prisma, listing, {
+      status: ListingStatus.DELISTED,
+      lastError: null,
+      missingRequirement: null,
+    });
+  }
+
   /** The primary listing with its variants' stock, when the channel holds it. */
   findPrimaryStock(
     workspaceId: string,
