@@ -107,7 +107,7 @@ function finishedStep(view: AgentWorkerActionView): StepEvent {
   }
   if (view.status === AgentWorkerActionStatus.Executed) {
     const summary = AGENT_EVENT_COPY.applied(view.summary);
-    return { type: WorkspaceEventType.AgentChangeApplied, summary, detail: view.outcome };
+    return { type: WorkspaceEventType.AgentChangeApplied, summary, detail: null };
   }
   const summary = AGENT_EVENT_COPY.failed(view.summary);
   return { type: WorkspaceEventType.AgentChangeFailed, summary, detail: view.outcome };
