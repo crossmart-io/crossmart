@@ -1,15 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { API_KEY_HEADER } from '@crossmart/common';
-import { AGENT_WORKER_TOKEN_HEADER, ApiKeysService } from '@crossmart/core';
+import {
+  AGENT_PROPOSAL_TOKEN_HEADER,
+  AGENT_WORKER_TOKEN_HEADER,
+  ApiKeysService,
+} from '@crossmart/core';
 import { AUTHORIZATION_HEADER, BEARER_SCHEME, LOOPBACK_ADDRESSES } from '../auth.constants.js';
 import { PrincipalKind } from '../enums/principal-kind.enum.js';
 import type { AuthenticatedRequest, Principal } from '../entities/principal.js';
 import { AgentAuthenticator } from './agent-authenticator.js';
+import { AgentProposalAuthenticator } from './agent-proposal-authenticator.js';
 import { AgentWorkerAuthenticator } from './agent-worker-authenticator.js';
 
 /**
  * The credentials a request carries in its headers, other than a session cookie: an API key, an
- * agent's access token, or Agent Worker's internal credential. A credential that is present but
+ * agent's access token, or one of the API's internal credentials (Agent Worker's, or the one an
+ * approved proposal is applied with). A credential that is present but
  * wrong resolves to null; it never falls back to another kind.
  */
 @Injectable()
@@ -18,6 +24,7 @@ export class RequestCredentials {
     private readonly apiKeys: ApiKeysService,
     private readonly agents: AgentAuthenticator,
     private readonly agentWorker: AgentWorkerAuthenticator,
+    private readonly agentProposals: AgentProposalAuthenticator,
   ) {}
 
   /** True when the request presents a header credential, right or wrong. */
@@ -25,6 +32,7 @@ export class RequestCredentials {
     return (
       request.header(API_KEY_HEADER) !== undefined ||
       request.header(AGENT_WORKER_TOKEN_HEADER) !== undefined ||
+      request.header(AGENT_PROPOSAL_TOKEN_HEADER) !== undefined ||
       this.bearerToken(request) !== undefined
     );
   }
@@ -34,6 +42,10 @@ export class RequestCredentials {
     const agentWorkerToken = request.header(AGENT_WORKER_TOKEN_HEADER);
     if (agentWorkerToken !== undefined) {
       return this.isLoopback(request) ? this.agentWorker.authenticate(agentWorkerToken) : null;
+    }
+    const proposalToken = request.header(AGENT_PROPOSAL_TOKEN_HEADER);
+    if (proposalToken !== undefined) {
+      return this.isLoopback(request) ? this.agentProposals.authenticate(proposalToken) : null;
     }
     const apiKey = request.header(API_KEY_HEADER);
     if (apiKey !== undefined) {
@@ -45,7 +57,7 @@ export class RequestCredentials {
   }
 
   /**
-   * Agent Worker calls the API from inside the server, so its credential is only accepted on a
+   * The API's internal credentials come from inside the server, so they are only accepted on a
    * connection from this machine; a forwarded request never qualifies, whatever it sends.
    */
   private isLoopback(request: AuthenticatedRequest): boolean {

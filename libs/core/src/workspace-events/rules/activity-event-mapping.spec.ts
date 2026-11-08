@@ -22,6 +22,8 @@ function view(overrides: Partial<ActivityEventView> = {}): ActivityEventView {
       name: 'Dana',
       email: 'dana@example.com',
       agentName: null,
+      approvedByUserId: null,
+      approvedByName: null,
     },
     subject: { type: ActivitySubjectType.Product, id: 'p-1', label: 'Mug' },
     itemCount: null,

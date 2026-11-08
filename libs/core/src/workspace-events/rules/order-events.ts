@@ -17,7 +17,7 @@ export function orderReceivedEvent(order: OrderEventRecord): WorkspaceEventDraft
     type: WorkspaceEventType.OrderReceived,
     summary: ORDER_EVENT_COPY.received(order.name, order.connection.displayName),
     detail: formatCurrency(order.total.toFixed(AMOUNT_FRACTION_DIGITS), order.currencyCode),
-    actor: { type: ActivityActorType.SYSTEM, name: null, agentName: null },
+    actor: { type: ActivityActorType.SYSTEM, name: null, agentName: null, approvedByName: null },
     refs: { orderId: order.id, connectionId: order.connectionId },
     itemCount: null,
     occurredAt: order.createdAt,

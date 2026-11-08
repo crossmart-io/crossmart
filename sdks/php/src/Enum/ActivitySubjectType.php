@@ -16,6 +16,7 @@ enum ActivitySubjectType: string
     case Member = 'member';
     case Invitation = 'invitation';
     case Workspace = 'workspace';
+    case AgentProposal = 'agent_proposal';
     case CustomRole = 'custom_role';
     case ChannelConnection = 'channel_connection';
     case WebhookEndpoint = 'webhook_endpoint';

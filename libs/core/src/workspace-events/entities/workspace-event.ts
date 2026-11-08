@@ -11,6 +11,8 @@ export interface WorkspaceEventActor {
   name: string | null;
   /** The agent's name ("Claude", "Crossmart Agent") for agent actions. */
   agentName: string | null;
+  /** The person who approved an outside agent's proposal that made the change (ADR 0028). */
+  approvedByName: string | null;
 }
 
 /** The records an event is about, so a client can point at them; null when not about one. */
@@ -23,6 +25,8 @@ export interface WorkspaceEventRefs {
   /** The Crossmart Agent conversation, and the tool call in it. */
   conversationId: string | null;
   actionId: string | null;
+  /** An outside agent's proposal (ADR 0028). */
+  proposalId: string | null;
 }
 
 export interface WorkspaceEvent {

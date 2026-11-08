@@ -17,6 +17,8 @@ final class ActivityActorDto implements JsonSerializable
      * @param string|null $name User or API key name; for an agent, the user it acted for. Null for system actions and deleted users or keys
      * @param string|null $email Set for users, and for the user an agent acted for
      * @param string|null $agentName The agent's name, such as "Claude", for agent actions
+     * @param string|null $approvedByUserId Who approved the outside agent's proposal that made this change; null when nobody had to
+     * @param string|null $approvedByName Their name, for "Claude for Dana, approved by Lee"; null when deleted or none
      */
     public function __construct(
         public readonly ActivityActorType|string $type,
@@ -26,6 +28,8 @@ final class ActivityActorDto implements JsonSerializable
         public readonly ?string $name,
         public readonly ?string $email,
         public readonly ?string $agentName,
+        public readonly ?string $approvedByUserId,
+        public readonly ?string $approvedByName,
     ) {
     }
 
@@ -46,6 +50,8 @@ final class ActivityActorDto implements JsonSerializable
             name: $payload->isNull('name') ? null : $payload->string('name'),
             email: $payload->isNull('email') ? null : $payload->string('email'),
             agentName: $payload->isNull('agentName') ? null : $payload->string('agentName'),
+            approvedByUserId: $payload->isNull('approvedByUserId') ? null : $payload->string('approvedByUserId'),
+            approvedByName: $payload->isNull('approvedByName') ? null : $payload->string('approvedByName'),
         );
     }
 
@@ -64,6 +70,8 @@ final class ActivityActorDto implements JsonSerializable
             'name' => $this->name,
             'email' => $this->email,
             'agentName' => $this->agentName,
+            'approvedByUserId' => $this->approvedByUserId,
+            'approvedByName' => $this->approvedByName,
         ];
     }
 

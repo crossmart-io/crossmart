@@ -40,6 +40,7 @@ const EXPECTED_HINTS: Record<string, [boolean, boolean, boolean]> = {
   ask_crossmart: [true, false, false],
   escalate_to_crossmart_team: [false, false, true],
   get_ask_escalation: [true, false, false],
+  get_proposal: [true, false, false],
   create_account: [false, false, true],
 };
 

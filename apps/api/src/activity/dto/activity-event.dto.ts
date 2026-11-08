@@ -53,6 +53,22 @@ export class ActivityActorDto implements ActivityActorView {
     description: 'The agent\'s name, such as "Claude", for agent actions',
   })
   agentName: string | null;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description:
+      "Who approved the outside agent's proposal that made this change; null when nobody had to",
+  })
+  approvedByUserId: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Their name, for "Claude for Dana, approved by Lee"; null when deleted or none',
+  })
+  approvedByName: string | null;
 }
 
 export class ActivitySubjectDto implements ActivitySubjectView {

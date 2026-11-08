@@ -12,6 +12,7 @@ export * from './queues/queue-name.enum.js';
 export * from './queues/queues.module.js';
 export * from './crypto/secure-token.js';
 export * from './crypto/hmac.js';
+export * from './crypto/internal-token.js';
 export * from './crypto/envelope/aes-gcm-envelope-encryption.js';
 export * from './crypto/envelope/data-key-store.js';
 export * from './crypto/envelope/encryption-errors.js';

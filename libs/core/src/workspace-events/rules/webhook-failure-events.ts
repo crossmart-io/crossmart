@@ -28,7 +28,7 @@ export function webhookFailureEvent(delivery: FailedDeliveryRecord): WorkspaceEv
     type: WorkspaceEventType.WebhookDeliveryFailed,
     summary: WEBHOOK_EVENT_COPY.failed(delivery.event.type, hostOf(delivery.endpoint.url)),
     detail: delivery.error,
-    actor: { type: ActivityActorType.SYSTEM, name: null, agentName: null },
+    actor: { type: ActivityActorType.SYSTEM, name: null, agentName: null, approvedByName: null },
     refs: { webhookEndpointId: delivery.endpointId },
     itemCount: null,
     occurredAt: delivery.updatedAt,

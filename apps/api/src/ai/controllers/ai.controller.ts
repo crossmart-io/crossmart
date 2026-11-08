@@ -52,6 +52,7 @@ import {
 import { AiStatusDto } from '../dto/ai-status.dto.js';
 import { AiUsageQueryDto, AiUsageReportDto } from '../dto/ai-usage.dto.js';
 import { ContentDraftDto, CreateContentDraftDto } from '../dto/content-draft.dto.js';
+import { AgentApprovalExempt } from '../../agent-proposals/decorators/agent-approval-exempt.decorator.js';
 import { ContentGenerationReceiptDto, GenerateContentDto } from '../dto/content-generation.dto.js';
 
 const PERIOD_INCOMPLETE = 'Give both from and to, or neither';
@@ -93,6 +94,7 @@ export class AiController {
   }
 
   @Post(CONTENT_GENERATIONS_PATH)
+  @AgentApprovalExempt()
   @HttpCode(HttpStatus.ACCEPTED)
   @RequirePermission(WorkspacePermission.GenerateContent)
   @UseGuards(WorkspacePrincipalThrottlerGuard)
@@ -124,6 +126,7 @@ export class AiController {
   }
 
   @Post(CONTENT_DRAFTS_PATH)
+  @AgentApprovalExempt()
   @HttpCode(HttpStatus.OK)
   @RequirePermission(WorkspacePermission.GenerateContent)
   @UseGuards(WorkspacePrincipalThrottlerGuard)

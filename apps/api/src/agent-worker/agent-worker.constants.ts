@@ -34,8 +34,3 @@ export const TURN_STREAM_DESCRIPTION =
   'A stream of server-sent events, one `AgentWorkerStreamEventDto` per event as JSON in its ' +
   '`data` field (the event name is the `type`). It starts with `turn_started` and ends with ' +
   '`turn_finished`; the turn status there says how it ended.';
-
-/** Agent Worker calls this API on its own machine, on the port it listens on. */
-export const LOOPBACK_PROTOCOL = 'http:';
-export const LOOPBACK_HOST = '127.0.0.1';
-export const API_NOT_LISTENING = 'The API is not listening, so Agent Worker cannot call it';

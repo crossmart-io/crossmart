@@ -92,7 +92,7 @@ final class WorkspacesApi
     }
 
     /**
-     * Rename a workspace or set its time zone
+     * Rename a workspace, set its time zone, or say whether agents' changes need approval
      *
      * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
      */

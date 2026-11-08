@@ -54,7 +54,8 @@ function setup() {
     })
     .answer('get_workspace', { currency: 'USD' });
   const scope = { workspaceId: randomUUID(), userId: randomUUID(), conversationId: randomUUID() };
-  return { executor, reader: new PreviewReader(executor, scope) };
+  const reader = new PreviewReader((spec, input) => executor.execute(scope, spec, input));
+  return { executor, reader };
 }
 
 function preview(tool: AgentToolName, input: Record<string, unknown>) {

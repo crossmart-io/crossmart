@@ -38,6 +38,9 @@ model User {
   sandboxAccount           SandboxAccount?
   askConversations         AskConversation[]
   agentWorkerConversations AgentWorkerConversation[]
+  agentProposals           AgentProposal[]           @relation("AgentProposalUser")
+  agentProposalsDecided    AgentProposal[]           @relation("AgentProposalDecider")
+  activityApproved         ActivityEvent[]           @relation("ActivityApprovedBy")
   createdAt                DateTime                  @default(now()) @map("created_at")
   updatedAt                DateTime                  @updatedAt @map("updated_at")
 
@@ -320,6 +323,8 @@ model Workspace {
   currency                 String                    @default("USD") @db.Char(3)
   /// IANA zone that sets where a day starts for reports, such as "Asia/Jerusalem". Null until set.
   timeZone                 String?                   @map("time_zone")
+  /// An `OutsideAgentChanges` (ADR 0028): whether outside agents' changes wait for approval.
+  outsideAgentChanges      String                    @default("require_approval") @map("outside_agent_changes")
   members                  WorkspaceMember[]
   invitations              WorkspaceInvitation[]
   customRoles              CustomRole[]
@@ -339,6 +344,7 @@ model Workspace {
   sandboxAccount           SandboxAccount?
   askConversations         AskConversation[]
   agentWorkerConversations AgentWorkerConversation[]
+  agentProposals           AgentProposal[]
   createdAt                DateTime                  @default(now()) @map("created_at")
   updatedAt                DateTime                  @updatedAt @map("updated_at")
 
@@ -432,6 +438,7 @@ model ApiKey {
   importJobs           ImportJob[]
   suggestionsRequested Suggestion[]        @relation("SuggestionRequestedByKey")
   suggestionsReviewed  Suggestion[]        @relation("SuggestionReviewedByKey")
+  agentProposals       AgentProposal[]
 
   @@index([workspaceId])
   @@map("api_keys")
@@ -815,6 +822,9 @@ model ActivityEvent {
   actorOAuthClient   OauthClient?      @relation(fields: [actorOAuthClientId], references: [clientId], onDelete: SetNull)
   /// The agent's name, kept when its unused registration is deleted, so its history still names it.
   actorAgentName     String?           @map("actor_agent_name")
+  /// The person who approved an outside agent's proposal that made this change (ADR 0028).
+  actorApprovedById  String?           @map("actor_approved_by_id") @db.Uuid
+  actorApprovedBy    User?             @relation("ActivityApprovedBy", fields: [actorApprovedById], references: [id], onDelete: SetNull)
   /// An `ActivityAction` value; kept as text so features can add actions without a migration.
   action             String
   outcome            ActivityOutcome
@@ -1676,4 +1686,49 @@ model AgentWorkerAction {
   @@unique([messageId, toolUseId])
   @@index([conversationId, status])
   @@map("agent_worker_actions")
+}
+
+/// A change an outside agent (OAuth or an MCP session) proposed, waiting for a person (ADR 0028).
+model AgentProposal {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  workspaceId     String    @map("workspace_id") @db.Uuid
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// An `AgentProposerKind`: an OAuth agent or an API key.
+  proposerKind    String    @map("proposer_kind")
+  /// The person the agent acts for, or who created the key.
+  userId          String    @map("user_id") @db.Uuid
+  user            User      @relation("AgentProposalUser", fields: [userId], references: [id], onDelete: Cascade)
+  /// The OAuth client, for an OAuth agent; kept as text so the history outlives the client.
+  oauthClientId   String?   @map("oauth_client_id")
+  apiKeyId        String?   @map("api_key_id") @db.Uuid
+  apiKey          ApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  /// The agent's or key's name when it proposed, such as "Claude".
+  agentName       String    @map("agent_name")
+  /// The OAuth agent's scopes when it proposed; the change runs with them, narrowed again.
+  scopes          String[]
+  toolName        String    @map("tool_name")
+  /// The tool's input, validated against its schema.
+  input           Json
+  /// `AgentWorkerActionRisk` values: approving needs an explicit confirmation.
+  risks           String[]
+  summary         String
+  /// Before and after values, for the approval card.
+  preview         Json?
+  /// An `AgentProposalStatus`.
+  status          String
+  /// The API's answer or refusal once it ran, truncated.
+  result          String?
+  resultIsError   Boolean   @default(false) @map("result_is_error")
+  decidedByUserId String?   @map("decided_by_user_id") @db.Uuid
+  decidedBy       User?     @relation("AgentProposalDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedAt       DateTime? @map("decided_at")
+  finishedAt      DateTime? @map("finished_at")
+  expiresAt       DateTime  @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([workspaceId, status, createdAt(sort: Desc)])
+  @@index([workspaceId, updatedAt])
+  @@index([status, expiresAt])
+  @@map("agent_proposals")
 }

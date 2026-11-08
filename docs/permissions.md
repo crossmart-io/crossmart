@@ -19,18 +19,18 @@ those, not the role name, so they keep working when roles change.
 | `reports:view`        | Sales and stock value reports                                        |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
 | `channels:view`       | Connected stores, their rules and listings                           |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
 | `activity:view`       | The activity log                                                     |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
-| `suggestions:view`    | The AI suggestions inbox                                             |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
+| `suggestions:view`    | The AI suggestions inbox and outside agents' proposals               |   ✓   |   ✓   |   ✓    |    ✓     |   ✓    |
 | `products:edit`       | Create, change, import and delete products, prices and images        |   ✓   |   ✓   |   ✓    |          |        |
 | `inventory:edit`      | Adjust stock and import stock files                                  |   ✓   |   ✓   |   ✓    |          |        |
 | `listings:edit`       | Add products to stores, remove them, override what one store shows   |   ✓   |   ✓   |   ✓    |          |        |
 | `ai:generate`         | Ask the AI agents for content (metered); results need approval       |   ✓   |   ✓   |   ✓    |          |        |
 | `agent_worker:use`    | Chat with Agent Worker (metered); its changes need approval          |   ✓   |   ✓   |   ✓    |          |        |
-| `suggestions:approve` | Approve (apply) or reject AI suggestions                             |   ✓   |   ✓   |        |    ✓     |        |
+| `suggestions:approve` | Approve (apply) or reject AI suggestions and agents' proposals       |   ✓   |   ✓   |        |    ✓     |        |
 | `channels:manage`     | Connect and disconnect stores, set pricing and selection rules, sync |   ✓   |   ✓   |        |          |        |
 | `members:manage`      | Invite, change roles and remove members                              |   ✓   |   ✓   |        |          |        |
 | `api-keys:manage`     | Create and revoke API keys                                           |   ✓   |   ✓   |        |          |        |
 | `webhooks:manage`     | Add, change and delete webhook endpoints, see their deliveries       |   ✓   |   ✓   |        |          |        |
-| `workspace:manage`    | Change the workspace's settings                                      |   ✓   |   ✓   |        |          |        |
+| `workspace:manage`    | Change the workspace's settings, such as agents needing approval     |   ✓   |   ✓   |        |          |        |
 | `billing:view`        | See the organization's plan and usage (in any of its workspaces)     |   ✓   |   ✓   |        |          |        |
 | `billing:manage`      | Choose a plan, open the billing portal (in any of its workspaces)    |   ✓   |   ✓   |        |          |        |
 | `workspace:delete`    | Delete the workspace and everything in it                            |   ✓   |       |        |          |        |
@@ -45,6 +45,11 @@ request. `webhooks:write` is the only scope that unlocks `webhooks:manage`, sinc
 workspace data to the URL the agent names. Agents never get `members:*`, `api-keys:manage`,
 `channels:manage`, `workspace:manage`, `workspace:delete` or `billing:*`, and they can only call
 workspace routes.
+
+Unless the workspace lets outside agents apply changes directly, an agent's writes are proposals
+([ADR 0028](decisions/0028-outside-agent-approvals.md)): a person holding `suggestions:approve`
+and the permission the change itself needs approves them, and the change then runs with the
+agent's permissions as they are at that moment.
 
 ## Rules around roles
 

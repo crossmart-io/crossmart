@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  OutsideAgentChanges,
   type SandboxState,
   toPermissionList,
   type WorkspaceAccess,
@@ -10,6 +11,7 @@ import {
   WORKSPACE_PERMISSION_SCHEMA_NAME,
   WORKSPACE_ROLE_SCHEMA_NAME,
 } from '../workspaces.constants.js';
+import { OUTSIDE_AGENT_CHANGES_SCHEMA_NAME } from '../../agent-proposals/agent-proposals.constants.js';
 import { CUSTOM_ROLE_PROPERTY, CustomRoleRefDto } from './role-assignment.dto.js';
 
 /** An unclaimed sandbox account an AI agent opened (ADR 0019). */
@@ -55,6 +57,16 @@ export class WorkspaceDto {
       'connect stores, publish or invite people until claimed. Null for every other workspace.',
   })
   sandbox: SandboxState | null;
+
+  @ApiProperty({
+    enum: OutsideAgentChanges,
+    enumName: OUTSIDE_AGENT_CHANGES_SCHEMA_NAME,
+    description:
+      'What happens to changes by outside AI agents (OAuth agents and MCP sessions): ' +
+      '`require_approval` (the default) makes each one a proposal to approve; ' +
+      '`apply_directly` makes them at once. API keys over REST always apply directly.',
+  })
+  outsideAgentChanges: OutsideAgentChanges;
 
   @ApiProperty({
     enum: WorkspaceRole,

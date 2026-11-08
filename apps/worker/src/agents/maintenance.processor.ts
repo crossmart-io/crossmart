@@ -4,14 +4,15 @@ import type { Job } from 'bullmq';
 import { QueueName } from '@crossmart/common';
 import {
   AGENT_CLIENT_SWEEP_JOB_NAME,
+  AGENT_PROPOSAL_EXPIRY_JOB_NAME,
+  AgentProposalExpiryService,
   AGENT_WORKER_RETENTION_JOB_NAME,
   AgentClientSweeper,
-  AgentWorkerRetentionService,
   ASK_RETENTION_JOB_NAME,
-  AskRetentionService,
   SANDBOX_SWEEP_JOB_NAME,
   SandboxSweeper,
 } from '@crossmart/core';
+import { ConversationRetention } from './conversation-retention.js';
 
 /** Runs scheduled housekeeping from the `maintenance` queue, the lowest-priority one. */
 @Processor(QueueName.Maintenance)
@@ -21,8 +22,8 @@ export class MaintenanceProcessor extends WorkerHost {
   constructor(
     private readonly agentClients: AgentClientSweeper,
     private readonly sandboxes: SandboxSweeper,
-    private readonly askRetention: AskRetentionService,
-    private readonly agentWorkerRetention: AgentWorkerRetentionService,
+    private readonly retention: ConversationRetention,
+    private readonly agentProposalExpiry: AgentProposalExpiryService,
   ) {
     super();
   }
@@ -37,6 +38,8 @@ export class MaintenanceProcessor extends WorkerHost {
         return this.purgeAskConversations();
       case AGENT_WORKER_RETENTION_JOB_NAME:
         return this.purgeAgentWorkerConversations();
+      case AGENT_PROPOSAL_EXPIRY_JOB_NAME:
+        return this.expireAgentProposals();
       default:
         this.logger.warn(`Skipped unknown maintenance job ${job.name}`);
     }
@@ -61,16 +64,23 @@ export class MaintenanceProcessor extends WorkerHost {
   }
 
   private async purgeAskConversations(): Promise<void> {
-    const deleted = await this.askRetention.purge();
+    const deleted = await this.retention.purgeAsk();
     if (deleted > 0) {
       this.logger.log(`Deleted ${deleted} Ask Crossmart conversations past their retention`);
     }
   }
 
   private async purgeAgentWorkerConversations(): Promise<void> {
-    const deleted = await this.agentWorkerRetention.purge();
+    const deleted = await this.retention.purgeAgentWorker();
     if (deleted > 0) {
       this.logger.log(`Deleted ${deleted} Agent Worker conversations past their retention`);
+    }
+  }
+
+  private async expireAgentProposals(): Promise<void> {
+    const expired = await this.agentProposalExpiry.expire();
+    if (expired > 0) {
+      this.logger.log(`Expired ${expired} agent proposals nobody decided in time`);
     }
   }
 }

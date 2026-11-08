@@ -16,6 +16,15 @@ export enum WorkspaceEventType {
   AgentChangeFailed = 'agent.change_failed',
   /** A turn of Crossmart Agent ended in an error. */
   AgentTurnFailed = 'agent.turn_failed',
+  /** An outside agent (ADR 0028) proposed a change; it waits for someone's approval. */
+  AgentProposalReceived = 'agent.proposal_received',
+  /** Someone approved an outside agent's proposal; the change follows as `agent.activity`. */
+  AgentProposalApproved = 'agent.proposal_approved',
+  AgentProposalRejected = 'agent.proposal_rejected',
+  /** Nobody decided an outside agent's proposal in time. */
+  AgentProposalExpired = 'agent.proposal_expired',
+  /** An approved proposal was refused by the API. */
+  AgentProposalFailed = 'agent.proposal_failed',
   /** Another agent (over MCP) or a program (with an API key) changed something. */
   AgentActivity = 'agent.activity',
   ListingPublished = 'listing.published',

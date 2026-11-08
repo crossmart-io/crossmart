@@ -59,8 +59,8 @@ agent with the user's name. Members see and disconnect their agents under Settin
 | `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                                |
 | `webhooks:write`    | `list_webhook_endpoints`, `create_webhook_endpoint`                                                                                                                                                     |
 
-`ask_crossmart`, `escalate_to_crossmart_team`, `get_ask_escalation` and `get_platform_health` need
-no scope. `ask_crossmart` reads the workspace only through the lookups its connection's permissions
+`ask_crossmart`, `escalate_to_crossmart_team`, `get_ask_escalation`, `get_platform_health` and
+`get_proposal` need no scope (`get_proposal` reads only the caller's own proposals). `ask_crossmart` reads the workspace only through the lookups its connection's permissions
 allow (ADR 0025).
 
 **Or open a sandbox account** (ADR 0019, part 2). A local server started without
@@ -74,6 +74,38 @@ address for the API's per-caller limits.
 **Or use an API key**, for scripts and self-hosted setups: send it as `Authorization: Bearer <key>`
 or `x-api-key`. A key works in exactly one workspace, which the server finds with
 `GET /api/v1/api-key`, and every tool is offered; the key's role decides in the API.
+
+## Changes wait for the seller's approval
+
+By default every write tool **proposes** its change instead of making it
+([ADR 0028](decisions/0028-outside-agent-approvals.md)). The MCP server sends the call to
+`POST /api/v1/workspaces/{id}/agent-proposals` (`proposeApiTool` in
+`libs/core/src/agent-tools/tools/propose-api-tool.ts`), and the API stores a proposal with a
+before-and-after preview (Agent Worker's formatters, read with the agent's own credential). The
+tool answers, without an error:
+
+```json
+{
+  "status": "proposed",
+  "message": "Proposed; waiting for the seller's approval in Crossmart. …",
+  "proposalId": "0193…",
+  "summary": "Change the title or description of a product: Linen Shirt",
+  "expiresAt": "2026-11-15T10:00:00.000Z"
+}
+```
+
+The seller approves or rejects it in the web app (Agent proposals). The agent checks it with
+`get_proposal`: `pending`, `applying`, `applied` (with the API's answer), `failed` (with the
+refusal), `rejected` or `expired` (nobody decided within 7 days). An approved change runs as the
+agent, so the activity log reads "Claude for Dana, approved by Lee"; if the connection was revoked
+in the meantime, it fails.
+
+This holds for **every MCP session**, OAuth or API key. When the workspace sets "Outside agents'
+changes" to "Apply directly" (Settings > Workspace, Owners and Admins), the API answers
+`apply_directly` and the server makes the call as before. Read tools, `generate_content` (its
+results already wait as suggestions), Ask and `create_account` never wait.
+
+Existing MCP clients need no change: the tools, names and inputs are the same.
 
 ## Tools
 
@@ -114,6 +146,7 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 | `ask_crossmart`              | Answers about Crossmart (and, read-only, the workspace)                |        |
 | `escalate_to_crossmart_team` | Hands an Ask conversation to the Crossmart team, who reply by email    | Yes    |
 | `get_ask_escalation`         | Reads the team's reply to an escalated question (ADR 0025)             |        |
+| `get_proposal`               | Where a change this agent proposed stands (ADR 0028)                   |        |
 | `create_account`             | Opens a sandbox account; only offered without a credential (ADR 0019)  | Yes    |
 
 Every tool carries `readOnlyHint`, `destructiveHint` and `openWorldHint` (`toolAnnotations` in
@@ -138,7 +171,8 @@ example `Crossmart refused (404): Product not found`) instead of failing the ses
 
 AI content goes through review: `generate_content` only creates pending suggestions, and
 `approve_suggestion` needs a key whose role holds `suggestions:approve` (Owner, Admin or
-Approver), so an agent with an Editor key can propose but never apply.
+Approver), so an agent with an Editor key can propose but never apply. While the workspace
+approves agents' changes, `approve_suggestion` itself is a proposal too.
 
 Connecting a store always needs the merchant: channel OAuth (Shopify and others) runs in the
 dashboard, never through an agent.
@@ -155,7 +189,9 @@ Each tool is a spec in `libs/core/src/agent-tools/tools/*.tools.ts`: a name, a d
 for the agent, a zod input and the API call it makes (`defineTool`). Add it to the group's list;
 `ALL_TOOLS` registers it. Keep one tool per endpoint and describe what the agent should read first.
 The specs are shared with [Agent Worker](agent-worker.md), the agent inside the web app, which
-offers the same tools and proposes every write for approval; mark `destructive`, `publishes` and
+offers the same tools and proposes every write for approval. A write tool with a scope waits for
+approval on the MCP server too (`requiresApproval`); mark one that changes nothing by itself
+`approvalExempt`. Mark `destructive`, `publishes` and
 `priceInputs` where they apply. `destructive` (deletes or takes off sale) also shows as a risk on
 Agent Worker's approval cards; `overwrites` (replaces a live value) and `openWorld` (publishes to
 a store or sends data out) only set the MCP hints. `toResult` shapes what the agent reads of the

@@ -11,6 +11,11 @@ import {
   ACTIVITY_EVENT_INCLUDE,
   type ActivityEventRecord,
 } from '../../activity/repositories/activity-event.queries.js';
+import {
+  AGENT_PROPOSAL_INCLUDE,
+  type AgentProposalRecord,
+} from '../../agent-proposals/repositories/agent-proposal.queries.js';
+import { AgentProposalStatus } from '../../agent-proposals/enums/agent-proposal-status.enum.js';
 import { AgentWorkerTurnStatus } from '../../agent-worker/enums/agent-worker-turn-status.enum.js';
 import type { SourceWindow, TieCondition, TimeCondition } from '../rules/source-window.js';
 import {
@@ -38,6 +43,15 @@ function windowWhere<Field extends string>(
 /** Which of the reader's tool calls to read: those with a step in the range, at most `limit`. */
 export interface AgentStepQuery {
   conversationIds: string[];
+  since: Date;
+  until: Date;
+  limit: number;
+  direction: SortDirection;
+}
+
+/** Which outside agents' proposals to read: those with a step in the range, at most `limit`. */
+export interface ProposalStepQuery {
+  workspaceId: string;
   since: Date;
   until: Date;
   limit: number;
@@ -119,6 +133,28 @@ export class WorkspaceEventRepository {
       where: { conversationId: { in: conversationIds }, OR: anyStepIn(since, until) },
       orderBy: sortWithTiebreak('createdAt', direction),
       take: limit,
+    });
+  }
+
+  /**
+   * Proposals with a step (received, decided, finished) in the range, or pending ones whose
+   * expiry fell in it (they read as expired before the worker marks them).
+   */
+  agentProposals(query: ProposalStepQuery): Promise<AgentProposalRecord[]> {
+    const range = { gte: query.since, lte: query.until };
+    return this.prisma.agentProposal.findMany({
+      where: {
+        workspaceId: query.workspaceId,
+        OR: [
+          { createdAt: range },
+          { decidedAt: range },
+          { finishedAt: range },
+          { status: AgentProposalStatus.Pending, expiresAt: range },
+        ],
+      },
+      include: AGENT_PROPOSAL_INCLUDE,
+      orderBy: sortWithTiebreak('createdAt', query.direction),
+      take: query.limit,
     });
   }
 

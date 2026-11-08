@@ -37,6 +37,11 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   publishes?: boolean;
   /** Input fields that change what a buyer pays; a call that sets one changes prices. */
   priceInputs?: readonly string[];
+  /**
+   * True for a write that changes nothing in the catalog by itself, so it never waits for the
+   * seller's approval (ADR 0028), such as asking for AI content that arrives as suggestions.
+   */
+  approvalExempt?: boolean;
   /** The scope an agent needs to see the tool; absent for tools every connection may use. */
   scope?: AgentScope;
   /** What the agent should do next when the API refuses the call with one of these statuses. */
@@ -58,17 +63,26 @@ export interface ApiToolResult {
   status?: number;
 }
 
+/**
+ * Whether an outside agent's call to the tool waits for the seller's approval when the workspace
+ * asks for it (ADR 0028): a write in the workspace (it has a scope) that is not exempt. Reads,
+ * and tools outside any workspace (opening an account, Ask), never wait.
+ */
+export function requiresApproval(spec: ApiToolSpec): boolean {
+  return !spec.readOnly && spec.scope !== undefined && spec.approvalExempt !== true;
+}
+
 /** Keeps each spec's input type while collecting specs of different shapes in one list. */
 export function defineTool<Shape extends z.ZodRawShape>(spec: ApiToolSpec<Shape>): ApiToolSpec {
   return spec as unknown as ApiToolSpec;
 }
 
-function toText(value: unknown): string {
+export function toText(value: unknown): string {
   return JSON.stringify(value, null, JSON_INDENTATION);
 }
 
 /** The refusal as the agent reads it: status, the API's code and message, and a next step. */
-function toRefusalText(spec: ApiToolSpec, error: CrossmartApiError): string {
+export function toRefusalText(spec: ApiToolSpec, error: CrossmartApiError): string {
   const reason = error.code ? `${error.status} ${error.code}` : String(error.status);
   const hint = spec.refusalHints?.[error.status as RefusalStatus];
   const refusal = `Crossmart refused (${reason}): ${error.message}`;

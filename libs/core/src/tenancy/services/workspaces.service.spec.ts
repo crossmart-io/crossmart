@@ -17,9 +17,12 @@ import {
 import { resolveRole } from '../permissions/role-permissions.js';
 import type { NewWorkspace, WorkspaceRepository } from '../repositories/workspace.repository.js';
 import { MAX_WORKSPACES_PER_ORGANIZATION } from '../tenancy.constants.js';
+import { OutsideAgentChanges } from '../../workspace-settings/enums/outside-agent-changes.enum.js';
 import { WorkspacesService } from './workspaces.service.js';
 
-function stored(fields: Partial<NewWorkspace> & { id?: string } = {}) {
+type StoredFields = Partial<NewWorkspace> & { id?: string; outsideAgentChanges?: string };
+
+function stored(fields: StoredFields = {}) {
   return {
     id: fields.id ?? 'ws-2',
     organizationId: 'org-1',
@@ -27,6 +30,7 @@ function stored(fields: Partial<NewWorkspace> & { id?: string } = {}) {
     slug: fields.slug ?? 'eu-store',
     currency: fields.currency ?? 'EUR',
     timeZone: fields.timeZone ?? null,
+    outsideAgentChanges: fields.outsideAgentChanges ?? OutsideAgentChanges.RequireApproval,
     createdAt: new Date(),
     updatedAt: new Date(),
     organization: { name: 'Ana Cohen' },
@@ -40,8 +44,8 @@ function createService() {
     slugsLike: vi.fn().mockResolvedValue(['eu-store']),
     create: vi.fn((record: NewWorkspace) => Promise.resolve(stored(record))),
     findById: vi.fn().mockResolvedValue(stored({ name: 'Default' })),
-    update: vi.fn((_id: string, changes: { name?: string; timeZone?: string }) =>
-      Promise.resolve(stored({ name: changes.name ?? 'Default', timeZone: changes.timeZone })),
+    update: vi.fn((_id: string, changes: StoredFields) =>
+      Promise.resolve(stored({ ...changes, name: changes.name ?? 'Default' })),
     ),
   };
   const activity = new InMemoryActivityRecorder();
@@ -167,5 +171,35 @@ describe('WorkspacesService.update', () => {
       action: ActivityAction.WorkspaceTimeZoneChanged,
       detail: 'Asia/Jerusalem',
     });
+  });
+
+  it("records whether outside agents' changes need approval, and exposes it", async () => {
+    const { service, activity } = createService();
+    const access = resolveRole(WorkspaceRole.OWNER, null);
+    const updated = await service.update(
+      'ws-2',
+      { outsideAgentChanges: OutsideAgentChanges.ApplyDirectly },
+      access,
+      Actor.user('user-1'),
+    );
+    expect(updated.outsideAgentChanges).toBe(OutsideAgentChanges.ApplyDirectly);
+    expect(activity.entries).toEqual([
+      expect.objectContaining({
+        action: ActivityAction.OutsideAgentChangesChanged,
+        detail: 'they apply directly',
+      }),
+    ]);
+  });
+
+  it('records nothing when the setting stays the same', async () => {
+    const { service, activity } = createService();
+    const access = resolveRole(WorkspaceRole.OWNER, null);
+    await service.update(
+      'ws-2',
+      { name: 'Default', outsideAgentChanges: OutsideAgentChanges.RequireApproval },
+      access,
+      Actor.user('user-1'),
+    );
+    expect(activity.entries).toEqual([]);
   });
 });

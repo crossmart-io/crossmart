@@ -60,7 +60,7 @@ export interface paths {
         delete: operations["WorkspacesController_deleteWorkspace_v1"];
         options?: never;
         head?: never;
-        /** Rename a workspace or set its time zone */
+        /** Rename a workspace, set its time zone, or say whether agents' changes need approval */
         patch: operations["WorkspacesController_update_v1"];
         trace?: never;
     };
@@ -1722,6 +1722,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/agent-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Outside agents’ proposals, newest first (signed-in people) */
+        get: operations["AgentProposalsController_list_v1"];
+        put?: never;
+        /**
+         * Propose a change as an outside agent
+         * @description For connected agents and MCP sessions. Takes an MCP write tool and its input. When the workspace approves agents’ changes, it stores a proposal for the seller and answers `proposed`; otherwise it answers `apply_directly` and stores nothing. 400 for a read tool, an unknown one or invalid input; 403 when the caller could not make the change.
+         */
+        post: operations["AgentProposalsController_propose_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-proposals/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many proposals wait for a decision (signed-in people) */
+        get: operations["AgentProposalsController_summary_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-proposals/{proposalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One proposal and where it stands
+         * @description People need suggestions:view. An agent or key reads only proposals it made; any other id answers 404.
+         */
+        get: operations["AgentProposalsController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-proposals/{proposalId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a proposal: the change is made as the agent, approved by you
+         * @description Needs the permission the change itself needs too. A proposal with risks needs `confirmHighRisk`. 409 when it no longer waits (decided or expired).
+         */
+        post: operations["AgentProposalsController_approve_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/agent-proposals/{proposalId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a proposal; nothing changes and the agent reads `rejected` */
+        post: operations["AgentProposalsController_reject_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/oauth/client": {
         parameters: {
             query?: never;
@@ -2239,6 +2334,11 @@ export interface components {
             claimExpiresAt: string;
         };
         /**
+         * @description What happens to changes by outside AI agents (OAuth agents and MCP sessions): `require_approval` (the default) makes each one a proposal to approve; `apply_directly` makes them at once. API keys over REST always apply directly.
+         * @enum {string}
+         */
+        OutsideAgentChanges: OutsideAgentChanges;
+        /**
          * @description Your role here
          * @enum {string}
          */
@@ -2274,6 +2374,8 @@ export interface components {
             timeZone: string | null;
             /** @description Set while the workspace is an unclaimed sandbox account an AI agent opened: it cannot connect stores, publish or invite people until claimed. Null for every other workspace. */
             sandbox: components["schemas"]["SandboxStateDto"] | null;
+            /** @description What happens to changes by outside AI agents (OAuth agents and MCP sessions): `require_approval` (the default) makes each one a proposal to approve; `apply_directly` makes them at once. API keys over REST always apply directly. */
+            outsideAgentChanges: components["schemas"]["OutsideAgentChanges"];
             /** @description Your role here */
             role: components["schemas"]["WorkspaceRole"];
             /** @description The workspace’s own role, when `role` is CUSTOM */
@@ -2298,6 +2400,8 @@ export interface components {
              * @example Asia/Jerusalem
              */
             timeZone?: string;
+            /** @description Whether outside agents' changes wait for approval. Only a signed-in person may change it; an API key or agent gets 403. Recorded in the activity log. */
+            outsideAgentChanges?: components["schemas"]["OutsideAgentChanges"];
         };
         DeleteWorkspaceDto: {
             /** @description The workspace’s name, typed to confirm: deleting it cannot be undone */
@@ -3171,6 +3275,13 @@ export interface components {
             email: string | null;
             /** @description The agent's name, such as "Claude", for agent actions */
             agentName: string | null;
+            /**
+             * Format: uuid
+             * @description Who approved the outside agent's proposal that made this change; null when nobody had to
+             */
+            approvedByUserId: string | null;
+            /** @description Their name, for "Claude for Dana, approved by Lee"; null when deleted or none */
+            approvedByName: string | null;
         };
         ActivitySubjectDto: {
             type: components["schemas"]["ActivitySubjectType"];
@@ -4774,6 +4885,102 @@ export interface components {
             /** @description False when no turn was running */
             cancelled: boolean;
         };
+        ProposeAgentChangeDto: {
+            /**
+             * @description An MCP write tool, as the MCP server lists it
+             * @example update_variant_price
+             */
+            tool: string;
+            /**
+             * @description The tool's input, as its MCP schema describes it
+             * @example {
+             *       "productId": "0193…",
+             *       "variantId": "0193…",
+             *       "price": "19.00"
+             *     }
+             */
+            input: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * @description `proposed`: it waits for the seller. `apply_directly`: the workspace lets agents make changes at once, so make the call itself.
+         * @enum {string}
+         */
+        AgentProposalOutcome: AgentProposalOutcome;
+        /**
+         * @description A pending proposal past its expiry reads as expired
+         * @enum {string}
+         */
+        AgentProposalStatus: AgentProposalStatus;
+        /** @enum {string} */
+        AgentProposerKind: AgentProposerKind;
+        AgentProposalDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description The MCP tool it calls
+             * @example update_variant_price
+             */
+            toolName: string;
+            /** @example Change a variant's price */
+            toolTitle: string;
+            /** @description A pending proposal past its expiry reads as expired */
+            status: components["schemas"]["AgentProposalStatus"];
+            proposerKind: components["schemas"]["AgentProposerKind"];
+            /**
+             * @description The agent; for an MCP session with a key, the key's name
+             * @example Claude
+             */
+            agentName: string;
+            /** @description The person the agent acts for */
+            onBehalfOfName: string | null;
+            /** @example Change a variant's price: Linen Shirt */
+            summary: string;
+            /** @description Why approving it also needs `confirmHighRisk`; empty for ordinary changes */
+            risks: components["schemas"]["AgentWorkerActionRisk"][];
+            preview: components["schemas"]["AgentWorkerActionPreviewDto"] | null;
+            targets: components["schemas"]["AgentWorkerActionTargetsDto"];
+            /** @description The API's answer once applied, or why it was refused */
+            result: string | null;
+            /** @description True when the approved change was refused */
+            isError: boolean;
+            decidedByName: string | null;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When it expires if nobody decides
+             */
+            expiresAt: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AgentProposalSubmissionDto: {
+            /** @description `proposed`: it waits for the seller. `apply_directly`: the workspace lets agents make changes at once, so make the call itself. */
+            outcome: components["schemas"]["AgentProposalOutcome"];
+            /** @description What to do next, or to tell the user */
+            message: string;
+            proposal: components["schemas"]["AgentProposalDto"] | null;
+        };
+        AgentProposalPageDto: {
+            /** @description Newest first */
+            items: components["schemas"]["AgentProposalDto"][];
+            total: number;
+        };
+        AgentProposalSummaryDto: {
+            /** @description Proposals waiting for a decision now */
+            pendingCount: number;
+        };
+        DecideAgentProposalDto: {
+            /**
+             * @description Required for a proposal with risks (deletes, changes prices, or many items)
+             * @default false
+             */
+            confirmHighRisk?: boolean;
+        };
         /**
          * @description `metadata_document`: Crossmart fetched the agent’s metadata from its HTTPS client id. `dynamic`: the agent registered itself, and its name and site are unverified.
          * @enum {string}
@@ -5293,6 +5500,8 @@ export interface components {
              * @example Crossmart Agent
              */
             agentName: string | null;
+            /** @description Who approved the outside agent's proposal that made the change, if anyone */
+            approvedByName: string | null;
         };
         WorkspaceEventRefsDto: {
             /**
@@ -5316,6 +5525,11 @@ export interface components {
              * @description The Crossmart Agent tool call
              */
             actionId: string | null;
+            /**
+             * Format: uuid
+             * @description An outside agent's proposal
+             */
+            proposalId: string | null;
         };
         WorkspaceEventDto: {
             /**
@@ -8393,6 +8607,148 @@ export interface operations {
             };
         };
     };
+    AgentProposalsController_list_v1: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["AgentProposalStatus"];
+                /** @description 1-based page number, for tables with page numbers. It wins over `cursor`. */
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentProposalPageDto"];
+                };
+            };
+        };
+    };
+    AgentProposalsController_propose_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeAgentChangeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentProposalSubmissionDto"];
+                };
+            };
+        };
+    };
+    AgentProposalsController_summary_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentProposalSummaryDto"];
+                };
+            };
+        };
+    };
+    AgentProposalsController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentProposalDto"];
+                };
+            };
+        };
+    };
+    AgentProposalsController_approve_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideAgentProposalDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentProposalDto"];
+                };
+            };
+        };
+    };
+    AgentProposalsController_reject_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentProposalDto"];
+                };
+            };
+        };
+    };
     AgentAuthorizationController_findClient_v1: {
         parameters: {
             query: {
@@ -9276,6 +9632,10 @@ export enum PathsApiV1HealthGetResponses503ContentApplicationJsonDetailsStatus {
     degraded = "degraded",
     down = "down"
 }
+export enum OutsideAgentChanges {
+    require_approval = "require_approval",
+    apply_directly = "apply_directly"
+}
 export enum WorkspaceRole {
     OWNER = "OWNER",
     ADMIN = "ADMIN",
@@ -9521,6 +9881,7 @@ export enum ActivityAction {
     sandbox_claimed = "sandbox_claimed",
     workspace_renamed = "workspace_renamed",
     workspace_time_zone_changed = "workspace_time_zone_changed",
+    outside_agent_changes_changed = "outside_agent_changes_changed",
     custom_role_created = "custom_role_created",
     custom_role_updated = "custom_role_updated",
     custom_role_deleted = "custom_role_deleted",
@@ -9551,6 +9912,7 @@ export enum ActivityAction {
     content_generated = "content_generated",
     suggestion_approved = "suggestion_approved",
     suggestion_rejected = "suggestion_rejected",
+    agent_proposal_rejected = "agent_proposal_rejected",
     suggestions_bulk_approved = "suggestions_bulk_approved"
 }
 export enum ActivityOutcome {
@@ -9566,6 +9928,7 @@ export enum ActivitySubjectType {
     member = "member",
     invitation = "invitation",
     workspace = "workspace",
+    agent_proposal = "agent_proposal",
     custom_role = "custom_role",
     channel_connection = "channel_connection",
     webhook_endpoint = "webhook_endpoint"
@@ -9859,6 +10222,22 @@ export enum AgentWorkerContextView {
     orders = "orders",
     inventory = "inventory"
 }
+export enum AgentProposalOutcome {
+    proposed = "proposed",
+    apply_directly = "apply_directly"
+}
+export enum AgentProposalStatus {
+    pending = "pending",
+    applying = "applying",
+    applied = "applied",
+    failed = "failed",
+    rejected = "rejected",
+    expired = "expired"
+}
+export enum AgentProposerKind {
+    oauth_agent = "oauth_agent",
+    api_key = "api_key"
+}
 export enum AgentClientRegistration {
     metadata_document = "metadata_document",
     dynamic = "dynamic"
@@ -9949,6 +10328,11 @@ export enum WorkspaceEventType {
     agent_change_applied = "agent.change_applied",
     agent_change_failed = "agent.change_failed",
     agent_turn_failed = "agent.turn_failed",
+    agent_proposal_received = "agent.proposal_received",
+    agent_proposal_approved = "agent.proposal_approved",
+    agent_proposal_rejected = "agent.proposal_rejected",
+    agent_proposal_expired = "agent.proposal_expired",
+    agent_proposal_failed = "agent.proposal_failed",
     agent_activity = "agent.activity",
     listing_published = "listing.published",
     listing_updated = "listing.updated",

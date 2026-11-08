@@ -9,6 +9,8 @@ export interface ActorRef {
   agentClientId?: string | null;
   /** The name of a built-in agent such as Agent Worker, which has no OAuth client. */
   agentName?: string | null;
+  /** Who approved the outside agent's proposal that made the change (ADR 0028). */
+  approvedByUserId?: string | null;
 }
 
 /** The built-in agent of ADR 0026, credited in the activity log as acting for its user. */
@@ -29,6 +31,7 @@ interface ActorFields {
   apiKeyId?: string | null;
   agentClientId?: string | null;
   agentName?: string | null;
+  approvedByUserId?: string | null;
 }
 
 /**
@@ -43,6 +46,11 @@ export class Actor {
   readonly agentClientId: string | null;
   /** The built-in agent's name; connected agents are named by their OAuth client. */
   readonly agentName: string | null;
+  /**
+   * The person who approved the change, when an outside agent proposed it and a person approved
+   * it (ADR 0028): "Claude for Dana, approved by Lee".
+   */
+  readonly approvedByUserId: string | null;
 
   private constructor(fields: ActorFields) {
     this.type = fields.type;
@@ -50,6 +58,12 @@ export class Actor {
     this.apiKeyId = fields.apiKeyId ?? null;
     this.agentClientId = fields.agentClientId ?? null;
     this.agentName = fields.agentName ?? null;
+    this.approvedByUserId = fields.approvedByUserId ?? null;
+  }
+
+  /** The same actor, credited with the person who approved its proposal. */
+  approvedBy(userId: string): Actor {
+    return new Actor({ ...this.toRef(), approvedByUserId: userId });
   }
 
   static user(userId: string): Actor {
@@ -75,6 +89,13 @@ export class Actor {
    * Ids that do not fit the type are dropped.
    */
   static from(ref: ActorRef): Actor {
+    const actor = Actor.baseFrom(ref);
+    return ref.approvedByUserId && actor.type !== ActivityActorType.SYSTEM
+      ? actor.approvedBy(ref.approvedByUserId)
+      : actor;
+  }
+
+  private static baseFrom(ref: ActorRef): Actor {
     if (ref.type === ActivityActorType.USER && ref.userId) return Actor.user(ref.userId);
     if (ref.type === ActivityActorType.API_KEY && ref.apiKeyId) return Actor.apiKey(ref.apiKeyId);
     if (ref.type === ActivityActorType.AGENT && ref.userId) return Actor.agentFrom(ref, ref.userId);
@@ -96,6 +117,7 @@ export class Actor {
       apiKeyId: this.apiKeyId,
       agentClientId: this.agentClientId,
       agentName: this.agentName,
+      ...(this.approvedByUserId ? { approvedByUserId: this.approvedByUserId } : {}),
     };
   }
 

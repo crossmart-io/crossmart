@@ -7,6 +7,7 @@
   "currency": "sample",
   "timeZone": "sample",
   "sandbox": null,
+  "outsideAgentChanges": "require_approval",
   "role": "OWNER",
   "customRole": null,
   "permissions": []

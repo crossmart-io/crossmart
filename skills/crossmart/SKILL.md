@@ -42,6 +42,10 @@ the seller chose when signing the agent in, or the API key's.
   never repeat or log one. Keys go into the MCP client's config or an environment variable.
 - **Don't apply AI content on your own.** `generate_content` creates suggestions; a person approves
   them unless the seller explicitly asks you to approve a specific one.
+- **Changes usually wait for the seller.** Unless the workspace lets agents apply directly, a
+  write tool answers `"status": "proposed"` with a `proposalId`: nothing changed yet. Tell the
+  seller it waits for them under Agent proposals in the Crossmart app, don't send it again, and
+  check it with `get_proposal` when they say they decided (it expires after 7 days).
 - Report refusals as they come (`Crossmart refused (402): …`) and follow the hint in the message.
 
 ## Workflows

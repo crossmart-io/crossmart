@@ -39,6 +39,7 @@ enum ActivityAction: string
     case SandboxClaimed = 'sandbox_claimed';
     case WorkspaceRenamed = 'workspace_renamed';
     case WorkspaceTimeZoneChanged = 'workspace_time_zone_changed';
+    case OutsideAgentChangesChanged = 'outside_agent_changes_changed';
     case CustomRoleCreated = 'custom_role_created';
     case CustomRoleUpdated = 'custom_role_updated';
     case CustomRoleDeleted = 'custom_role_deleted';
@@ -69,5 +70,6 @@ enum ActivityAction: string
     case ContentGenerated = 'content_generated';
     case SuggestionApproved = 'suggestion_approved';
     case SuggestionRejected = 'suggestion_rejected';
+    case AgentProposalRejected = 'agent_proposal_rejected';
     case SuggestionsBulkApproved = 'suggestions_bulk_approved';
 }

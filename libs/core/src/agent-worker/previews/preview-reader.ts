@@ -1,10 +1,12 @@
 import type { z } from 'zod';
 import { HttpMethod } from '../../agent-tools/api/api-call.js';
 import { AgentToolName, WORKSPACE_PATH } from '../../agent-tools/agent-tools.constants.js';
-import { type ApiToolSpec, defineTool } from '../../agent-tools/tools/api-tool.js';
+import {
+  type ApiToolResult,
+  type ApiToolSpec,
+  defineTool,
+} from '../../agent-tools/tools/api-tool.js';
 import { ALL_TOOLS } from '../../agent-tools/tools/index.js';
-import type { AgentWorkerScope } from '../entities/agent-worker-owner.js';
-import type { AgentToolExecutor } from '../tools/agent-tool-executor.js';
 import {
   INVENTORY_ITEM_SOURCE,
   type InventoryItemSource,
@@ -36,16 +38,22 @@ function specNamed(name: AgentToolName): ApiToolSpec {
 }
 
 /**
- * What a preview reads, through the same API the change will go through, as the person. Each
+ * Runs one read tool for a preview, as whoever proposes the change: Crossmart Agent for its
+ * person, or an outside agent with its own credential (ADR 0028).
+ */
+export type PreviewToolRunner = (
+  spec: ApiToolSpec,
+  input: Record<string, unknown>,
+) => Promise<ApiToolResult>;
+
+/**
+ * What a preview reads, through the same API the change will go through, as its proposer. Each
  * read happens once per preview, however many values use it.
  */
 export class PreviewReader {
   private readonly reads = new Map<string, Promise<unknown>>();
 
-  constructor(
-    private readonly executor: AgentToolExecutor,
-    private readonly scope: AgentWorkerScope,
-  ) {}
+  constructor(private readonly run: PreviewToolRunner) {}
 
   product(productId: string): Promise<ProductSource> {
     return this.read(specNamed(AgentToolName.GetProduct), { productId }, PRODUCT_SOURCE);
@@ -93,7 +101,7 @@ export class PreviewReader {
     input: Record<string, unknown>,
     schema: z.ZodType<Source>,
   ): Promise<Source> {
-    const result = await this.executor.execute(this.scope, spec, input);
+    const result = await this.run(spec, input);
     if (result.isError) throw new Error(result.text.split(FIRST_LINE)[0]);
     return schema.parse(result.value);
   }

@@ -14,6 +14,8 @@ export const ASK_PATH = `${API_PREFIX}/ask`;
 export const ASK_ESCALATIONS_PATH = `${API_PREFIX}/ask/escalations`;
 /** Opens a sandbox account for someone without one (ADR 0019); it takes calls without a key. */
 export const SANDBOX_ACCOUNTS_PATH = `${API_PREFIX}/sandbox-accounts`;
+/** Outside agents' proposals (ADR 0028): writes that wait for the seller's approval. */
+export const AGENT_PROPOSALS_PATH = `${WORKSPACE_PATH}/agent-proposals`;
 export const API_KEY_HEADER = 'x-api-key';
 export const AUTHORIZATION_HEADER = 'authorization';
 export const BEARER_PREFIX = 'Bearer ';
@@ -93,4 +95,13 @@ export enum AgentToolName {
   CreateWebhookEndpoint = 'create_webhook_endpoint',
   GetListing = 'get_listing',
   UpdateListing = 'update_listing',
+  GetProposal = 'get_proposal',
 }
+
+/** What an agent reads when its change waits for the seller (ADR 0028). */
+export const PROPOSAL_COPY = {
+  proposed:
+    "Proposed; waiting for the seller's approval in Crossmart. Nothing has changed yet. Tell " +
+    'the user the change is waiting for them under Agent proposals in the Crossmart app, and ' +
+    'check its status later with get_proposal. Do not send the same change again.',
+} as const;

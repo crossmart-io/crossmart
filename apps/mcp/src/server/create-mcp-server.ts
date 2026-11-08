@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { crossmartVersion } from '@crossmart/common/package/package-version.js';
 import type { ApiCredential } from '@crossmart/core/agent-tools/api/api-credential.js';
 import { CrossmartApiClient } from '@crossmart/core/agent-tools/api/crossmart-api-client.js';
+import { AGENT_PROPOSAL_TTL_DAYS } from '@crossmart/core/agent-proposals/agent-proposal-ttl.js';
 import { MCP_SERVER_NAME } from '../mcp.constants.js';
 import type { ApiToolSpec } from '@crossmart/core/agent-tools/tools/api-tool.js';
 import { registerApiTool } from '../tools/register-api-tool.js';
@@ -13,10 +14,16 @@ export const SERVER_VERSION = crossmartVersion();
 const INSTRUCTIONS =
   'Crossmart keeps one catalog and one stock count for a seller and publishes them to their ' +
   'stores. Read before you write: find ids with list_products, list_inventory or list_stores. ' +
-  'Every change is recorded in the activity log, credited to you and the person who connected you ' +
-  '(or to the API key). For questions about Crossmart itself (features, plans, how to do ' +
-  'something), use ask_crossmart; only when the user asks for a person, hand the conversation ' +
-  'to the Crossmart team with escalate_to_crossmart_team.';
+  'Changes wait for the seller: unless the workspace lets agents apply changes directly, a ' +
+  'write tool changes nothing yet. It answers status "proposed" with a proposalId, and the ' +
+  'seller approves or rejects it in the Crossmart app (Agent proposals). Tell the user it is ' +
+  'waiting for their approval, do not send the same change again, and check it later with ' +
+  'get_proposal (pending, applied, failed, rejected, or expired after ' +
+  `${AGENT_PROPOSAL_TTL_DAYS} days). Every change is recorded in the activity log, credited ` +
+  'to you and the person who connected you (or to the API key), and to whoever approved it. ' +
+  'For questions about Crossmart itself (features, plans, how to do something), use ' +
+  'ask_crossmart; only when the user asks for a person, hand the conversation to the ' +
+  'Crossmart team with escalate_to_crossmart_team.';
 
 /**
  * The tools a credential may use: every tool for an API key (its role decides in the API), and

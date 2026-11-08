@@ -15,6 +15,11 @@ enum WorkspaceEventType: string
     case AgentChangeApplied = 'agent.change_applied';
     case AgentChangeFailed = 'agent.change_failed';
     case AgentTurnFailed = 'agent.turn_failed';
+    case AgentProposalReceived = 'agent.proposal_received';
+    case AgentProposalApproved = 'agent.proposal_approved';
+    case AgentProposalRejected = 'agent.proposal_rejected';
+    case AgentProposalExpired = 'agent.proposal_expired';
+    case AgentProposalFailed = 'agent.proposal_failed';
     case AgentActivity = 'agent.activity';
     case ListingPublished = 'listing.published';
     case ListingUpdated = 'listing.updated';

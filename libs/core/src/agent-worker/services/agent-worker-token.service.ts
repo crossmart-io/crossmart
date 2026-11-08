@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { jwtVerify, SignJWT } from 'jose';
-import { AppConfigService, hmacSha256 } from '@crossmart/common';
+import { AppConfigService, InternalToken } from '@crossmart/common';
 import {
   AGENT_WORKER_CONVERSATION_CLAIM,
-  AGENT_WORKER_TOKEN_ALGORITHM,
   AGENT_WORKER_TOKEN_AUDIENCE,
   AGENT_WORKER_TOKEN_ISSUER,
   AGENT_WORKER_TOKEN_KEY_CONTEXT,
@@ -11,8 +9,6 @@ import {
   AGENT_WORKER_WORKSPACE_CLAIM,
 } from '../agent-worker.constants.js';
 import type { AgentWorkerScope } from '../entities/agent-worker-owner.js';
-
-const SECONDS_SUFFIX = 's';
 
 /**
  * Agent Worker's credential for its own calls to the API: a JWT naming the person, workspace and
@@ -22,45 +18,32 @@ const SECONDS_SUFFIX = 's';
  */
 @Injectable()
 export class AgentWorkerTokenService {
-  private readonly key: Uint8Array;
+  private readonly token: InternalToken;
 
   constructor(config: AppConfigService) {
-    this.key = Buffer.from(
-      hmacSha256(config.authSecret, AGENT_WORKER_TOKEN_KEY_CONTEXT, 'hex'),
-      'hex',
-    );
+    this.token = new InternalToken({
+      secret: config.authSecret,
+      keyContext: AGENT_WORKER_TOKEN_KEY_CONTEXT,
+      issuer: AGENT_WORKER_TOKEN_ISSUER,
+      audience: AGENT_WORKER_TOKEN_AUDIENCE,
+      ttlSeconds: AGENT_WORKER_TOKEN_TTL_SECONDS,
+    });
   }
 
   issue(scope: AgentWorkerScope): Promise<string> {
-    return new SignJWT({
+    return this.token.issue(scope.userId, {
       [AGENT_WORKER_WORKSPACE_CLAIM]: scope.workspaceId,
       [AGENT_WORKER_CONVERSATION_CLAIM]: scope.conversationId,
-    })
-      .setProtectedHeader({ alg: AGENT_WORKER_TOKEN_ALGORITHM })
-      .setSubject(scope.userId)
-      .setIssuer(AGENT_WORKER_TOKEN_ISSUER)
-      .setAudience(AGENT_WORKER_TOKEN_AUDIENCE)
-      .setIssuedAt()
-      .setExpirationTime(`${AGENT_WORKER_TOKEN_TTL_SECONDS}${SECONDS_SUFFIX}`)
-      .sign(this.key);
+    });
   }
 
   /** The scope the token names, or null when it is forged, expired or malformed. */
   async verify(token: string): Promise<AgentWorkerScope | null> {
-    try {
-      const { payload } = await jwtVerify(token, this.key, {
-        algorithms: [AGENT_WORKER_TOKEN_ALGORITHM],
-        audience: AGENT_WORKER_TOKEN_AUDIENCE,
-        issuer: AGENT_WORKER_TOKEN_ISSUER,
-      });
-      const workspaceId = payload[AGENT_WORKER_WORKSPACE_CLAIM];
-      const conversationId = payload[AGENT_WORKER_CONVERSATION_CLAIM];
-      if (!payload.sub || typeof workspaceId !== 'string' || typeof conversationId !== 'string') {
-        return null;
-      }
-      return { userId: payload.sub, workspaceId, conversationId };
-    } catch {
-      return null;
-    }
+    const verified = await this.token.verify(token);
+    if (!verified) return null;
+    const workspaceId = verified.claims[AGENT_WORKER_WORKSPACE_CLAIM];
+    const conversationId = verified.claims[AGENT_WORKER_CONVERSATION_CLAIM];
+    if (typeof workspaceId !== 'string' || typeof conversationId !== 'string') return null;
+    return { userId: verified.subject, workspaceId, conversationId };
   }
 }

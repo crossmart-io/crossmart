@@ -1,6 +1,7 @@
 import type { Workspace } from '@crossmart/database';
 import type { ResolvedRole } from '../entities/role-assignment.js';
 import type { SandboxState, WorkspaceAccess } from '../entities/workspace-access.js';
+import { toOutsideAgentChanges } from '../../workspace-settings/workspace-settings.repository.js';
 import { workspaceDisplayName } from './workspace-display-name.js';
 
 /** What a workspace read needs besides its own columns: its organization's name and sandbox. */
@@ -36,6 +37,7 @@ export function toWorkspaceAccess(
     currency,
     timeZone,
     sandbox: sandboxStateOf(workspace),
+    outsideAgentChanges: toOutsideAgentChanges(workspace.outsideAgentChanges),
     ...access,
   };
 }

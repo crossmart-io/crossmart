@@ -7,6 +7,7 @@ from uuid import UUID
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.outside_agent_changes import OutsideAgentChanges
 from ..models.workspace_permission import WorkspacePermission
 from ..models.workspace_role import WorkspaceRole
 
@@ -31,6 +32,9 @@ class WorkspaceDto:
         time_zone (None | str): IANA time zone that reports follow; null until set Example: Asia/Jerusalem.
         sandbox (None | SandboxStateDto): Set while the workspace is an unclaimed sandbox account an AI agent opened: it
             cannot connect stores, publish or invite people until claimed. Null for every other workspace.
+        outside_agent_changes (OutsideAgentChanges): What happens to changes by outside AI agents (OAuth agents and MCP
+            sessions): `require_approval` (the default) makes each one a proposal to approve; `apply_directly` makes them at
+            once. API keys over REST always apply directly.
         role (WorkspaceRole): Your role here
         custom_role (CustomRoleRefDto | None): The workspace’s own role, when `role` is CUSTOM
         permissions (list[WorkspacePermission]): What your role lets you do here. Check these, not the role, to adapt a
@@ -45,6 +49,7 @@ class WorkspaceDto:
     currency: str
     time_zone: None | str
     sandbox: None | SandboxStateDto
+    outside_agent_changes: OutsideAgentChanges
     role: WorkspaceRole
     custom_role: CustomRoleRefDto | None
     permissions: list[WorkspacePermission]
@@ -75,6 +80,8 @@ class WorkspaceDto:
         else:
             sandbox = self.sandbox
 
+        outside_agent_changes = self.outside_agent_changes.value
+
         role = self.role.value
 
         custom_role: dict[str, Any] | None
@@ -100,6 +107,7 @@ class WorkspaceDto:
                 "currency": currency,
                 "timeZone": time_zone,
                 "sandbox": sandbox,
+                "outsideAgentChanges": outside_agent_changes,
                 "role": role,
                 "customRole": custom_role,
                 "permissions": permissions,
@@ -148,6 +156,8 @@ class WorkspaceDto:
 
         sandbox = _parse_sandbox(d.pop("sandbox"))
 
+        outside_agent_changes = OutsideAgentChanges(d.pop("outsideAgentChanges"))
+
         role = WorkspaceRole(d.pop("role"))
 
         def _parse_custom_role(data: object) -> CustomRoleRefDto | None:
@@ -181,6 +191,7 @@ class WorkspaceDto:
             currency=currency,
             time_zone=time_zone,
             sandbox=sandbox,
+            outside_agent_changes=outside_agent_changes,
             role=role,
             custom_role=custom_role,
             permissions=permissions,

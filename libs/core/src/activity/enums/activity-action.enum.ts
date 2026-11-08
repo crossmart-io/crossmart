@@ -58,6 +58,11 @@ export enum ActivityAction {
   WorkspaceRenamed = 'workspace_renamed',
   /** The detail names the new time zone. */
   WorkspaceTimeZoneChanged = 'workspace_time_zone_changed',
+  /**
+   * Whether outside agents' changes wait for approval changed (ADR 0028); the detail says what
+   * it is now.
+   */
+  OutsideAgentChangesChanged = 'outside_agent_changes_changed',
   CustomRoleCreated = 'custom_role_created',
   /** A custom role's name or permissions changed. */
   CustomRoleUpdated = 'custom_role_updated',
@@ -115,6 +120,12 @@ export enum ActivityAction {
   SuggestionApproved = 'suggestion_approved',
   /** A suggestion was rejected; the detail names the field and the store. */
   SuggestionRejected = 'suggestion_rejected',
+  /**
+   * A person rejected an outside agent's proposed change (ADR 0028); the detail names the agent.
+   * Approved ones need no event of their own: the change is logged, credited to the agent and
+   * the person who approved it.
+   */
+  AgentProposalRejected = 'agent_proposal_rejected',
   /** Several suggestions were approved at once; each applied change is logged on its own too. */
   SuggestionsBulkApproved = 'suggestions_bulk_approved',
 }

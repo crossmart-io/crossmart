@@ -1,7 +1,7 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { AgentClientSweeper } from '@crossmart/core';
+import { AgentClientSweeper, OutsideAgentChanges } from '@crossmart/core';
 import { PrismaService } from '@crossmart/database';
 import {
   type AgentTokens,
@@ -32,6 +32,15 @@ describe('Agents connected with OAuth (ADR 0019)', () => {
       .post(`/api/v1/workspaces/${workspaceId}/products`)
       .set(asAgent(tokens))
       .send({ title, variants: [{ price: '10' }] });
+  }
+
+  /** These tests are about access, not approvals (ADR 0028): let the agent's writes apply. */
+  async function letAgentsApplyDirectly({ cookie, workspaceId }: SignedUpUser) {
+    const response = await server()
+      .patch(`/api/v1/workspaces/${workspaceId}`)
+      .set('Cookie', cookie)
+      .send({ outsideAgentChanges: OutsideAgentChanges.ApplyDirectly });
+    expect(response.status).toBe(HttpStatus.OK);
   }
 
   async function connectionsOf({ cookie, workspaceId }: SignedUpUser) {
@@ -92,6 +101,7 @@ describe('Agents connected with OAuth (ADR 0019)', () => {
 
     beforeAll(async () => {
       user = await signUp(app, 'Dana');
+      await letAgentsApplyDirectly(user);
       tokens = await connectAgent(app, user, { clientId: await registerAgent(app, 'Test Agent') });
     });
 
@@ -228,6 +238,7 @@ describe('Agents connected with OAuth (ADR 0019)', () => {
     async function agedAgent(user: SignedUpUser, name: string) {
       const clientId = await registerAgent(app, name);
       const tokens = await connectAgent(app, user, { clientId });
+      await letAgentsApplyDirectly(user);
       await createProduct(user.workspaceId, tokens, `${name} mug`);
       const prisma = app.get(PrismaService);
       const where = { clientId };

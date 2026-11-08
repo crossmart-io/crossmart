@@ -15,11 +15,13 @@ final class WorkspaceEventActorDto implements JsonSerializable
     /**
      * @param string|null $name The person or API key; for an agent, the person it acted for
      * @param string|null $agentName The agent, for agent actions: "Crossmart Agent", or a connected agent such as "Claude"
+     * @param string|null $approvedByName Who approved the outside agent's proposal that made the change, if anyone
      */
     public function __construct(
         public readonly ActivityActorType|string $type,
         public readonly ?string $name,
         public readonly ?string $agentName,
+        public readonly ?string $approvedByName,
     ) {
     }
 
@@ -36,6 +38,7 @@ final class WorkspaceEventActorDto implements JsonSerializable
             type: $payload->enum('type', ActivityActorType::class),
             name: $payload->isNull('name') ? null : $payload->string('name'),
             agentName: $payload->isNull('agentName') ? null : $payload->string('agentName'),
+            approvedByName: $payload->isNull('approvedByName') ? null : $payload->string('approvedByName'),
         );
     }
 
@@ -50,6 +53,7 @@ final class WorkspaceEventActorDto implements JsonSerializable
             'type' => Payload::enumValue($this->type),
             'name' => $this->name,
             'agentName' => $this->agentName,
+            'approvedByName' => $this->approvedByName,
         ];
     }
 

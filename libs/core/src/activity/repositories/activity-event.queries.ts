@@ -5,6 +5,7 @@ export const ACTIVITY_EVENT_INCLUDE = {
   actorUser: { select: { name: true, email: true } },
   actorApiKey: { select: { name: true } },
   actorOAuthClient: { select: { name: true } },
+  actorApprovedBy: { select: { name: true } },
 } satisfies Prisma.ActivityEventInclude;
 
 export type ActivityEventRecord = Prisma.ActivityEventGetPayload<{

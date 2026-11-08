@@ -59,7 +59,7 @@ export class WorkspaceRepository {
 
   update(
     workspaceId: string,
-    changes: { name?: string; timeZone?: string },
+    changes: { name?: string; timeZone?: string; outsideAgentChanges?: string },
   ): Promise<WorkspaceWithOrganization> {
     return this.prisma.workspace.update({
       where: { id: workspaceId },

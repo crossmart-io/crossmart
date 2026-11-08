@@ -23,6 +23,11 @@ export const WORKSPACE_EVENT_KINDS: Record<WorkspaceEventType, EventKind> = {
   [WorkspaceEventType.AgentChangeFailed]: { category: Agent, severity: Error },
   [WorkspaceEventType.AgentTurnFailed]: { category: Agent, severity: Error },
   [WorkspaceEventType.AgentActivity]: { category: Agent, severity: Info },
+  [WorkspaceEventType.AgentProposalReceived]: { category: Agent, severity: Warning },
+  [WorkspaceEventType.AgentProposalApproved]: { category: Agent, severity: Info },
+  [WorkspaceEventType.AgentProposalRejected]: { category: Agent, severity: Info },
+  [WorkspaceEventType.AgentProposalExpired]: { category: Agent, severity: Info },
+  [WorkspaceEventType.AgentProposalFailed]: { category: Agent, severity: Error },
   [WorkspaceEventType.ListingPublished]: { category: Stores, severity: Success },
   [WorkspaceEventType.ListingUpdated]: { category: Stores, severity: Info },
   [WorkspaceEventType.ListingFailed]: { category: Stores, severity: Error },
@@ -46,6 +51,7 @@ export const NO_REFS: WorkspaceEventRefs = {
   webhookEndpointId: null,
   conversationId: null,
   actionId: null,
+  proposalId: null,
 };
 
 /** What a source knows about an event; the kind table fills in its group and tone. */

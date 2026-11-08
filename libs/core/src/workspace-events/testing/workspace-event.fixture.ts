@@ -13,7 +13,7 @@ export function workspaceEvent(overrides: Partial<WorkspaceEvent> = {}): Workspa
     severity: WorkspaceEventSeverity.Info,
     summary: 'Updated product “Mug”',
     detail: null,
-    actor: { type: ActivityActorType.USER, name: 'Dana', agentName: null },
+    actor: { type: ActivityActorType.USER, name: 'Dana', agentName: null, approvedByName: null },
     refs: {
       connectionId: null,
       productId: null,
@@ -21,6 +21,7 @@ export function workspaceEvent(overrides: Partial<WorkspaceEvent> = {}): Workspa
       webhookEndpointId: null,
       conversationId: null,
       actionId: null,
+      proposalId: null,
     },
     itemCount: null,
     occurredAt: new Date('2026-11-08T10:00:00.000Z'),
