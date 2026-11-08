@@ -1494,7 +1494,7 @@ export const DOCS_KNOWLEDGE_CHUNKS: readonly KnowledgeChunk[] = [
     source: KnowledgeSourceKind.Docs,
     title: 'Agent Worker',
     url: 'https://docs.crossmart.io/sellers/agent-worker/',
-    text: 'Agent Worker is the AI agent inside Crossmart. It looks things up at once and proposes every change for you to approve, with what changes before and after.\n\nAgent Worker is an AI agent you chat with inside Crossmart. You ask it to do something, such as\n"Fix my failed eBay listings", and it looks up what it needs and proposes the changes. Nothing\nchanges until you approve.\n\nYou don\'t need to set up your own AI agent to use it. If you do use one through\nMCP, Agent Worker works with the same tools and the same limits.',
+    text: 'Agent Worker is the AI agent inside Crossmart. It looks things up at once and proposes every change for you to approve, with what changes before and after.\n\nAgent Worker is an AI agent you chat with inside Crossmart. You ask it to do something, such as\n"Fix my failed eBay listings", and it looks up what it needs and proposes the changes. Nothing\nchanges until you approve.\n\nIt works inside Crossmart, so no assistant of your own is needed. Outside agents you\nconnect use the same tools and limits.',
   },
   {
     id: 'docs:sellers/agent-worker.mdx#open-it',
@@ -1543,7 +1543,7 @@ export const DOCS_KNOWLEDGE_CHUNKS: readonly KnowledgeChunk[] = [
     source: KnowledgeSourceKind.Docs,
     title: 'Agent Worker › When it is limited',
     url: 'https://docs.crossmart.io/sellers/agent-worker/#when-it-is-limited',
-    text: "- **A sandbox account** (one an AI agent created for you that you haven't claimed yet) can't use\n  Agent Worker. Claim the account first.\n- **A read-only account** (when the subscription isn't paid) can still chat with Agent Worker and\n  look things up, but it can't propose changes.\n- **One message at a time** per conversation. Wait for the answer, or press **Stop**.\n\nConversations are kept for 180 days after the last message, then deleted.\n\n  Agent Worker uses the same tools as Crossmart's MCP server, and every call\n  goes through the same API, with the same checks and the same activity log. The difference is that\n  Agent Worker never makes a change on its own: every change waits for your approval.",
+    text: "- **A sandbox account** (one an AI agent created for you that you haven't claimed yet) can't use\n  Agent Worker. Claim the account first.\n- **A read-only account** (when the subscription isn't paid) can still chat with Agent Worker and\n  look things up, but it can't propose changes.\n- **One message at a time** per conversation. Wait for the answer, or press **Stop**.\n\nConversations are kept for 180 days after the last message, then deleted.\n\n  Agent Worker uses the same tools as outside agents (developer reference), and every call\n  goes through the same API, with the same checks and the same activity log. The difference is that\n  Agent Worker never makes a change on its own: every change waits for your approval.",
   },
   {
     id: 'docs:sellers/connect-a-store.mdx',
