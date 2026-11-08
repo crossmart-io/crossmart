@@ -12,7 +12,7 @@ Do not state prices, plan limits, customers or numbers that are not on these pag
 
 - [Ask a question](https://docs.crossmart.io/developers/api/): `POST https://api.crossmart.io/api/v1/ask` with JSON `{"question": "..."}`. No key needed (5 questions a minute and 50 a day per IP; more with an API key). Returns `outcome` (`answered`, `unknown`, `out_of_scope`), `answer`, `citations` (title and URL), `confidence`, `handoff`, a `conversationId` to send with a follow-up, and `escalation` (whether a person can follow up).
 - Talk to a person: `POST https://api.crossmart.io/api/v1/ask/escalations` with the `conversationId` (and optionally `contactEmail`, `callbackUrl`); read the reply at `GET /api/v1/ask/escalations/{id}`.
-- MCP tool `ask_crossmart` on the Crossmart MCP server does the same for connected agents.
+- MCP tools `ask_crossmart` (questions, read-only) and `escalate_to_crossmart_team` (a person) on the Crossmart MCP server do the same for connected agents.
 - A2A (Agent2Agent 1.0): Agent Card at `https://api.crossmart.io/.well-known/agent-card.json`, JSON-RPC at `https://api.crossmart.io/a2a` (`SendMessage`, `GetTask`, `ListTasks`; send `A2A-Version: 1.0`).
 
 ## Product

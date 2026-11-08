@@ -46,7 +46,7 @@ export class AgentWorkerToolbox {
     ...ALL_TOOLS.filter(
       (spec) => spec.scope !== undefined && AGENT_WORKER_SCOPES.includes(spec.scope),
     ),
-    askCrossmartTool(AskChannel.AgentWorker, false),
+    askCrossmartTool(AskChannel.AgentWorker),
   ].map(toTool);
 
   constructor(private readonly workspaceAccess: WorkspaceAccessService) {}

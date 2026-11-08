@@ -101,6 +101,8 @@ export const LISTING_EDITOR_TOOLS = [
       'update is queued. Read the fields first with get_listing.',
     input: { ...PRODUCT_ON_STORE_INPUT, ...OVERRIDE_INPUT },
     readOnly: false,
+    overwrites: true,
+    openWorld: true,
     priceInputs: ['variantPrices'],
     scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId, ...patch }) => ({

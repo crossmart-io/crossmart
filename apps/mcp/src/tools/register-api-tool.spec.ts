@@ -4,7 +4,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { apiKeyCredential } from '@crossmart/core/agent-tools/api/api-credential.js';
 import { CrossmartApiClient } from '@crossmart/core/agent-tools/api/crossmart-api-client.js';
 import { CrossmartApiError } from '@crossmart/core/agent-tools/api/crossmart-api.error.js';
-import { RefusalStatus } from '@crossmart/core/agent-tools/agent-tools.constants.js';
+import {
+  AgentToolName,
+  RefusalStatus,
+  WEBHOOK_SECRET_WITHHELD,
+} from '@crossmart/core/agent-tools/agent-tools.constants.js';
 import { registerApiTool } from './register-api-tool.js';
 import { ALL_TOOLS } from '@crossmart/core/agent-tools/tools/index.js';
 
@@ -26,6 +30,12 @@ async function connect(apiClient: CrossmartApiClient): Promise<Client> {
 function refusingClient(error: CrossmartApiError): CrossmartApiClient {
   const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
   vi.spyOn(apiClient, 'call').mockRejectedValue(error);
+  return apiClient;
+}
+
+function answeringClient(value: unknown): CrossmartApiClient {
+  const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
+  vi.spyOn(apiClient, 'call').mockResolvedValue(value);
   return apiClient;
 }
 
@@ -61,5 +71,35 @@ describe('API tools', () => {
     expect(tools.map((listed) => listed.name)).toEqual(ALL_TOOLS.map((spec) => spec.name));
     const itemSpecifics = tools.find((listed) => listed.name === 'get_item_specifics');
     expect(itemSpecifics?.annotations?.readOnlyHint).toBe(true);
+  });
+
+  it('tells clients overwrites are destructive and publishing is open-world', async () => {
+    const { tools } = await (await connect(answeringClient({}))).listTools();
+    const annotationsOf = (name: string) =>
+      tools.find((listed) => listed.name === name)?.annotations;
+
+    expect(annotationsOf(AgentToolName.UpdateProductText)).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    });
+    expect(annotationsOf(AgentToolName.AskCrossmart)).toEqual({
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+    });
+  });
+
+  it('answers a new webhook endpoint without its signing secret', async () => {
+    const endpoint = { id: 'we-1', url: 'https://example.com/hooks' };
+    const client = await connect(answeringClient({ endpoint, secret: 'whsec_live_secret' }));
+    const result = await client.callTool({
+      name: AgentToolName.CreateWebhookEndpoint,
+      arguments: { url: endpoint.url, eventTypes: ['order.created'] },
+    });
+
+    const text = firstText(result);
+    expect(text).not.toContain('whsec_live_secret');
+    expect(JSON.parse(text)).toEqual({ endpoint, signingSecret: WEBHOOK_SECRET_WITHHELD });
   });
 });

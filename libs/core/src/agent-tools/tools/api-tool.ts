@@ -17,8 +17,22 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   input: Shape;
   /** True for tools that only read. */
   readOnly: boolean;
-  /** True for tools that delete or take things off sale. */
+  /**
+   * True for tools that delete or take things off sale. Agent Worker labels these calls
+   * "destructive" on its approval cards; MCP clients see them as destructive too.
+   */
   destructive?: boolean;
+  /**
+   * True for tools that overwrite a live value (a title, a price, a stock count, a listing).
+   * Only MCP clients are told such a tool is destructive (`destructiveHint`), so they confirm
+   * before running it; Agent Worker's risk labels read `destructive` alone.
+   */
+  overwrites?: boolean;
+  /**
+   * True for tools that reach beyond the workspace: publish to a marketplace, send data to a
+   * URL, or email someone. MCP clients see it as `openWorldHint`.
+   */
+  openWorld?: boolean;
   /** True for tools that publish a listing to a store (counted for bulk confirmation). */
   publishes?: boolean;
   /** Input fields that change what a buyer pays; a call that sets one changes prices. */
@@ -30,6 +44,8 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   toCall: (input: z.infer<z.ZodObject<Shape>>) => ApiCall;
   /** Runs after the API answered, such as to start using a credential the answer carries. */
   afterCall?: (result: unknown, client: CrossmartApiClient) => void;
+  /** What the agent reads of the API's answer, such as the answer without a secret it holds. */
+  toResult?: (result: unknown) => unknown;
 }
 
 /** What a tool call gave the agent: the API's answer as text, or its refusal. */
@@ -71,7 +87,8 @@ export async function runApiTool(
   try {
     const value = await client.call(spec.toCall(input as never));
     spec.afterCall?.(value, client);
-    return { isError: false, text: toText(value), value };
+    const shown = spec.toResult ? spec.toResult(value) : value;
+    return { isError: false, text: toText(shown), value: shown };
   } catch (error) {
     if (!(error instanceof CrossmartApiError)) throw error;
     return { isError: true, text: toRefusalText(spec, error), status: error.status };

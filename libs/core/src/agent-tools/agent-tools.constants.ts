@@ -58,6 +58,15 @@ export enum RefusalStatus {
   Conflict = 409,
 }
 
+/**
+ * What an agent reads in place of a new webhook endpoint's signing secret: tool results must not
+ * carry credentials, so the person gets the secret in the web app (a rotation shows a new one).
+ */
+export const WEBHOOK_SECRET_WITHHELD =
+  'The signing secret is not shown to agents. To get it, open Settings > Webhooks in the ' +
+  'Crossmart web app, open this endpoint and choose Rotate secret: the new secret is shown ' +
+  'there once, to give to the service behind the URL.';
+
 /** The answer of an API call that has no body (204). */
 export const NO_CONTENT_STATUS = 204;
 
@@ -79,6 +88,9 @@ export enum AgentToolName {
   GenerateContent = 'generate_content',
   ApproveSuggestion = 'approve_suggestion',
   AskCrossmart = 'ask_crossmart',
+  EscalateToCrossmartTeam = 'escalate_to_crossmart_team',
+  GetAskEscalation = 'get_ask_escalation',
+  CreateWebhookEndpoint = 'create_webhook_endpoint',
   GetListing = 'get_listing',
   UpdateListing = 'update_listing',
 }

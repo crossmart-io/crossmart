@@ -26,6 +26,7 @@ describe('toolsFor', () => {
     expect(tools.sort()).toEqual(
       [
         'ask_crossmart',
+        'escalate_to_crossmart_team',
         'get_ask_escalation',
         'get_order',
         'get_platform_health',
@@ -36,6 +37,11 @@ describe('toolsFor', () => {
 
   it('gives every tool a scope but the public ones, which read no workspace data', () => {
     const unscoped = ALL_TOOLS.filter((tool) => tool.scope === undefined).map((tool) => tool.name);
-    expect(unscoped.sort()).toEqual(['ask_crossmart', 'get_ask_escalation', 'get_platform_health']);
+    expect(unscoped.sort()).toEqual([
+      'ask_crossmart',
+      'escalate_to_crossmart_team',
+      'get_ask_escalation',
+      'get_platform_health',
+    ]);
   });
 });

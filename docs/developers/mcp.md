@@ -89,46 +89,59 @@ suggestions). The agent is offered only the tools those scopes cover. The
 
 ## Tools
 
-| Tool                        | Does                                                                        | Changes data |
-| --------------------------- | --------------------------------------------------------------------------- | :----------: |
-| `list_products`             | Products by title, with price range, stock and status                       |              |
-| `get_product`               | One product with its variants, stock, options and images                    |              |
-| `create_product`            | Adds a product with its variants (a draft unless `ACTIVE`)                  |     Yes      |
-| `replace_product`           | Saves a whole product; variants left out are removed                        |     Yes      |
-| `list_inventory`            | Stock per variant: on hand, held for orders, available                      |              |
-| `adjust_stock`              | Adds, removes or sets stock, with a reason                                  |     Yes      |
-| `list_orders`               | Orders from every store (Shopify, eBay…), without buyer details             |              |
-| `get_order`                 | One order with its lines and the stock each line holds or has shipped       |              |
-| `list_stores`               | Connected stores with their status and publish readiness                    |              |
-| `get_store`                 | One store, with what its setup still needs before it can publish            |              |
-| `add_product_to_store`      | Lists a product on a store                                                  |     Yes      |
-| `remove_product_from_store` | Takes a product off a store; it keeps its order history                     |     Yes      |
-| `list_store_products`       | A store's products by state or `displayState`, with counts                  |              |
-| `get_product_stores`        | One product on every store, with its display state and reason               |              |
-| `retry_store_listing`       | Publishes one product to one store again                                    |     Yes      |
-| `get_sync_progress`         | A store's sync: listings still pending, failed, and whether it is done      |              |
-| `get_listing`               | One listing field by field, with each variant's rule price                  |              |
-| `update_listing`            | Overrides fields of one listing, or reverts them with `null`                |     Yes      |
-| `suggest_store_categories`  | eBay categories that fit a product                                          |              |
-| `set_store_category`        | Chooses a product's eBay category                                           |     Yes      |
-| `get_item_specifics`        | A listing's eBay item specifics: required, recommended, allowed values      |              |
-| `save_item_specifics`       | Replaces a listing's eBay item specifics                                    |     Yes      |
-| `get_sales_report`          | Sales, orders, average order value and units against the period before      |              |
-| `get_inventory_report`      | Stock value, stock levels and listings per store                            |              |
-| `get_listing_health_report` | Products by display state per store, and the latest failed listings         |              |
-| `get_platform_health`       | Whether the API and its database are reachable                              |              |
-| `generate_content`          | Queues AI titles and descriptions for products on a store                   |     Yes      |
-| `list_suggestions`          | Proposed changes with current and proposed value and rationale              |              |
-| `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                        |     Yes      |
-| `ask_crossmart`             | Answers about Crossmart from its docs, with sources; follow-ups, escalation |              |
-| `get_ask_escalation`        | Reads the Crossmart team's reply to an escalated question                   |              |
-| `create_account`            | Opens a sandbox account for a user who has none (local server only)         |     Yes      |
+| Tool                         | Does                                                                   | Changes data |
+| ---------------------------- | ---------------------------------------------------------------------- | :----------: |
+| `list_products`              | Products by title, with price range, stock and status                  |              |
+| `get_product`                | One product with its variants, stock, options and images               |              |
+| `create_product`             | Adds a product with its variants (a draft unless `ACTIVE`)             |     Yes      |
+| `replace_product`            | Saves a whole product; variants left out are removed                   |     Yes      |
+| `update_product_text`        | Changes only a product's title and/or description                      |     Yes      |
+| `update_variant_price`       | Changes only one variant's price and/or compare-at price               |     Yes      |
+| `list_inventory`             | Stock per variant: on hand, held for orders, available                 |              |
+| `get_inventory_item`         | One variant's stock with its product                                   |              |
+| `adjust_stock`               | Adds, removes or sets stock, with a reason                             |     Yes      |
+| `list_orders`                | Orders from every store (Shopify, eBay…), without buyer details        |              |
+| `get_order`                  | One order with its lines and the stock each line holds or has shipped  |              |
+| `list_stores`                | Connected stores with their status and publish readiness               |              |
+| `get_store`                  | One store, with what its setup still needs before it can publish       |              |
+| `add_product_to_store`       | Lists a product on a store                                             |     Yes      |
+| `remove_product_from_store`  | Takes a product off a store; it keeps its order history                |     Yes      |
+| `list_store_products`        | A store's products by state or `displayState`, with counts             |              |
+| `get_product_stores`         | One product on every store, with its display state and reason          |              |
+| `retry_store_listing`        | Publishes one product to one store again                               |     Yes      |
+| `get_sync_progress`          | A store's sync: listings still pending, failed, and whether it is done |              |
+| `get_listing`                | One listing field by field, with each variant's rule price             |              |
+| `update_listing`             | Overrides fields of one listing, or reverts them with `null`           |     Yes      |
+| `suggest_store_categories`   | eBay categories that fit a product                                     |              |
+| `set_store_category`         | Chooses a product's eBay category                                      |     Yes      |
+| `get_item_specifics`         | A listing's eBay item specifics: required, recommended, allowed values |              |
+| `save_item_specifics`        | Replaces a listing's eBay item specifics                               |     Yes      |
+| `get_sales_report`           | Sales, orders, average order value and units against the period before |              |
+| `get_inventory_report`       | Stock value, stock levels and listings per store                       |              |
+| `get_listing_health_report`  | Products by display state per store, and the latest failed listings    |              |
+| `get_platform_health`        | Whether the API and its database are reachable                         |              |
+| `generate_content`           | Queues AI titles and descriptions for products on a store              |     Yes      |
+| `list_suggestions`           | Proposed changes with current and proposed value and rationale         |              |
+| `approve_suggestion`         | Applies a pending suggestion (or reports it `STALE`)                   |     Yes      |
+| `list_webhook_endpoints`     | The URLs the workspace sends events to, and which events each gets     |              |
+| `create_webhook_endpoint`    | Adds a URL to send events to; get its signing secret in the dashboard  |     Yes      |
+| `ask_crossmart`              | Answers about Crossmart from its docs, with sources, and follow-ups    |              |
+| `escalate_to_crossmart_team` | Hands an Ask conversation to the Crossmart team, who reply by email    |     Yes      |
+| `get_ask_escalation`         | Reads the Crossmart team's reply to an escalated question              |              |
+| `create_account`             | Opens a sandbox account for a user who has none (local server only)    |     Yes      |
 
-Read-only tools are marked `readOnlyHint`, and `replace_product`, `remove_product_from_store` and
-`save_item_specifics` are marked `destructiveHint`, so clients can ask before running them. When the
-API refuses a call, the tool returns the API's status, its `code` when it gives one, and its message
-(for example `Crossmart refused (404): Product not found`) instead of failing the session. Some
-tools add a next step: `retry_store_listing` explains a `409` (the store is not connected or does
+Every tool tells the client whether it only reads (`readOnlyHint`), whether it deletes or
+overwrites something (`destructiveHint`: `replace_product`, `remove_product_from_store`,
+`save_item_specifics`, `update_product_text`, `update_variant_price`, `adjust_stock`,
+`update_listing`, `set_store_category` and `approve_suggestion`), and whether it reaches beyond
+Crossmart (`openWorldHint`: those same tools, which change what your stores show, plus
+`add_product_to_store`, `retry_store_listing`, `create_webhook_endpoint`,
+`escalate_to_crossmart_team` and `create_account`), so clients can ask before running them. Tool
+results never hold secrets: `create_webhook_endpoint` leaves out the signing secret, which you get
+under Settings > Webhooks (Rotate secret). When the API refuses a call, the tool returns the API's
+status, its `code` when it gives one, and its message (for example
+`Crossmart refused (404): Product not found`) instead of failing the session. Some tools add a next
+step: `retry_store_listing` explains a `409` (the store is not connected or does
 not select the product) and a `402` (no room on the plan).
 
 ## Listing states and what to do next

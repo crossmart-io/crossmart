@@ -59,8 +59,9 @@ agent with the user's name. Members see and disconnect their agents under Settin
 | `suggestions:write` | `generate_content`, `approve_suggestion`                                                                                                                                                                |
 | `webhooks:write`    | `list_webhook_endpoints`, `create_webhook_endpoint`                                                                                                                                                     |
 
-`ask_crossmart`, `get_ask_escalation` and `get_platform_health` need no scope. `ask_crossmart` reads the
-workspace only through the lookups its connection's permissions allow (ADR 0025).
+`ask_crossmart`, `escalate_to_crossmart_team`, `get_ask_escalation` and `get_platform_health` need
+no scope. `ask_crossmart` reads the workspace only through the lookups its connection's permissions
+allow (ADR 0025).
 
 **Or open a sandbox account** (ADR 0019, part 2). A local server started without
 `CROSSMART_API_KEY` adds `create_account` (`ANONYMOUS_TOOLS` in `tools/account.tools.ts`), which
@@ -76,48 +77,64 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 
 ## Tools
 
-| Tool                        | Does                                                                   | Writes |
-| --------------------------- | ---------------------------------------------------------------------- | ------ |
-| `list_products`             | Products by title, with price range, stock and status                  |        |
-| `get_product`               | One product with its variants, stock, options and images               |        |
-| `create_product`            | Adds a product with its variants (a draft unless `ACTIVE`)             | Yes    |
-| `replace_product`           | Saves a whole product; variants left out are removed                   | Yes    |
-| `update_product_text`       | Changes only a product's title and/or description                      | Yes    |
-| `update_variant_price`      | Changes only one variant's price and/or compare-at price               | Yes    |
-| `list_inventory`            | Stock per variant: on hand, held for orders, available                 |        |
-| `get_inventory_item`        | One variant's stock with its product                                   |        |
-| `adjust_stock`              | Adds, removes or sets stock, with a reason                             | Yes    |
-| `list_orders`, `get_order`  | Orders from every store, without buyer details                         |        |
-| `list_stores`, `get_store`  | Connected stores with their status and publish readiness               |        |
-| `add_product_to_store`      | Lists a product on a store                                             | Yes    |
-| `remove_product_from_store` | Archives a product on a store                                          | Yes    |
-| `list_store_products`       | A store's products by state or display state, with the reason          |        |
-| `get_product_stores`        | One product on every store                                             |        |
-| `retry_store_listing`       | Publishes one product to one store again                               | Yes    |
-| `get_sync_progress`         | A store's sync: listings still pending, failed, and whether it is done |        |
-| `get_listing`               | One listing field by field: product value, override, result            |        |
-| `update_listing`            | Overrides fields of one listing, or reverts them with `null`           | Yes    |
-| `suggest_store_categories`  | eBay categories that fit a product                                     |        |
-| `set_store_category`        | Chooses a product's eBay category                                      | Yes    |
-| `get_item_specifics`        | A listing's eBay item specifics and the category's aspects             |        |
-| `save_item_specifics`       | Replaces a listing's eBay item specifics                               | Yes    |
-| `get_sales_report`          | Sales, orders, average order value and units against the period before |        |
-| `get_inventory_report`      | Stock value, stock levels and listings per store                       |        |
-| `get_listing_health_report` | Products by display state per store, and the latest failed listings    |        |
-| `get_platform_health`       | Whether the API and database are up                                    |        |
-| `generate_content`          | Queues AI titles and descriptions for products on a store              | Yes    |
-| `list_suggestions`          | Proposed changes with current and proposed value and rationale         |        |
-| `approve_suggestion`        | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
-| `list_webhook_endpoints`    | The URLs the workspace sends events to, and which events each gets     |        |
-| `create_webhook_endpoint`   | Adds a URL to send events to; returns its signing secret once          | Yes    |
-| `ask_crossmart`             | Answers about Crossmart (and, read-only, the workspace); can escalate  |        |
-| `get_ask_escalation`        | Reads the team's reply to an escalated question (ADR 0025)             |        |
-| `create_account`            | Opens a sandbox account; only offered without a credential (ADR 0019)  | Yes    |
+| Tool                         | Does                                                                   | Writes |
+| ---------------------------- | ---------------------------------------------------------------------- | ------ |
+| `list_products`              | Products by title, with price range, stock and status                  |        |
+| `get_product`                | One product with its variants, stock, options and images               |        |
+| `create_product`             | Adds a product with its variants (a draft unless `ACTIVE`)             | Yes    |
+| `replace_product`            | Saves a whole product; variants left out are removed                   | Yes    |
+| `update_product_text`        | Changes only a product's title and/or description                      | Yes    |
+| `update_variant_price`       | Changes only one variant's price and/or compare-at price               | Yes    |
+| `list_inventory`             | Stock per variant: on hand, held for orders, available                 |        |
+| `get_inventory_item`         | One variant's stock with its product                                   |        |
+| `adjust_stock`               | Adds, removes or sets stock, with a reason                             | Yes    |
+| `list_orders`, `get_order`   | Orders from every store, without buyer details                         |        |
+| `list_stores`, `get_store`   | Connected stores with their status and publish readiness               |        |
+| `add_product_to_store`       | Lists a product on a store                                             | Yes    |
+| `remove_product_from_store`  | Archives a product on a store                                          | Yes    |
+| `list_store_products`        | A store's products by state or display state, with the reason          |        |
+| `get_product_stores`         | One product on every store                                             |        |
+| `retry_store_listing`        | Publishes one product to one store again                               | Yes    |
+| `get_sync_progress`          | A store's sync: listings still pending, failed, and whether it is done |        |
+| `get_listing`                | One listing field by field: product value, override, result            |        |
+| `update_listing`             | Overrides fields of one listing, or reverts them with `null`           | Yes    |
+| `suggest_store_categories`   | eBay categories that fit a product                                     |        |
+| `set_store_category`         | Chooses a product's eBay category                                      | Yes    |
+| `get_item_specifics`         | A listing's eBay item specifics and the category's aspects             |        |
+| `save_item_specifics`        | Replaces a listing's eBay item specifics                               | Yes    |
+| `get_sales_report`           | Sales, orders, average order value and units against the period before |        |
+| `get_inventory_report`       | Stock value, stock levels and listings per store                       |        |
+| `get_listing_health_report`  | Products by display state per store, and the latest failed listings    |        |
+| `get_platform_health`        | Whether the API and database are up                                    |        |
+| `generate_content`           | Queues AI titles and descriptions for products on a store              | Yes    |
+| `list_suggestions`           | Proposed changes with current and proposed value and rationale         |        |
+| `approve_suggestion`         | Applies a pending suggestion (or reports it `STALE`)                   | Yes    |
+| `list_webhook_endpoints`     | The URLs the workspace sends events to, and which events each gets     |        |
+| `create_webhook_endpoint`    | Adds a URL to send events to; its signing secret stays in the web app  | Yes    |
+| `ask_crossmart`              | Answers about Crossmart (and, read-only, the workspace)                |        |
+| `escalate_to_crossmart_team` | Hands an Ask conversation to the Crossmart team, who reply by email    | Yes    |
+| `get_ask_escalation`         | Reads the team's reply to an escalated question (ADR 0025)             |        |
+| `create_account`             | Opens a sandbox account; only offered without a credential (ADR 0019)  | Yes    |
 
-Tools that only read carry `readOnlyHint`; `replace_product`, `remove_product_from_store` and
-`save_item_specifics` carry `destructiveHint`, so clients can ask before running them. When the API refuses a call, the
-tool returns an error with the API's message (for example `Crossmart refused (404): Product not
-found`) instead of failing the session.
+Every tool carries `readOnlyHint`, `destructiveHint` and `openWorldHint` (`toolAnnotations` in
+`apps/mcp/src/tools/tool-annotations.ts`), so clients can ask before running a risky call:
+
+- **Destructive:** tools that delete or take something off sale (`replace_product`,
+  `remove_product_from_store`, `save_item_specifics`), and tools that overwrite a live value
+  (`update_product_text`, `update_variant_price`, `adjust_stock`, `update_listing`,
+  `set_store_category`, `approve_suggestion`).
+- **Open-world:** tools that publish to a store or send data out of Crossmart: every destructive
+  tool above, `add_product_to_store`, `retry_store_listing`, `create_webhook_endpoint`,
+  `escalate_to_crossmart_team` and `create_account`.
+- Neither: the read tools, `create_product` (a draft until added to a store) and
+  `generate_content` (its results wait as suggestions).
+
+Tool results never carry credentials: `create_webhook_endpoint` answers with the endpoint and where
+to get its signing secret (Settings > Webhooks in the web app, Rotate secret), while
+`POST /webhook-endpoints` in the REST API still returns it once. `ask_crossmart` only asks; reaching
+a person is `escalate_to_crossmart_team`, which takes a `contactEmail` but not the REST API's
+`callbackUrl`. When the API refuses a call, the tool returns an error with the API's message (for
+example `Crossmart refused (404): Product not found`) instead of failing the session.
 
 AI content goes through review: `generate_content` only creates pending suggestions, and
 `approve_suggestion` needs a key whose role holds `suggestions:approve` (Owner, Admin or
@@ -139,7 +156,10 @@ for the agent, a zod input and the API call it makes (`defineTool`). Add it to t
 `ALL_TOOLS` registers it. Keep one tool per endpoint and describe what the agent should read first.
 The specs are shared with [Agent Worker](agent-worker.md), the agent inside the web app, which
 offers the same tools and proposes every write for approval; mark `destructive`, `publishes` and
-`priceInputs` where they apply.
+`priceInputs` where they apply. `destructive` (deletes or takes off sale) also shows as a risk on
+Agent Worker's approval cards; `overwrites` (replaces a live value) and `openWorld` (publishes to
+a store or sends data out) only set the MCP hints. `toResult` shapes what the agent reads of the
+API's answer, such as leaving a secret out.
 
 A spec may add `refusalHints`: a next step per HTTP status, appended to the API's message when it
 refuses the call. Tools that return listings include `LISTING_STATE_GUIDE`

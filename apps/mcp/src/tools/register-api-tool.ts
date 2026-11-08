@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { CrossmartApiClient } from '@crossmart/core/agent-tools/api/crossmart-api-client.js';
 import { type ApiToolSpec, runApiTool } from '@crossmart/core/agent-tools/tools/api-tool.js';
+import { toolAnnotations } from './tool-annotations.js';
 
 async function run(
   spec: ApiToolSpec,
@@ -27,11 +28,7 @@ export function registerApiTool(
       title: spec.title,
       description: spec.description,
       inputSchema: spec.input,
-      annotations: {
-        readOnlyHint: spec.readOnly,
-        destructiveHint: spec.destructive ?? false,
-        openWorldHint: false,
-      },
+      annotations: toolAnnotations(spec),
     },
     (input: Record<string, unknown>) => run(spec, client, input),
   );

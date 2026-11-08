@@ -15,7 +15,8 @@ const INSTRUCTIONS =
   'stores. Read before you write: find ids with list_products, list_inventory or list_stores. ' +
   'Every change is recorded in the activity log, credited to you and the person who connected you ' +
   '(or to the API key). For questions about Crossmart itself (features, plans, how to do ' +
-  'something), use ask_crossmart.';
+  'something), use ask_crossmart; only when the user asks for a person, hand the conversation ' +
+  'to the Crossmart team with escalate_to_crossmart_team.';
 
 /**
  * The tools a credential may use: every tool for an API key (its role decides in the API), and
