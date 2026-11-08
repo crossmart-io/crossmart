@@ -62,12 +62,12 @@ function outcomeOf(status: AgentWorkerActionStatus, result: string | null): stri
   }
 }
 
-function previewOf(json: unknown): AgentWorkerActionPreview | null {
+export function previewOf(json: unknown): AgentWorkerActionPreview | null {
   const parsed = STORED_PREVIEW.safeParse(json);
   return parsed.success ? parsed.data : null;
 }
 
-function risksOf(stored: string[]): AgentWorkerActionRisk[] {
+export function risksOf(stored: string[]): AgentWorkerActionRisk[] {
   return stored.flatMap((risk) => {
     const known = findEnumValue(AgentWorkerActionRisk, risk);
     return known ? [known] : [];

@@ -9,6 +9,8 @@ import {
   RefusalStatus,
   WEBHOOK_SECRET_WITHHELD,
 } from '@crossmart/core/agent-tools/agent-tools.constants.js';
+import { AgentProposalOutcome } from '@crossmart/core/agent-proposals/enums/agent-proposal-outcome.enum.js';
+import { HttpMethod } from '@crossmart/core/agent-tools/api/api-call.js';
 import { registerApiTool } from './register-api-tool.js';
 import { ALL_TOOLS } from '@crossmart/core/agent-tools/tools/index.js';
 
@@ -36,6 +38,14 @@ function refusingClient(error: CrossmartApiError): CrossmartApiClient {
 function answeringClient(value: unknown): CrossmartApiClient {
   const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
   vi.spyOn(apiClient, 'call').mockResolvedValue(value);
+  return apiClient;
+}
+
+/** A workspace that lets agents apply directly: the proposal call says so, then the tool runs. */
+function directClient(value: unknown): CrossmartApiClient {
+  const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
+  const directly = { outcome: AgentProposalOutcome.ApplyDirectly, message: '', proposal: null };
+  vi.spyOn(apiClient, 'call').mockResolvedValueOnce(directly).mockResolvedValueOnce(value);
   return apiClient;
 }
 
@@ -92,7 +102,7 @@ describe('API tools', () => {
 
   it('answers a new webhook endpoint without its signing secret', async () => {
     const endpoint = { id: 'we-1', url: 'https://example.com/hooks' };
-    const client = await connect(answeringClient({ endpoint, secret: 'whsec_live_secret' }));
+    const client = await connect(directClient({ endpoint, secret: 'whsec_live_secret' }));
     const result = await client.callTool({
       name: AgentToolName.CreateWebhookEndpoint,
       arguments: { url: endpoint.url, eventTypes: ['order.created'] },
@@ -101,5 +111,57 @@ describe('API tools', () => {
     const text = firstText(result);
     expect(text).not.toContain('whsec_live_secret');
     expect(JSON.parse(text)).toEqual({ endpoint, signingSecret: WEBHOOK_SECRET_WITHHELD });
+  });
+
+  it('proposes a write instead of making it when the seller must approve', async () => {
+    const proposal = {
+      id: 'p-1',
+      status: 'pending',
+      summary: 'Retry publishing a product to a store',
+      expiresAt: '2026-11-15T00:00:00.000Z',
+    };
+    const apiClient = answeringClient({
+      outcome: AgentProposalOutcome.Proposed,
+      message: 'Proposed; waiting for the seller.',
+      proposal,
+    });
+    const client = await connect(apiClient);
+    const result = await client.callTool({ name: RETRY_TOOL, arguments: RETRY_INPUT });
+
+    expect(result.isError).toBeFalsy();
+    expect(JSON.parse(firstText(result))).toMatchObject({
+      status: AgentProposalOutcome.Proposed,
+      proposalId: 'p-1',
+      expiresAt: proposal.expiresAt,
+    });
+    expect(apiClient.call).toHaveBeenCalledTimes(1);
+    expect(apiClient.call).toHaveBeenCalledWith({
+      method: HttpMethod.Post,
+      path: '/api/v1/workspaces/{workspaceId}/agent-proposals',
+      body: { tool: RETRY_TOOL, input: RETRY_INPUT },
+    });
+  });
+
+  it('makes the call itself when the workspace lets agents apply directly', async () => {
+    const apiClient = directClient({ queued: true });
+    const result = await (
+      await connect(apiClient)
+    ).callTool({
+      name: RETRY_TOOL,
+      arguments: RETRY_INPUT,
+    });
+
+    expect(JSON.parse(firstText(result))).toEqual({ queued: true });
+    expect(apiClient.call).toHaveBeenCalledTimes(2);
+  });
+
+  it('runs reads at once, without proposing', async () => {
+    const apiClient = answeringClient({ items: [] });
+    await (await connect(apiClient)).callTool({ name: 'list_stores', arguments: {} });
+
+    expect(apiClient.call).toHaveBeenCalledTimes(1);
+    expect(apiClient.call).toHaveBeenCalledWith(
+      expect.objectContaining({ method: HttpMethod.Get }),
+    );
   });
 });

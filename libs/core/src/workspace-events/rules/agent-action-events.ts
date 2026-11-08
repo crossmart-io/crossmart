@@ -38,6 +38,7 @@ const CROSSMART_AGENT: WorkspaceEventActor = {
   type: ActivityActorType.AGENT,
   name: null,
   agentName: AGENT_WORKER_NAME,
+  approvedByName: null,
 };
 
 /** Statuses an approved change moves through. */

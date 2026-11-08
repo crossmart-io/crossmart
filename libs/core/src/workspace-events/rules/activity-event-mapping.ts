@@ -64,7 +64,12 @@ export function fromActivityEvent(view: ActivityEventView): WorkspaceEventDraft 
     type: typeOf(view),
     summary: view.summary,
     detail: view.failureReason,
-    actor: { type: view.actor.type, name: view.actor.name, agentName: view.actor.agentName },
+    actor: {
+      type: view.actor.type,
+      name: view.actor.name,
+      agentName: view.actor.agentName,
+      approvedByName: view.actor.approvedByName,
+    },
     refs: {
       connectionId: view.connectionId,
       productId: subjectIdOf(view, ActivitySubjectType.Product),

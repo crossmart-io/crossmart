@@ -11,6 +11,8 @@ export enum ActivitySubjectType {
   Member = 'member',
   Invitation = 'invitation',
   Workspace = 'workspace',
+  /** An outside agent's proposed change (ADR 0028). */
+  AgentProposal = 'agent_proposal',
   /** A role the workspace defined itself. */
   CustomRole = 'custom_role',
   ChannelConnection = 'channel_connection',

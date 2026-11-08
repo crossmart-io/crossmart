@@ -7,6 +7,7 @@ import { ALL_TOOLS, ANONYMOUS_TOOLS } from '@crossmart/core/agent-tools/tools/in
 import { toolsFor } from './create-mcp-server.js';
 
 const names = (tools: ReturnType<typeof toolsFor>) => tools.map((tool) => tool.name);
+const byName = (left: string, right: string): number => left.localeCompare(right);
 
 describe('toolsFor', () => {
   it('offers every tool to an API key', () => {
@@ -23,25 +24,25 @@ describe('toolsFor', () => {
 
   it('offers an agent only the tools its scopes cover', () => {
     const tools = names(toolsFor(accessTokenCredential('a.b.c', 'ws-1', [AgentScope.OrdersRead])));
-    expect(tools.sort()).toEqual(
-      [
-        'ask_crossmart',
-        'escalate_to_crossmart_team',
-        'get_ask_escalation',
-        'get_order',
-        'get_platform_health',
-        'list_orders',
-      ].sort(),
-    );
+    expect(tools.toSorted(byName)).toEqual([
+      'ask_crossmart',
+      'escalate_to_crossmart_team',
+      'get_ask_escalation',
+      'get_order',
+      'get_platform_health',
+      'get_proposal',
+      'list_orders',
+    ]);
   });
 
-  it('gives every tool a scope but the public ones, which read no workspace data', () => {
+  it('gives every tool a scope but the public ones and checking an own proposal', () => {
     const unscoped = ALL_TOOLS.filter((tool) => tool.scope === undefined).map((tool) => tool.name);
-    expect(unscoped.sort()).toEqual([
+    expect(unscoped.toSorted(byName)).toEqual([
       'ask_crossmart',
       'escalate_to_crossmart_team',
       'get_ask_escalation',
       'get_platform_health',
+      'get_proposal',
     ]);
   });
 });

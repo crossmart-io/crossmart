@@ -14,6 +14,13 @@ from .adjust_stock_dto import AdjustStockDto
 from .agent_client_dto import AgentClientDto
 from .agent_client_registration import AgentClientRegistration
 from .agent_connection_dto import AgentConnectionDto
+from .agent_proposal_dto import AgentProposalDto
+from .agent_proposal_outcome import AgentProposalOutcome
+from .agent_proposal_page_dto import AgentProposalPageDto
+from .agent_proposal_status import AgentProposalStatus
+from .agent_proposal_submission_dto import AgentProposalSubmissionDto
+from .agent_proposal_summary_dto import AgentProposalSummaryDto
+from .agent_proposer_kind import AgentProposerKind
 from .agent_scope import AgentScope
 from .agent_worker_action_dto import AgentWorkerActionDto
 from .agent_worker_action_preview_dto import AgentWorkerActionPreviewDto
@@ -118,6 +125,7 @@ from .current_api_key_dto import CurrentApiKeyDto
 from .custom_role_dto import CustomRoleDto
 from .custom_role_input_dto import CustomRoleInputDto
 from .custom_role_ref_dto import CustomRoleRefDto
+from .decide_agent_proposal_dto import DecideAgentProposalDto
 from .decide_agent_worker_actions_dto import DecideAgentWorkerActionsDto
 from .delete_workspace_dto import DeleteWorkspaceDto
 from .ebay_business_policies_dto import EbayBusinessPoliciesDto
@@ -264,6 +272,7 @@ from .order_page_dto import OrderPageDto
 from .order_status import OrderStatus
 from .order_summary_dto import OrderSummaryDto
 from .out_of_stock_policy import OutOfStockPolicy
+from .outside_agent_changes import OutsideAgentChanges
 from .pick_agent_workspace_dto import PickAgentWorkspaceDto
 from .plan_dto import PlanDto
 from .plan_grant_dto import PlanGrantDto
@@ -298,6 +307,8 @@ from .product_store_badge_dto import ProductStoreBadgeDto
 from .product_store_filter import ProductStoreFilter
 from .product_summary_dto import ProductSummaryDto
 from .product_view_dto import ProductViewDto
+from .propose_agent_change_dto import ProposeAgentChangeDto
+from .propose_agent_change_dto_input import ProposeAgentChangeDtoInput
 from .publish_readiness_dto import PublishReadinessDto
 from .publish_requirement import PublishRequirement
 from .reply_ask_escalation_dto import ReplyAskEscalationDto
@@ -405,6 +416,13 @@ __all__ = (
     "AgentClientDto",
     "AgentClientRegistration",
     "AgentConnectionDto",
+    "AgentProposalDto",
+    "AgentProposalOutcome",
+    "AgentProposalPageDto",
+    "AgentProposalStatus",
+    "AgentProposalSubmissionDto",
+    "AgentProposalSummaryDto",
+    "AgentProposerKind",
     "AgentScope",
     "AgentWorkerActionDto",
     "AgentWorkerActionPreviewDto",
@@ -509,6 +527,7 @@ __all__ = (
     "CustomRoleDto",
     "CustomRoleInputDto",
     "CustomRoleRefDto",
+    "DecideAgentProposalDto",
     "DecideAgentWorkerActionsDto",
     "DeleteWorkspaceDto",
     "EbayBusinessPoliciesDto",
@@ -615,6 +634,7 @@ __all__ = (
     "OrderStatus",
     "OrderSummaryDto",
     "OutOfStockPolicy",
+    "OutsideAgentChanges",
     "PickAgentWorkspaceDto",
     "PlanDto",
     "PlanGrantDto",
@@ -645,6 +665,8 @@ __all__ = (
     "ProductStoreFilter",
     "ProductSummaryDto",
     "ProductViewDto",
+    "ProposeAgentChangeDto",
+    "ProposeAgentChangeDtoInput",
     "PublishReadinessDto",
     "PublishRequirement",
     "ReplyAskEscalationDto",

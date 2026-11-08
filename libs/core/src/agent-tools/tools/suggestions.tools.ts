@@ -27,6 +27,7 @@ export const SUGGESTION_TOOLS = [
       productIds: z.array(ID_INPUT).min(1).max(CONTENT_GENERATION_MAX_PRODUCTS),
     },
     readOnly: false,
+    approvalExempt: true,
     scope: AgentScope.SuggestionsWrite,
     toCall: (input) => ({
       method: HttpMethod.Post,

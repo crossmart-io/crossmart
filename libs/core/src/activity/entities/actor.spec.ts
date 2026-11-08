@@ -52,4 +52,12 @@ describe('Actor', () => {
     const ref = { type: ActivityActorType.AGENT, userId: 'user-1', apiKeyId: null, agentName: 'X' };
     expect(Actor.from(ref)).toEqual(Actor.system());
   });
+
+  it('credits an agent with the person who approved its proposal, through a job too', () => {
+    const actor = Actor.agent('user-1', 'https://claude.ai/client').approvedBy('user-2');
+    expect(actor.approvedByUserId).toBe('user-2');
+    expect(actor.agentClientId).toBe('https://claude.ai/client');
+    expect(Actor.from(actor.toRef()).approvedByUserId).toBe('user-2');
+    expect(Actor.agent('user-1', 'client').toRef()).not.toHaveProperty('approvedByUserId');
+  });
 });

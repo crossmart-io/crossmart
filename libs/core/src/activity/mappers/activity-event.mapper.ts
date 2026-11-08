@@ -8,7 +8,11 @@ import {
   TRUNCATION_MARKER,
 } from '../activity.constants.js';
 import type { ActivityEntry } from '../entities/activity-entry.js';
-import type { ActivityEventView, ActivitySubjectView } from '../entities/activity-event-view.js';
+import type {
+  ActivityActorView,
+  ActivityEventView,
+  ActivitySubjectView,
+} from '../entities/activity-event-view.js';
 import { type Actor, builtInAgentName } from '../entities/actor.js';
 import { ActivityAction } from '../enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../enums/activity-subject-type.enum.js';
@@ -49,6 +53,7 @@ export function toActivityEventInput(
     actorApiKeyId: actor.apiKeyId,
     actorOAuthClientId: actor.agentClientId,
     actorAgentName: actor.agentName,
+    actorApprovedById: actor.approvedByUserId,
     action: entry.action,
     outcome: entry.outcome ?? ActivityOutcome.SUCCEEDED,
     subjectType: entry.subject?.type ?? null,
@@ -67,6 +72,25 @@ function toSubjectView(record: ActivityEventRecord): ActivitySubjectView | null 
   return type ? { type, id: record.subjectId, label: record.subjectLabel } : null;
 }
 
+/** The agent's name: its OAuth client's, or the built-in agent's. */
+function agentNameOf(record: ActivityEventRecord): string | null {
+  return record.actorOAuthClient?.name ?? builtInAgentName(record.actorAgentName);
+}
+
+function toActorView(record: ActivityEventRecord): ActivityActorView {
+  return {
+    type: record.actorType,
+    userId: record.actorUserId,
+    apiKeyId: record.actorApiKeyId,
+    agentClientId: record.actorOAuthClientId,
+    name: record.actorUser?.name ?? record.actorApiKey?.name ?? null,
+    email: record.actorUser?.email ?? null,
+    agentName: agentNameOf(record),
+    approvedByUserId: record.actorApprovedById,
+    approvedByName: record.actorApprovedBy?.name ?? null,
+  };
+}
+
 /** Null for an action this version does not know, such as one written by a newer release. */
 export function toActivityEventView(record: ActivityEventRecord): ActivityEventView | null {
   const action = findEnumValue(ActivityAction, record.action);
@@ -76,15 +100,7 @@ export function toActivityEventView(record: ActivityEventRecord): ActivityEventV
     action,
     outcome: record.outcome,
     summary: record.summary,
-    actor: {
-      type: record.actorType,
-      userId: record.actorUserId,
-      apiKeyId: record.actorApiKeyId,
-      agentClientId: record.actorOAuthClientId,
-      name: record.actorUser?.name ?? record.actorApiKey?.name ?? null,
-      email: record.actorUser?.email ?? null,
-      agentName: record.actorOAuthClient?.name ?? builtInAgentName(record.actorAgentName),
-    },
+    actor: toActorView(record),
     subject: toSubjectView(record),
     itemCount: record.itemCount,
     failureReason: record.failureReason,

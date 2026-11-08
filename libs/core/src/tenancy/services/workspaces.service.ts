@@ -22,7 +22,9 @@ import { toWorkspaceAccess } from '../rules/workspace-access.js';
 import {
   DEFAULT_WORKSPACE_CURRENCY,
   MAX_WORKSPACES_PER_ORGANIZATION,
+  OUTSIDE_AGENT_CHANGES_DETAIL,
 } from '../tenancy.constants.js';
+import { toOutsideAgentChanges } from '../../workspace-settings/workspace-settings.repository.js';
 
 /**
  * More workspaces for one organization, such as one per client or per brand. Owners of a
@@ -59,7 +61,10 @@ export class WorkspacesService {
     return toWorkspaceAccess(workspace, resolveRole(WorkspaceRole.OWNER, null));
   }
 
-  /** Renames the workspace or sets its time zone, recording each change. */
+  /**
+   * Renames the workspace, sets its time zone or says whether outside agents' changes wait for
+   * approval, recording each change.
+   */
   async update(
     workspaceId: string,
     changes: WorkspaceChanges,
@@ -70,19 +75,29 @@ export class WorkspacesService {
     const workspace = await this.workspaces.update(workspaceId, {
       ...(changes.name === undefined ? {} : { name: changes.name.trim() }),
       ...(changes.timeZone === undefined ? {} : { timeZone: changes.timeZone }),
+      ...(changes.outsideAgentChanges === undefined
+        ? {}
+        : { outsideAgentChanges: changes.outsideAgentChanges }),
     });
-    if (before && before.name !== workspace.name) {
-      await this.record(workspace, actor, ActivityAction.WorkspaceRenamed, before.name);
-    }
-    if (before && workspace.timeZone && before.timeZone !== workspace.timeZone) {
-      await this.record(
-        workspace,
-        actor,
-        ActivityAction.WorkspaceTimeZoneChanged,
-        workspace.timeZone,
-      );
-    }
+    if (before) await this.recordChanges(before, workspace, actor);
     return toWorkspaceAccess(workspace, access);
+  }
+
+  private async recordChanges(
+    before: WorkspaceWithOrganization,
+    after: WorkspaceWithOrganization,
+    actor: Actor,
+  ): Promise<void> {
+    if (before.name !== after.name) {
+      await this.record(after, actor, ActivityAction.WorkspaceRenamed, before.name);
+    }
+    if (after.timeZone && before.timeZone !== after.timeZone) {
+      await this.record(after, actor, ActivityAction.WorkspaceTimeZoneChanged, after.timeZone);
+    }
+    if (before.outsideAgentChanges !== after.outsideAgentChanges) {
+      const detail = OUTSIDE_AGENT_CHANGES_DETAIL[toOutsideAgentChanges(after.outsideAgentChanges)];
+      await this.record(after, actor, ActivityAction.OutsideAgentChangesChanged, detail);
+    }
   }
 
   private async assertCanCreate(organizationId: string, userId: string): Promise<void> {

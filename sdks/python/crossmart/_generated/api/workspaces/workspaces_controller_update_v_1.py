@@ -64,7 +64,7 @@ def sync_detailed(
     client: AuthenticatedClient | Client,
     body: UpdateWorkspaceDto,
 ) -> Response[WorkspaceDto]:
-    """Rename a workspace or set its time zone
+    """Rename a workspace, set its time zone, or say whether agents' changes need approval
 
     Args:
         workspace_id (str):
@@ -96,7 +96,7 @@ def sync(
     client: AuthenticatedClient | Client,
     body: UpdateWorkspaceDto,
 ) -> WorkspaceDto | None:
-    """Rename a workspace or set its time zone
+    """Rename a workspace, set its time zone, or say whether agents' changes need approval
 
     Args:
         workspace_id (str):
@@ -123,7 +123,7 @@ async def asyncio_detailed(
     client: AuthenticatedClient | Client,
     body: UpdateWorkspaceDto,
 ) -> Response[WorkspaceDto]:
-    """Rename a workspace or set its time zone
+    """Rename a workspace, set its time zone, or say whether agents' changes need approval
 
     Args:
         workspace_id (str):
@@ -153,7 +153,7 @@ async def asyncio(
     client: AuthenticatedClient | Client,
     body: UpdateWorkspaceDto,
 ) -> WorkspaceDto | None:
-    """Rename a workspace or set its time zone
+    """Rename a workspace, set its time zone, or say whether agents' changes need approval
 
     Args:
         workspace_id (str):

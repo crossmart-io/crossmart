@@ -102,6 +102,24 @@ export class ApiKeysService {
       return null;
     }
     await this.recordUse(apiKey, now);
+    return this.toIdentity(apiKey);
+  }
+
+  /**
+   * A key that is still usable, by id: how an approved proposal an MCP session made with it is
+   * applied as the key (ADR 0028). Null once it is revoked or expired.
+   */
+  async identify(
+    workspaceId: string,
+    apiKeyId: string,
+    now = new Date(),
+  ): Promise<ApiKeyIdentity | null> {
+    const apiKey = await this.apiKeys.findActive(workspaceId, apiKeyId);
+    if (!apiKey || !this.isUsable(apiKey, now)) return null;
+    return this.toIdentity(apiKey);
+  }
+
+  private toIdentity(apiKey: ApiKeyWithRole): ApiKeyIdentity {
     return {
       apiKeyId: apiKey.id,
       workspaceId: apiKey.workspaceId,

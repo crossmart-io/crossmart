@@ -29,9 +29,16 @@ export function requireApiKey(principal: Principal): ApiKeyPrincipal {
 
 /**
  * Who the activity log credits: the signed-in user, the API key itself, or the agent (a connected
- * one, or Agent Worker) on behalf of its user.
+ * one, or Agent Worker) on behalf of its user; with the person who approved it, for an outside
+ * agent's proposal (ADR 0028).
  */
 export function toActor(principal: Principal): Actor {
+  const actor = baseActor(principal);
+  const approvedBy = 'approvedByUserId' in principal ? principal.approvedByUserId : undefined;
+  return approvedBy ? actor.approvedBy(approvedBy) : actor;
+}
+
+function baseActor(principal: Principal): Actor {
   switch (principal.kind) {
     case PrincipalKind.User:
       return Actor.user(principal.userId);

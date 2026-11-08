@@ -20,6 +20,7 @@ class WorkspaceEventRefsDto:
         webhook_endpoint_id (None | UUID):
         conversation_id (None | UUID): Your Crossmart Agent conversation
         action_id (None | UUID): The Crossmart Agent tool call
+        proposal_id (None | UUID): An outside agent's proposal
     """
 
     connection_id: None | UUID
@@ -28,6 +29,7 @@ class WorkspaceEventRefsDto:
     webhook_endpoint_id: None | UUID
     conversation_id: None | UUID
     action_id: None | UUID
+    proposal_id: None | UUID
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -67,6 +69,12 @@ class WorkspaceEventRefsDto:
         else:
             action_id = self.action_id
 
+        proposal_id: None | str
+        if isinstance(self.proposal_id, UUID):
+            proposal_id = str(self.proposal_id)
+        else:
+            proposal_id = self.proposal_id
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -77,6 +85,7 @@ class WorkspaceEventRefsDto:
                 "webhookEndpointId": webhook_endpoint_id,
                 "conversationId": conversation_id,
                 "actionId": action_id,
+                "proposalId": proposal_id,
             }
         )
 
@@ -176,6 +185,21 @@ class WorkspaceEventRefsDto:
 
         action_id = _parse_action_id(d.pop("actionId"))
 
+        def _parse_proposal_id(data: object) -> None | UUID:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                proposal_id_type_0 = UUID(data)
+
+                return proposal_id_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | UUID, data)
+
+        proposal_id = _parse_proposal_id(d.pop("proposalId"))
+
         workspace_event_refs_dto = cls(
             connection_id=connection_id,
             product_id=product_id,
@@ -183,6 +207,7 @@ class WorkspaceEventRefsDto:
             webhook_endpoint_id=webhook_endpoint_id,
             conversation_id=conversation_id,
             action_id=action_id,
+            proposal_id=proposal_id,
         )
 
         workspace_event_refs_dto.additional_properties = d

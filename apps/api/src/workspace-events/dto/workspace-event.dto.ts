@@ -38,6 +38,13 @@ export class WorkspaceEventActorDto implements WorkspaceEventActor {
       'The agent, for agent actions: "Crossmart Agent", or a connected agent such as "Claude"',
   })
   agentName: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: "Who approved the outside agent's proposal that made the change, if anyone",
+  })
+  approvedByName: string | null;
 }
 
 export class WorkspaceEventRefsDto implements WorkspaceEventRefs {
@@ -58,6 +65,9 @@ export class WorkspaceEventRefsDto implements WorkspaceEventRefs {
 
   @ApiProperty({ ...NULLABLE_UUID, description: 'The Crossmart Agent tool call' })
   actionId: string | null;
+
+  @ApiProperty({ ...NULLABLE_UUID, description: "An outside agent's proposal" })
+  proposalId: string | null;
 }
 
 /** One thing that happened in the workspace. */

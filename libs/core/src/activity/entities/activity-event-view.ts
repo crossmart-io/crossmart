@@ -18,6 +18,10 @@ export interface ActivityActorView {
   email: string | null;
   /** The agent's name (such as "Claude"), for agent actions. */
   agentName: string | null;
+  /** Who approved the outside agent's proposal that made this change (ADR 0028). */
+  approvedByUserId: string | null;
+  /** Their name; null when nobody approved it, or the person was deleted. */
+  approvedByName: string | null;
 }
 
 export interface ActivitySubjectView {

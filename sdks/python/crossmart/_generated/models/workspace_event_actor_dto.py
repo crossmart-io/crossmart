@@ -19,11 +19,13 @@ class WorkspaceEventActorDto:
         name (None | str): The person or API key; for an agent, the person it acted for
         agent_name (None | str): The agent, for agent actions: "Crossmart Agent", or a connected agent such as "Claude"
             Example: Crossmart Agent.
+        approved_by_name (None | str): Who approved the outside agent's proposal that made the change, if anyone
     """
 
     type_: ActivityActorType
     name: None | str
     agent_name: None | str
+    approved_by_name: None | str
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -35,6 +37,9 @@ class WorkspaceEventActorDto:
         agent_name: None | str
         agent_name = self.agent_name
 
+        approved_by_name: None | str
+        approved_by_name = self.approved_by_name
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -42,6 +47,7 @@ class WorkspaceEventActorDto:
                 "type": type_,
                 "name": name,
                 "agentName": agent_name,
+                "approvedByName": approved_by_name,
             }
         )
 
@@ -66,10 +72,18 @@ class WorkspaceEventActorDto:
 
         agent_name = _parse_agent_name(d.pop("agentName"))
 
+        def _parse_approved_by_name(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        approved_by_name = _parse_approved_by_name(d.pop("approvedByName"))
+
         workspace_event_actor_dto = cls(
             type_=type_,
             name=name,
             agent_name=agent_name,
+            approved_by_name=approved_by_name,
         )
 
         workspace_event_actor_dto.additional_properties = d

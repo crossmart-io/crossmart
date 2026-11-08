@@ -53,7 +53,6 @@ export const AGENT_WORKER_TOKEN_AUDIENCE = 'crossmart:agent-worker';
 export const AGENT_WORKER_TOKEN_ISSUER = 'crossmart-api';
 /** What the token's signing key is derived for, so it is good for nothing else. */
 export const AGENT_WORKER_TOKEN_KEY_CONTEXT = 'crossmart:agent-worker-token:v1';
-export const AGENT_WORKER_TOKEN_ALGORITHM = 'HS256';
 /** The token's claims. */
 export const AGENT_WORKER_WORKSPACE_CLAIM = 'wid';
 export const AGENT_WORKER_CONVERSATION_CLAIM = 'cid';

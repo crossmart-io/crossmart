@@ -15,6 +15,7 @@ final class WorkspaceEventRefsDto implements JsonSerializable
      * @param string|null $connectionId The store (channel connection)
      * @param string|null $conversationId Your Crossmart Agent conversation
      * @param string|null $actionId The Crossmart Agent tool call
+     * @param string|null $proposalId An outside agent's proposal
      */
     public function __construct(
         public readonly ?string $connectionId,
@@ -23,6 +24,7 @@ final class WorkspaceEventRefsDto implements JsonSerializable
         public readonly ?string $webhookEndpointId,
         public readonly ?string $conversationId,
         public readonly ?string $actionId,
+        public readonly ?string $proposalId,
     ) {
     }
 
@@ -42,6 +44,7 @@ final class WorkspaceEventRefsDto implements JsonSerializable
             webhookEndpointId: $payload->isNull('webhookEndpointId') ? null : $payload->string('webhookEndpointId'),
             conversationId: $payload->isNull('conversationId') ? null : $payload->string('conversationId'),
             actionId: $payload->isNull('actionId') ? null : $payload->string('actionId'),
+            proposalId: $payload->isNull('proposalId') ? null : $payload->string('proposalId'),
         );
     }
 
@@ -59,6 +62,7 @@ final class WorkspaceEventRefsDto implements JsonSerializable
             'webhookEndpointId' => $this->webhookEndpointId,
             'conversationId' => $this->conversationId,
             'actionId' => $this->actionId,
+            'proposalId' => $this->proposalId,
         ];
     }
 

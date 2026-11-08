@@ -3,6 +3,7 @@ from enum import StrEnum
 
 class ActivityAction(StrEnum):
     AGENT_DISCONNECTED = "agent_disconnected"
+    AGENT_PROPOSAL_REJECTED = "agent_proposal_rejected"
     API_KEY_CREATED = "api_key_created"
     API_KEY_REVOKED = "api_key_revoked"
     CHANNEL_CATALOG_IMPORTED = "channel_catalog_imported"
@@ -37,6 +38,7 @@ class ActivityAction(StrEnum):
     MEMBER_LEFT = "member_left"
     MEMBER_REMOVED = "member_removed"
     MEMBER_ROLE_CHANGED = "member_role_changed"
+    OUTSIDE_AGENT_CHANGES_CHANGED = "outside_agent_changes_changed"
     PRODUCTS_BULK_DELETED = "products_bulk_deleted"
     PRODUCTS_BULK_UPDATED = "products_bulk_updated"
     PRODUCTS_IMPORTED = "products_imported"

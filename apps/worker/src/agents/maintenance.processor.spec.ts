@@ -2,6 +2,8 @@ import type { Job } from 'bullmq';
 import {
   AGENT_CLIENT_SWEEP_JOB_NAME,
   type AgentClientSweeper,
+  AGENT_PROPOSAL_EXPIRY_JOB_NAME,
+  type AgentProposalExpiryService,
   AGENT_WORKER_RETENTION_JOB_NAME,
   type AgentWorkerRetentionService,
   ASK_RETENTION_JOB_NAME,
@@ -9,6 +11,7 @@ import {
   SANDBOX_SWEEP_JOB_NAME,
   type SandboxSweeper,
 } from '@crossmart/core';
+import { ConversationRetention } from './conversation-retention.js';
 import { MaintenanceProcessor } from './maintenance.processor.js';
 
 function setup() {
@@ -24,13 +27,20 @@ function setup() {
   const agentWorkerRetention = {
     purge: vi.fn<AgentWorkerRetentionService['purge']>(() => Promise.resolve(2)),
   };
-  const processor = new MaintenanceProcessor(
-    agentClients as unknown as AgentClientSweeper,
-    sandboxes as unknown as SandboxSweeper,
+  const proposalExpiry = {
+    expire: vi.fn<AgentProposalExpiryService['expire']>(() => Promise.resolve(3)),
+  };
+  const retention = new ConversationRetention(
     askRetention as unknown as AskRetentionService,
     agentWorkerRetention as unknown as AgentWorkerRetentionService,
   );
-  return { agentClients, sandboxes, askRetention, agentWorkerRetention, processor };
+  const processor = new MaintenanceProcessor(
+    agentClients as unknown as AgentClientSweeper,
+    sandboxes as unknown as SandboxSweeper,
+    retention,
+    proposalExpiry as unknown as AgentProposalExpiryService,
+  );
+  return { agentClients, sandboxes, askRetention, agentWorkerRetention, proposalExpiry, processor };
 }
 
 describe('MaintenanceProcessor', () => {
@@ -60,6 +70,13 @@ describe('MaintenanceProcessor', () => {
     await processor.process({ name: AGENT_WORKER_RETENTION_JOB_NAME } as Job);
     expect(agentWorkerRetention.purge).toHaveBeenCalled();
     expect(askRetention.purge).not.toHaveBeenCalled();
+  });
+
+  it('expires agent proposals nobody decided in time', async () => {
+    const { agentWorkerRetention, proposalExpiry, processor } = setup();
+    await processor.process({ name: AGENT_PROPOSAL_EXPIRY_JOB_NAME } as Job);
+    expect(proposalExpiry.expire).toHaveBeenCalled();
+    expect(agentWorkerRetention.purge).not.toHaveBeenCalled();
   });
 
   it('skips jobs it does not know', async () => {

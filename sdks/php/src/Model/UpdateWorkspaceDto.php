@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Crossmart\Model;
 
+use Crossmart\Enum\OutsideAgentChanges;
 use Crossmart\Serialization\Payload;
 use JsonSerializable;
 
@@ -13,10 +14,12 @@ final class UpdateWorkspaceDto implements JsonSerializable
 {
     /**
      * @param string|null $timeZone IANA time zone where the workspace’s day starts, for reports, such as Asia/Jerusalem
+     * @param OutsideAgentChanges|string|null $outsideAgentChanges Whether outside agents' changes wait for approval. Only a signed-in person may change it; an API key or agent gets 403. Recorded in the activity log.
      */
     public function __construct(
         public readonly ?string $name = null,
         public readonly ?string $timeZone = null,
+        public readonly OutsideAgentChanges|string|null $outsideAgentChanges = null,
     ) {
     }
 
@@ -32,6 +35,7 @@ final class UpdateWorkspaceDto implements JsonSerializable
         return new self(
             name: $payload->isNull('name') ? null : $payload->string('name'),
             timeZone: $payload->isNull('timeZone') ? null : $payload->string('timeZone'),
+            outsideAgentChanges: $payload->isNull('outsideAgentChanges') ? null : $payload->enum('outsideAgentChanges', OutsideAgentChanges::class),
         );
     }
 
@@ -48,6 +52,9 @@ final class UpdateWorkspaceDto implements JsonSerializable
         }
         if ($this->timeZone !== null) {
             $data['timeZone'] = $this->timeZone;
+        }
+        if ($this->outsideAgentChanges !== null) {
+            $data['outsideAgentChanges'] = Payload::enumValue($this->outsideAgentChanges);
         }
 
         return $data;

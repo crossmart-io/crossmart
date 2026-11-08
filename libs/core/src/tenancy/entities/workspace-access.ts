@@ -1,3 +1,4 @@
+import type { OutsideAgentChanges } from '../../workspace-settings/enums/outside-agent-changes.enum.js';
 import type { ResolvedRole } from './role-assignment.js';
 
 /** An unclaimed sandbox account (ADR 0019): an AI agent opened it, and its owner must claim it. */
@@ -20,6 +21,8 @@ export interface WorkspaceAccess extends ResolvedRole {
   timeZone: string | null;
   /** Set while the workspace is an unclaimed sandbox account; null for every other workspace. */
   sandbox: SandboxState | null;
+  /** Whether outside agents' changes wait for approval here (ADR 0028). */
+  outsideAgentChanges: OutsideAgentChanges;
 }
 
 export interface WorkspaceMemberProfile extends ResolvedRole {

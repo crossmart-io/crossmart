@@ -1,3 +1,4 @@
+import { OutsideAgentChanges } from '../workspace-settings/enums/outside-agent-changes.enum.js';
 import { WorkspaceRole } from '@crossmart/database';
 
 /** A merchant's first workspace. Merchants never see the workspace concept in the UI. */
@@ -55,3 +56,9 @@ export const MAX_CUSTOM_ROLES = 30;
 
 /** A hard ceiling against abuse, whatever the plan allows. Plan limits sit below it. */
 export const MAX_WORKSPACES_PER_ORGANIZATION = 25;
+
+/** How the activity log words each choice of `OutsideAgentChanges` (ADR 0028). */
+export const OUTSIDE_AGENT_CHANGES_DETAIL: Readonly<Record<OutsideAgentChanges, string>> = {
+  [OutsideAgentChanges.RequireApproval]: 'they wait for approval',
+  [OutsideAgentChanges.ApplyDirectly]: 'they apply directly',
+};

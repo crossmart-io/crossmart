@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Crossmart\Model;
 
+use Crossmart\Enum\OutsideAgentChanges;
 use Crossmart\Enum\WorkspacePermission;
 use Crossmart\Enum\WorkspaceRole;
 use Crossmart\Serialization\Payload;
@@ -18,6 +19,7 @@ final class WorkspaceDto implements JsonSerializable
      * @param string $currency ISO 4217 code of the catalog prices
      * @param string|null $timeZone IANA time zone that reports follow; null until set
      * @param SandboxStateDto|null $sandbox Set while the workspace is an unclaimed sandbox account an AI agent opened: it cannot connect stores, publish or invite people until claimed. Null for every other workspace.
+     * @param OutsideAgentChanges|string $outsideAgentChanges What happens to changes by outside AI agents (OAuth agents and MCP sessions): `require_approval` (the default) makes each one a proposal to approve; `apply_directly` makes them at once. API keys over REST always apply directly.
      * @param WorkspaceRole|string $role Your role here
      * @param CustomRoleRefDto|null $customRole The workspace’s own role, when `role` is CUSTOM
      * @param list<WorkspacePermission|string> $permissions What your role lets you do here. Check these, not the role, to adapt a UI.
@@ -31,6 +33,7 @@ final class WorkspaceDto implements JsonSerializable
         public readonly string $currency,
         public readonly ?string $timeZone,
         public readonly ?SandboxStateDto $sandbox,
+        public readonly OutsideAgentChanges|string $outsideAgentChanges,
         public readonly WorkspaceRole|string $role,
         public readonly ?CustomRoleRefDto $customRole,
         public readonly array $permissions,
@@ -55,6 +58,7 @@ final class WorkspaceDto implements JsonSerializable
             currency: $payload->string('currency'),
             timeZone: $payload->isNull('timeZone') ? null : $payload->string('timeZone'),
             sandbox: $payload->isNull('sandbox') ? null : $payload->model('sandbox', SandboxStateDto::fromArray(...)),
+            outsideAgentChanges: $payload->enum('outsideAgentChanges', OutsideAgentChanges::class),
             role: $payload->enum('role', WorkspaceRole::class),
             customRole: $payload->isNull('customRole') ? null : $payload->model('customRole', CustomRoleRefDto::fromArray(...)),
             permissions: $payload->enumList('permissions', WorkspacePermission::class),
@@ -77,6 +81,7 @@ final class WorkspaceDto implements JsonSerializable
             'currency' => $this->currency,
             'timeZone' => $this->timeZone,
             'sandbox' => $this->sandbox?->toArray(),
+            'outsideAgentChanges' => Payload::enumValue($this->outsideAgentChanges),
             'role' => Payload::enumValue($this->role),
             'customRole' => $this->customRole?->toArray(),
             'permissions' => array_map(Payload::enumValue(...), $this->permissions),

@@ -5,6 +5,7 @@ import { INVENTORY_TOOLS } from './inventory.tools.js';
 import { LISTING_EDITOR_TOOLS } from './listing-editor.tools.js';
 import { LISTING_TOOLS } from './listings.tools.js';
 import { ORDER_TOOLS } from './orders.tools.js';
+import { PROPOSAL_TOOLS } from './proposals.tools.js';
 import { REPORT_TOOLS } from './reports.tools.js';
 import { STORE_TOOLS } from './stores.tools.js';
 import { SUGGESTION_TOOLS } from './suggestions.tools.js';
@@ -24,4 +25,5 @@ export const ALL_TOOLS: readonly ApiToolSpec[] = [
   ...SUGGESTION_TOOLS,
   ...WEBHOOK_TOOLS,
   ...ASK_TOOLS,
+  ...PROPOSAL_TOOLS,
 ];
