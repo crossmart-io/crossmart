@@ -73,6 +73,7 @@ function setup(target: ListingTarget) {
     recordPublished: vi.fn<ListingSyncRepository['recordPublished']>().mockResolvedValue(),
     recordFailure: vi.fn<ListingSyncRepository['recordFailure']>().mockResolvedValue(),
     markDelisted: vi.fn<ListingSyncRepository['markDelisted']>().mockResolvedValue(),
+    markWithdrawn: vi.fn<ListingSyncRepository['markWithdrawn']>().mockResolvedValue(),
   };
   const records = {
     markSynced: vi.fn<ChannelConnectionRepository['markSynced']>().mockResolvedValue(),
@@ -180,6 +181,21 @@ describe('ListingContentSync', () => {
     });
     expect(listings.markDelisted).toHaveBeenCalledWith(LISTING_REF, expect.any(Date));
     expect(activity.entries[0]?.action).toBe(ActivityAction.ListingDelisted);
+  });
+
+  it('withdraws a listing the channel never received without calling it', async () => {
+    const { sync, publisher, listings, activity } = setup({
+      action: ListingTargetAction.Withdraw,
+      product: productDetail(),
+      listing: listingRecord({ status: ListingStatus.ERROR }),
+    });
+
+    await sync.delist(syncJob());
+
+    expect(publisher.delist).not.toHaveBeenCalled();
+    expect(listings.markWithdrawn).toHaveBeenCalledWith(LISTING_REF);
+    expect(listings.markDelisted).not.toHaveBeenCalled();
+    expect(activity.entries).toEqual([]);
   });
 
   it('keeps what a refused publish lacked, so the merchant is asked for it', async () => {

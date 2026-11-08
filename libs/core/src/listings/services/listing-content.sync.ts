@@ -15,6 +15,7 @@ import { ListingTargetAction } from '../enums/listing-target-action.enum.js';
 type PublishTarget = Extract<ListingTarget, { action: ListingTargetAction.Publish }>;
 type DelistTarget = Extract<ListingTarget, { action: ListingTargetAction.Delist }>;
 type BlockedTarget = Extract<ListingTarget, { action: ListingTargetAction.Blocked }>;
+type WithdrawTarget = Extract<ListingTarget, { action: ListingTargetAction.Withdraw }>;
 type PublishingConnection = SyncConnection & { connector: ChannelConnector & ListingPublisher };
 
 function canPublish(connection: SyncConnection | null): connection is PublishingConnection {
@@ -64,6 +65,8 @@ export class ListingContentSync {
         return this.send(job, connection, target);
       case ListingTargetAction.Delist:
         return this.takeDown(job, connection, target);
+      case ListingTargetAction.Withdraw:
+        return this.withdraw(job, connection, target);
       case ListingTargetAction.Blocked:
         return this.block(job, connection, target);
       case ListingTargetAction.Skip:
@@ -119,6 +122,15 @@ export class ListingContentSync {
     } catch (error) {
       await this.outcomes.failed(synced, error);
     }
+  }
+
+  /** The channel never held it, so there is nothing to take down: only the listing is cleared. */
+  private withdraw(
+    job: ListingSyncJob,
+    connection: PublishingConnection,
+    { product, listing }: WithdrawTarget,
+  ): Promise<void> {
+    return this.outcomes.withdrawn(this.describe(job, connection, listing, product?.title ?? ''));
   }
 
   /** The product was deleted with its listing, so the job carries the id the channel gave it. */
