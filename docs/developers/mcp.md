@@ -87,6 +87,20 @@ sign-in: the seller signs in to Crossmart, chooses a workspace and approves what
 suggestions). The agent is offered only the tools those scopes cover. The
 [agent guides](agents/README.md) have the steps for each client.
 
+## Changes wait for your approval
+
+Unless you choose otherwise, an agent's changes over MCP don't apply on their own. A write tool
+answers `"status": "proposed"` with a `proposalId`, and the change waits under **Agent
+proposals** in the dashboard with a before-and-after preview. You approve or reject it there;
+deletions, price changes and changes to more than 5 items need an extra confirmation. Approved
+changes are made as the agent and logged as "Claude for Dana, approved by Lee". The agent can
+check a proposal with `get_proposal`; proposals nobody decides expire after 7 days.
+
+This applies to every MCP session, whether the agent signed in with OAuth or uses an API key.
+Owners and Admins can turn it off under **Settings → Workspace → Outside agents' changes**
+("Apply directly"). Reading is never affected, and neither are scripts and integrations (such as
+n8n) that call the REST API with an API key.
+
 ## Tools
 
 | Tool                         | Does                                                                   | Changes data |
@@ -128,6 +142,7 @@ suggestions). The agent is offered only the tools those scopes cover. The
 | `ask_crossmart`              | Answers about Crossmart from its docs, with sources, and follow-ups    |              |
 | `escalate_to_crossmart_team` | Hands an Ask conversation to the Crossmart team, who reply by email    |     Yes      |
 | `get_ask_escalation`         | Reads the Crossmart team's reply to an escalated question              |              |
+| `get_proposal`               | Where a change the agent proposed stands: pending, applied, rejected…  |              |
 | `create_account`             | Opens a sandbox account for a user who has none (local server only)    |     Yes      |
 
 Every tool tells the client whether it only reads (`readOnlyHint`), whether it deletes or

@@ -45,10 +45,17 @@ Paths below are under `/workspaces/{workspaceId}`.
 | `generate_content`          | `POST /ai/content-generations`                                           |
 | `list_suggestions`          | `GET /suggestions`                                                       |
 | `approve_suggestion`        | `POST /suggestions/{suggestionId}/approve`                               |
+| `get_proposal`              | `GET /agent-proposals/{proposalId}`                                      |
 | `get_platform_health`       | `GET /api/v1/health` (not workspace-scoped)                              |
 
 Bulk publish (no MCP tool): `POST /channel-connections/{connectionId}/products/add` with
 `{ "productIds": [...] }`. Confirm the list with the seller first.
+
+An API key over REST writes directly, like any integration. An OAuth agent token does not while
+the workspace approves agents' changes: writes answer `403` with `code: agent_approval_required`.
+Propose the change instead with `POST /agent-proposals` and `{ "tool": "<MCP tool>", "input": {…} }`;
+the answer's `outcome` is `proposed` (it waits for the seller; check it with
+`GET /agent-proposals/{id}`) or `apply_directly` (make the call yourself).
 
 Lists return `{ items, nextCursor, total }`; pass `cursor=<nextCursor>` for the next page. Errors are
 `{ statusCode, error, message }`; `402` adds `code` (`plan_limit_reached`,

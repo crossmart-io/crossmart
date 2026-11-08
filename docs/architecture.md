@@ -178,7 +178,7 @@ Key rules:
 
 - `workspace_id` lives on every tenant table, and Postgres RLS enforces it as defence in depth.
 - Channel-specific attributes are stored as JSONB, validated by the connector's schema.
-- Every state change by an agent goes through `Suggestion` and is then applied by the same service a user would call.
+- Every state change by an agent waits for a person: background agents' content goes through `Suggestion`, Crossmart Agent proposes in its chat (ADR 0026), and outside agents' writes become an `AgentProposal` unless the workspace lets them apply directly (ADR 0028). An approved change is applied through the same API a user calls.
 - A variant's `cost` is what the merchant pays per unit. It drives pricing floors, is sent to channels that keep it for margin reports (Shopify's "Cost per item"), and is never shown to buyers. Shopify CSV files may carry it in an optional `Cost per item` column.
 - Stock on hand is derived from the ledger (`InventoryMovement`). Each `InventoryItem` stores `available` (what can be sold, and what channels receive) and `reserved` (held for open orders); on hand = available + reserved. Both columns are updated atomically with the ledger, and every movement records the stock on hand after it, its reason and its author. The author is the same `Actor` the activity log credits (a user or an API key), and manual adjustments also appear as `inventory_adjusted` events in the product's activity. Every stock change goes through the inventory module: manual adjustments, product edits and inventory file imports (`StockLevelsService`, reason `IMPORTED`) all write the same ledger.
 

@@ -15,8 +15,9 @@ To get a grounded answer about Crossmart instead of reading every page, call `PO
 - [Roles and permissions](https://docs.crossmart.io/developers/permissions/): what each role and API key may do
 - [TypeScript SDK](https://docs.crossmart.io/developers/sdks/typescript/): `@crossmart/sdk`, typed from the OpenAPI spec
 - [Python SDK](https://docs.crossmart.io/developers/sdks/python/): synchronous and asynchronous clients for Python 3.11+
-- [MCP server](https://docs.crossmart.io/developers/mcp/): connect AI agents, and the tools they get
+- [MCP server](https://docs.crossmart.io/developers/mcp/): connect AI agents, and the tools they get. By default an agent's changes are proposals the seller approves; the agent checks them with `get_proposal`
 - [Agent Worker](https://docs.crossmart.io/sellers/agent-worker/): the AI agent inside the web app, which uses the same tools and proposes every change for approval
+- [Agent proposals](https://docs.crossmart.io/sellers/agent-proposals/): changes from outside agents (Claude, ChatGPT, any MCP client) wait for the seller's approval
 
 ## Optional
 
