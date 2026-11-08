@@ -64,6 +64,7 @@ export const STORE_TOOLS = [
     input: { productId: ID_INPUT, connectionId: ID_INPUT.describe('From list_stores') },
     readOnly: false,
     publishes: true,
+    openWorld: true,
     scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Post,
@@ -78,6 +79,7 @@ export const STORE_TOOLS = [
     readOnly: false,
     scope: AgentScope.StoresWrite,
     destructive: true,
+    openWorld: true,
     toCall: ({ productId, connectionId }) => ({
       method: HttpMethod.Delete,
       path: productStorePath(productId, connectionId),

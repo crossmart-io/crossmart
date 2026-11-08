@@ -4,12 +4,15 @@ import {
   API_HEALTH_PATH,
   ASK_ESCALATIONS_PATH,
   ASK_PATH,
+  AgentToolName,
+  WEBHOOK_SECRET_WITHHELD,
   WORKSPACE_PATH,
 } from '../agent-tools.constants.js';
 import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { AskChannel } from '../../ask/enums/ask-channel.enum.js';
 import { askCrossmartTool } from './ask.tools.js';
 import { ALL_TOOLS } from './index.js';
+import { withoutSigningSecret } from './webhooks.tools.js';
 
 const SNAKE_CASE = /^[a-z]+(_[a-z]+)*$/;
 
@@ -31,7 +34,7 @@ describe('MCP tools', () => {
 
   it('read only with GET, apart from asking a question, which changes nothing', () => {
     const readOnlyMethods = ALL_TOOLS.filter(
-      (spec) => spec.readOnly && spec.name !== 'ask_crossmart',
+      (spec) => spec.readOnly && spec.name !== AgentToolName.AskCrossmart,
     ).map((spec) => spec.toCall({} as never).method);
     expect(new Set(readOnlyMethods)).toEqual(new Set([HttpMethod.Get]));
   });
@@ -40,7 +43,12 @@ describe('MCP tools', () => {
     const outside = ALL_TOOLS.map(
       (spec) => spec.toCall({ escalationId: 'esc_1' } as never).path,
     ).filter((path) => !path.startsWith(WORKSPACE_PATH));
-    expect(outside).toEqual([API_HEALTH_PATH, ASK_PATH, `${ASK_ESCALATIONS_PATH}/esc_1`]);
+    expect(outside).toEqual([
+      API_HEALTH_PATH,
+      ASK_PATH,
+      ASK_ESCALATIONS_PATH,
+      `${ASK_ESCALATIONS_PATH}/esc_1`,
+    ]);
   });
 
   it('asks Crossmart a question, read only and outside any workspace', () => {
@@ -54,23 +62,37 @@ describe('MCP tools', () => {
     });
   });
 
-  it('continues a conversation, and escalates it to a person', () => {
-    const spec = tool('ask_crossmart');
+  it('continues a conversation, and only asks', () => {
+    const spec = tool(AgentToolName.AskCrossmart);
 
+    expect(Object.keys(spec.input)).toEqual(['question', 'conversationId']);
     expect(
       spec.toCall({ question: 'And eBay?', conversationId: 'conv_1' } as never).body,
     ).toMatchObject({ conversationId: 'conv_1' });
+    expect(spec.description).toContain(AgentToolName.EscalateToCrossmartTeam);
+  });
+
+  it('escalates a conversation to a person with a separate, open-world write tool', () => {
+    const spec = tool(AgentToolName.EscalateToCrossmartTeam);
+
+    expect(spec.readOnly).toBe(false);
+    expect(spec.openWorld).toBe(true);
+    expect(spec.scope).toBeUndefined();
+    expect(Object.keys(spec.input)).toEqual(['conversationId', 'contactEmail']);
     expect(
-      spec.toCall({
-        question: 'A person, please',
-        conversationId: 'conv_1',
-        escalate: { contactEmail: 'owner@example.com' },
-      } as never),
+      spec.toCall({ conversationId: 'conv_1', contactEmail: 'owner@example.com' } as never),
     ).toEqual({
       method: HttpMethod.Post,
       path: ASK_ESCALATIONS_PATH,
       body: { conversationId: 'conv_1', contactEmail: 'owner@example.com' },
     });
+  });
+
+  it('takes no callback URL for an escalation, so a reply cannot be sent anywhere', () => {
+    const input = z.object(tool(AgentToolName.EscalateToCrossmartTeam).input).strict();
+    expect(
+      input.safeParse({ conversationId: 'conv_1', callbackUrl: 'https://example.com' }).success,
+    ).toBe(false);
   });
 
   it('reads an escalation by its ticket id', () => {
@@ -111,6 +133,7 @@ describe('MCP tools', () => {
   it('edits only a product’s title or description, with PATCH, and removes nothing', () => {
     const spec = tool('update_product_text');
     expect(spec.destructive).toBeFalsy();
+    expect(spec.overwrites).toBe(true);
     expect(spec.readOnly).toBe(false);
     expect(spec.scope).toBe(AgentScope.CatalogWrite);
     expect(spec.toCall({ productId: 'p-1', title: 'Big Mug' } as never)).toEqual({
@@ -124,6 +147,7 @@ describe('MCP tools', () => {
   it('changes one variant’s prices with PATCH, marked as a price change and nothing removed', () => {
     const spec = tool('update_variant_price');
     expect(spec.destructive).toBeFalsy();
+    expect(spec.overwrites).toBe(true);
     expect(spec.scope).toBe(AgentScope.CatalogWrite);
     expect(spec.priceInputs).toEqual(['price', 'compareAtPrice']);
     expect(
@@ -152,8 +176,10 @@ describe('MCP tools', () => {
   });
 
   it('builds an Ask tool for Agent Worker that cannot escalate and names its channel', () => {
-    const spec = askCrossmartTool(AskChannel.AgentWorker, false);
+    const spec = askCrossmartTool(AskChannel.AgentWorker);
+    expect(spec.readOnly).toBe(true);
     expect(Object.keys(spec.input)).toEqual(['question', 'conversationId']);
+    expect(spec.description).not.toContain(AgentToolName.EscalateToCrossmartTeam);
     expect(spec.toCall({ question: 'Etsy?' } as never)).toEqual({
       method: HttpMethod.Post,
       path: ASK_PATH,
@@ -165,6 +191,43 @@ describe('MCP tools', () => {
     expect(tool('remove_product_from_store').destructive).toBe(true);
     expect(tool('replace_product').destructive).toBe(true);
     expect(tool('create_product').destructive).toBeFalsy();
+  });
+
+  it('marks tools that overwrite live values, without calling them destructive', () => {
+    const overwriting = ALL_TOOLS.filter((spec) => spec.overwrites).map((spec) => spec.name);
+    expect(overwriting.sort()).toEqual(
+      [
+        AgentToolName.AdjustStock,
+        AgentToolName.ApproveSuggestion,
+        AgentToolName.SetStoreCategory,
+        AgentToolName.UpdateListing,
+        AgentToolName.UpdateProductText,
+        AgentToolName.UpdateVariantPrice,
+      ].sort(),
+    );
+    for (const name of overwriting) expect(tool(name).destructive).toBeFalsy();
+  });
+
+  it('marks tools that publish to a store or send data out of Crossmart as open-world', () => {
+    const openWorld = ALL_TOOLS.filter((spec) => spec.openWorld).map((spec) => spec.name);
+    expect(openWorld.sort()).toEqual(
+      [
+        AgentToolName.AddProductToStore,
+        AgentToolName.AdjustStock,
+        AgentToolName.ApproveSuggestion,
+        AgentToolName.CreateWebhookEndpoint,
+        AgentToolName.EscalateToCrossmartTeam,
+        AgentToolName.RemoveProductFromStore,
+        AgentToolName.ReplaceProduct,
+        AgentToolName.RetryStoreListing,
+        AgentToolName.SaveItemSpecifics,
+        AgentToolName.SetStoreCategory,
+        AgentToolName.UpdateListing,
+        AgentToolName.UpdateProductText,
+        AgentToolName.UpdateVariantPrice,
+      ].sort(),
+    );
+    expect(ALL_TOOLS.filter((spec) => spec.readOnly && spec.openWorld)).toEqual([]);
   });
 
   it('asks for content generation without approving anything', () => {
@@ -292,6 +355,20 @@ describe('MCP tools', () => {
       method: HttpMethod.Post,
       path: `${WORKSPACE_PATH}/webhook-endpoints`,
       body: { url: 'https://example.com/hooks', eventTypes: ['order.created'] },
+    });
+  });
+
+  it('keeps a new webhook endpoint’s signing secret out of what the agent reads', () => {
+    const endpoint = { id: 'we-1', url: 'https://example.com/hooks' };
+    const spec = tool(AgentToolName.CreateWebhookEndpoint);
+
+    expect(spec.openWorld).toBe(true);
+    expect(spec.toResult?.({ endpoint, secret: 'whsec_live' })).toEqual({
+      endpoint,
+      signingSecret: WEBHOOK_SECRET_WITHHELD,
+    });
+    expect(withoutSigningSecret({ secret: 'whsec_live' })).toEqual({
+      signingSecret: WEBHOOK_SECRET_WITHHELD,
     });
   });
 });

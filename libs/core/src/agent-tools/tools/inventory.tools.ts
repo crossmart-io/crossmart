@@ -51,6 +51,8 @@ export const INVENTORY_TOOLS = [
       note: z.string().max(NOTE_MAX_LENGTH).optional(),
     },
     readOnly: false,
+    overwrites: true,
+    openWorld: true,
     scope: AgentScope.CatalogWrite,
     toCall: ({ inventoryItemId, ...adjustment }) => ({
       method: HttpMethod.Post,

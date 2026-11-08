@@ -37,6 +37,14 @@ describe('assessRisks', () => {
     ).toEqual([AgentWorkerActionRisk.Bulk]);
   });
 
+  it('does not label an overwrite destructive, whatever MCP clients are told', () => {
+    const edit = spec(AgentToolName.UpdateProductText);
+    expect(edit.overwrites).toBe(true);
+    expect(assessRisks({ spec: edit, input: { title: 'Big Mug' }, publishesInBatch: 0 })).toEqual(
+      [],
+    );
+  });
+
   it('leaves an ordinary change without risks', () => {
     expect(
       assessRisks({ spec: spec('retry_store_listing'), input: {}, publishesInBatch: 1 }),

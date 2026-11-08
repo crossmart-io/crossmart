@@ -59,6 +59,8 @@ export const SUGGESTION_TOOLS = [
       'Needs the suggestions:approve permission; ask the merchant before approving.',
     input: { suggestionId: ID_INPUT.describe('From list_suggestions') },
     readOnly: false,
+    overwrites: true,
+    openWorld: true,
     scope: AgentScope.SuggestionsWrite,
     toCall: ({ suggestionId }) => ({
       method: HttpMethod.Post,

@@ -98,6 +98,7 @@ const STATE_TOOLS = [
     input: PRODUCT_ON_STORE_INPUT,
     readOnly: false,
     publishes: true,
+    openWorld: true,
     scope: AgentScope.StoresWrite,
     refusalHints: {
       [RefusalStatus.Conflict]:
@@ -141,6 +142,8 @@ const CATEGORY_TOOLS = [
       'decides which item specifics the listing needs: read them next with get_item_specifics.',
     input: { ...PRODUCT_ON_STORE_INPUT, category: CATEGORY_INPUT.nullable() },
     readOnly: false,
+    overwrites: true,
+    openWorld: true,
     scope: AgentScope.StoresWrite,
     toCall: ({ productId, connectionId, category }) => ({
       method: HttpMethod.Put,
@@ -182,6 +185,7 @@ const ITEM_SPECIFICS_TOOLS = [
     readOnly: false,
     scope: AgentScope.StoresWrite,
     destructive: true,
+    openWorld: true,
     toCall: ({ productId, connectionId, itemSpecifics }) => ({
       method: HttpMethod.Put,
       path: productStorePath(productId, connectionId, ITEM_SPECIFICS_PART),

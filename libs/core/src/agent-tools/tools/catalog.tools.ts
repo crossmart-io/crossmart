@@ -101,6 +101,7 @@ export const CATALOG_TOOLS = [
     priceInputs: ['variants'],
     scope: AgentScope.CatalogWrite,
     destructive: true,
+    openWorld: true,
     toCall: ({ productId, ...product }) => ({
       method: HttpMethod.Put,
       path: `${PRODUCTS_PATH}/${productId}`,
@@ -124,6 +125,8 @@ export const CATALOG_TOOLS = [
         .describe('HTML; unsafe markup is removed'),
     },
     readOnly: false,
+    overwrites: true,
+    openWorld: true,
     scope: AgentScope.CatalogWrite,
     toCall: ({ productId, ...content }) => ({
       method: HttpMethod.Patch,
@@ -148,6 +151,8 @@ export const CATALOG_TOOLS = [
         .describe('The "was" price buyers see struck through; null removes it'),
     },
     readOnly: false,
+    overwrites: true,
+    openWorld: true,
     scope: AgentScope.CatalogWrite,
     priceInputs: ['price', 'compareAtPrice'],
     toCall: ({ productId, variantId, ...prices }) => ({

@@ -46,6 +46,7 @@ export const ANONYMOUS_TOOLS = [
         .describe('What to call their store, such as their brand'),
     },
     readOnly: false,
+    openWorld: true,
     toCall: (input) => ({ method: HttpMethod.Post, path: SANDBOX_ACCOUNTS_PATH, body: input }),
     afterCall: useOpenedAccount,
   }),

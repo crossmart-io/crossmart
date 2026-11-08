@@ -8,6 +8,7 @@ import type { WorkspaceAccessService } from '../../tenancy/services/workspace-ac
 import { AgentWorkerConversationNotFoundError } from '../errors/agent-worker.errors.js';
 import { AgentWorkerToolKind } from '../enums/agent-worker-tool-kind.enum.js';
 import type { ResolvedRole } from '../../tenancy/entities/role-assignment.js';
+import { AgentToolName } from '../../agent-tools/agent-tools.constants.js';
 import { AgentWorkerToolbox } from './agent-worker-toolbox.js';
 
 function toolbox(role?: BuiltInRole): AgentWorkerToolbox {
@@ -44,6 +45,15 @@ describe('AgentWorkerToolbox', () => {
     const tools = await toolbox(WorkspaceRole.VIEWER).toolsForMember(OWNER);
     expect(tools.length).toBeGreaterThan(0);
     expect(tools.every((tool) => tool.kind === AgentWorkerToolKind.Read)).toBe(true);
+  });
+
+  it('asks Crossmart read-only, without escalating or adding webhook endpoints', async () => {
+    const names = (await toolbox(WorkspaceRole.OWNER).toolsForMember(OWNER)).map(
+      (tool) => tool.spec.name,
+    );
+    expect(names).toContain(AgentToolName.AskCrossmart);
+    expect(names).not.toContain(AgentToolName.EscalateToCrossmartTeam);
+    expect(names).not.toContain(AgentToolName.CreateWebhookEndpoint);
   });
 
   it('answers 404 for someone outside the workspace', async () => {
