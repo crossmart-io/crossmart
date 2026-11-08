@@ -16,6 +16,7 @@ To get a grounded answer about Crossmart instead of reading every page, call `PO
 - [TypeScript SDK](https://docs.crossmart.io/developers/sdks/typescript/): `@crossmart/sdk`, typed from the OpenAPI spec
 - [Python SDK](https://docs.crossmart.io/developers/sdks/python/): synchronous and asynchronous clients for Python 3.11+
 - [MCP server](https://docs.crossmart.io/developers/mcp/): connect AI agents, and the tools they get
+- [Agent Worker](https://docs.crossmart.io/sellers/agent-worker/): the AI agent inside the web app, which uses the same tools and proposes every change for approval
 
 ## Optional
 
