@@ -25,6 +25,21 @@ const FEED = {
   feedLabel: 'DE',
 };
 const DERIVED_M = '44444444-4444-4444-8444-444444444442';
+/** The feed of a country the merchant listed in before switching to Germany. */
+const US_FEED = {
+  accountId: ACCOUNT_ID,
+  dataSourceId: 'ds-us',
+  contentLanguage: 'en',
+  feedLabel: 'US',
+};
+const US_QUERY = `dataSource=accounts%2F${ACCOUNT_ID}%2FdataSources%2Fds-us`;
+const SWITCHED = googleSettings({
+  retiredDataSources: [{ country: GoogleTargetCountry.US, dataSourceId: 'ds-us' }],
+});
+
+function usInputUrl(offerId: string): string {
+  return `${API}/products/v1/accounts/${ACCOUNT_ID}/productInputs/${productInputId(US_FEED, offerId)}?${US_QUERY}`;
+}
 
 function inputUrl(offerId: string, query = DATA_SOURCE_QUERY): string {
   return `${API}/products/v1/accounts/${ACCOUNT_ID}/productInputs/${productInputId(FEED, offerId)}?${query}`;
@@ -150,6 +165,39 @@ describe('GoogleListingPublisher', () => {
 
     http.assertDone();
     expect(published.active).toBe(false);
+  });
+
+  it('delists from the feeds of countries listed in before, as well as the current one', async () => {
+    const { connector, http } = createGoogleTestKit();
+    const gone = jsonResponse({ error: { code: 404 } }, 404);
+    http
+      .expect(HttpMethod.Delete, inputUrl('SHIRT-S'), gone)
+      .expect(HttpMethod.Delete, usInputUrl('SHIRT-S'), jsonResponse({}));
+
+    await connector.delist(googleSession(SWITCHED), PRODUCT_ID, {
+      productId: PRODUCT_ID,
+      variantExternalIds: ['SHIRT-S'],
+    });
+
+    http.assertDone();
+  });
+
+  it('moves a product to the new country: written there, removed from the old feed', async () => {
+    const { connector, http } = createGoogleTestKit();
+    const product = fixtureResponse(FIXTURES, 'product-input.json');
+    http
+      .expect(HttpMethod.Post, INSERT_URL, product)
+      .expect(HttpMethod.Post, INSERT_URL, product)
+      .expect(HttpMethod.Delete, usInputUrl('SHIRT-S'), jsonResponse({}))
+      .expect(
+        HttpMethod.Delete,
+        usInputUrl(DERIVED_M),
+        jsonResponse({ error: { code: 404 } }, 404),
+      );
+
+    await connector.publish(googleSession(SWITCHED), shirtDraft({ accountSettings: SWITCHED }));
+
+    http.assertDone();
   });
 
   it('patches only prices, removing a sale price that ended', async () => {
