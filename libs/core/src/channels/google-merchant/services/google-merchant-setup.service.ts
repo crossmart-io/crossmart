@@ -5,6 +5,7 @@ import {
   GoogleMerchantConnector,
   googleListingSetupSchema,
   isGoogleMerchantSettings,
+  retireDataSources,
 } from '@crossmart/connectors';
 import type { Actor } from '../../../activity/entities/actor.js';
 import { ActivityAction } from '../../../activity/enums/activity-action.enum.js';
@@ -30,7 +31,8 @@ const GOOGLE_MERCHANT_ACCOUNT: ConnectionAccountKind<GoogleMerchantSettings> = {
 /**
  * What a Google Merchant Center connection needs before it can list: the country it sells in
  * (its currency and language follow) and the address of each product's page. Saving creates
- * the API data source for the country, once; the same country keeps its data source.
+ * the API data source for the country, once; the same country keeps its data source. A country
+ * left behind keeps its data source too, so its offers can still be removed from Google.
  */
 @Injectable()
 export class GoogleMerchantSetupService {
@@ -50,12 +52,14 @@ export class GoogleMerchantSetupService {
     const { connection, settings } = await this.load(workspaceId, connectionId);
     const dataSourceId = await this.dataSourceFor(workspaceId, connectionId, settings, input);
     const { currencyCode, contentLanguage } = GOOGLE_COUNTRY_MARKETS[input.country];
+    const retired = settings.retiredDataSources ?? [];
     const account: GoogleMerchantSettings = {
       ...settings,
       country: input.country,
       currencyCode,
       contentLanguage,
       listingSetup: googleListingSetupSchema.parse({ ...input, dataSourceId }),
+      retiredDataSources: retireDataSources(settings.listingSetup, retired, input.country),
     };
     const saved = await this.store.saveAccount(workspaceId, connection, account);
     await recordConnectionChange(this.activity, workspaceId, actor, {
@@ -65,7 +69,7 @@ export class GoogleMerchantSetupService {
     return saved;
   }
 
-  /** The country's data source: the one already made for it, or a new one on Google. */
+  /** The country's data source: the one already made for it, now or before, or a new one. */
   private async dataSourceFor(
     workspaceId: string,
     connectionId: string,
@@ -74,6 +78,8 @@ export class GoogleMerchantSetupService {
   ): Promise<string> {
     const current = settings.listingSetup;
     if (current?.country === input.country) return current.dataSourceId;
+    const earlier = settings.retiredDataSources?.find(({ country }) => country === input.country);
+    if (earlier) return earlier.dataSourceId;
     const session = await this.sessions.open(workspaceId, connectionId);
     return callChannel(() => this.google.createDataSource(session, input.country));
   }

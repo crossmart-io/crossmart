@@ -75,6 +75,7 @@ describe('GoogleMerchantSetupService', () => {
       currencyCode: 'EUR',
       contentLanguage: 'de',
       listingSetup: { country: 'DE', productUrlTemplate: TEMPLATE, dataSourceId: 'ds-de' },
+      retiredDataSources: [],
     });
     expect(activity.entries[0]?.action).toBe(ActivityAction.ChannelListingDefaultsUpdated);
   });
@@ -103,6 +104,32 @@ describe('GoogleMerchantSetupService', () => {
         dataSourceId: 'ds-us',
         productUrlTemplate: 'https://acme.example/p/{handle}',
       },
+    });
+  });
+
+  it('keeps the old country’s data source, and reuses it when that country is picked again', async () => {
+    const saved = {
+      ...SETTINGS,
+      listingSetup: {
+        country: GoogleTargetCountry.US,
+        productUrlTemplate: TEMPLATE,
+        dataSourceId: 'ds-us',
+      },
+      retiredDataSources: [{ country: GoogleTargetCountry.DE, dataSourceId: 'ds-de-old' }],
+    };
+    const { service, store, google } = setup(connection(saved));
+
+    await service.saveListingSetup(
+      'w1',
+      'c1',
+      { country: GoogleTargetCountry.DE, productUrlTemplate: TEMPLATE },
+      ACTOR,
+    );
+
+    expect(google.createDataSource).not.toHaveBeenCalled();
+    expect(store.saveAccount.mock.calls[0]?.[2]).toMatchObject({
+      listingSetup: { country: GoogleTargetCountry.DE, dataSourceId: 'ds-de-old' },
+      retiredDataSources: [{ country: GoogleTargetCountry.US, dataSourceId: 'ds-us' }],
     });
   });
 

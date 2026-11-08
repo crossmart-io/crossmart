@@ -71,6 +71,16 @@ function feedOf({ settings, setup }: ReadyAccount): GoogleFeed {
   };
 }
 
+/** Feeds of countries listed in before, where a product's old offers may still be. */
+function retiredFeedsOf({ settings }: ReadyAccount): GoogleFeed[] {
+  return (settings.retiredDataSources ?? []).map(({ country, dataSourceId }) => ({
+    accountId: settings.accountId,
+    dataSourceId,
+    contentLanguage: GOOGLE_COUNTRY_MARKETS[country].contentLanguage,
+    feedLabel: country,
+  }));
+}
+
 /** Listings are priced in the setup country's currency, like the feed's language. */
 function currencyOf({ setup }: ReadyAccount): string {
   return GOOGLE_COUNTRY_MARKETS[setup.country].currencyCode;
@@ -80,7 +90,8 @@ function currencyOf({ setup }: ReadyAccount): string {
  * Lists products in Google Merchant Center through the Merchant API: one offer (product
  * input) per variant in the connection's API data source, grouped by `itemGroupId`. Writing
  * an offer replaces it, so publishing again updates it. Google has no hidden listings: a
- * product that is no longer active has its offers removed.
+ * product that is no longer active has its offers removed. After the merchant changes country,
+ * a product's offers in the old country's feed are removed when it is next written or delisted.
  */
 @Injectable()
 export class GoogleListingPublisher implements ListingPublisher {
@@ -115,11 +126,9 @@ export class GoogleListingPublisher implements ListingPublisher {
     if (!reference) {
       throw googleMerchantError(ChannelErrorCode.RequestRejected, NO_REFERENCE);
     }
-    const feed = feedOf(readyAccount(session.settings));
-    const accessToken = await session.accessToken();
-    await forEachLimited(reference.variantExternalIds, PRODUCT_WRITE_CONCURRENCY, (offerId) =>
-      this.inputs.delete(accessToken, feed, offerId),
-    );
+    const account = readyAccount(session.settings);
+    const feeds = [feedOf(account), ...retiredFeedsOf(account)];
+    await this.remove(await session.accessToken(), feeds, reference.variantExternalIds);
   }
 
   async updatePrices(session: ChannelSession, updates: readonly PriceUpdate[]): Promise<void> {
@@ -158,7 +167,20 @@ export class GoogleListingPublisher implements ListingPublisher {
         toProductInput(draft, variant, ids.get(variant.variantId) ?? variant.variantId, target),
       ),
     );
+    await this.remove(accessToken, retiredFeedsOf(account), [...ids.values()]);
     return this.toPublished(draft, ids, true);
+  }
+
+  /** Deletes the offers from each feed; offers a feed never held are skipped by Google. */
+  private async remove(
+    accessToken: string,
+    feeds: readonly GoogleFeed[],
+    offerIds: readonly string[],
+  ): Promise<void> {
+    const targets = feeds.flatMap((feed) => offerIds.map((offerId) => ({ feed, offerId })));
+    await forEachLimited(targets, PRODUCT_WRITE_CONCURRENCY, ({ feed, offerId }) =>
+      this.inputs.delete(accessToken, feed, offerId),
+    );
   }
 
   /** The listing is the product; each variant is its offer. Google gives no public page. */

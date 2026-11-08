@@ -34,6 +34,31 @@ export const googleListingSetupSchema = z
 export type GoogleListingSetup = z.infer<typeof googleListingSetupSchema>;
 
 /**
+ * A data source Crossmart listed into for a country the setup no longer targets. Its offers stay
+ * on Google until removed, so Crossmart keeps it to remove them, and reuses it if the merchant
+ * picks that country again.
+ */
+export const googleRetiredDataSourceSchema = z
+  .object({
+    country: z.enum(GoogleTargetCountry),
+    dataSourceId: z.string().min(1),
+  })
+  .strict();
+
+export type GoogleRetiredDataSource = z.infer<typeof googleRetiredDataSourceSchema>;
+
+/** The data sources left behind once the setup targets `country`: the current one joins them. */
+export function retireDataSources(
+  current: GoogleListingSetup | undefined,
+  retired: readonly GoogleRetiredDataSource[],
+  country: GoogleTargetCountry,
+): GoogleRetiredDataSource[] {
+  const kept = retired.filter((source) => source.country !== country);
+  if (!current || current.country === country) return kept;
+  return [...kept, { country: current.country, dataSourceId: current.dataSourceId }];
+}
+
+/**
  * What Crossmart keeps about a connected Merchant Center account: what it read on connect,
  * and the merchant's listing setup.
  */
@@ -52,6 +77,8 @@ export const googleMerchantSettingsSchema = z
     contentLanguage: z.string().length(LANGUAGE_CODE_LENGTH),
     /** Absent until the merchant saves it; publishing needs it. */
     listingSetup: googleListingSetupSchema.optional(),
+    /** Data sources of countries listed in before; absent until the country first changes. */
+    retiredDataSources: z.array(googleRetiredDataSourceSchema).optional(),
   })
   .strict();
 
