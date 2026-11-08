@@ -7,7 +7,7 @@ Crossmart stores marketplace credentials and order data, so we take security rep
 **Do not open a public issue.** Report vulnerabilities privately by either:
 
 - using [GitHub private vulnerability reporting](https://github.com/crossmart-io/crossmart/security/advisories/new), or
-- emailing **security@crossmart.io**.
+- emailing **hello@crossmart.io** with "Security" in the subject.
 
 Please include a description, the steps to reproduce, the affected version, and the impact you expect.
 

@@ -40,9 +40,9 @@ work end to end, but APIs and data models can still change between releases.
 | ----------------------------------- | --------------------------------------------------------------- |
 | Shopify                             | Live                                                            |
 | eBay                                | Live (a self-hosted instance uses eBay sandbox keys by default) |
-| Google Merchant (Google Shopping)   | In development                                                  |
-| Etsy                                | In development                                                  |
-| Amazon, Walmart                     | Planned                                                         |
+| Google Shopping (Merchant Center)   | Coming soon                                                     |
+| Etsy                                | Coming soon                                                     |
+| Amazon, Walmart, TikTok Shop        | Planned                                                         |
 | WooCommerce, BigCommerce and others | Community contributions welcome                                 |
 
 The [channel status page](https://docs.crossmart.io/channels/) is kept up to date as connectors
@@ -217,7 +217,7 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. It cov
 - **Questions and chat:** join the community on [Discord](https://discord.gg/dWPQjnzWhf).
 - **Ideas and longer threads:** [GitHub Discussions](https://github.com/crossmart-io/crossmart/discussions).
 - **Bugs:** [GitHub Issues](https://github.com/crossmart-io/crossmart/issues).
-- **Security vulnerabilities:** email security@crossmart.io, never a public issue. See [SECURITY.md](SECURITY.md).
+- **Security vulnerabilities:** report them privately through [GitHub private vulnerability reporting](https://github.com/crossmart-io/crossmart/security/advisories/new) or hello@crossmart.io, never in a public issue. See [SECURITY.md](SECURITY.md).
 - **Anything else:** hello@crossmart.io.
 
 See [SUPPORT.md](SUPPORT.md) for what to expect.
