@@ -1,3 +1,4 @@
+import type { ExternalImage } from '../../sdk/capabilities/catalog.types.js';
 import type { ListingDraft } from '../../sdk/capabilities/listing-publisher.js';
 import { ChannelType } from '../../sdk/channel-type.enum.js';
 import { EBAY_MERCHANT_LOCATION_KEY } from '../ebay.constants.js';
@@ -14,6 +15,16 @@ export const VARIANT_M = '22222222-2222-4222-8222-222222222222';
 export const MUG_ID = '44444444-4444-4444-8444-444444444444';
 export const MUG_VARIANT = '55555555-5555-4555-8555-555555555555';
 export const MUG_SKU = 'CM55555555555545558555555555555555';
+
+/** More photos than eBay takes on one listing: 30 https images, numbered from 1 in order. */
+export const GALLERY_IMAGE_COUNT = 30;
+export const galleryImageUrl = (position: number): string =>
+  `https://cdn.example.com/gallery-${position}.jpg`;
+export const galleryImages = (): ExternalImage[] =>
+  Array.from({ length: GALLERY_IMAGE_COUNT }, (_, index) => ({
+    url: galleryImageUrl(index + 1),
+    altText: null,
+  }));
 
 export const offersUrl = (sku: string): string =>
   `${INVENTORY}/offer?sku=${encodeURIComponent(sku)}&marketplace_id=EBAY_US`;
