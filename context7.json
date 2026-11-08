@@ -1,0 +1,32 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Crossmart",
+  "description": "Open-source multichannel commerce platform: one product catalog and stock ledger published to Shopify and eBay, with a REST API, TypeScript, Python and PHP SDKs, an MCP server, webhooks and n8n nodes for scripts and AI agents.",
+  "folders": ["docs", "sdks", "skills", "integrations"],
+  "excludeFolders": [
+    "docs/decisions",
+    "docs/llms",
+    "docs/images",
+    "**/test",
+    "**/tests",
+    "**/fixtures",
+    "**/__fixtures__",
+    "node_modules",
+    "dist"
+  ],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "CODE_OF_CONDUCT.md",
+    "CLA.md",
+    "CLAUDE.md",
+    "RELEASING.md"
+  ],
+  "rules": [
+    "Call the REST API at https://api.crossmart.io/api/v1 with an API key in the x-api-key header; every resource is scoped to a workspace.",
+    "Prefer the official SDKs (@crossmart/sdk, crossmart for Python, crossmart/crossmart-php) over hand-written HTTP calls.",
+    "Send prices as decimal strings in the workspace currency, not as numbers.",
+    "Stores are connected in the Crossmart dashboard because the marketplace asks the seller to approve access; the API publishes to stores that are already connected.",
+    "Verify webhook signatures before trusting a webhook payload."
+  ]
+}
