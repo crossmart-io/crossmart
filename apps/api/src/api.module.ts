@@ -21,6 +21,7 @@ import { OrdersApiModule } from './orders/orders.module.js';
 import { SandboxApiModule } from './sandbox/sandbox-api.module.js';
 import { SuggestionsApiModule } from './suggestions/suggestions.module.js';
 import { WebhooksApiModule } from './webhooks/webhooks.module.js';
+import { WorkspaceEventsApiModule } from './workspace-events/workspace-events-api.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
 @Module({
@@ -52,6 +53,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     A2aApiModule,
     SandboxApiModule,
     WebhooksApiModule,
+    WorkspaceEventsApiModule,
   ],
 })
 export class ApiModule {}

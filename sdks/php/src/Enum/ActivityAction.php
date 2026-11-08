@@ -62,6 +62,8 @@ enum ActivityAction: string
     case ListingItemSpecificsChanged = 'listing_item_specifics_changed';
     case ChannelSyncRequested = 'channel_sync_requested';
     case ListingRetryRequested = 'listing_retry_requested';
+    case StockReconciled = 'stock_reconciled';
+    case StockSyncFailed = 'stock_sync_failed';
     case StockOversold = 'stock_oversold';
     case ContentGenerationRequested = 'content_generation_requested';
     case ContentGenerated = 'content_generated';

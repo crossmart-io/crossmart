@@ -3,6 +3,7 @@ import {
   AgentWorkerActionRisk,
   AgentWorkerActionStatus,
   type AgentWorkerActionPreview,
+  type AgentWorkerActionTargets,
   type AgentWorkerActionView,
   type AgentWorkerChange,
   type AgentWorkerConversationDetail,
@@ -55,6 +56,18 @@ export class AgentWorkerActionPreviewDto implements AgentWorkerActionPreview {
   changes: AgentWorkerChangeDto[];
 }
 
+export class AgentWorkerActionTargetsDto implements AgentWorkerActionTargets {
+  @ApiProperty({
+    type: [String],
+    format: 'uuid',
+    description: 'Stores (channel connections) the call names; empty for none',
+  })
+  connectionIds: string[];
+
+  @ApiProperty({ type: [String], format: 'uuid', description: 'Products the call names' })
+  productIds: string[];
+}
+
 export class AgentWorkerActionDto implements AgentWorkerActionView {
   @ApiProperty({ format: 'uuid' })
   id: string;
@@ -87,6 +100,12 @@ export class AgentWorkerActionDto implements AgentWorkerActionView {
 
   @ApiProperty({ type: AgentWorkerActionPreviewDto, nullable: true })
   preview: AgentWorkerActionPreviewDto | null;
+
+  @ApiProperty({
+    type: AgentWorkerActionTargetsDto,
+    description: 'What the call reads or changes, so a map of the workspace can show it',
+  })
+  targets: AgentWorkerActionTargetsDto;
 
   @ApiProperty({ type: String, nullable: true, example: '12 found' })
   outcome: string | null;

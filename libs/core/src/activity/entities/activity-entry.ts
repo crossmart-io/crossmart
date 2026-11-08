@@ -26,4 +26,6 @@ export interface ActivityEntry {
   detail?: string;
   /** A user-facing reason, for failed outcomes. Never pass secrets or internal errors. */
   failureReason?: string;
+  /** The store (channel connection) it happened on, such as the one a listing failed on. */
+  connectionId?: string;
 }

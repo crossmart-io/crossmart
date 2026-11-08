@@ -829,6 +829,9 @@ model ActivityEvent {
   itemCount          Int?              @map("item_count")
   /// A short, user-facing reason for a failed outcome. Never holds secrets.
   failureReason      String?           @map("failure_reason")
+  /// The store (channel connection) the event happened on, such as a listing that failed to
+  /// publish there; kept without a foreign key so the history outlives the connection.
+  connectionId       String?           @map("connection_id") @db.Uuid
   summary            String
   createdAt          DateTime          @default(now()) @map("created_at")
 
@@ -1201,6 +1204,8 @@ model Order {
   @@unique([connectionId, externalId])
   @@index([workspaceId, placedAt(sort: Desc), id(sort: Desc)])
   @@index([workspaceId, status])
+  /// Orders as they arrive, for the workspace event stream.
+  @@index([workspaceId, createdAt])
   @@map("orders")
 }
 
@@ -1450,6 +1455,8 @@ model WebhookDelivery {
 
   @@index([status, nextAttemptAt])
   @@index([endpointId, createdAt])
+  /// Deliveries that gave up, as they settle, for the workspace event stream.
+  @@index([workspaceId, status, updatedAt])
   @@index([eventId])
   @@index([createdAt])
   @@map("webhook_deliveries")
@@ -1662,6 +1669,8 @@ model AgentWorkerAction {
   decidedByUserId  String?                 @map("decided_by_user_id") @db.Uuid
   decidedAt        DateTime?               @map("decided_at")
   executedAt       DateTime?               @map("executed_at")
+  /// When the call finished: a read answered or failed, an approved change was made or refused.
+  finishedAt       DateTime?               @map("finished_at")
   createdAt        DateTime                @default(now()) @map("created_at")
 
   @@unique([messageId, toolUseId])

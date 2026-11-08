@@ -17,6 +17,7 @@ import { AgentWorkerTurnTrigger } from '../enums/agent-worker-turn-trigger.enum.
 import type { AgentWorkerConversationRecord } from '../repositories/agent-worker-conversation.repository.js';
 import type { AgentWorkerMessageRecord } from '../repositories/agent-worker-message.repository.js';
 import { describeOutcome } from '../rules/action-outcome.js';
+import { actionTargets } from '../rules/action-targets.js';
 
 const STORED_PREVIEW = z.object({
   target: z.string().nullable(),
@@ -89,6 +90,7 @@ export function toActionView(
     summary: action.summary,
     risks: risksOf(action.risks),
     preview: previewOf(action.preview),
+    targets: actionTargets(action.input),
     outcome: outcomeOf(status, action.result),
     isError: action.resultIsError,
     untrustedWarning: action.untrustedWarning,

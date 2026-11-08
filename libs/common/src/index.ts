@@ -1,3 +1,4 @@
+export * from './async/abortable-delay.js';
 export * from './async/for-each-limited.js';
 export * from './async/with-timeout.js';
 export * from './config/app-config.module.js';

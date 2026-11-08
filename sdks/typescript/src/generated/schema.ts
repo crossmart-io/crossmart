@@ -2187,6 +2187,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What happened in the workspace, oldest first, after a cursor
+         * @description Without `after`, the latest events. Poll with the `cursor` of the previous page to follow the workspace without a stream; the newest second or two is held back so nothing is skipped. 400 for a cursor this API did not give out.
+         */
+        get: operations["WorkspaceEventsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Follow the workspace as it happens, as server-sent events
+         * @description Server-sent events. Each `workspace_event` carries one `WorkspaceEventDto` as JSON, with its `cursor` as the event id. Without a cursor the stream starts with the latest events. `ready` (its id is the cursor) says the backlog is out. A comment every 15 seconds keeps the connection open; the stream ends after 10 minutes, and the client reconnects with `Last-Event-ID` to go on where it was.
+         */
+        get: operations["WorkspaceEventsController_stream_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3152,6 +3192,11 @@ export interface components {
             itemCount: number | null;
             /** @description Why a failed action failed */
             failureReason: string | null;
+            /**
+             * Format: uuid
+             * @description The store (channel connection) it happened on, such as where a listing failed
+             */
+            connectionId: string | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -4591,6 +4636,12 @@ export interface components {
             details: string[];
             changes: components["schemas"]["AgentWorkerChangeDto"][];
         };
+        AgentWorkerActionTargetsDto: {
+            /** @description Stores (channel connections) the call names; empty for none */
+            connectionIds: string[];
+            /** @description Products the call names */
+            productIds: string[];
+        };
         AgentWorkerActionDto: {
             /** Format: uuid */
             id: string;
@@ -4610,6 +4661,8 @@ export interface components {
             /** @description Why approving it also needs `confirmHighRisk`; empty for ordinary changes */
             risks: components["schemas"]["AgentWorkerActionRisk"][];
             preview: components["schemas"]["AgentWorkerActionPreviewDto"] | null;
+            /** @description What the call reads or changes, so a map of the workspace can show it */
+            targets: components["schemas"]["AgentWorkerActionTargetsDto"];
             /** @example 12 found */
             outcome: string | null;
             isError: boolean;
@@ -5224,6 +5277,77 @@ export interface components {
             createdAt: string;
             /** @description The JSON body every attempt sends */
             payload: components["schemas"]["WebhookEnvelopeDto"];
+        };
+        /** @enum {string} */
+        WorkspaceEventType: WorkspaceEventType;
+        /** @enum {string} */
+        WorkspaceEventCategory: WorkspaceEventCategory;
+        /** @enum {string} */
+        WorkspaceEventSeverity: WorkspaceEventSeverity;
+        WorkspaceEventActorDto: {
+            type: components["schemas"]["ActivityActorType"];
+            /** @description The person or API key; for an agent, the person it acted for */
+            name: string | null;
+            /**
+             * @description The agent, for agent actions: "Crossmart Agent", or a connected agent such as "Claude"
+             * @example Crossmart Agent
+             */
+            agentName: string | null;
+        };
+        WorkspaceEventRefsDto: {
+            /**
+             * Format: uuid
+             * @description The store (channel connection)
+             */
+            connectionId: string | null;
+            /** Format: uuid */
+            productId: string | null;
+            /** Format: uuid */
+            orderId: string | null;
+            /** Format: uuid */
+            webhookEndpointId: string | null;
+            /**
+             * Format: uuid
+             * @description Your Crossmart Agent conversation
+             */
+            conversationId: string | null;
+            /**
+             * Format: uuid
+             * @description The Crossmart Agent tool call
+             */
+            actionId: string | null;
+        };
+        WorkspaceEventDto: {
+            /**
+             * @description Stable across reads
+             * @example activity:0193f7c2-…
+             */
+            id: string;
+            /** @description Pass as `after` (or `Last-Event-ID`) to read what follows it */
+            cursor: string;
+            type: components["schemas"]["WorkspaceEventType"];
+            category: components["schemas"]["WorkspaceEventCategory"];
+            severity: components["schemas"]["WorkspaceEventSeverity"];
+            /** @example Published “Linen Shirt” on Outlet */
+            summary: string;
+            /** @description More to read: the store’s error, what a read found, an order’s total */
+            detail: string | null;
+            actor: components["schemas"]["WorkspaceEventActorDto"];
+            /** @description What the event is about */
+            refs: components["schemas"]["WorkspaceEventRefsDto"];
+            /** @description Items the event covered */
+            itemCount: number | null;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        WorkspaceEventStreamReadyDto: {
+            cursor: string;
+        };
+        WorkspaceEventPageDto: {
+            /** @description Oldest first */
+            items: components["schemas"]["WorkspaceEventDto"][];
+            /** @description Pass as `after` to read what happens next; it moves on even when nothing did */
+            cursor: string;
         };
     };
     responses: never;
@@ -8204,7 +8328,7 @@ export interface operations {
                     "text/event-stream": components["schemas"]["SandboxRestrictedErrorDto"];
                 };
             };
-            /** @description Agent Worker is getting too many requests in this workspace. Wait a minute and try again. */
+            /** @description Crossmart Agent is getting too many requests in this workspace. Wait a minute and try again. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -8238,7 +8362,7 @@ export interface operations {
                     "text/event-stream": components["schemas"]["AgentWorkerStreamEventDto"];
                 };
             };
-            /** @description Agent Worker is getting too many requests in this workspace. Wait a minute and try again. */
+            /** @description Crossmart Agent is getting too many requests in this workspace. Wait a minute and try again. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -9046,6 +9170,73 @@ export interface operations {
             };
         };
     };
+    WorkspaceEventsController_list_v1: {
+        parameters: {
+            query?: {
+                /** @description The `cursor` of a previous page or event: only what happened after it. Without it, the latest events. */
+                after?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceEventPageDto"];
+                };
+            };
+            /** @description Too many requests for the event stream. Wait a minute and try again. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WorkspaceEventsController_stream_v1: {
+        parameters: {
+            query?: {
+                /** @description The `cursor` of a previous page or event: only what happened after it. Without it, the latest events. */
+                after?: string;
+            };
+            header?: {
+                /** @description Sent by a reconnecting client: go on after this event. Wins over `after`. */
+                "last-event-id"?: string;
+            };
+            path: {
+                workspaceId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-sent events. Each `workspace_event` carries one `WorkspaceEventDto` as JSON, with its `cursor` as the event id. Without a cursor the stream starts with the latest events. `ready` (its id is the cursor) says the backlog is out. A comment every 15 seconds keeps the connection open; the stream ends after 10 minutes, and the client reconnects with `Last-Event-ID` to go on where it was. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["WorkspaceEventDto"];
+                };
+            };
+            /** @description Too many requests for the event stream. Wait a minute and try again. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }
 export enum PathsApiV1HealthGetResponses200ContentApplicationJsonStatus {
     ok = "ok",
@@ -9353,6 +9544,8 @@ export enum ActivityAction {
     listing_item_specifics_changed = "listing_item_specifics_changed",
     channel_sync_requested = "channel_sync_requested",
     listing_retry_requested = "listing_retry_requested",
+    stock_reconciled = "stock_reconciled",
+    stock_sync_failed = "stock_sync_failed",
     stock_oversold = "stock_oversold",
     content_generation_requested = "content_generation_requested",
     content_generated = "content_generated",
@@ -9747,4 +9940,40 @@ export enum WebhookDeliveryStatus {
     RETRYING = "RETRYING",
     SUCCEEDED = "SUCCEEDED",
     FAILED = "FAILED"
+}
+export enum WorkspaceEventType {
+    agent_tool_called = "agent.tool_called",
+    agent_change_proposed = "agent.change_proposed",
+    agent_change_approved = "agent.change_approved",
+    agent_change_rejected = "agent.change_rejected",
+    agent_change_applied = "agent.change_applied",
+    agent_change_failed = "agent.change_failed",
+    agent_turn_failed = "agent.turn_failed",
+    agent_activity = "agent.activity",
+    listing_published = "listing.published",
+    listing_updated = "listing.updated",
+    listing_failed = "listing.failed",
+    listing_delisted = "listing.delisted",
+    stock_reconciled = "stock.reconciled",
+    stock_sync_failed = "stock.sync_failed",
+    stock_oversold = "stock.oversold",
+    order_received = "order.received",
+    store_connected = "store.connected",
+    store_disconnected = "store.disconnected",
+    store_connect_failed = "store.connect_failed",
+    webhook_delivery_failed = "webhook.delivery_failed",
+    webhook_endpoint_disabled = "webhook.endpoint_disabled",
+    workspace_change = "workspace.change"
+}
+export enum WorkspaceEventCategory {
+    agent = "agent",
+    stores = "stores",
+    orders = "orders",
+    workspace = "workspace"
+}
+export enum WorkspaceEventSeverity {
+    info = "info",
+    success = "success",
+    warning = "warning",
+    error = "error"
 }

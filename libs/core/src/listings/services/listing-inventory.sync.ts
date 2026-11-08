@@ -12,8 +12,9 @@ import type { ListingSyncJob } from '../entities/listing-sync-job.js';
 import type { ListingStockRecord } from '../repositories/listing-sync.queries.js';
 import { ListingSyncRepository } from '../repositories/listing-sync.repository.js';
 import { effectiveQuantity } from '../rules/effective-quantity.js';
+import type { FailedListing } from './listing-sync-failures.js';
 import { ListingSyncOutcomes } from './listing-sync-outcomes.js';
-import { SyncConnectionLoader } from './sync-connection.loader.js';
+import { type SyncConnection, SyncConnectionLoader } from './sync-connection.loader.js';
 
 /** The quantity each tracked variant shows on the channel: available, minus the buffer, capped. */
 function toQuantityUpdates(listing: ListingStockRecord): InventoryQuantityUpdate[] {
@@ -56,10 +57,13 @@ async function setInBatches(
   return failures;
 }
 
+/** A connection that can set stock, with its connector typed for it. */
+type StockConnection = SyncConnection & { connector: InventorySync };
+
 /**
  * Sets a listing's stock on its channel, in batches of the connector's `maxBatchSize`. Items
  * the channel rejects are reported on the listing; the rest are applied. Reconciliation jobs
- * send only what the channel shows wrongly.
+ * send only what the channel shows wrongly, and log what they corrected.
  */
 @Injectable()
 export class ListingInventorySync {
@@ -84,26 +88,47 @@ export class ListingInventorySync {
     );
     const updates = listing ? toQuantityUpdates(listing) : [];
     if (!listing || updates.length === 0) return;
-    const { connector } = connection;
+    const store = this.describe(job, listing, connection.view.displayName);
     try {
-      const session = await this.connections.openSession(job.workspaceId, job.connectionId);
-      const pending = job.reconcile ? await driftedOnly(connector, session, updates) : updates;
-      const [firstFailure] = await setInBatches(connector, session, pending);
-      const ref = { workspaceId: job.workspaceId, listingId: listing.id };
-      await (firstFailure
-        ? this.outcomes.partlyFailed(ref, firstFailure.message)
-        : this.outcomes.synced(ref));
+      await this.send(job, { ...connection, connector: connection.connector }, listing, updates);
     } catch (error) {
-      await this.outcomes.failed(
-        {
-          workspaceId: job.workspaceId,
-          listingId: listing.id,
-          productId: job.productId,
-          productTitle: '',
-          storeName: connection.view.displayName,
-        },
-        error,
-      );
+      await this.outcomes.failed(store, error);
     }
+  }
+
+  /** Sends the quantities (only the drifted ones when reconciling) and records how it went. */
+  private async send(
+    job: ListingSyncJob,
+    connection: StockConnection,
+    listing: ListingStockRecord,
+    updates: InventoryQuantityUpdate[],
+  ): Promise<void> {
+    const { connector } = connection;
+    const session = await this.connections.openSession(job.workspaceId, job.connectionId);
+    const pending = job.reconcile ? await driftedOnly(connector, session, updates) : updates;
+    const [firstFailure] = await setInBatches(connector, session, pending);
+    const store = this.describe(job, listing, connection.view.displayName);
+    if (firstFailure) {
+      await this.outcomes.stockPartlyFailed(store, firstFailure.message, listing.lastError);
+    } else if (job.reconcile && pending.length > 0) {
+      await this.outcomes.reconciled(store, pending.length);
+    } else {
+      await this.outcomes.synced(store);
+    }
+  }
+
+  private describe(
+    job: ListingSyncJob,
+    listing: ListingStockRecord,
+    storeName: string,
+  ): FailedListing {
+    return {
+      workspaceId: job.workspaceId,
+      connectionId: job.connectionId,
+      listingId: listing.id,
+      productId: job.productId,
+      productTitle: listing.product.title,
+      storeName,
+    };
   }
 }

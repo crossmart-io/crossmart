@@ -9,7 +9,7 @@ import {
 } from '../activity.constants.js';
 import type { ActivityEntry } from '../entities/activity-entry.js';
 import type { ActivityEventView, ActivitySubjectView } from '../entities/activity-event-view.js';
-import type { Actor } from '../entities/actor.js';
+import { type Actor, builtInAgentName } from '../entities/actor.js';
 import { ActivityAction } from '../enums/activity-action.enum.js';
 import { ActivitySubjectType } from '../enums/activity-subject-type.enum.js';
 import type { ActivityEventRecord } from '../repositories/activity-event.queries.js';
@@ -28,6 +28,13 @@ function toSubjectIds(entry: ActivityEntry): string[] {
     id ? [id] : [],
   );
   return [...new Set(ids)].slice(0, ACTIVITY_MAX_SUBJECT_IDS);
+}
+
+/** An event about a store is on that store. */
+function storeSubjectId(entry: ActivityEntry): string | null {
+  return entry.subject?.type === ActivitySubjectType.ChannelConnection
+    ? (entry.subject.id ?? null)
+    : null;
 }
 
 export function toActivityEventInput(
@@ -50,6 +57,7 @@ export function toActivityEventInput(
     subjectIds: toSubjectIds(entry),
     itemCount: entry.itemCount ?? null,
     failureReason: truncate(entry.failureReason, ACTIVITY_FAILURE_REASON_MAX_LENGTH),
+    connectionId: entry.connectionId ?? storeSubjectId(entry),
     summary: truncate(summarizeActivity(entry), ACTIVITY_SUMMARY_MAX_LENGTH) ?? '',
   };
 }
@@ -75,11 +83,12 @@ export function toActivityEventView(record: ActivityEventRecord): ActivityEventV
       agentClientId: record.actorOAuthClientId,
       name: record.actorUser?.name ?? record.actorApiKey?.name ?? null,
       email: record.actorUser?.email ?? null,
-      agentName: record.actorOAuthClient?.name ?? record.actorAgentName,
+      agentName: record.actorOAuthClient?.name ?? builtInAgentName(record.actorAgentName),
     },
     subject: toSubjectView(record),
     itemCount: record.itemCount,
     failureReason: record.failureReason,
+    connectionId: record.connectionId,
     createdAt: record.createdAt,
   };
 }

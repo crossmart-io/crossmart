@@ -1,5 +1,5 @@
 import { ActivityActorType } from '@crossmart/database';
-import { Actor, AGENT_WORKER_NAME } from './actor.js';
+import { Actor, AGENT_WORKER_NAME, builtInAgentName, LEGACY_AGENT_WORKER_NAME } from './actor.js';
 
 describe('Actor', () => {
   it.each([
@@ -32,6 +32,20 @@ describe('Actor', () => {
       agentClientId: null,
       agentName: AGENT_WORKER_NAME,
     });
+  });
+
+  it('reads the built-in agent’s former name as Crossmart Agent, in old events and jobs', () => {
+    expect(AGENT_WORKER_NAME).toBe('Crossmart Agent');
+    expect(builtInAgentName(LEGACY_AGENT_WORKER_NAME)).toBe(AGENT_WORKER_NAME);
+    expect(builtInAgentName('Claude')).toBe('Claude');
+    expect(builtInAgentName(null)).toBeNull();
+    const ref = {
+      type: ActivityActorType.AGENT,
+      userId: 'user-1',
+      apiKeyId: null,
+      agentName: LEGACY_AGENT_WORKER_NAME,
+    };
+    expect(Actor.from(ref)).toEqual(Actor.agentWorker('user-1'));
   });
 
   it('never turns another built-in agent name into Agent Worker', () => {

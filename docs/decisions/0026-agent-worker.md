@@ -5,6 +5,8 @@
 - Builds on: the AI layer ([ADR 0016](0016-ai-layer.md)), agent access ([ADR 0019](0019-agent-access.md)),
   Ask Crossmart ([ADR 0022](0022-ask-crossmart.md), [ADR 0025](0025-agent-to-agent.md)) and billing
   ([ADR 0024](0024-billing.md)).
+- Amended by: [ADR 0027](0027-workspace-event-stream.md), which renames it Crossmart Agent for
+  people (internal names stay) and adds the workspace event stream its page follows.
 
 ## Context
 

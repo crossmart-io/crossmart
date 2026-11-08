@@ -14,6 +14,7 @@ from ..models.agent_worker_tool_kind import AgentWorkerToolKind
 
 if TYPE_CHECKING:
     from ..models.agent_worker_action_preview_dto import AgentWorkerActionPreviewDto
+    from ..models.agent_worker_action_targets_dto import AgentWorkerActionTargetsDto
 
 
 T = TypeVar("T", bound="AgentWorkerActionDto")
@@ -32,6 +33,7 @@ class AgentWorkerActionDto:
         summary (str):  Example: Override or revert fields of a listing: Linen Shirt on Outlet store.
         risks (list[AgentWorkerActionRisk]): Why approving it also needs `confirmHighRisk`; empty for ordinary changes
         preview (AgentWorkerActionPreviewDto | None):
+        targets (AgentWorkerActionTargetsDto):
         outcome (None | str):  Example: 12 found.
         is_error (bool):
         untrusted_warning (bool): Text read in the same turn looked like instructions to an AI: review with care
@@ -49,6 +51,7 @@ class AgentWorkerActionDto:
     summary: str
     risks: list[AgentWorkerActionRisk]
     preview: AgentWorkerActionPreviewDto | None
+    targets: AgentWorkerActionTargetsDto
     outcome: None | str
     is_error: bool
     untrusted_warning: bool
@@ -85,6 +88,8 @@ class AgentWorkerActionDto:
         else:
             preview = self.preview
 
+        targets = self.targets.to_dict()
+
         outcome: None | str
         outcome = self.outcome
 
@@ -119,6 +124,7 @@ class AgentWorkerActionDto:
                 "summary": summary,
                 "risks": risks,
                 "preview": preview,
+                "targets": targets,
                 "outcome": outcome,
                 "isError": is_error,
                 "untrustedWarning": untrusted_warning,
@@ -133,6 +139,7 @@ class AgentWorkerActionDto:
     @classmethod
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         from ..models.agent_worker_action_preview_dto import AgentWorkerActionPreviewDto
+        from ..models.agent_worker_action_targets_dto import AgentWorkerActionTargetsDto
 
         d = dict(src_dict)
         id = UUID(d.pop("id"))
@@ -170,6 +177,8 @@ class AgentWorkerActionDto:
             return cast(AgentWorkerActionPreviewDto | None, data)
 
         preview = _parse_preview(d.pop("preview"))
+
+        targets = AgentWorkerActionTargetsDto.from_dict(d.pop("targets"))
 
         def _parse_outcome(data: object) -> None | str:
             if data is None:
@@ -224,6 +233,7 @@ class AgentWorkerActionDto:
             summary=summary,
             risks=risks,
             preview=preview,
+            targets=targets,
             outcome=outcome,
             is_error=is_error,
             untrusted_warning=untrusted_warning,

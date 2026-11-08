@@ -40,6 +40,12 @@ export interface AgentWorkerActionPreview {
   changes: AgentWorkerChange[];
 }
 
+/** The stores and products a tool call is about, as its input names them. */
+export interface AgentWorkerActionTargets {
+  connectionIds: string[];
+  productIds: string[];
+}
+
 export interface AgentWorkerActionView {
   id: string;
   messageId: string;
@@ -51,6 +57,8 @@ export interface AgentWorkerActionView {
   summary: string;
   risks: AgentWorkerActionRisk[];
   preview: AgentWorkerActionPreview | null;
+  /** What it reads or changes, so a map of the workspace can show where the agent works. */
+  targets: AgentWorkerActionTargets;
   /** The outcome in one line, once there is one, such as "12 found" or the API's refusal. */
   outcome: string | null;
   isError: boolean;

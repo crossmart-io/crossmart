@@ -269,6 +269,7 @@ class InMemoryActions {
       decidedByUserId: null,
       decidedAt: null,
       executedAt: null,
+      finishedAt: null,
       createdAt: this.tables.now(),
     };
     this.tables.actions.push(row);
@@ -278,7 +279,8 @@ class InMemoryActions {
   finish(id: string, outcome: AgentWorkerActionOutcome): Promise<AgentWorkerAction> {
     const row = this.find(id);
     Object.assign(row, outcome);
-    if (outcome.status === AgentWorkerActionStatus.Executed) row.executedAt = this.tables.now();
+    row.finishedAt = this.tables.now();
+    if (outcome.status === AgentWorkerActionStatus.Executed) row.executedAt = row.finishedAt;
     return Promise.resolve({ ...row });
   }
 

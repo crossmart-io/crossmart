@@ -15,6 +15,7 @@ export type ListingSyncRecord = Prisma.ListingGetPayload<{ include: typeof LISTI
 
 /** Variants with the stock a channel needs, for inventory syncs. */
 export const LISTING_STOCK_INCLUDE = {
+  product: { select: { title: true } },
   override: { select: { inventoryBuffer: true, maxQuantity: true } },
   variants: {
     select: {

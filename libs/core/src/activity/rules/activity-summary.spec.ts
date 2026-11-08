@@ -126,4 +126,19 @@ describe('summarizeActivity', () => {
       }),
     ).toBe('Syncing a listing failed');
   });
+
+  it('counts the stock levels reconciliation corrected, and names a refused stock sync', () => {
+    const subject = { type: ActivitySubjectType.Product, id: 'p-1', label: 'Mug' };
+    expect(
+      summarizeActivity({
+        action: ActivityAction.StockReconciled,
+        subject,
+        itemCount: 2,
+        detail: 'Outlet',
+      }),
+    ).toBe('Corrected the stock of 2 items of “Mug” on Outlet');
+    expect(
+      summarizeActivity({ action: ActivityAction.StockSyncFailed, subject, detail: 'eBay' }),
+    ).toBe('Could not sync the stock of “Mug” on eBay');
+  });
 });

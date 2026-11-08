@@ -18,6 +18,7 @@ final class AgentWorkerActionDto implements JsonSerializable
     /**
      * @param string $toolName The MCP tool it calls
      * @param list<AgentWorkerActionRisk|string> $risks Why approving it also needs `confirmHighRisk`; empty for ordinary changes
+     * @param AgentWorkerActionTargetsDto $targets What the call reads or changes, so a map of the workspace can show it
      * @param bool $untrustedWarning Text read in the same turn looked like instructions to an AI: review with care
      */
     public function __construct(
@@ -30,6 +31,7 @@ final class AgentWorkerActionDto implements JsonSerializable
         public readonly string $summary,
         public readonly array $risks,
         public readonly ?AgentWorkerActionPreviewDto $preview,
+        public readonly AgentWorkerActionTargetsDto $targets,
         public readonly ?string $outcome,
         public readonly bool $isError,
         public readonly bool $untrustedWarning,
@@ -58,6 +60,7 @@ final class AgentWorkerActionDto implements JsonSerializable
             summary: $payload->string('summary'),
             risks: $payload->enumList('risks', AgentWorkerActionRisk::class),
             preview: $payload->isNull('preview') ? null : $payload->model('preview', AgentWorkerActionPreviewDto::fromArray(...)),
+            targets: $payload->model('targets', AgentWorkerActionTargetsDto::fromArray(...)),
             outcome: $payload->isNull('outcome') ? null : $payload->string('outcome'),
             isError: $payload->bool('isError'),
             untrustedWarning: $payload->bool('untrustedWarning'),
@@ -84,6 +87,7 @@ final class AgentWorkerActionDto implements JsonSerializable
             'summary' => $this->summary,
             'risks' => array_map(Payload::enumValue(...), $this->risks),
             'preview' => $this->preview?->toArray(),
+            'targets' => $this->targets->toArray(),
             'outcome' => $this->outcome,
             'isError' => $this->isError,
             'untrustedWarning' => $this->untrustedWarning,
