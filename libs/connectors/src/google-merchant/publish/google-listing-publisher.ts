@@ -17,6 +17,7 @@ import {
   GOOGLE_OFFER_ID_PATTERN,
   PRODUCT_WRITE_CONCURRENCY,
 } from '../google-merchant.constants.js';
+import { GOOGLE_COUNTRY_MARKETS } from '../google-merchant-country.js';
 import { googleMerchantError } from '../google-merchant-errors.js';
 import {
   type GoogleListingSetup,
@@ -57,13 +58,22 @@ function readyAccount(settings: ChannelSettings | null | undefined): ReadyAccoun
   return { settings, setup: settings.listingSetup };
 }
 
+/**
+ * The data source's feed: its language follows the setup's country, the same way the data source
+ * was created, never the account's own business country (a reconnect rereads that and may differ).
+ */
 function feedOf({ settings, setup }: ReadyAccount): GoogleFeed {
   return {
     accountId: settings.accountId,
     dataSourceId: setup.dataSourceId,
-    contentLanguage: settings.contentLanguage,
+    contentLanguage: GOOGLE_COUNTRY_MARKETS[setup.country].contentLanguage,
     feedLabel: setup.country,
   };
+}
+
+/** Listings are priced in the setup country's currency, like the feed's language. */
+function currencyOf({ setup }: ReadyAccount): string {
+  return GOOGLE_COUNTRY_MARKETS[setup.country].currencyCode;
 }
 
 /**
@@ -121,7 +131,7 @@ export class GoogleListingPublisher implements ListingPublisher {
         accessToken,
         feed,
         update.externalVariantId,
-        toGooglePrices(update, account.settings.currencyCode),
+        toGooglePrices(update, currencyOf(account)),
       ),
     );
   }
@@ -137,7 +147,7 @@ export class GoogleListingPublisher implements ListingPublisher {
     const target = {
       contentLanguage: feed.contentLanguage,
       feedLabel: feed.feedLabel,
-      currencyCode: account.settings.currencyCode,
+      currencyCode: currencyOf(account),
       productUrlTemplate: account.setup.productUrlTemplate,
     };
     const accessToken = await session.accessToken();

@@ -14,6 +14,7 @@ import {
   PRODUCT_ID,
   shirtDraft,
 } from '../google-merchant.fixtures.js';
+import { GoogleTargetCountry } from '../google-merchant-country.js';
 import { NO_IMAGE, NO_SETUP, NOT_ACTIVE } from './google-listing-publisher.js';
 import { productInputId } from './google-product-inputs.client.js';
 
@@ -34,6 +35,27 @@ function bodies(requests: readonly HttpRequest[]): Record<string, unknown>[] {
 }
 
 describe('GoogleListingPublisher', () => {
+  it('uses the setup country for the language and currency, not the account business country', async () => {
+    const { connector, http } = createGoogleTestKit();
+    const product = fixtureResponse(FIXTURES, 'product-input.json');
+    http.expect(HttpMethod.Post, INSERT_URL, product).expect(HttpMethod.Post, INSERT_URL, product);
+    // A reconnect rereads the account: an Israeli business keeps its German listing setup.
+    const accountSettings = googleSettings({
+      country: GoogleTargetCountry.IL,
+      currencyCode: 'ILS',
+      contentLanguage: 'he',
+    });
+
+    await connector.publish(googleSession(accountSettings), shirtDraft({ accountSettings }));
+
+    const [small] = bodies(http.requests);
+    expect(small).toMatchObject({
+      contentLanguage: 'de',
+      feedLabel: 'DE',
+      productAttributes: { price: { currencyCode: 'EUR' } },
+    });
+  });
+
   it('publishes each variant as an offer, grouped, priced and linked to the product page', async () => {
     const { connector, http } = createGoogleTestKit();
     const product = fixtureResponse(FIXTURES, 'product-input.json');
