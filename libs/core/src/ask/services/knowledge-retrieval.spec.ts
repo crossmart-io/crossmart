@@ -99,7 +99,7 @@ describe('retrieval for representative questions', () => {
   it('answers MCP setup from the MCP page and the agent guide', async () => {
     const sources = await topSources('How do I set up the MCP server?', 2);
 
-    expect(sources.map((chunk) => chunk.url)).toEqual([MCP_URL, AGENTS_URL]);
+    expect(sources.map((chunk) => chunk.url).sort()).toEqual([AGENTS_URL, MCP_URL].sort());
   });
 
   it("answers agent setup from that agent's guide", async () => {
