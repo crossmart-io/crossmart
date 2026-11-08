@@ -10,6 +10,7 @@ import {
   createGoogleTestKit,
   FIXTURES,
   googleSession,
+  googleSettings,
   TOKEN_URL,
 } from './google-merchant.fixtures.js';
 import { GoogleTargetCountry } from './google-merchant-country.js';
@@ -121,6 +122,27 @@ describe('GoogleMerchantConnector', () => {
       },
     });
     expect(kit.connector.parseSettings(profile.settings)).toEqual(profile.settings);
+  });
+
+  it('sells in the listing setup’s currency, even after a reconnect read another country', () => {
+    const kit = createGoogleTestKit();
+    // A reconnect rereads the Israeli business country over a US listing setup.
+    const reread = googleSettings({
+      country: GoogleTargetCountry.IL,
+      currencyCode: 'ILS',
+      contentLanguage: 'he',
+      listingSetup: {
+        country: GoogleTargetCountry.US,
+        productUrlTemplate: 'https://acme.example/products/{handle}',
+        dataSourceId: 'ds-us',
+      },
+    });
+
+    expect(kit.connector.parseSettings(reread)).toMatchObject({
+      country: 'US',
+      currencyCode: 'USD',
+      contentLanguage: 'en',
+    });
   });
 
   it('lists in the US when the account has no business country yet', async () => {
