@@ -25,6 +25,21 @@ export const AGENT_READ_SCOPES: readonly AgentScope[] = [
 /** Separates scopes in an OAuth `scope` value. */
 export const SCOPE_SEPARATOR = ' ';
 
+/** RFC 9728: where a protected resource publishes its metadata, before the resource's own path. */
+export const PROTECTED_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource';
+/** The RFC 6750 scheme of the `WWW-Authenticate` challenge a 401 carries. */
+export const BEARER_CHALLENGE_SCHEME = 'Bearer';
+/** RFC 6750's error code for a credential that was sent but refused. */
+export const INVALID_TOKEN_ERROR = 'invalid_token';
+/** Separates the parameters of a `WWW-Authenticate` challenge. */
+export const CHALLENGE_PARAMETER_SEPARATOR = ', ';
+
+/**
+ * auth.md (WorkOS, v0.6.0): the Markdown that tells AI agents how to sign up and authenticate,
+ * served by crossmart.io and named as `agent_auth.skill` in the authorization server metadata.
+ */
+export const AGENT_AUTH_SKILL_URL = 'https://crossmart.io/auth.md';
+
 /** How Better Auth's `cimd()` marks the clients it created from a Client ID Metadata Document. */
 export const CIMD_CLIENT_DISCOVERY_ID = 'cimd';
 

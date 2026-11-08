@@ -30,6 +30,7 @@ starlightLlmsTxt({
   optionalLinks: [
     { label: 'OpenAPI spec', url: 'https://api.crossmart.io/api/docs-json' },
     { label: 'crossmart.io', url: 'https://crossmart.io' },
+    { label: 'Discord', url: 'https://discord.gg/dWPQjnzWhf' },
   ],
 }),
 ```

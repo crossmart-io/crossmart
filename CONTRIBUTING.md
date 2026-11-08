@@ -7,6 +7,7 @@ Thanks for helping build Crossmart. This guide explains how to set up the projec
 - For anything larger than a small fix, open an issue first so we can agree on the approach.
 - Look for issues labelled `good first issue` if you are new to the codebase.
 - Read [docs/architecture.md](docs/architecture.md) and the decision records in [docs/decisions](docs/decisions).
+- Questions while you work? Ask in the community on [Discord](https://discord.gg/dWPQjnzWhf).
 
 ## Development setup
 

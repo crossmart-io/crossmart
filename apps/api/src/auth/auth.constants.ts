@@ -67,12 +67,15 @@ export const OAUTH_GRANT_TYPES = ['authorization_code', 'refresh_token'] as cons
 export const CIMD_METADATA_PROFILE = 'mcp-2026-07-28';
 
 /**
- * Root discovery documents (RFC 8414 and OpenID Connect) for an issuer under the auth base path.
- * MCP clients look for them at the root, with the issuer's path appended or not.
+ * Discovery documents (RFC 8414 and OpenID Connect) for an issuer under the auth base path.
+ * MCP clients look for them at the root, with the issuer's path appended or not; others append
+ * the well-known path to the issuer. Every copy of the RFC 8414 one carries auth.md's
+ * `agent_auth` block.
  */
 export const OAUTH_AUTHORIZATION_SERVER_METADATA_PATHS = [
   `/.well-known/oauth-authorization-server${AUTH_BASE_PATH}`,
   '/.well-known/oauth-authorization-server',
+  `${AUTH_BASE_PATH}/.well-known/oauth-authorization-server`,
 ] as const;
 export const OPENID_CONFIGURATION_PATHS = [
   `/.well-known/openid-configuration${AUTH_BASE_PATH}`,
@@ -85,6 +88,8 @@ export const AGENT_TOKEN_KEYS_TTL_MS = 10 * 60 * 1000;
 export const CLIENT_ID_CLAIMS = ['client_id', 'azp'] as const;
 /** The access-token claim with the granted scopes. */
 export const SCOPE_CLAIM = 'scope';
+/** The header a 401 names its challenge in (RFC 9110 §11.6.1). */
+export const WWW_AUTHENTICATE_HEADER = 'WWW-Authenticate';
 /** The header and scheme agent access tokens are sent with. */
 export const AUTHORIZATION_HEADER = 'authorization';
 export const BEARER_SCHEME = 'Bearer';

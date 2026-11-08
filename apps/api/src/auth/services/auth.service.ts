@@ -10,6 +10,11 @@ import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:
 import { AppConfigService } from '@crossmart/common';
 import { PrismaService } from '@crossmart/database';
 import { isPublicCorsPath } from '../../bootstrap/cors-policy.js';
+import {
+  type AgentAuthMetadata,
+  agentAuthMetadata,
+  withAgentAuth,
+} from '../agent-auth-metadata.js';
 import { ORIGIN_HEADER } from '../../bootstrap/cors.constants.js';
 import { type BetterAuthInstance, createBetterAuth } from '../better-auth.factory.js';
 import { PrincipalKind } from '../enums/principal-kind.enum.js';
@@ -33,6 +38,7 @@ export interface AgentTokenKeys {
 export class AuthService {
   private readonly auth: BetterAuthInstance;
   private readonly trustedOrigins: ReadonlySet<string>;
+  private readonly agentAuth: AgentAuthMetadata;
 
   constructor(
     appConfig: AppConfigService,
@@ -41,6 +47,7 @@ export class AuthService {
     { accountEmails, rateLimitStorage }: BetterAuthServices,
   ) {
     this.trustedOrigins = new Set(appConfig.corsOrigins);
+    this.agentAuth = agentAuthMetadata(appConfig);
     this.auth = createBetterAuth({
       appConfig,
       prisma,
@@ -59,7 +66,9 @@ export class AuthService {
   /** The OAuth discovery documents, for clients that look for them at the root. */
   createMetadataHandlers(): { authorizationServer: NodeHandler; openIdConfiguration: NodeHandler } {
     return {
-      authorizationServer: toNodeHandler(oauthProviderAuthServerMetadata(this.auth)),
+      authorizationServer: toNodeHandler(
+        withAgentAuth(oauthProviderAuthServerMetadata(this.auth), this.agentAuth),
+      ),
       openIdConfiguration: toNodeHandler(oauthProviderOpenIdConfigMetadata(this.auth)),
     };
   }

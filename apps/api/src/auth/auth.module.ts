@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { RedisModule } from '@crossmart/common';
 import {
   AgentsModule,
@@ -9,6 +9,7 @@ import {
   TenancyModule,
 } from '@crossmart/core';
 import { SubscriptionWriteGuard } from '../billing/guards/subscription-write.guard.js';
+import { BearerChallengeFilter } from './filters/bearer-challenge.filter.js';
 import { AuthenticationGuard } from './guards/authentication.guard.js';
 import { WorkspaceAccessGuard } from './guards/workspace-access.guard.js';
 import { RedisAuthRateLimitStorage } from './rate-limit/redis-auth-rate-limit.storage.js';
@@ -23,7 +24,8 @@ import { RequestCredentials } from './services/request-credentials.js';
 /**
  * Sessions (Better Auth, with its rate limits in Redis), API keys, agent access tokens and the
  * global guards. Guards run in the order listed: who is calling, their access to the workspace,
- * then whether the organization's subscription lets it change anything (ADR 0024).
+ * then whether the organization's subscription lets it change anything (ADR 0024). Every 401
+ * points to where an agent signs in (RFC 9728).
  */
 @Module({
   imports: [
@@ -46,6 +48,7 @@ import { RequestCredentials } from './services/request-credentials.js';
     { provide: APP_GUARD, useClass: AuthenticationGuard },
     { provide: APP_GUARD, useClass: WorkspaceAccessGuard },
     { provide: APP_GUARD, useClass: SubscriptionWriteGuard },
+    { provide: APP_FILTER, useClass: BearerChallengeFilter },
   ],
   exports: [AuthService],
 })
