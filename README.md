@@ -217,7 +217,7 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. It cov
 - **Questions and chat:** join the community on [Discord](https://discord.gg/dWPQjnzWhf).
 - **Ideas and longer threads:** [GitHub Discussions](https://github.com/crossmart-io/crossmart/discussions).
 - **Bugs:** [GitHub Issues](https://github.com/crossmart-io/crossmart/issues).
-- **Security vulnerabilities:** report them privately through [GitHub private vulnerability reporting](https://github.com/crossmart-io/crossmart/security/advisories/new) or hello@crossmart.io, never in a public issue. See [SECURITY.md](SECURITY.md).
+- **Security vulnerabilities:** report them privately through [GitHub private vulnerability reporting](https://github.com/crossmart-io/crossmart/security/advisories/new) or security@crossmart.io, never in a public issue. See [SECURITY.md](SECURITY.md).
 - **Anything else:** hello@crossmart.io.
 
 See [SUPPORT.md](SUPPORT.md) for what to expect.
