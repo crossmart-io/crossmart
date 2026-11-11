@@ -18,6 +18,7 @@ export * from './sdk/capabilities/webhook-receiver.js';
 export * from './sdk/capabilities/taxonomy-provider.js';
 export * from './sdk/errors/channel-error-code.enum.js';
 export * from './sdk/errors/channel-error.js';
+export * from './sdk/listings/item-condition.enum.js';
 export * from './sdk/publishing/publish-requirement.enum.js';
 export * from './sdk/publishing/unmet-publish-requirement.js';
 export * from './sdk/http/fetch-http-transport.js';

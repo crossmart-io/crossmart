@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import {
   type Actor,
+  ProductSaleService,
   ProductStoreDisplays,
   ProductsService,
   WorkspacePermission,
@@ -30,6 +31,7 @@ import { CurrentActor } from '../../auth/decorators/current-actor.decorator.js';
 import { RequirePermission } from '../../auth/decorators/require-permission.decorator.js';
 import {
   CATALOG_TAG,
+  MARK_SOLD_PATH,
   PRODUCT_ID_PARAM,
   PRODUCTS_ROUTE,
   VARIANT_PATH,
@@ -38,6 +40,7 @@ import { CreateProductDto } from '../dto/create-product.dto.js';
 import { ListProductsQueryDto } from '../dto/list-products-query.dto.js';
 import { ProductPageDto } from '../dto/product-summary.dto.js';
 import { ProductDto } from '../dto/product.dto.js';
+import { ProductSaleDto } from '../dto/product-sale.dto.js';
 import { UpdateProductContentDto } from '../dto/update-product-content.dto.js';
 import { UpdateVariantPriceDto, VariantParamsDto } from '../dto/variant-price.dto.js';
 import { UpdateProductDto } from '../dto/update-product.dto.js';
@@ -49,6 +52,7 @@ export class ProductsController {
   constructor(
     private readonly products: ProductsService,
     private readonly storeDisplays: ProductStoreDisplays,
+    private readonly sales: ProductSaleService,
   ) {}
 
   @Get()
@@ -145,6 +149,26 @@ export class ProductsController {
     @CurrentActor() actor: Actor,
   ): Promise<ProductDto> {
     return ProductDto.from(await this.products.updateVariantPrice(params, body, actor));
+  }
+
+  @Post(MARK_SOLD_PATH)
+  @RequirePermission(WorkspacePermission.EditProducts)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mark a product sold',
+    description:
+      'For an item that sold outside the connected stores, such as a one-of-a-kind item sold in ' +
+      'person. Sets the available stock of every tracked variant to 0 (logged as sold) and takes ' +
+      'the product off every connected store, as removing it by hand does, so it cannot sell ' +
+      'twice. Idempotent: calling it again changes nothing and answers `alreadySold: true`.',
+  })
+  @ApiOkResponse({ type: ProductSaleDto })
+  async markSold(
+    @Param(WORKSPACE_ID_PARAM, ParseUUIDPipe) workspaceId: string,
+    @Param(PRODUCT_ID_PARAM, ParseUUIDPipe) productId: string,
+    @CurrentActor() actor: Actor,
+  ): Promise<ProductSaleDto> {
+    return ProductSaleDto.from(await this.sales.markSold(workspaceId, productId, actor));
   }
 
   @Delete(`:${PRODUCT_ID_PARAM}`)

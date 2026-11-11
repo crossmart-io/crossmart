@@ -24,6 +24,7 @@ const INPUT = z.object({
   productType: z.string().optional(),
   tags: z.array(z.string()).optional(),
   status: z.string().optional(),
+  condition: z.string().nullable().optional(),
   variants: z.array(VARIANT),
 });
 type ProductReplacement = z.infer<typeof INPUT>;
@@ -35,6 +36,7 @@ const TEXT_FIELDS = [
   ['productType', PREVIEW_LABELS.productType],
   ['tags', PREVIEW_LABELS.tags],
   ['status', PREVIEW_LABELS.status],
+  ['condition', PREVIEW_LABELS.condition],
 ] as const;
 
 function fieldChanges(product: ProductSource, input: ProductReplacement): AgentWorkerChange[] {

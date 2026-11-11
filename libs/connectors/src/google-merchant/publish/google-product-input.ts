@@ -10,8 +10,11 @@ export enum GoogleAvailability {
   Backorder = 'BACKORDER',
 }
 
+/** `ProductAttributes.condition` in the Merchant API. */
 export enum GoogleCondition {
   New = 'NEW',
+  Used = 'USED',
+  Refurbished = 'REFURBISHED',
 }
 
 /** The product attributes Crossmart sends (`ProductAttributes` in the Merchant API). */

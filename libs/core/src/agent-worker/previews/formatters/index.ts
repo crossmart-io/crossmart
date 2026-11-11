@@ -1,6 +1,7 @@
 import type { ActionPreviewFormatter } from '../action-preview-formatter.js';
 import {
   ContentGenerationPreview,
+  MarkSoldPreview,
   ProductCreatePreview,
   SuggestionApprovalPreview,
 } from './catalog-actions.preview.js';
@@ -19,6 +20,7 @@ export const ACTION_PREVIEW_FORMATTERS: readonly ActionPreviewFormatter[] = [
   new ProductReplacePreview(),
   new VariantPricePreview(),
   new ProductCreatePreview(),
+  new MarkSoldPreview(),
   new ListingUpdatePreview(),
   ...STORE_LISTING_PREVIEWS,
   new CategoryPreview(),

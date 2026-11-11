@@ -1,5 +1,6 @@
 import type { HttpRequest } from '../../sdk/http/http-transport.js';
 import { HttpMethod } from '../../sdk/http/http-method.enum.js';
+import { ItemCondition } from '../../sdk/listings/item-condition.enum.js';
 import { jsonResponse } from '../../sdk/testing/fake-http-transport.js';
 import { fixtureResponse } from '../../sdk/testing/fixtures.js';
 import {
@@ -125,6 +126,21 @@ describe('GoogleListingPublisher', () => {
       },
     });
     expect(medium.productAttributes).not.toHaveProperty('salePrice');
+  });
+
+  it('sends the product’s condition as Google’s new, used or refurbished', async () => {
+    const { connector, http } = createGoogleTestKit();
+    const product = fixtureResponse(FIXTURES, 'product-input.json');
+    for (let call = 0; call < 4; call += 1) http.expect(HttpMethod.Post, INSERT_URL, product);
+
+    await connector.publish(googleSession(), shirtDraft({ condition: ItemCondition.UsedGood }));
+    await connector.publish(googleSession(), shirtDraft({ condition: ItemCondition.Refurbished }));
+
+    http.assertDone();
+    const conditions = bodies(http.requests).map(
+      (body) => (body.productAttributes as { condition: string }).condition,
+    );
+    expect(conditions).toEqual(['USED', 'USED', 'REFURBISHED', 'REFURBISHED']);
   });
 
   it('refuses before calling Google without a listing setup, a photo, or an active product', async () => {

@@ -11,6 +11,7 @@ enum ActivityAction: string
     case ProductCreated = 'product_created';
     case ProductUpdated = 'product_updated';
     case ProductDeleted = 'product_deleted';
+    case ProductMarkedSold = 'product_marked_sold';
     case ProductsBulkUpdated = 'products_bulk_updated';
     case ProductsBulkDeleted = 'products_bulk_deleted';
     case ProductsImported = 'products_imported';

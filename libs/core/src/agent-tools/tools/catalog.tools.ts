@@ -1,6 +1,10 @@
 import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
-import { OutOfStockPolicy, ProductStatus } from '@crossmart/database/generated/prisma/enums.js';
+import {
+  OutOfStockPolicy,
+  ProductCondition,
+  ProductStatus,
+} from '@crossmart/database/generated/prisma/enums.js';
 import { HttpMethod } from '../api/api-call.js';
 import {
   AgentToolName,
@@ -39,6 +43,14 @@ const PRODUCT_INPUT = {
   productType: z.string().optional(),
   tags: z.array(z.string()).optional(),
   status: z.enum(ProductStatus).optional().describe('DRAFT until it is ready to sell'),
+  condition: z
+    .enum(ProductCondition)
+    .nullable()
+    .optional()
+    .describe(
+      'The item’s condition, such as USED_GOOD for a pre-owned item with visible wear. Each ' +
+        'store gets its own equivalent. Left out keeps the current one; null clears it.',
+    ),
   optionNames: z.array(z.string()).optional().describe('Such as ["Size", "Color"]'),
   media: z
     .array(z.object({ url: z.url(), altText: z.string().optional() }))
@@ -159,6 +171,25 @@ export const CATALOG_TOOLS = [
       method: HttpMethod.Patch,
       path: `${PRODUCTS_PATH}/${productId}/variants/${variantId}`,
       body: prices,
+    }),
+  }),
+  defineTool({
+    name: AgentToolName.MarkProductSold,
+    title: 'Mark a product sold',
+    description:
+      'For a one-of-a-kind item that sold anywhere (in person, or on a store Crossmart does not ' +
+      'manage): sets every variant’s available stock to 0 and takes the product off every ' +
+      'connected store, so it cannot sell twice. Safe to repeat. Orders from connected stores ' +
+      'are handled already; to sell only some units of a product, use adjust_stock instead.',
+    input: { productId: ID_INPUT.describe('From list_products') },
+    readOnly: false,
+    destructive: true,
+    openWorld: true,
+    idempotent: true,
+    scope: AgentScope.CatalogWrite,
+    toCall: ({ productId }) => ({
+      method: HttpMethod.Post,
+      path: `${PRODUCTS_PATH}/${productId}/mark-sold`,
     }),
   }),
 ];

@@ -7,7 +7,7 @@ import {
   ListingDisplayState,
   type PriceRange,
 } from '@crossmart/core';
-import { ListingSource, ListingStatus, ProductStatus } from '@crossmart/database';
+import { ListingSource, ListingStatus, ProductCondition, ProductStatus } from '@crossmart/database';
 import { CHANNEL_TYPE_SCHEMA_NAME } from '../../channels/channels.constants.js';
 import {
   LISTING_SOURCE_SCHEMA_NAME,
@@ -18,7 +18,7 @@ import {
   DisplayRequirementProperty,
   DisplayStateProperty,
 } from '../../listings/dto/listing-display.decorators.js';
-import { PRODUCT_STATUS_SCHEMA_NAME } from '../catalog.constants.js';
+import { PRODUCT_CONDITION_SCHEMA_NAME, PRODUCT_STATUS_SCHEMA_NAME } from '../catalog.constants.js';
 
 export class PriceRangeDto implements PriceRange {
   @ApiProperty({ example: '22.00', description: 'Decimal string in the workspace currency' })
@@ -66,6 +66,9 @@ export class ProductSummaryDto implements DisplayedProductSummary {
 
   @ApiProperty({ enum: ProductStatus, enumName: PRODUCT_STATUS_SCHEMA_NAME })
   status: ProductStatus;
+
+  @ApiProperty({ enum: ProductCondition, enumName: PRODUCT_CONDITION_SCHEMA_NAME, nullable: true })
+  condition: ProductCondition | null;
 
   @ApiProperty({ type: String, nullable: true })
   vendor: string | null;

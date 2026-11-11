@@ -18,6 +18,7 @@ function summary(id: string): ProductSummaryRecord {
     productType: null,
     tags: [],
     status: 'ACTIVE',
+    condition: null,
     optionNames: [],
     createdAt: new Date(),
     updatedAt: new Date(),

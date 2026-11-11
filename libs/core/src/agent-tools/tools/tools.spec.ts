@@ -190,6 +190,7 @@ describe('MCP tools', () => {
   it('marks tools that remove things as destructive', () => {
     expect(tool('remove_product_from_store').destructive).toBe(true);
     expect(tool('replace_product').destructive).toBe(true);
+    expect(tool('mark_product_sold').destructive).toBe(true);
     expect(tool('create_product').destructive).toBeFalsy();
   });
 
@@ -217,6 +218,7 @@ describe('MCP tools', () => {
         AgentToolName.ApproveSuggestion,
         AgentToolName.CreateWebhookEndpoint,
         AgentToolName.EscalateToCrossmartTeam,
+        AgentToolName.MarkProductSold,
         AgentToolName.RemoveProductFromStore,
         AgentToolName.ReplaceProduct,
         AgentToolName.RetryStoreListing,

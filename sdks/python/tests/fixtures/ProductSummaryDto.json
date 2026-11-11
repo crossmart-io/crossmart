@@ -3,6 +3,7 @@
   "handle": "sample",
   "title": "sample",
   "status": "DRAFT",
+  "condition": null,
   "vendor": "sample",
   "productType": "sample",
   "variantCount": 1,

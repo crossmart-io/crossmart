@@ -8,6 +8,7 @@ import { AgentProposalsApiModule } from './agent-proposals/agent-proposals-api.m
 import { AgentWorkerApiModule } from './agent-worker/agent-worker-api.module.js';
 import { AiApiModule } from './ai/ai.module.js';
 import { AskApiModule } from './ask/ask.module.js';
+import { AttentionApiModule } from './attention/attention-api.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BillingApiModule } from './billing/billing-api.module.js';
 import { CatalogApiModule } from './catalog/catalog.module.js';
@@ -46,6 +47,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module.js';
     ListingsApiModule,
     OrdersApiModule,
     AnalyticsApiModule,
+    AttentionApiModule,
     SuggestionsApiModule,
     AiApiModule,
     AgentWorkerApiModule,

@@ -31,6 +31,7 @@ function target(id: string, handle: string, sku: string): ProductUpdateTargetRec
     productType: null,
     tags: ['kept'],
     status: ProductStatus.ACTIVE,
+    condition: null,
     optionNames: [],
     variants: [
       {

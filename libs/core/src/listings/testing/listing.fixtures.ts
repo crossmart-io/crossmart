@@ -51,6 +51,7 @@ export function productDetail(overrides: Partial<ProductDetail> = {}): ProductDe
     productType: 'Mugs',
     tags: ['kitchen'],
     status: ProductStatus.ACTIVE,
+    condition: null,
     optionNames: ['Color'],
     variants: [variantView()],
     media: [

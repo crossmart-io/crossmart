@@ -18,6 +18,7 @@ const PRODUCT = {
   productType: null,
   tags: ['linen'],
   status: 'ACTIVE',
+  condition: null,
   variants: [
     { id: 'v1', sku: 'SHIRT-M', optionValues: ['M'], price: '48.00', compareAtPrice: null },
   ],
@@ -148,6 +149,25 @@ describe('action preview formatters', () => {
     expect(result.changes).toEqual([
       { label: 'Price (SHIRT-M)', before: '$48.00', after: '$19.00' },
     ]);
+  });
+
+  it('shows a replaced product’s new condition', async () => {
+    const result = await preview(AgentToolName.ReplaceProduct, {
+      productId: PRODUCT_ID,
+      title: 'Linen Shirt',
+      condition: 'USED_GOOD',
+      variants: [{ id: 'v1', price: '48.00' }],
+    });
+    expect(result.changes).toEqual([{ label: 'Condition', before: null, after: 'USED_GOOD' }]);
+  });
+
+  it('says marking a product sold empties its stock and takes it off every store', async () => {
+    expect(await preview(AgentToolName.MarkProductSold, { productId: PRODUCT_ID })).toEqual({
+      target: 'Linen Shirt',
+      headline: 'Mark this product sold: its stock goes to 0 and it is taken off every store',
+      details: [],
+      changes: [],
+    });
   });
 
   it('shows one variant’s new prices as money, and a removed compare-at price as none', async () => {

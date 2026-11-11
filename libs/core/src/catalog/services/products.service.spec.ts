@@ -39,6 +39,7 @@ function summaryRecord(id: string, prices: string[]): ProductSummaryRecord {
     productType: null,
     tags: [],
     status: ProductStatus.ACTIVE,
+    condition: null,
     optionNames: [],
     createdAt: UPDATED_AT,
     updatedAt: UPDATED_AT,

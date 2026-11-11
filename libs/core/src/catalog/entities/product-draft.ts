@@ -1,4 +1,4 @@
-import type { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import type { OutOfStockPolicy, ProductCondition, ProductStatus } from '@crossmart/database';
 
 /** A product ready to be written to the catalog, whether typed in, sent by an agent or imported. */
 export interface ProductDraft {
@@ -9,6 +9,11 @@ export interface ProductDraft {
   productType?: string;
   tags: string[];
   status: ProductStatus;
+  /**
+   * The item's condition. Absent keeps the product's current one (none for a new product) and
+   * null clears it; a product without one is listed in each store's default condition.
+   */
+  condition?: ProductCondition | null;
   optionNames: string[];
   variants: VariantDraft[];
   media: MediaDraft[];

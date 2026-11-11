@@ -16,9 +16,9 @@ import {
   WEIGHT_UNIT_GRAMS,
 } from '../google-merchant.constants.js';
 import { toGooglePrices } from './google-price.js';
+import { googleConditionOf } from './google-condition.mapper.js';
 import {
   GoogleAvailability,
-  GoogleCondition,
   type GoogleProductAttributes,
   type GoogleProductInput,
 } from './google-product-input.js';
@@ -124,7 +124,7 @@ export function toProductInput(
       link: productLink(target.productUrlTemplate, draft.product.handle),
       ...images(draft),
       availability: availability(variant),
-      condition: GoogleCondition.New,
+      condition: googleConditionOf(draft.condition),
       ...toGooglePrices(variant, target.currencyCode),
       ...(brand ? { brand: cut(brand, GOOGLE_BRAND_MAX_LENGTH) } : {}),
       ...variantAttributes(draft, variant),

@@ -79,6 +79,7 @@ export enum AgentToolName {
   ReplaceProduct = 'replace_product',
   UpdateProductText = 'update_product_text',
   UpdateVariantPrice = 'update_variant_price',
+  MarkProductSold = 'mark_product_sold',
   GetInventoryItem = 'get_inventory_item',
   AdjustStock = 'adjust_stock',
   GetStore = 'get_store',

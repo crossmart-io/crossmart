@@ -52,6 +52,7 @@ export function toProductSummary(record: ProductSummaryRecord): ProductSummary {
     handle: record.handle,
     title: record.title,
     status: record.status,
+    condition: record.condition,
     vendor: record.vendor,
     productType: record.productType,
     variantCount: record.variants.length,
@@ -73,6 +74,7 @@ export function toProductDetail(record: ProductDetailRecord): ProductDetail {
     productType: record.productType,
     tags: record.tags,
     status: record.status,
+    condition: record.condition,
     optionNames: record.optionNames,
     variants: record.variants.map((variant) => ({
       id: variant.id,

@@ -33,6 +33,11 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
    * URL, or email someone. MCP clients see it as `openWorldHint`.
    */
   openWorld?: boolean;
+  /**
+   * True for writes that change nothing more when repeated with the same input, such as marking
+   * a product sold. MCP clients see it as `idempotentHint`.
+   */
+  idempotent?: boolean;
   /** True for tools that publish a listing to a store (counted for bulk confirmation). */
   publishes?: boolean;
   /** Input fields that change what a buyer pays; a call that sets one changes prices. */

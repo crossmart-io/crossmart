@@ -9,6 +9,11 @@ import { ChannelsModule } from '../channels/channels.module.js';
 import { CurrencyModule } from '../currency/currency.module.js';
 import { WorkspaceSettingsModule } from '../workspace-settings/workspace-settings.module.js';
 import { EventsModule } from '../events/events.module.js';
+import { InventoryModule } from '../inventory/inventory.module.js';
+import { ProductSaleRepository } from './repositories/product-sale.repository.js';
+import { ProductSaleService } from './services/product-sale.service.js';
+import { SoldProductStores } from './services/sold-product.stores.js';
+import { SoldStockClearer } from './services/sold-stock.clearer.js';
 import { ListingOverrideRepository } from './repositories/listing-override.repository.js';
 import { ListingSyncRepository } from './repositories/listing-sync.repository.js';
 import { ListingWebhookEvents } from './repositories/listing-webhook-events.js';
@@ -75,6 +80,7 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     CurrencyModule,
     EntitlementsModule,
     EventsModule,
+    InventoryModule,
     WebhookOutboxModule,
     WorkspaceSettingsModule,
   ],
@@ -132,9 +138,14 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingCategoryService,
     InventoryReconciliationService,
     SyncRequestSweeper,
+    ProductSaleRepository,
+    SoldProductStores,
+    SoldStockClearer,
+    ProductSaleService,
     { provide: SyncJobQueue, useClass: BullSyncJobQueue },
   ],
   exports: [
+    ProductSaleService,
     StoreListingStates,
     SyncProgressService,
     ListingEditorService,

@@ -18,6 +18,7 @@ const VARIANT_NOUN: Noun = { one: 'variant', other: 'variants' };
 const SUGGESTION_NOUN: Noun = { one: 'suggestion', other: 'suggestions' };
 const UNUSED_AGENT_NOUN: Noun = { one: 'unused agent', other: 'unused agents' };
 const ITEM_NOUN: Noun = { one: 'item', other: 'items' };
+const UNIT_NOUN: Noun = { one: 'unit', other: 'units' };
 const pluralRules = new Intl.PluralRules('en');
 
 function countOf(noun: Noun, entry: ActivityEntry): string {
@@ -65,6 +66,13 @@ const ACTION_WORDING: Record<ActivityAction, ActionWording> = {
   [ActivityAction.ProductDeleted]: {
     operation: 'Product deletion',
     describe: (entry) => `Deleted product${named(entry)}`,
+  },
+  [ActivityAction.ProductMarkedSold]: {
+    operation: 'Marking a product sold',
+    describe: (entry) =>
+      entry.itemCount
+        ? `Marked${named(entry)} sold, clearing ${countOf(UNIT_NOUN, entry)}`
+        : `Marked${named(entry)} sold`,
   },
   [ActivityAction.ProductsBulkUpdated]: {
     operation: 'Bulk edit',

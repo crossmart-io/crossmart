@@ -151,6 +151,9 @@ Crossmart only activates drafts, inactive and expired listings of active product
 | Variations  | Option values without parentheses                                                                           |
 | Images      | At most 20                                                                                                  |
 
+A product's item condition (ADR 0029) is not sent: Etsy's Open API v3 has no condition field
+(vintage items are told apart by `when_made` in the listing setup).
+
 Characters Etsy refuses are removed, repeated tags (ignoring case) dropped, and long titles and
 tags cut on whole characters. `contentLimits` declares the title, tag and description limits for
 content generation, which writes for Etsy with its own guidance.

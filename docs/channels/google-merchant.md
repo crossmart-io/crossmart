@@ -86,7 +86,10 @@ the same country again keeps it.
 - Price in the country's currency (converted by the connection's pricing). A higher compare-at
   price becomes the price and the price the `salePrice`.
 - Availability: in stock when untracked or stock is above zero; otherwise backorder when the
-  variant keeps selling, else out of stock. Condition is new.
+  variant keeps selling, else out of stock.
+- Condition from the product's `condition` (ADR 0029): `NEW` → `NEW`, `REFURBISHED` →
+  `REFURBISHED`, every other grade (new without tags or with defects included) → `USED`. A product
+  without one is `NEW`.
 - `brand` from the vendor; `gtins` from the barcode when it is 8, 12, 13 or 14 digits, else
   `identifierExists: false`; `color` and `size` from options named Color/Colour and Size;
   `shippingWeight` in grams.

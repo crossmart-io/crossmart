@@ -20,6 +20,7 @@ function summary(id: string, connectionIds: string[]): ProductSummary {
     handle: id,
     title: id,
     status: ProductStatus.ACTIVE,
+    condition: null,
     vendor: null,
     productType: null,
     variantCount: 1,

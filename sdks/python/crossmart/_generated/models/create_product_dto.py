@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.product_condition import ProductCondition
 from ..models.product_status import ProductStatus
 from ..types import UNSET, Unset
 
@@ -28,6 +29,8 @@ class CreateProductDto:
         product_type (str | Unset):
         tags (list[str] | Unset):
         status (ProductStatus | Unset):  Default: ProductStatus.DRAFT.
+        condition (None | ProductCondition | Unset): The item’s condition, mapped to each store’s own conditions. Left
+            out, an update keeps the current one; null clears it. Without one, each store lists it in its default condition.
         option_names (list[str] | Unset):  Example: ['Size', 'Color'].
         media (list[CreateMediaDto] | Unset):
         handle (str | Unset): Unique in the workspace. Defaults to the slugified title, or to `product-<random id>` when
@@ -41,6 +44,7 @@ class CreateProductDto:
     product_type: str | Unset = UNSET
     tags: list[str] | Unset = UNSET
     status: ProductStatus | Unset = ProductStatus.DRAFT
+    condition: None | ProductCondition | Unset = UNSET
     option_names: list[str] | Unset = UNSET
     media: list[CreateMediaDto] | Unset = UNSET
     handle: str | Unset = UNSET
@@ -67,6 +71,14 @@ class CreateProductDto:
         status: str | Unset = UNSET
         if not isinstance(self.status, Unset):
             status = self.status.value
+
+        condition: None | str | Unset
+        if isinstance(self.condition, Unset):
+            condition = UNSET
+        elif isinstance(self.condition, ProductCondition):
+            condition = self.condition.value
+        else:
+            condition = self.condition
 
         option_names: list[str] | Unset = UNSET
         if not isinstance(self.option_names, Unset):
@@ -99,6 +111,8 @@ class CreateProductDto:
             field_dict["tags"] = tags
         if status is not UNSET:
             field_dict["status"] = status
+        if condition is not UNSET:
+            field_dict["condition"] = condition
         if option_names is not UNSET:
             field_dict["optionNames"] = option_names
         if media is not UNSET:
@@ -138,6 +152,23 @@ class CreateProductDto:
         else:
             status = ProductStatus(_status)
 
+        def _parse_condition(data: object) -> None | ProductCondition | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                condition_type_0 = ProductCondition(data)
+
+                return condition_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | ProductCondition | Unset, data)
+
+        condition = _parse_condition(d.pop("condition", UNSET))
+
         option_names = cast(list[str], d.pop("optionNames", UNSET))
 
         _media = d.pop("media", UNSET)
@@ -159,6 +190,7 @@ class CreateProductDto:
             product_type=product_type,
             tags=tags,
             status=status,
+            condition=condition,
             option_names=option_names,
             media=media,
             handle=handle,

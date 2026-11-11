@@ -304,6 +304,15 @@ Triggers:
 4. The inventory policy (buffer, low-stock lock to the primary channel, allocation) computes the quantity per channel.
 5. If `available < 0`, an `OversellIncident` and a resolution `Suggestion` are created.
 
+**Mark as sold** (`ProductSaleService`, [ADR 0029](decisions/0029-item-condition-sold-and-attention.md)):
+`POST …/products/:id/mark-sold` sets every tracked variant's available stock to 0 through the ledger (reason `SOLD`)
+and removes the product by hand from every connected store that lists it or whose rule selects it, so each listing
+is delisted (or withdrawn when the channel never received it). Repeating it changes nothing.
+
+**Item condition:** `products.condition` (`ProductCondition`, nullable) reaches connectors as
+`ListingDraft.condition` (`ItemCondition`). eBay maps it to its Inventory API condition, falling back to the
+connection's default; Google Merchant to new, used or refurbished; Etsy and Shopify have no condition field.
+
 **Channel catalog import:** the API records an `ImportJob` (format `shopify_api`, mode `create_or_link`) and queues it on `import`. The worker reads the catalog through the connector's `CatalogSource` page by page, links or creates products, writes listings with their variant ids, sets new stock through the ledger, and stores the cursor with each page's counts, so retries resume. See [channels/shopify.md](channels/shopify.md#catalog-import).
 
 **Reconciliation:** inventory every 15 minutes and everything else daily. The job compares each channel's state to Crossmart and corrects drift, logging what it changed. Today the inventory reconciliation is a BullMQ job scheduler on the `inventory` queue that re-sends the shown stock of every listing of every connected account; comparing with the channel's own quantities first, and the daily content reconciliation, come later.
@@ -369,6 +378,9 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 - REST, versioned at `/api/v1`, with OpenAPI generated from `@nestjs/swagger` decorators.
 - `openapi.json` is published per release, and `crossmart-web` generates its typed client from it. The web CI fails on breaking changes.
 - Auth uses Better Auth sessions (web) or workspace API keys (API/MCP). Rate limited per key.
+- `GET /workspaces/:id/attention` (`AttentionService`, ADR 0029) is the one source of "needs attention" counts for Home
+  and the sidebar badge: stores to reconnect, failed listings, pending agent proposals and AI suggestions, each counted by
+  the same query as its own page, and null without that page's permission.
 - Errors use NestJS's JSON shape, `application/json` (not RFC 9457 problem+json):
   `{ "statusCode": 404, "error": "Not Found", "message": "Product not found" }`. On a validation
   failure (400), `message` is a list with one entry per problem. Plan refusals (402) add a typed

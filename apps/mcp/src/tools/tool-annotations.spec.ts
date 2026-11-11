@@ -9,6 +9,7 @@ const EXPECTED_HINTS: Record<string, [boolean, boolean, boolean]> = {
   replace_product: [false, true, true],
   update_product_text: [false, true, true],
   update_variant_price: [false, true, true],
+  mark_product_sold: [false, true, true],
   list_inventory: [true, false, false],
   get_inventory_item: [true, false, false],
   adjust_stock: [false, true, true],
@@ -59,5 +60,14 @@ describe('toolAnnotations', () => {
   it('never calls a read-only tool destructive', () => {
     const readOnly = { ...ALL_TOOLS[0], readOnly: true, destructive: true, overwrites: true };
     expect(toolAnnotations(readOnly).destructiveHint).toBe(false);
+  });
+
+  it('calls only writes that are safe to repeat idempotent', () => {
+    const idempotent = [...ALL_TOOLS, ...ANONYMOUS_TOOLS]
+      .filter((spec) => toolAnnotations(spec).idempotentHint === true)
+      .map((spec) => spec.name);
+    expect(idempotent).toEqual(['mark_product_sold']);
+    const readOnly = { ...ALL_TOOLS[0], readOnly: true, idempotent: true };
+    expect(toolAnnotations(readOnly)).not.toHaveProperty('idempotentHint');
   });
 });

@@ -4,6 +4,7 @@ import type {
   ListingSource,
   ListingStatus,
   OutOfStockPolicy,
+  ProductCondition,
   ProductStatus,
 } from '@crossmart/database';
 import type { CatalogGap } from '../enums/catalog-gap.enum.js';
@@ -30,6 +31,7 @@ export interface ProductSummary {
   handle: string;
   title: string;
   status: ProductStatus;
+  condition: ProductCondition | null;
   vendor: string | null;
   productType: string | null;
   variantCount: number;
@@ -84,6 +86,8 @@ export interface ProductDetail {
   productType: string | null;
   tags: string[];
   status: ProductStatus;
+  /** The item's condition; null uses each store's default condition. */
+  condition: ProductCondition | null;
   optionNames: string[];
   variants: VariantView[];
   media: MediaView[];

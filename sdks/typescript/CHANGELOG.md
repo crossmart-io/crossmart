@@ -8,6 +8,10 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
 
 ### Added
 
+- Item condition, marking a product sold and the attention summary (ADR 0029): `condition`
+  (`ProductCondition`) on products, `POST /workspaces/{workspaceId}/products/{productId}/mark-sold`
+  (`ProductSaleDto`), `GET /workspaces/{workspaceId}/attention` (`AttentionSummaryDto`,
+  `AttentionStoreReason`) and the `product_marked_sold` activity action.
 - Agent Worker (ADR 0026): conversations under
   `/workspaces/{workspaceId}/agent-worker/conversations` (list, create, read, delete, cancel), and
   the `messages` and `decision` routes, which answer with server-sent events

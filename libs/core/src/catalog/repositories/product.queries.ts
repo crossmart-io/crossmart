@@ -46,6 +46,7 @@ export const PRODUCT_UPDATE_TARGET_SELECT = {
   productType: true,
   tags: true,
   status: true,
+  condition: true,
   optionNames: true,
   variants: {
     select: {

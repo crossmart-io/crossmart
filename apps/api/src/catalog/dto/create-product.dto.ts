@@ -25,9 +25,10 @@ import {
   type ProductDraft,
   type VariantDraft,
 } from '@crossmart/core';
-import { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import { OutOfStockPolicy, ProductCondition, ProductStatus } from '@crossmart/database';
 import {
   OUT_OF_STOCK_POLICY_SCHEMA_NAME,
+  PRODUCT_CONDITION_SCHEMA_NAME,
   PRODUCT_DESCRIPTION_MAX_LENGTH,
   PRODUCT_HANDLE_MAX_LENGTH,
   PRODUCT_MEDIA_MAX,
@@ -203,6 +204,18 @@ export abstract class ProductContentDto {
   @IsEnum(ProductStatus)
   status: ProductStatus = ProductStatus.DRAFT;
 
+  @ApiPropertyOptional({
+    enum: ProductCondition,
+    enumName: PRODUCT_CONDITION_SCHEMA_NAME,
+    nullable: true,
+    description:
+      'The item’s condition, mapped to each store’s own conditions. Left out, an update keeps ' +
+      'the current one; null clears it. Without one, each store lists it in its default condition.',
+  })
+  @IsOptional()
+  @IsEnum(ProductCondition)
+  condition?: ProductCondition | null;
+
   @ApiPropertyOptional({ type: [String], example: ['Size', 'Color'] })
   @IsOptional()
   @IsArray()
@@ -228,6 +241,7 @@ export abstract class ProductContentDto {
       productType: this.productType,
       tags: this.tags,
       status: this.status,
+      condition: this.condition,
       optionNames: this.optionNames,
       variants,
       media: this.media.map(({ url, altText }) => ({ url, altText })),
