@@ -16,7 +16,7 @@ In n8n, open **Settings → Community nodes → Install** and enter `n8n-nodes-c
 
 ## Credentials
 
-Add a **Crossmart API** credential with a workspace API key (dashboard: **Settings → API keys**)
+Add a **Crossmart API** credential with a workspace API key (dashboard: **Settings → Developers → API keys**)
 and, if you self-host Crossmart, your API's base URL. The default is `https://api.crossmart.io`;
 a trailing slash or `/api/v1` is fine. n8n tests the credential with `GET /api/v1/api-key`, and
 the nodes use the same call to find the key's workspace, so there is no workspace field to fill.

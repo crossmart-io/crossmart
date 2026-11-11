@@ -6,7 +6,7 @@ A store is a **channel connection** (Shopify, eBay, Google Merchant). Its `id` i
 ## Connecting a store
 
 You can't connect one. The marketplace asks the seller to approve access, so the seller does it in
-the Crossmart dashboard: app.crossmart.io → **Channels → Connect**. Never ask for a marketplace
+the Crossmart dashboard: app.crossmart.io → **Stores → Connect**. Never ask for a marketplace
 username, password or token.
 
 ## Is the store ready to publish?

@@ -7,7 +7,7 @@ from n8n, Zapier, Make or your agent's backend. The design is recorded in
 
 ## Add an endpoint
 
-In the dashboard: **Settings → Webhooks → Add endpoint**. Or with the API, using a key whose role
+In the dashboard: **Settings → Developers → Webhooks → Add endpoint**. Or with the API, using a key whose role
 holds `webhooks:manage` (Owner or Admin, see [roles](../permissions.md)):
 
 ```bash
@@ -231,7 +231,7 @@ Without an SDK, in any language: split the header on `,`, take `t` and every `v1
   (failed attempts since the last one that went through) and `lastDelivery`, the latest attempt
   whatever event it carried: `attemptedAt`, `outcome` (`SUCCEEDED` or `FAILED`), `responseStatus`
   (null when no response came) and `error`. It is `null` until the first attempt. The dashboard
-  shows them in **Settings → Webhooks**.
+  shows them in **Settings → Developers → Webhooks**.
 
   ```json
   {
