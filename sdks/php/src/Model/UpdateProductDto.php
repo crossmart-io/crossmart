@@ -6,8 +6,10 @@ declare(strict_types=1);
 
 namespace Crossmart\Model;
 
+use Crossmart\Enum\ProductCondition;
 use Crossmart\Enum\ProductStatus;
 use Crossmart\Serialization\Payload;
+use Crossmart\Serialization\Undefined;
 use JsonSerializable;
 
 final class UpdateProductDto implements JsonSerializable
@@ -15,6 +17,7 @@ final class UpdateProductDto implements JsonSerializable
     /**
      * @param list<UpdateVariantDto> $variants
      * @param list<string>|null $tags
+     * @param ProductCondition|string|Undefined|null $condition The item’s condition, mapped to each store’s own conditions. Left out, an update keeps the current one; null clears it. Without one, each store lists it in its default condition.
      * @param list<string>|null $optionNames
      * @param list<CreateMediaDto>|null $media
      */
@@ -27,6 +30,7 @@ final class UpdateProductDto implements JsonSerializable
         public readonly ?string $productType = null,
         public readonly ?array $tags = null,
         public readonly ProductStatus|string|null $status = null,
+        public readonly ProductCondition|string|Undefined|null $condition = Undefined::Value,
         public readonly ?array $optionNames = null,
         public readonly ?array $media = null,
     ) {
@@ -50,6 +54,7 @@ final class UpdateProductDto implements JsonSerializable
             productType: $payload->isNull('productType') ? null : $payload->string('productType'),
             tags: $payload->isNull('tags') ? null : $payload->stringList('tags'),
             status: $payload->isNull('status') ? null : $payload->enum('status', ProductStatus::class),
+            condition: !$payload->has('condition') ? Undefined::Value : ($payload->isNull('condition') ? null : $payload->enum('condition', ProductCondition::class)),
             optionNames: $payload->isNull('optionNames') ? null : $payload->stringList('optionNames'),
             media: $payload->isNull('media') ? null : $payload->modelList('media', CreateMediaDto::fromArray(...)),
         );
@@ -81,6 +86,9 @@ final class UpdateProductDto implements JsonSerializable
         }
         if ($this->status !== null) {
             $data['status'] = Payload::enumValue($this->status);
+        }
+        if (!$this->condition instanceof Undefined) {
+            $data['condition'] = Payload::enumValue($this->condition);
         }
         if ($this->optionNames !== null) {
             $data['optionNames'] = $this->optionNames;

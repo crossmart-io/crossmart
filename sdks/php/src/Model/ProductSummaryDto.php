@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Crossmart\Model;
 
+use Crossmart\Enum\ProductCondition;
 use Crossmart\Enum\ProductStatus;
 use Crossmart\Serialization\Payload;
 use DateTimeImmutable;
@@ -22,6 +23,7 @@ final class ProductSummaryDto implements JsonSerializable
         public readonly string $handle,
         public readonly string $title,
         public readonly ProductStatus|string $status,
+        public readonly ProductCondition|string|null $condition,
         public readonly ?string $vendor,
         public readonly ?string $productType,
         public readonly int|float $variantCount,
@@ -47,6 +49,7 @@ final class ProductSummaryDto implements JsonSerializable
             handle: $payload->string('handle'),
             title: $payload->string('title'),
             status: $payload->enum('status', ProductStatus::class),
+            condition: $payload->isNull('condition') ? null : $payload->enum('condition', ProductCondition::class),
             vendor: $payload->isNull('vendor') ? null : $payload->string('vendor'),
             productType: $payload->isNull('productType') ? null : $payload->string('productType'),
             variantCount: $payload->number('variantCount'),
@@ -70,6 +73,7 @@ final class ProductSummaryDto implements JsonSerializable
             'handle' => $this->handle,
             'title' => $this->title,
             'status' => Payload::enumValue($this->status),
+            'condition' => Payload::enumValue($this->condition),
             'vendor' => $this->vendor,
             'productType' => $this->productType,
             'variantCount' => $this->variantCount,

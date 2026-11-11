@@ -8,6 +8,7 @@ from uuid import UUID
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.product_condition import ProductCondition
 from ..models.product_status import ProductStatus
 
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ class ProductDto:
         product_type (None | str):
         tags (list[str]):
         status (ProductStatus):
+        condition (None | ProductCondition): The item’s condition; null lists it in each store’s default condition
         option_names (list[str]):  Example: ['Size', 'Color'].
         variants (list[VariantDto]):
         media (list[MediaDto]):
@@ -45,6 +47,7 @@ class ProductDto:
     product_type: None | str
     tags: list[str]
     status: ProductStatus
+    condition: None | ProductCondition
     option_names: list[str]
     variants: list[VariantDto]
     media: list[MediaDto]
@@ -70,6 +73,12 @@ class ProductDto:
         tags = self.tags
 
         status = self.status.value
+
+        condition: None | str
+        if isinstance(self.condition, ProductCondition):
+            condition = self.condition.value
+        else:
+            condition = self.condition
 
         option_names = self.option_names
 
@@ -99,6 +108,7 @@ class ProductDto:
                 "productType": product_type,
                 "tags": tags,
                 "status": status,
+                "condition": condition,
                 "optionNames": option_names,
                 "variants": variants,
                 "media": media,
@@ -141,6 +151,21 @@ class ProductDto:
 
         status = ProductStatus(d.pop("status"))
 
+        def _parse_condition(data: object) -> None | ProductCondition:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                condition_type_0 = ProductCondition(data)
+
+                return condition_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | ProductCondition, data)
+
+        condition = _parse_condition(d.pop("condition"))
+
         option_names = cast(list[str], d.pop("optionNames"))
 
         variants = []
@@ -170,6 +195,7 @@ class ProductDto:
             product_type=product_type,
             tags=tags,
             status=status,
+            condition=condition,
             option_names=option_names,
             variants=variants,
             media=media,

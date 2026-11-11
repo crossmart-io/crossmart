@@ -510,6 +510,26 @@ export interface paths {
         patch: operations["ProductsController_updateVariantPrice_v1"];
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/products/{productId}/mark-sold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a product sold
+         * @description For an item that sold outside the connected stores, such as a one-of-a-kind item sold in person. Sets the available stock of every tracked variant to 0 (logged as sold) and takes the product off every connected store, as removing it by hand does, so it cannot sell twice. Idempotent: calling it again changes nothing and answers `alreadySold: true`.
+         */
+        post: operations["ProductsController_markSold_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/product-bulk-actions": {
         parameters: {
             query?: never;
@@ -1441,6 +1461,26 @@ export interface paths {
          * @description Counts follow the same rule as each store’s product list. Each failed listing carries `displayState`, `displayReason` and `displayRequirement`, so a client can link to the fix.
          */
         get: operations["ListingHealthReportController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/attention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What needs the merchant now
+         * @description Stores to reconnect, failed listings, outside agents’ proposals and AI suggestions waiting for review: a count and the latest few of each, for Home and a sidebar badge. Counts match the Channels, Agent proposals and Suggestions pages. A section is null without the permission its page needs (`channels:view` or `suggestions:view`).
+         */
+        get: operations["AttentionController_get_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2801,6 +2841,8 @@ export interface components {
         ProductSort: ProductSort;
         /** @enum {string} */
         SortDirection: SortDirection;
+        /** @enum {string} */
+        ProductCondition: ProductCondition;
         PriceRangeDto: {
             /**
              * @description Decimal string in the workspace currency
@@ -2850,6 +2892,7 @@ export interface components {
             handle: string;
             title: string;
             status: components["schemas"]["ProductStatus"];
+            condition: components["schemas"]["ProductCondition"] | null;
             vendor: string | null;
             productType: string | null;
             variantCount: number;
@@ -2917,6 +2960,8 @@ export interface components {
             productType: string | null;
             tags: string[];
             status: components["schemas"]["ProductStatus"];
+            /** @description The item’s condition; null lists it in each store’s default condition */
+            condition: components["schemas"]["ProductCondition"] | null;
             /**
              * @example [
              *       "Size",
@@ -2977,6 +3022,8 @@ export interface components {
             tags?: string[];
             /** @default DRAFT */
             status?: components["schemas"]["ProductStatus"];
+            /** @description The item’s condition, mapped to each store’s own conditions. Left out, an update keeps the current one; null clears it. Without one, each store lists it in its default condition. */
+            condition?: components["schemas"]["ProductCondition"] | null;
             /**
              * @example [
              *       "Size",
@@ -3032,6 +3079,8 @@ export interface components {
             tags?: string[];
             /** @default DRAFT */
             status?: components["schemas"]["ProductStatus"];
+            /** @description The item’s condition, mapped to each store’s own conditions. Left out, an update keeps the current one; null clears it. Without one, each store lists it in its default condition. */
+            condition?: components["schemas"]["ProductCondition"] | null;
             /**
              * @example [
              *       "Size",
@@ -3060,6 +3109,22 @@ export interface components {
              * @example 24.90
              */
             compareAtPrice?: string | null;
+        };
+        SoldProductStoreDto: {
+            /** Format: uuid */
+            connectionId: string;
+            channel: components["schemas"]["ChannelType"];
+            displayName: string;
+        };
+        ProductSaleDto: {
+            /** @description The product as it is now, with every tracked variant at 0 available */
+            product: components["schemas"]["ProductDto"];
+            /** @description Available units set to 0 across its tracked variants */
+            unitsCleared: number;
+            /** @description The stores it was taken off. Their listings are ended on the channel in the background, like removing a product from a store by hand. */
+            removedFromStores: components["schemas"]["SoldProductStoreDto"][];
+            /** @description True when it was sold already (no stock left, on no store): nothing changed */
+            alreadySold: boolean;
         };
         /** @enum {string} */
         BulkProductAction: BulkProductAction;
@@ -4534,9 +4599,100 @@ export interface components {
             failedListings: number;
         };
         /** @enum {string} */
-        SuggestionStatus: SuggestionStatus;
+        AttentionStoreReason: AttentionStoreReason;
+        AttentionStoreDto: {
+            /** Format: uuid */
+            connectionId: string;
+            channel: components["schemas"]["ChannelType"];
+            displayName: string;
+            status: components["schemas"]["ChannelConnectionStatus"];
+            statusReason: string | null;
+            reason: components["schemas"]["AttentionStoreReason"];
+            /** @description Listings still on the channel (not delisted) */
+            liveListings: number;
+        };
+        AttentionStoresDto: {
+            /** @description Stores to reconnect or fix, and disconnected ones still listing */
+            count: number;
+            /** @description The latest ones, up to `limit` */
+            items: components["schemas"]["AttentionStoreDto"][];
+        };
+        AttentionListingGroupDto: {
+            /** Format: uuid */
+            productId: string;
+            productTitle: string;
+            imageUrl: string | null;
+            /** Format: uuid */
+            connectionId: string;
+            channel: components["schemas"]["ChannelType"];
+            storeName: string;
+            /** @description Failed listings of the product on this store */
+            failedListings: number;
+            /** @description The channel’s latest refusal */
+            lastError: string | null;
+            /** @description What the channel asks for, when details are missing rather than an error */
+            missingRequirement: components["schemas"]["PublishRequirement"] | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AttentionListingsDto: {
+            /** @description Failed listings across the stores, as the Channels page counts them */
+            count: number;
+            /** @description The latest products with failed listings, one per product and store */
+            items: components["schemas"]["AttentionListingGroupDto"][];
+        };
+        AttentionProposalDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Claude */
+            agentName: string;
+            /** @example update_variant_price */
+            toolName: string;
+            /** @example Change a variant’s price */
+            toolTitle: string;
+            summary: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        AttentionProposalsDto: {
+            /** @description Outside agents’ changes waiting for approval */
+            count: number;
+            /** @description The latest ones, up to `limit` */
+            items: components["schemas"]["AttentionProposalDto"][];
+        };
         /** @enum {string} */
         SuggestionKind: SuggestionKind;
+        AttentionSuggestionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            productId: string;
+            productTitle: string;
+            kind: components["schemas"]["SuggestionKind"];
+            /** Format: uuid */
+            connectionId: string | null;
+            storeName: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AttentionSuggestionsDto: {
+            /** @description AI suggestions waiting for review */
+            count: number;
+            /** @description The latest ones, up to `limit` */
+            items: components["schemas"]["AttentionSuggestionDto"][];
+        };
+        AttentionSummaryDto: {
+            /** @description The sum of the visible sections’ counts, for one badge */
+            total: number;
+            stores: components["schemas"]["AttentionStoresDto"] | null;
+            listings: components["schemas"]["AttentionListingsDto"] | null;
+            proposals: components["schemas"]["AttentionProposalsDto"] | null;
+            suggestions: components["schemas"]["AttentionSuggestionsDto"] | null;
+        };
+        /** @enum {string} */
+        SuggestionStatus: SuggestionStatus;
         SuggestionConnectionDto: {
             /** Format: uuid */
             id: string;
@@ -6646,6 +6802,28 @@ export interface operations {
             };
         };
     };
+    ProductsController_markSold_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductSaleDto"];
+                };
+            };
+        };
+    };
     ProductBulkActionsController_apply_v1: {
         parameters: {
             query?: never;
@@ -8131,6 +8309,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListingHealthReportDto"];
+                };
+            };
+        };
+    };
+    AttentionController_get_v1: {
+        parameters: {
+            query?: {
+                /** @description Items each section lists, latest first. The counts always cover everything. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttentionSummaryDto"];
                 };
             };
         };
@@ -9752,6 +9954,18 @@ export enum SortDirection {
     asc = "asc",
     desc = "desc"
 }
+export enum ProductCondition {
+    NEW = "NEW",
+    NEW_OTHER = "NEW_OTHER",
+    NEW_WITH_DEFECTS = "NEW_WITH_DEFECTS",
+    LIKE_NEW = "LIKE_NEW",
+    REFURBISHED = "REFURBISHED",
+    USED_EXCELLENT = "USED_EXCELLENT",
+    USED_VERY_GOOD = "USED_VERY_GOOD",
+    USED_GOOD = "USED_GOOD",
+    USED_FAIR = "USED_FAIR",
+    FOR_PARTS = "FOR_PARTS"
+}
 export enum ChannelType {
     shopify = "shopify",
     ebay = "ebay",
@@ -9853,6 +10067,7 @@ export enum ActivityAction {
     product_created = "product_created",
     product_updated = "product_updated",
     product_deleted = "product_deleted",
+    product_marked_sold = "product_marked_sold",
     products_bulk_updated = "products_bulk_updated",
     products_bulk_deleted = "products_bulk_deleted",
     products_imported = "products_imported",
@@ -10131,15 +10346,20 @@ export enum SalesInterval {
     week = "week",
     month = "month"
 }
+export enum AttentionStoreReason {
+    needs_reauth = "needs_reauth",
+    error = "error",
+    disconnected_with_listings = "disconnected_with_listings"
+}
+export enum SuggestionKind {
+    listing_title = "listing_title",
+    listing_description = "listing_description"
+}
 export enum SuggestionStatus {
     PENDING = "PENDING",
     APPLIED = "APPLIED",
     REJECTED = "REJECTED",
     STALE = "STALE"
-}
-export enum SuggestionKind {
-    listing_title = "listing_title",
-    listing_description = "listing_description"
 }
 export enum SuggestionCreatorType {
     AGENT = "AGENT",

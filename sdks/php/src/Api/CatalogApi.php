@@ -26,6 +26,7 @@ use Crossmart\Model\ImportJobDetailDto;
 use Crossmart\Model\ImportJobPageDto;
 use Crossmart\Model\ProductDto;
 use Crossmart\Model\ProductPageDto;
+use Crossmart\Model\ProductSaleDto;
 use Crossmart\Model\ProductViewDto;
 use Crossmart\Model\UpdateProductContentDto;
 use Crossmart\Model\UpdateProductDto;
@@ -199,6 +200,26 @@ final class CatalogApi
         ));
 
         return ProductDto::fromArray($response->object());
+    }
+
+    /**
+     * Mark a product sold
+     *
+     * For an item that sold outside the connected stores, such as a one-of-a-kind item sold in person. Sets the available stock of every tracked variant to 0 (logged as sold) and takes the product off every connected store, as removing it by hand does, so it cannot sell twice. Idempotent: calling it again changes nothing and answers `alreadySold: true`.
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function productsControllerMarkSoldV1(
+        string $workspaceId,
+        string $productId,
+    ): ProductSaleDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Post,
+            pathTemplate: '/api/v1/workspaces/{workspaceId}/products/{productId}/mark-sold',
+            pathParameters: ['workspaceId' => $workspaceId, 'productId' => $productId],
+        ));
+
+        return ProductSaleDto::fromArray($response->object());
     }
 
     /**

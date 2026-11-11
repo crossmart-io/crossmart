@@ -45,6 +45,7 @@ class ActivityAction(StrEnum):
     PRODUCTS_UPDATED_BY_IMPORT = "products_updated_by_import"
     PRODUCT_CREATED = "product_created"
     PRODUCT_DELETED = "product_deleted"
+    PRODUCT_MARKED_SOLD = "product_marked_sold"
     PRODUCT_UPDATED = "product_updated"
     PRODUCT_VIEW_CREATED = "product_view_created"
     PRODUCT_VIEW_DELETED = "product_view_deleted"

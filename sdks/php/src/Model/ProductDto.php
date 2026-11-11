@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace Crossmart\Model;
 
+use Crossmart\Enum\ProductCondition;
 use Crossmart\Enum\ProductStatus;
 use Crossmart\Serialization\Payload;
 use DateTimeImmutable;
@@ -15,6 +16,7 @@ final class ProductDto implements JsonSerializable
 {
     /**
      * @param list<string> $tags
+     * @param ProductCondition|string|null $condition The item’s condition; null lists it in each store’s default condition
      * @param list<string> $optionNames
      * @param list<VariantDto> $variants
      * @param list<MediaDto> $media
@@ -28,6 +30,7 @@ final class ProductDto implements JsonSerializable
         public readonly ?string $productType,
         public readonly array $tags,
         public readonly ProductStatus|string $status,
+        public readonly ProductCondition|string|null $condition,
         public readonly array $optionNames,
         public readonly array $variants,
         public readonly array $media,
@@ -54,6 +57,7 @@ final class ProductDto implements JsonSerializable
             productType: $payload->isNull('productType') ? null : $payload->string('productType'),
             tags: $payload->stringList('tags'),
             status: $payload->enum('status', ProductStatus::class),
+            condition: $payload->isNull('condition') ? null : $payload->enum('condition', ProductCondition::class),
             optionNames: $payload->stringList('optionNames'),
             variants: $payload->modelList('variants', VariantDto::fromArray(...)),
             media: $payload->modelList('media', MediaDto::fromArray(...)),
@@ -78,6 +82,7 @@ final class ProductDto implements JsonSerializable
             'productType' => $this->productType,
             'tags' => $this->tags,
             'status' => Payload::enumValue($this->status),
+            'condition' => Payload::enumValue($this->condition),
             'optionNames' => $this->optionNames,
             'variants' => array_map(static fn (VariantDto $item): array => $item->toArray(), $this->variants),
             'media' => array_map(static fn (MediaDto $item): array => $item->toArray(), $this->media),

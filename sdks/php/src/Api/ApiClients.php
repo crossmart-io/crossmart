@@ -27,6 +27,7 @@ final class ApiClients
     public readonly ListingsApi $listings;
     public readonly OrdersApi $orders;
     public readonly AnalyticsApi $analytics;
+    public readonly AttentionApi $attention;
     public readonly SuggestionsApi $suggestions;
     public readonly AiApi $ai;
     public readonly AgentWorkerApi $agentWorker;
@@ -54,6 +55,7 @@ final class ApiClients
         $this->listings = new ListingsApi($transport);
         $this->orders = new OrdersApi($transport);
         $this->analytics = new AnalyticsApi($transport);
+        $this->attention = new AttentionApi($transport);
         $this->suggestions = new SuggestionsApi($transport);
         $this->ai = new AiApi($transport);
         $this->agentWorker = new AgentWorkerApi($transport);

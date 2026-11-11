@@ -8,6 +8,7 @@ from uuid import UUID
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.product_condition import ProductCondition
 from ..models.product_status import ProductStatus
 
 if TYPE_CHECKING:
@@ -26,6 +27,7 @@ class ProductSummaryDto:
         handle (str):
         title (str):
         status (ProductStatus):
+        condition (None | ProductCondition):
         vendor (None | str):
         product_type (None | str):
         variant_count (float):
@@ -40,6 +42,7 @@ class ProductSummaryDto:
     handle: str
     title: str
     status: ProductStatus
+    condition: None | ProductCondition
     vendor: None | str
     product_type: None | str
     variant_count: float
@@ -60,6 +63,12 @@ class ProductSummaryDto:
         title = self.title
 
         status = self.status.value
+
+        condition: None | str
+        if isinstance(self.condition, ProductCondition):
+            condition = self.condition.value
+        else:
+            condition = self.condition
 
         vendor: None | str
         vendor = self.vendor
@@ -96,6 +105,7 @@ class ProductSummaryDto:
                 "handle": handle,
                 "title": title,
                 "status": status,
+                "condition": condition,
                 "vendor": vendor,
                 "productType": product_type,
                 "variantCount": variant_count,
@@ -122,6 +132,21 @@ class ProductSummaryDto:
         title = d.pop("title")
 
         status = ProductStatus(d.pop("status"))
+
+        def _parse_condition(data: object) -> None | ProductCondition:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                condition_type_0 = ProductCondition(data)
+
+                return condition_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(None | ProductCondition, data)
+
+        condition = _parse_condition(d.pop("condition"))
 
         def _parse_vendor(data: object) -> None | str:
             if data is None:
@@ -182,6 +207,7 @@ class ProductSummaryDto:
             handle=handle,
             title=title,
             status=status,
+            condition=condition,
             vendor=vendor,
             product_type=product_type,
             variant_count=variant_count,
