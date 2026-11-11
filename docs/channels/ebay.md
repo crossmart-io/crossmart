@@ -165,9 +165,17 @@ Every listing on a connection is sold under the merchant's **listing defaults**
 | Field                                                      | Meaning                                                                                                       |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `fulfillmentPolicyId`, `paymentPolicyId`, `returnPolicyId` | One of the account's policies. Null uses the account's only policy of that type, when it has exactly one.     |
-| `condition`                                                | `NEW` by default; any Inventory API condition (`USED_EXCELLENT`, `FOR_PARTS_OR_NOT_WORKING`…).                |
+| `condition`                                                | `NEW` by default; any Inventory API condition. Used for products without their own condition (below).         |
 | `location`                                                 | Ship-from `postalCode`, `country` (ISO 3166 alpha-2) and optional `city`.                                     |
 | `merchantLocationKey`                                      | Set by Crossmart: saving a location creates the inventory location `crossmart-default` on eBay (`WAREHOUSE`). |
+
+### Item condition
+
+A product's own `condition` (ADR 0029) wins over the default: `NEW`, `NEW_OTHER`,
+`NEW_WITH_DEFECTS`, `LIKE_NEW` and the `USED_*` grades map to the eBay value of the same name,
+except `USED_FAIR` → `USED_ACCEPTABLE`, `REFURBISHED` → `SELLER_REFURBISHED` and `FOR_PARTS` →
+`FOR_PARTS_OR_NOT_WORKING`. A category that does not take the grade refuses the listing with
+eBay's message.
 
 Saving a location calls `POST /location/crossmart-default`; when it exists (409, or error
 `25803`), Crossmart updates its address with `update_location_details`, so saving twice is

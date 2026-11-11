@@ -106,6 +106,8 @@ quantities, shipped units, prices and totals, never the buyer.
 | Prices          | `productVariantsBulkUpdate`, one call per product                                                                                                                                                                                    |
 | Delist          | `productUpdate` to `ARCHIVED`: the product leaves sales channels but keeps its orders. Publishing again updates and reactivates it.                                                                                                  |
 
+A product's item condition (ADR 0029) is not sent: Shopify has no native condition field.
+
 Images are re-sent only when they changed (`listings.media_digest`). A listing whose Crossmart status is not active,
 or that is hidden on the channel, is sent as `DRAFT`. User errors are stored on the listing as `lastError`.
 

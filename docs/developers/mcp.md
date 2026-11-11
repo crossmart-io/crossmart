@@ -111,6 +111,7 @@ n8n) that call the REST API with an API key.
 | `replace_product`            | Saves a whole product; variants left out are removed                   |     Yes      |
 | `update_product_text`        | Changes only a product's title and/or description                      |     Yes      |
 | `update_variant_price`       | Changes only one variant's price and/or compare-at price               |     Yes      |
+| `mark_product_sold`          | Sold elsewhere: stock to 0 and off every store; safe to repeat         |     Yes      |
 | `list_inventory`             | Stock per variant: on hand, held for orders, available                 |              |
 | `get_inventory_item`         | One variant's stock with its product                                   |              |
 | `adjust_stock`               | Adds, removes or sets stock, with a reason                             |     Yes      |
@@ -146,12 +147,13 @@ n8n) that call the REST API with an API key.
 | `create_account`             | Opens a sandbox account for a user who has none (local server only)    |     Yes      |
 
 Every tool tells the client whether it only reads (`readOnlyHint`), whether it deletes or
-overwrites something (`destructiveHint`: `replace_product`, `remove_product_from_store`,
+overwrites something (`destructiveHint`: `replace_product`, `mark_product_sold`, `remove_product_from_store`,
 `save_item_specifics`, `update_product_text`, `update_variant_price`, `adjust_stock`,
 `update_listing`, `set_store_category` and `approve_suggestion`), and whether it reaches beyond
 Crossmart (`openWorldHint`: those same tools, which change what your stores show, plus
 `add_product_to_store`, `retry_store_listing`, `create_webhook_endpoint`,
-`escalate_to_crossmart_team` and `create_account`), so clients can ask before running them. Tool
+`escalate_to_crossmart_team` and `create_account`), so clients can ask before running them.
+`mark_product_sold` is also `idempotentHint`: calling it again changes nothing. Tool
 results never hold secrets: `create_webhook_endpoint` leaves out the signing secret, which you get
 under Settings > Webhooks (Rotate secret). When the API refuses a call, the tool returns the API's
 status, its `code` when it gives one, and its message (for example
