@@ -63,7 +63,7 @@ admins under `/api/v1/organizations/{organizationId}/billing` (see [billing](../
 ### API keys
 
 An API key belongs to one workspace and has a role. Create one in the dashboard under
-**Settings → API keys** (or with `POST /api/v1/workspaces/{workspaceId}/api-keys`). The full key
+**Settings → Developers → API keys** (or with `POST /api/v1/workspaces/{workspaceId}/api-keys`). The full key
 is shown once; Crossmart stores only a hash. Send it in the `x-api-key` header:
 
 ```bash
@@ -92,7 +92,7 @@ AI agents such as Claude and ChatGPT connect to the [MCP server](mcp.md) through
 a pasted key: the seller signs in, picks a workspace and approves the access, full or read-only.
 The agent then sends an access token as `Authorization: Bearer <token>`, limited to the scopes the
 seller approved and to their own role, and to that workspace's routes. The SDK accepts
-`{ accessToken }`. Sellers see and disconnect their agents under **Settings → Connected agents**
+`{ accessToken }`. Sellers see and disconnect their agents under **Settings → Developers → Connected agents**
 ([ADR 0019](../decisions/0019-agent-access.md)).
 
 ### Sandbox accounts for AI agents

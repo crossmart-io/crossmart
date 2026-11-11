@@ -46,7 +46,7 @@ client. The rest follows the MCP authorization spec:
 An agent acts for the user who connected it, in one workspace. What it may do is its scopes
 narrowed by that user's current role, and it never reaches members, API keys, store connections,
 settings or billing. It only sees the tools its scopes cover. The activity log shows it as an
-agent with the user's name. Members see and disconnect their agents under Settings (`GET/DELETE
+agent with the user's name. Members see and disconnect their agents under Settings > Developers (`GET/DELETE
 /api/v1/workspaces/{id}/agent-connections`), and disconnecting stops the agent at once.
 
 | Scope               | Tools                                                                                                                                                                                                   |
@@ -94,14 +94,14 @@ tool answers, without an error:
 }
 ```
 
-The seller approves or rejects it in the web app (Agent proposals). The agent checks it with
+The seller approves or rejects it in the web app (Agent > Review, Outside agents). The agent checks it with
 `get_proposal`: `pending`, `applying`, `applied` (with the API's answer), `failed` (with the
 refusal), `rejected` or `expired` (nobody decided within 7 days). An approved change runs as the
 agent, so the activity log reads "Claude for Dana, approved by Lee"; if the connection was revoked
 in the meantime, it fails.
 
 This holds for **every MCP session**, OAuth or API key. When the workspace sets "Outside agents'
-changes" to "Apply directly" (Settings > Workspace, Owners and Admins), the API answers
+changes" to "Apply directly" (Settings > General, Owners and Admins), the API answers
 `apply_directly` and the server makes the call as before. Read tools, `generate_content` (its
 results already wait as suggestions), Ask and `create_account` never wait.
 
@@ -165,7 +165,7 @@ Every tool carries `readOnlyHint`, `destructiveHint` and `openWorldHint` (`toolA
   `generate_content` (its results wait as suggestions).
 
 Tool results never carry credentials: `create_webhook_endpoint` answers with the endpoint and where
-to get its signing secret (Settings > Webhooks in the web app, Rotate secret), while
+to get its signing secret (Settings > Developers > Webhooks in the web app, Rotate secret), while
 `POST /webhook-endpoints` in the REST API still returns it once. `ask_crossmart` only asks; reaching
 a person is `escalate_to_crossmart_team`, which takes a `contactEmail` but not the REST API's
 `callbackUrl`. When the API refuses a call, the tool returns an error with the API's message (for

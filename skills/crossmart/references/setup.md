@@ -4,7 +4,7 @@ Use this when the Crossmart tools are missing, or the seller asks how to connect
 
 ## What the seller needs
 
-A Crossmart workspace with at least one store connected (app.crossmart.io → **Channels**). Then
+A Crossmart workspace with at least one store connected (app.crossmart.io → **Stores**). Then
 they connect the agent in one of two ways: sign in with OAuth (simplest), or an API key.
 
 ## The MCP server
@@ -34,12 +34,12 @@ other clients (claude.ai and ChatGPT connectors, Cursor, VS Code…) they add th
 In the browser they sign in, choose the **workspace** the agent works in, and approve either
 everything the agent asks for or **read only**. The agent then works in that one workspace, never
 with more than the seller's own role allows, and never manages members, API keys, store
-connections, settings or billing. Agents are listed and disconnected under **Settings → Connected
-agents**.
+connections, settings or billing. Agents are listed and disconnected under **Settings → Developers →
+Connected agents**.
 
 ## Or use an API key
 
-For clients that only send headers, or for scripts: **Settings → API keys → Create**. Name the key
+For clients that only send headers, or for scripts: **Settings → Developers → API keys → Create key**. Name the key
 after the agent ("Claude Code", "Cursor"…) so it is easy to revoke. Pick the smallest role that
 works:
 

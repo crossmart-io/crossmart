@@ -9,8 +9,8 @@ resources and methods, in each language's naming.
 You need:
 
 - A Crossmart workspace with at least one connected store. Stores are connected in the dashboard
-  (**Channels**), because the marketplace asks the seller to approve access.
-- An API key with the **Editor** role (or Admin), from **Settings → API keys**.
+  (**Stores**), because the marketplace asks the seller to approve access.
+- An API key with the **Editor** role (or Admin), from **Settings → Developers → API keys**.
 
 ```bash
 export CROSSMART_API_KEY="cm_…"            # your key

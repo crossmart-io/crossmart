@@ -12,8 +12,8 @@ the [Crossmart skill](../../../skills/README.md), which teaches the agent the se
 
 ## Before you start
 
-1. Connect your stores in the dashboard (**Channels**). Agents can't connect stores.
-2. Create an API key: **Settings → API keys → Create**. Name it after the agent, and pick the smallest
+1. Connect your stores in the dashboard (**Stores**). Agents can't connect stores.
+2. Create an API key: **Settings → Developers → API keys → Create key**. Name it after the agent, and pick the smallest
    role that works (**Viewer** to ask questions, **Editor** to change the catalog and publish). See
    [roles](../README.md#api-keys).
 3. Put the key in the agent's config or in an environment variable (`CROSSMART_API_KEY`). Never paste

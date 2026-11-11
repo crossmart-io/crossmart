@@ -21,7 +21,7 @@ these tools; it installs in any agent that reads `SKILL.md` files.
 
 ## Connect with an API key
 
-1. In the dashboard, open **Settings → API keys** and create a key for the agent. Name it after the
+1. In the dashboard, open **Settings → Developers → API keys** and create a key for the agent. Name it after the
    agent (for example "Claude Desktop") so it is easy to find and revoke.
 2. Pick the role that matches what the agent may do:
    - **Viewer**: questions only ("which products are low on stock?").
@@ -97,7 +97,7 @@ changes are made as the agent and logged as "Claude for Dana, approved by Lee". 
 check a proposal with `get_proposal`; proposals nobody decides expire after 7 days.
 
 This applies to every MCP session, whether the agent signed in with OAuth or uses an API key.
-Owners and Admins can turn it off under **Settings → Workspace → Outside agents' changes**
+Owners and Admins can turn it off under **Settings → General → Outside agents' changes**
 ("Apply directly"). Reading is never affected, and neither are scripts and integrations (such as
 n8n) that call the REST API with an API key.
 
@@ -155,7 +155,7 @@ Crossmart (`openWorldHint`: those same tools, which change what your stores show
 `escalate_to_crossmart_team` and `create_account`), so clients can ask before running them.
 `mark_product_sold` is also `idempotentHint`: calling it again changes nothing. Tool
 results never hold secrets: `create_webhook_endpoint` leaves out the signing secret, which you get
-under Settings > Webhooks (Rotate secret). When the API refuses a call, the tool returns the API's
+under Settings > Developers > Webhooks (Rotate secret). When the API refuses a call, the tool returns the API's
 status, its `code` when it gives one, and its message (for example
 `Crossmart refused (404): Product not found`) instead of failing the session. Some tools add a next
 step: `retry_store_listing` explains a `409` (the store is not connected or does
@@ -203,8 +203,8 @@ token it answers 401, which is how MCP clients know to start the OAuth sign-in.
 - **Connect a store.** Marketplaces ask the seller to approve access, so stores are connected in the
   dashboard, never by an agent.
 - **Apply AI content on their own** (with an Editor key). `generate_content` only creates pending
-  suggestions; a person with the Approver, Admin or Owner role reviews them in the dashboard's
-  Suggestions inbox.
+  suggestions; a person with the Approver, Admin or Owner role reviews them in the dashboard, under
+  Agent > Review.
 - **Act outside their workspace.** A key only reaches its own workspace.
 
 ## Try it

@@ -179,7 +179,7 @@ SDKs, the [n8n nodes](docs/developers/n8n.md) and the [MCP server](docs/develope
 
 ## Using Crossmart from Claude, ChatGPT or Cursor
 
-Crossmart has an MCP server, so an AI agent can run the catalog with the same rules as the dashboard. Create an API key in **Settings → API keys** (an Editor key is enough for most work), then add the server to your client. See [docs/mcp.md](docs/mcp.md) for the tools and the details.
+Crossmart has an MCP server, so an AI agent can run the catalog with the same rules as the dashboard. Create an API key in **Settings → Developers → API keys** (an Editor key is enough for most work), then add the server to your client. See [docs/mcp.md](docs/mcp.md) for the tools and the details.
 
 **Remote** (Crossmart Cloud, or your own deployment run with `MCP_TRANSPORT=http`):
 

@@ -119,7 +119,8 @@ well. Without it, channels cannot be connected.
 
 In a new app version, set:
 
-- **App URL**: the web app's Channels page, for example `http://localhost:5173/channels`.
+- **App URL**: the web app's Stores page, for example `http://localhost:5173/stores` (`/channels`
+  still redirects there).
 - **Embed app in Shopify admin**: off.
 - **Redirect URLs**: the callback above, for example
   `http://localhost:3000/api/v1/channels/shopify/oauth/callback`. It must match exactly.
