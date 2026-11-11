@@ -38,6 +38,11 @@ export const CHANNEL_PATH_PARAM = ':channel';
  */
 export const EBAY_ACCOUNT_DELETION_PATH = '/api/v1/webhooks/ebay/account-deletion';
 /** Names a connection whose eBay user deleted their account; the username is erased. */
+/**
+ * eBay account deletions that concern no Crossmart connection are not logged one by one (eBay
+ * sends dozens an hour); one summary line is logged per this many.
+ */
+export const EBAY_DELETION_SUMMARY_EVERY = 100;
 export const EBAY_DELETED_ACCOUNT_NAME = 'Deleted eBay account';
 
 export const CONNECTION_NOT_FOUND = 'Channel connection not found';
