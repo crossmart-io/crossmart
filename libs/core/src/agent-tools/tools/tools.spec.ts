@@ -102,12 +102,12 @@ describe('MCP tools', () => {
     });
   });
 
-  it('need an agent scope for every workspace call but checking a proposal', () => {
+  it('need an agent scope for every workspace call but getting started and checking a proposal', () => {
     const unscoped = ALL_TOOLS.filter(
       (spec) =>
         spec.scope === undefined && spec.toCall({} as never).path.startsWith(WORKSPACE_PATH),
     ).map((spec) => spec.name);
-    expect(unscoped).toEqual([AgentToolName.GetProposal]);
+    expect(unscoped).toEqual([AgentToolName.GetStarted, AgentToolName.GetProposal]);
   });
 
   it('sends a replaced product without its id in the body', () => {

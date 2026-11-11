@@ -28,8 +28,12 @@ the seller chose when signing the agent in, or the API key's.
 1. Check that the Crossmart MCP tools are available (for example `list_stores`). If they are not,
    help the seller connect them: see [references/setup.md](references/setup.md). Use the REST API
    ([references/rest-api.md](references/rest-api.md)) only when MCP is not an option.
-2. Call `list_stores` once to learn the stores, their `id` (the `connectionId` other tools take)
-   and whether each can publish.
+2. Call `get_started` once. In a new or empty account it says what is missing and who does each
+   step: you add products with `create_product` right away (no store is needed), the seller
+   connects a store from a link in `connectStoreLinks`, then you publish. Follow `nextStep`.
+3. Call `list_stores` once to learn the stores, their `id` (the `connectionId` other tools take)
+   and whether each can publish. When it is empty, a second block (`{"next": ...}`) says what to
+   do instead.
 
 ## Safety rules (always)
 

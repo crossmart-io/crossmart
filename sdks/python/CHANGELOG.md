@@ -8,6 +8,10 @@ All notable changes to the `crossmart` Python package are documented here. The f
 
 ### Added
 
+- A new account's next steps: `GET /workspaces/{workspaceId}/getting-started`
+  (`GettingStartedDto`, `GettingStartedStepDto`, `StoreConnectLinkDto`, `GettingStartedStep`,
+  `GettingStartedStepState`, `GettingStartedStepOwner`), the counts of products, stores and live
+  listings, and the steps to a first listing with who takes each.
 - Item condition, marking a product sold and the attention summary (ADR 0029): `condition`
   (`ProductCondition`) on products, `POST /workspaces/{workspaceId}/products/{productId}/mark-sold`
   (`ProductSaleDto`), `GET /workspaces/{workspaceId}/attention` (`AttentionSummaryDto`,

@@ -7,7 +7,7 @@ import {
   type ApiToolResult,
   type ApiToolSpec,
   runApiTool,
-  toRefusalText,
+  toRefusalResult,
   toText,
 } from './api-tool.js';
 
@@ -33,7 +33,7 @@ function proposedResult(submission: ProposalSubmission): ApiToolResult {
     summary: proposal?.summary ?? null,
     expiresAt: proposal?.expiresAt ?? null,
   };
-  return { isError: false, text: toText(shown), value: shown };
+  return { isError: false, text: toText(shown), value: shown, proposed: true };
 }
 
 /**
@@ -53,7 +53,7 @@ export async function proposeApiTool(
     submission = (await client.call(call)) as ProposalSubmission;
   } catch (error) {
     if (!(error instanceof CrossmartApiError)) throw error;
-    return { isError: true, text: toRefusalText(spec, error), status: error.status };
+    return toRefusalResult(spec, error);
   }
   if (submission.outcome === AgentProposalOutcome.ApplyDirectly) {
     return runApiTool(spec, client, input);

@@ -1,6 +1,7 @@
 import type { ApiToolSpec } from './api-tool.js';
 import { ASK_TOOLS } from './ask.tools.js';
 import { CATALOG_TOOLS } from './catalog.tools.js';
+import { GETTING_STARTED_TOOLS } from './getting-started.tools.js';
 import { INVENTORY_TOOLS } from './inventory.tools.js';
 import { LISTING_EDITOR_TOOLS } from './listing-editor.tools.js';
 import { LISTING_TOOLS } from './listings.tools.js';
@@ -15,6 +16,7 @@ export { ANONYMOUS_TOOLS } from './account.tools.js';
 
 /** Every tool the server offers, grouped by area. */
 export const ALL_TOOLS: readonly ApiToolSpec[] = [
+  ...GETTING_STARTED_TOOLS,
   ...CATALOG_TOOLS,
   ...INVENTORY_TOOLS,
   ...ORDER_TOOLS,

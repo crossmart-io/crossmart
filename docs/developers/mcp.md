@@ -105,6 +105,7 @@ n8n) that call the REST API with an API key.
 
 | Tool                         | Does                                                                   | Changes data |
 | ---------------------------- | ---------------------------------------------------------------------- | :----------: |
+| `get_started`                | What the account still needs, who does each step, and links            |              |
 | `list_products`              | Products by title, with price range, stock and status                  |              |
 | `get_product`                | One product with its variants, stock, options and images               |              |
 | `create_product`             | Adds a product with its variants (a draft unless `ACTIVE`)             |     Yes      |
@@ -161,6 +162,24 @@ status, its `code` when it gives one, and its message (for example
 step: `retry_store_listing` explains a `409` (the store is not connected or does
 not select the product) and a `402` (no room on the plan).
 
+## First steps in a new account
+
+Just signed up? The agent starts with `get_started`, which says what the account still needs and
+who does each step:
+
+1. **Add products.** The agent can do this at once with `create_product`; no store is needed. Tell
+   it what you sell (titles, condition, prices, quantities, photo links) and it drafts the
+   listings. While the workspace approves agents' changes, they wait for you under **Agent >
+   Review**.
+2. **Connect a store.** Only you can: the agent sends you a link such as
+   `https://app.crossmart.io/stores?connect=shopify`, and you sign in to the channel there.
+3. **Publish.** With a product and a store, the agent lists it with `add_product_to_store`.
+4. **Confirm your email** from the email Crossmart sent when you signed up.
+
+When `list_products` or `list_stores` finds nothing in a new account, the answer comes with a
+second block, `{"next": {...}}`, that points the agent to these steps. The answer itself is
+unchanged.
+
 ## Listing states and what to do next
 
 Every product on a store has one `displayState`: `draft`, `needs_details`, `ready`, `publishing`,
@@ -211,6 +230,7 @@ token it answers 401, which is how MCP clients know to start the OAuth sign-in.
 
 Once connected, ask the agent things like:
 
+- "What should I do first?" (in a new account)
 - "Which products are out of stock, and on which stores are they listed?"
 - "Create a draft product for a blue ceramic mug at $18 with 25 in stock."
 - "Add every active mug to my Shopify store."
@@ -229,5 +249,7 @@ MCP_TRANSPORT=http CROSSMART_API_URL=http://localhost:3000 PORT=3100 node dist/a
 # answers at http://localhost:3100/mcp
 ```
 
-The server is stateless, so you can run several instances behind a load balancer. See the
-[maintainer notes](../mcp.md) for how tools are defined.
+The server is stateless, so you can run several instances behind a load balancer. It logs one
+line per session, tool list and tool call (ids, outcomes and timings, never what was sent or
+returned); see the [maintainer notes](../mcp.md#request-log), which also explain how tools are
+defined.

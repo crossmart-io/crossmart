@@ -3,6 +3,7 @@ import { toolAnnotations } from './tool-annotations.js';
 
 /** Every tool's hints as MCP clients see them: readOnly / destructive / openWorld. */
 const EXPECTED_HINTS: Record<string, [boolean, boolean, boolean]> = {
+  get_started: [true, false, false],
   list_products: [true, false, false],
   get_product: [true, false, false],
   create_product: [false, false, false],

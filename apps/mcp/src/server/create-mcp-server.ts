@@ -6,6 +6,7 @@ import { AGENT_PROPOSAL_TTL_DAYS } from '@crossmart/core/agent-proposals/agent-p
 import { MCP_SERVER_NAME } from '../mcp.constants.js';
 import type { ApiToolSpec } from '@crossmart/core/agent-tools/tools/api-tool.js';
 import { registerApiTool } from '../tools/register-api-tool.js';
+import type { ToolCallObserver } from '../observability/mcp-request-log.js';
 import { ALL_TOOLS, ANONYMOUS_TOOLS } from '@crossmart/core/agent-tools/tools/index.js';
 
 /** Read once from `package.json`, since `npm_package_version` is unset under plain `node`. */
@@ -13,7 +14,11 @@ export const SERVER_VERSION = crossmartVersion();
 
 const INSTRUCTIONS =
   'Crossmart keeps one catalog and one stock count for a seller and publishes them to their ' +
-  'stores. Read before you write: find ids with list_products, list_inventory or list_stores. ' +
+  'stores. Start with get_started: it says what the account still needs and who does it. A new ' +
+  'account is empty. You can add products with create_product at once, before any store is ' +
+  'connected; only the seller can connect a store (in the Crossmart app, from the links ' +
+  'get_started gives), and publishing needs one. ' +
+  'Read before you write: find ids with list_products, list_inventory or list_stores. ' +
   'Changes wait for the seller: unless the workspace lets agents apply changes directly, a ' +
   'write tool changes nothing yet. It answers status "proposed" with a proposalId, and the ' +
   'seller approves or rejects it in the Crossmart app (Agent proposals). Tell the user it is ' +
@@ -37,13 +42,17 @@ export function toolsFor(credential: ApiCredential | undefined): readonly ApiToo
   return ALL_TOOLS.filter((tool) => tool.scope === undefined || scopes.includes(tool.scope));
 }
 
-/** An MCP server whose tools act with one credential. */
-export function createMcpServer(apiUrl: string, credential: ApiCredential | undefined): McpServer {
+/** An MCP server whose tools act with one credential; `observer` hears how each call went. */
+export function createMcpServer(
+  apiUrl: string,
+  credential: ApiCredential | undefined,
+  observer?: ToolCallObserver,
+): McpServer {
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version: SERVER_VERSION },
     { instructions: INSTRUCTIONS },
   );
   const client = new CrossmartApiClient(apiUrl, credential);
-  for (const tool of toolsFor(credential)) registerApiTool(server, tool, client);
+  for (const tool of toolsFor(credential)) registerApiTool(server, tool, client, observer);
   return server;
 }

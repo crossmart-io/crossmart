@@ -31,11 +31,12 @@ describe('toolsFor', () => {
       'get_order',
       'get_platform_health',
       'get_proposal',
+      'get_started',
       'list_orders',
     ]);
   });
 
-  it('gives every tool a scope but the public ones and checking an own proposal', () => {
+  it('gives every tool a scope but the public ones, checking an own proposal and getting started', () => {
     const unscoped = ALL_TOOLS.filter((tool) => tool.scope === undefined).map((tool) => tool.name);
     expect(unscoped.toSorted(byName)).toEqual([
       'ask_crossmart',
@@ -43,6 +44,7 @@ describe('toolsFor', () => {
       'get_ask_escalation',
       'get_platform_health',
       'get_proposal',
+      'get_started',
     ]);
   });
 });

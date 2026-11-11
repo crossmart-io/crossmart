@@ -5,6 +5,7 @@ import {
   apiKeyCredential,
 } from '@crossmart/core/agent-tools/api/api-credential.js';
 import { JWT_PART_COUNT, JWT_SEPARATOR } from '../mcp.constants.js';
+import { agentCaller, apiKeyCaller, type McpCaller } from '../observability/mcp-caller.js';
 import { requestToken } from '../transports/request-token.js';
 import type { AccessTokenVerifier } from './access-token.verifier.js';
 
@@ -14,9 +15,15 @@ export enum CredentialProblem {
   Refused = 'refused',
 }
 
+/** A usable credential, with who it is for the request log. */
+export interface ResolvedCredential {
+  credential: ApiCredential;
+  caller: McpCaller;
+  problem?: never;
+}
+
 export type CredentialResult =
-  | { credential: ApiCredential; problem?: never }
-  | { credential?: never; problem: CredentialProblem };
+  ResolvedCredential | { credential?: never; caller?: never; problem: CredentialProblem };
 
 function looksLikeJwt(token: string): boolean {
   return token.split(JWT_SEPARATOR).length === JWT_PART_COUNT;
@@ -32,9 +39,13 @@ export async function resolveRequestCredential(
 ): Promise<CredentialResult> {
   const token = requestToken(headers);
   if (!token) return { problem: CredentialProblem.Missing };
-  if (!looksLikeJwt(token)) return { credential: apiKeyCredential(token) };
+  if (!looksLikeJwt(token)) {
+    return { credential: apiKeyCredential(token), caller: apiKeyCaller(token) };
+  }
   const claims = await verifier.verify(token);
-  return claims
-    ? { credential: accessTokenCredential(token, claims.workspaceId, claims.scopes) }
-    : { problem: CredentialProblem.Refused };
+  if (!claims) return { problem: CredentialProblem.Refused };
+  return {
+    credential: accessTokenCredential(token, claims.workspaceId, claims.scopes),
+    caller: agentCaller(claims),
+  };
 }

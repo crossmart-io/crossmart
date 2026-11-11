@@ -14,6 +14,8 @@ export const ASK_PATH = `${API_PREFIX}/ask`;
 export const ASK_ESCALATIONS_PATH = `${API_PREFIX}/ask/escalations`;
 /** Opens a sandbox account for someone without one (ADR 0019); it takes calls without a key. */
 export const SANDBOX_ACCOUNTS_PATH = `${API_PREFIX}/sandbox-accounts`;
+/** A new account's next steps, for agents that connect to an empty workspace. */
+export const GETTING_STARTED_PATH = `${WORKSPACE_PATH}/getting-started`;
 /** Outside agents' proposals (ADR 0028): writes that wait for the seller's approval. */
 export const AGENT_PROPOSALS_PATH = `${WORKSPACE_PATH}/agent-proposals`;
 export const API_KEY_HEADER = 'x-api-key';
@@ -69,11 +71,19 @@ export const WEBHOOK_SECRET_WITHHELD =
   'Crossmart web app, open this endpoint and choose Rotate secret: the new secret is shown ' +
   'there once, to give to the service behind the URL.';
 
+/** Why a list answer came with a next-step hint: the account has none of these yet. */
+export enum EmptyResultReason {
+  NoProducts = 'no_products',
+  NoStores = 'no_stores',
+}
+
 /** The answer of an API call that has no body (204). */
 export const NO_CONTENT_STATUS = 204;
 
 /** Tools other code refers to by name, such as Agent Worker's before-and-after previews. */
 export enum AgentToolName {
+  GetStarted = 'get_started',
+  ListProducts = 'list_products',
   GetProduct = 'get_product',
   CreateProduct = 'create_product',
   ReplaceProduct = 'replace_product',
@@ -82,6 +92,7 @@ export enum AgentToolName {
   MarkProductSold = 'mark_product_sold',
   GetInventoryItem = 'get_inventory_item',
   AdjustStock = 'adjust_stock',
+  ListStores = 'list_stores',
   GetStore = 'get_store',
   AddProductToStore = 'add_product_to_store',
   RemoveProductFromStore = 'remove_product_from_store',

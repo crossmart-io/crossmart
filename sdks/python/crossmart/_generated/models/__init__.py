@@ -157,6 +157,11 @@ from .feature import Feature
 from .feature_kind import FeatureKind
 from .feature_usage_dto import FeatureUsageDto
 from .generate_content_dto import GenerateContentDto
+from .getting_started_dto import GettingStartedDto
+from .getting_started_step import GettingStartedStep
+from .getting_started_step_dto import GettingStartedStepDto
+from .getting_started_step_owner import GettingStartedStepOwner
+from .getting_started_step_state import GettingStartedStepState
 from .google_listing_setup_dto import GoogleListingSetupDto
 from .google_merchant_settings_dto import GoogleMerchantSettingsDto
 from .google_target_country import GoogleTargetCountry
@@ -353,6 +358,7 @@ from .started_authorization_dto import StartedAuthorizationDto
 from .stock_adjustment_mode import StockAdjustmentMode
 from .stock_level import StockLevel
 from .stock_level_counts_dto import StockLevelCountsDto
+from .store_connect_link_dto import StoreConnectLinkDto
 from .store_health_dto import StoreHealthDto
 from .store_listing_failure_dto import StoreListingFailureDto
 from .store_listing_health_dto import StoreListingHealthDto
@@ -573,6 +579,11 @@ __all__ = (
     "FeatureKind",
     "FeatureUsageDto",
     "GenerateContentDto",
+    "GettingStartedDto",
+    "GettingStartedStep",
+    "GettingStartedStepDto",
+    "GettingStartedStepOwner",
+    "GettingStartedStepState",
     "GoogleListingSetupDto",
     "GoogleMerchantSettingsDto",
     "GoogleTargetCountry",
@@ -725,6 +736,7 @@ __all__ = (
     "StockAdjustmentMode",
     "StockLevel",
     "StockLevelCountsDto",
+    "StoreConnectLinkDto",
     "StoreHealthDto",
     "StoreListingFailureDto",
     "StoreListingHealthDto",

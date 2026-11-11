@@ -111,6 +111,7 @@ Existing MCP clients need no change: the tools, names and inputs are the same.
 
 | Tool                         | Does                                                                   | Writes |
 | ---------------------------- | ---------------------------------------------------------------------- | ------ |
+| `get_started`                | What the account still needs, who does each step, and links            |        |
 | `list_products`              | Products by title, with price range, stock and status                  |        |
 | `get_product`                | One product with its variants, stock, options and images               |        |
 | `create_product`             | Adds a product with its variants (a draft unless `ACTIVE`)             | Yes    |
@@ -184,6 +185,58 @@ Webhook endpoints send workspace data to a URL the agent names, so they have a s
 and add endpoints, so its own backend gets events as they happen
 ([webhooks](developers/webhooks.md)); changing, turning off and deleting them stays in the
 dashboard and the REST API.
+
+## A new, empty account
+
+An agent often connects right after the person signs up, to a workspace with no products and no
+store. The server's `instructions` (sent on `initialize`) tell it to call `get_started` first.
+`get_started` (`GET /workspaces/{workspaceId}/getting-started`, open to any connection) answers
+with the account's counts (`products`, `connectedStores`, `liveListings`, `pendingProposals`),
+`emailVerified`, `unclaimedSandbox`, `agentChangesNeedApproval`, and the steps to a first listing:
+
+| Step               | Owner    | Done when                       | How                                                         |
+| ------------------ | -------- | ------------------------------- | ----------------------------------------------------------- |
+| `claim_account`    | merchant | (unclaimed sandbox only)        | The claim link in the email                                 |
+| `review_proposals` | merchant | no proposal is pending          | `/agent/review`; only while agents' changes need approval   |
+| `add_products`     | agent    | the catalog has a product       | `create_product`; no store is needed                        |
+| `connect_store`    | merchant | a store is connected            | `connectStoreLinks`: `/stores?connect=shopify` (or `ebay`)  |
+| `publish`          | agent    | a listing is live               | `add_product_to_store`; blocked until a product and a store |
+| `verify_email`     | merchant | the caller's email is confirmed | The confirmation email (not shown for a sandbox)            |
+
+Each step has a `state` (`done`, `todo`, `blocked`), and `nextStep` names the first one still to
+take. The steps and their copy live in `libs/core/src/getting-started`.
+
+When `list_products` (without a search or filter) or `list_stores` comes back empty, the tool adds
+a second content block, `{"next": {"reason": "no_products" | "no_stores", "message", "tools"}}`,
+pointing to `create_product` and `get_started`. The first block is the API's answer, unchanged,
+so clients that parse it keep working. A spec opts in with `emptyResult`
+(`agent-tools/tools/next-step-hints.ts`).
+
+The confirmation email sent on sign-up lists the same three steps: add products (by hand or
+through an agent), connect a store, publish.
+
+## Request log
+
+The remote server logs one line per `initialize`, `tools/list` and tool call, at `LOG` level under
+the `McpRequests` context (`apps/mcp/src/observability`), so operators can see what agents try:
+
+```text
+event=initialize clientName=claude-code clientVersion=2.1.0 protocol=2025-06-18 caller=agent principal=<user id> client=<OAuth client id> workspace=<id>
+event=tools_list caller=api_key principal=cm_Fq3pzE9
+event=tool_call tool=list_products outcome=ok items=0 durationMs=59 caller=api_key principal=cm_Fq3pzE9 workspace=<id>
+event=tool_call tool=add_product_to_store outcome=refused status=403 code=sandbox_claim_required durationMs=7 ...
+```
+
+`outcome` is `ok`, `proposed`, `refused` (with the API's `status` and `code`) or `failed` (the API
+could not be reached). `items` counts what a list returned. A caller is named by ids only: the
+user an agent acts for and its OAuth client id, or an API key's visible prefix (the part the
+dashboard shows). **No content is logged:** never tool arguments or results, product data,
+prompts, tokens, emails or request bodies. Values a client chooses (its name and version) are cut
+short and quoted, so they cannot forge a field or a line.
+
+A body that is not JSON is answered `400` with JSON-RPC's parse error (`-32700`) and logged as one
+`event=parse_error` warning, without the body (which may hold a token) or a stack trace. The local
+(stdio) server logs nothing: its stdout is the protocol.
 
 ## Adding a tool
 

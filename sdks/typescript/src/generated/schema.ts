@@ -1489,6 +1489,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/getting-started": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a new account stands, and what to do next
+         * @description Counts of products, stores and live listings, whether the email is confirmed, and the steps to a first listing: each says whether it is done, whether the seller (in the app, with a link) or an agent (with the tools named) takes it. For agents that connect to an empty workspace.
+         */
+        get: operations["GettingStartedController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/suggestions": {
         parameters: {
             query?: never;
@@ -4703,6 +4723,61 @@ export interface components {
             listings: components["schemas"]["AttentionListingsDto"] | null;
             proposals: components["schemas"]["AttentionProposalsDto"] | null;
             suggestions: components["schemas"]["AttentionSuggestionsDto"] | null;
+        };
+        /**
+         * @description The first step still to take; null once every step is done
+         * @enum {string}
+         */
+        GettingStartedStep: GettingStartedStep;
+        /** @enum {string} */
+        GettingStartedStepState: GettingStartedStepState;
+        /**
+         * @description `merchant`: only the seller can take it, in the app; `agent`: with `tools`
+         * @enum {string}
+         */
+        GettingStartedStepOwner: GettingStartedStepOwner;
+        GettingStartedStepDto: {
+            step: components["schemas"]["GettingStartedStep"];
+            state: components["schemas"]["GettingStartedStepState"];
+            /** @description `merchant`: only the seller can take it, in the app; `agent`: with `tools` */
+            owner: components["schemas"]["GettingStartedStepOwner"];
+            /** @example Connect a store */
+            title: string;
+            detail: string;
+            /** @description The page of the web app where the seller takes it */
+            url: string | null;
+            /**
+             * @description Agent tools
+             * @example [
+             *       "create_product"
+             *     ]
+             */
+            tools: string[];
+        };
+        StoreConnectLinkDto: {
+            channel: components["schemas"]["ChannelType"];
+            /** @description Opens the Stores page with this channel’s connect dialog */
+            url: string;
+        };
+        GettingStartedDto: {
+            /** @description Whether the caller (or the key’s creator) confirmed their email */
+            emailVerified: boolean;
+            /** @description An account an AI agent opened that nobody has claimed yet */
+            unclaimedSandbox: boolean;
+            products: number;
+            /** @description Stores that are not disconnected */
+            connectedStores: number;
+            /** @description Listings live on a store */
+            liveListings: number;
+            /** @description Outside agents’ changes waiting for approval */
+            pendingProposals: number;
+            /** @description Whether outside agents’ changes wait for the seller’s approval */
+            agentChangesNeedApproval: boolean;
+            /** @description The first step still to take; null once every step is done */
+            nextStep: components["schemas"]["GettingStartedStep"] | null;
+            /** @description The steps that apply, in order */
+            steps: components["schemas"]["GettingStartedStepDto"][];
+            connectStoreLinks: components["schemas"]["StoreConnectLinkDto"][];
         };
         /** @enum {string} */
         SuggestionStatus: SuggestionStatus;
@@ -8352,6 +8427,27 @@ export interface operations {
             };
         };
     };
+    GettingStartedController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GettingStartedDto"];
+                };
+            };
+        };
+    };
     SuggestionsController_list_v1: {
         parameters: {
             query?: {
@@ -10375,6 +10471,23 @@ export enum AttentionStoreReason {
 export enum SuggestionKind {
     listing_title = "listing_title",
     listing_description = "listing_description"
+}
+export enum GettingStartedStep {
+    verify_email = "verify_email",
+    claim_account = "claim_account",
+    add_products = "add_products",
+    review_proposals = "review_proposals",
+    connect_store = "connect_store",
+    publish = "publish"
+}
+export enum GettingStartedStepState {
+    done = "done",
+    todo = "todo",
+    blocked = "blocked"
+}
+export enum GettingStartedStepOwner {
+    merchant = "merchant",
+    agent = "agent"
 }
 export enum SuggestionStatus {
     PENDING = "PENDING",
