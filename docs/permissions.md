@@ -47,7 +47,8 @@ workspace data to the URL the agent names. Agents never get `members:*`, `api-ke
 workspace routes.
 
 Unless the workspace lets outside agents apply changes directly, an agent's writes are proposals
-([ADR 0028](decisions/0028-outside-agent-approvals.md)): a person holding `suggestions:approve`
+([ADR 0028](decisions/0028-outside-agent-approvals.md)), except new products created as drafts: a
+person holding `suggestions:approve`
 and the permission the change itself needs approves them, and the change then runs with the
 agent's permissions as they are at that moment.
 

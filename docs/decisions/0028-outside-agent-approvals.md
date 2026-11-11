@@ -1,6 +1,6 @@
 # ADR 0028: Changes by outside agents wait for the seller's approval
 
-- Status: Accepted
+- Status: Accepted, amended 2026-11-11 (§9: new drafts apply at once)
 - Date: 2026-11-08
 - Builds on: agent access ([ADR 0019](0019-agent-access.md)), Agent Worker ([ADR 0026](0026-agent-worker.md))
   and the workspace event stream ([ADR 0027](0027-workspace-event-stream.md)).
@@ -83,6 +83,8 @@ any workspace. Read tools are unaffected. On the REST side the same split is mad
 (anything but GET, HEAD and OPTIONS on a workspace route) with the same exemptions
 (`@AgentApprovalExempt()`): content generation and the proposal routes themselves.
 
+One write is exempt only for some input: `create_product` for a new draft (§9).
+
 ### 5. Deciding
 
 `GET …/agent-proposals?status=` (the list, newest first, with a total) and `GET …/{id}` need
@@ -130,9 +132,52 @@ proposer kind, user, OAuth client or API key, agent name, scopes, tool, input, r
 preview, status, result, decided by and at, finished at, expires at), the workspace column with
 its default, and the activity column. Proposals are deleted with their workspace.
 
+### 9. Amendment (2026-11-11): new drafts apply at once
+
+**Decision.** While a workspace approves outside agents' changes, an outside agent may still
+create a product **as a draft** without the seller's approval. Everything else stays as it was:
+making a product active, publishing it or adding it to a store, price, stock and text changes,
+updates to existing products, marking sold, deletes and store settings all wait for the seller.
+
+**Why.** A draft changes nothing public: creating a product never lists it on a store, and only
+`ACTIVE` products are shown or sold on a channel. Crossmart has no rule that lists new or active
+products on a store by itself; listing always takes `add_product_to_store`, which still waits.
+Meanwhile the approval made a new account's first step a dead end: a user's agent created the
+first products, got `"status": "proposed"`, and nothing visible happened until the seller found
+the Review page (seen on 2026-11-10, PR #114).
+
+**Scope, exactly.**
+
+- The exemption is data on the tool: `create_product` carries
+  `approvalExemptWhen: AgentApprovalExemption.NewDraft`, and the rule (`isNewDraft` in
+  `libs/core/src/agent-proposals/rules/approval-exemptions.ts`) holds when the input has no
+  `status`, or `DRAFT`. `null`, `ACTIVE` and `ARCHIVED` do not qualify. The tool's input has no
+  store or publishing field; a test pins its fields, so adding one means revisiting the rule.
+- `POST …/agent-proposals` still checks the tool, the input schema and the caller's permissions
+  first. For a qualifying call under `require_approval` it stores nothing and answers
+  `outcome: apply_directly` with `exemption: "new_draft"` (a new nullable field, enum
+  `AgentApprovalExemption`; `null` in every other answer). Older MCP servers that only read
+  `outcome` make the call as before.
+- The MCP server makes the call and answers with the product unchanged, then a second block:
+  `{"status": "applied", "exemption": "new_draft", "message": …}` saying it is a draft and that
+  making it active, publishing it or changing it later waits for the seller.
+- `create_product` with `status: "ACTIVE"` is **proposed**, not quietly turned into a draft: the
+  call either applies as sent or waits. The proposed message adds that a draft would have applied
+  at once. (Creating a draft instead would leave the agent believing the product is for sale.)
+- Over REST, `POST …/products` carries `@AgentApprovalExemptWhen(AgentApprovalExemption.NewDraft)`:
+  the approval guard lets a connected agent through when the raw body qualifies, and refuses any
+  other body with `agent_approval_required` as before.
+- The call is the ordinary create, so the sandbox's product limit (`sandbox_claim_required`) and
+  the plan's entitlements apply, and the activity log records `product_created` credited to the
+  agent (`actorType` `AGENT` for an OAuth agent; the key for an MCP session with a key). Nothing
+  is added to Agent > Review or Needs attention.
+- `get_started`, the MCP instructions and the tool descriptions say that new drafts need no
+  approval.
+
 ## Consequences
 
-- "Every change waits for your approval" is true for every agent by default. A seller who wants
+- "Every change waits for your approval" is true for every agent by default, except new drafts
+  (§9), which nobody but the seller's team sees until a change that waits makes them public. A seller who wants
   the old behaviour turns it off once.
 - An agent waits for a person. It is told so, with an id to check, and the MCP instructions tell
   it to tell the user.
