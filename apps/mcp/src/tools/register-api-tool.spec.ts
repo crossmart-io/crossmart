@@ -12,6 +12,8 @@ import {
 import { AgentProposalOutcome } from '@crossmart/core/agent-proposals/enums/agent-proposal-outcome.enum.js';
 import { HttpMethod } from '@crossmart/core/agent-tools/api/api-call.js';
 import { registerApiTool } from './register-api-tool.js';
+import { ToolCallOutcome } from '../observability/mcp-log.constants.js';
+import type { ToolCallObserver } from '../observability/mcp-request-log.js';
 import { ALL_TOOLS } from '@crossmart/core/agent-tools/tools/index.js';
 
 const RETRY_TOOL = 'retry_store_listing';
@@ -20,9 +22,12 @@ const RETRY_INPUT = {
   connectionId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
 };
 
-async function connect(apiClient: CrossmartApiClient): Promise<Client> {
+async function connect(
+  apiClient: CrossmartApiClient,
+  observer?: ToolCallObserver,
+): Promise<Client> {
   const server = new McpServer({ name: 'test', version: '0.0.0' });
-  for (const spec of ALL_TOOLS) registerApiTool(server, spec, apiClient);
+  for (const spec of ALL_TOOLS) registerApiTool(server, spec, apiClient, observer);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: 'test-client', version: '0.0.0' });
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
@@ -53,6 +58,128 @@ function firstText(result: Awaited<ReturnType<Client['callTool']>>): string {
   const [content] = result.content as { type: string; text: string }[];
   return content?.text ?? '';
 }
+
+function texts(result: Awaited<ReturnType<Client['callTool']>>): string[] {
+  return (result.content as { type: string; text: string }[]).map((block) => block.text);
+}
+
+function observer() {
+  return { toolCalled: vi.fn<ToolCallObserver['toolCalled']>() };
+}
+
+const EMPTY_PAGE = { items: [], nextCursor: null, total: 0 };
+
+describe('API tools on an empty account', () => {
+  it('answers an empty catalog as the API gave it, then the next step in its own block', async () => {
+    const client = await connect(answeringClient(EMPTY_PAGE));
+    const result = await client.callTool({ name: AgentToolName.ListProducts, arguments: {} });
+
+    const [answer, hint] = texts(result);
+    expect(JSON.parse(answer ?? '')).toEqual(EMPTY_PAGE);
+    expect(JSON.parse(hint ?? '')).toMatchObject({
+      next: { reason: 'no_products', tools: ['create_product', 'get_started'] },
+    });
+  });
+
+  it('gives no hint when a search found nothing in a catalog that has products', async () => {
+    const client = await connect(answeringClient(EMPTY_PAGE));
+    const result = await client.callTool({
+      name: AgentToolName.ListProducts,
+      arguments: { search: 'mug' },
+    });
+
+    expect(texts(result)).toHaveLength(1);
+  });
+
+  it('points to get_started when no store is connected', async () => {
+    const client = await connect(answeringClient([]));
+    const result = await client.callTool({ name: AgentToolName.ListStores, arguments: {} });
+
+    const [answer, hint] = texts(result);
+    expect(answer).toBe('[]');
+    expect(JSON.parse(hint ?? '')).toMatchObject({ next: { reason: 'no_stores' } });
+  });
+
+  it('gives no hint once there is a store', async () => {
+    const client = await connect(answeringClient([{ id: 'store-1' }]));
+    const result = await client.callTool({ name: AgentToolName.ListStores, arguments: {} });
+
+    expect(texts(result)).toHaveLength(1);
+  });
+});
+
+describe('API tool calls, as the request log hears them', () => {
+  it('reports the tool, the outcome, the duration and how many items a list returned', async () => {
+    const heard = observer();
+    const client = await connect(answeringClient([{ id: 'a' }, { id: 'b' }]), heard);
+    await client.callTool({ name: AgentToolName.ListStores, arguments: {} });
+
+    expect(heard.toolCalled).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tool: AgentToolName.ListStores,
+        outcome: ToolCallOutcome.Ok,
+        items: 2,
+        durationMs: expect.any(Number),
+      }),
+    );
+  });
+
+  it('reports a refusal with its status and the API’s reason', async () => {
+    const error = new CrossmartApiError(403, 'Claim first', 'sandbox_claim_required');
+    const heard = observer();
+    const client = await connect(refusingClient(error), heard);
+    await client.callTool({ name: RETRY_TOOL, arguments: RETRY_INPUT });
+
+    expect(heard.toolCalled).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tool: RETRY_TOOL,
+        outcome: ToolCallOutcome.Refused,
+        status: 403,
+        code: 'sandbox_claim_required',
+      }),
+    );
+  });
+
+  it('reports a change stored as a proposal', async () => {
+    const proposed = {
+      outcome: AgentProposalOutcome.Proposed,
+      message: 'waits',
+      proposal: { id: 'p-1', status: 'pending', summary: 's', expiresAt: '2026-01-01' },
+    };
+    const heard = observer();
+    const client = await connect(answeringClient(proposed), heard);
+    await client.callTool({ name: RETRY_TOOL, arguments: RETRY_INPUT });
+
+    expect(heard.toolCalled).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: ToolCallOutcome.Proposed }),
+    );
+  });
+
+  it('reports a call that failed, such as when the API is down', async () => {
+    const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
+    vi.spyOn(apiClient, 'call').mockRejectedValue(new TypeError('fetch failed'));
+    const heard = observer();
+    const client = await connect(apiClient, heard);
+    await client.callTool({ name: AgentToolName.ListStores, arguments: {} });
+
+    expect(heard.toolCalled).toHaveBeenCalledWith(
+      expect.objectContaining({ tool: AgentToolName.ListStores, outcome: ToolCallOutcome.Failed }),
+    );
+  });
+
+  it('never hands the observer the call’s arguments or answer', async () => {
+    const heard = observer();
+    const client = await connect(answeringClient({ id: 'p-1', title: 'Secret mug' }), heard);
+    await client.callTool({
+      name: AgentToolName.GetProduct,
+      arguments: { productId: RETRY_INPUT.productId },
+    });
+
+    const reported = JSON.stringify(heard.toolCalled.mock.calls);
+    expect(reported).not.toContain(RETRY_INPUT.productId);
+    expect(reported).not.toContain('Secret mug');
+  });
+});
 
 describe('API tools', () => {
   it('turns a refusal into an error with the API’s code and the tool’s next step', async () => {

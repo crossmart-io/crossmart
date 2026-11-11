@@ -1,21 +1,26 @@
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Request, Response } from 'express';
-import type { ApiCredential } from '@crossmart/core/agent-tools/api/api-credential.js';
 import { AccessTokenVerifier } from '../auth/access-token.verifier.js';
 import {
   bearerChallenge,
   protectedResourceMetadata,
   protectedResourceMetadataPaths,
 } from '../auth/protected-resource.js';
-import { CredentialProblem, resolveRequestCredential } from '../auth/request-credential.js';
+import {
+  CredentialProblem,
+  type ResolvedCredential,
+  resolveRequestCredential,
+} from '../auth/request-credential.js';
 import type { McpConfig } from '../config/mcp-config.js';
-import { MCP_HTTP_PATH, WWW_AUTHENTICATE_HEADER } from '../mcp.constants.js';
+import { JSON_RPC_VERSION, MCP_HTTP_PATH, WWW_AUTHENTICATE_HEADER } from '../mcp.constants.js';
+import { logJsonRpcRequest } from '../observability/json-rpc-log.js';
+import { McpRequestLog } from '../observability/mcp-request-log.js';
+import { bodyParseErrorHandler } from './body-parse-error.js';
 import { createMcpServer } from '../server/create-mcp-server.js';
 
 const UNAUTHORIZED = 401;
 const METHOD_NOT_ALLOWED = 405;
-const JSON_RPC_VERSION = '2.0';
 /** JSON-RPC's code for a server-defined error. */
 const SERVER_ERROR_CODE = -32000;
 
@@ -31,14 +36,22 @@ function reject(response: Response, status: number, message: string): void {
     .json({ jsonrpc: JSON_RPC_VERSION, error: { code: SERVER_ERROR_CODE, message }, id: null });
 }
 
+/** What every request is served with: the settings, the token check and the request log. */
+interface HttpContext {
+  config: McpConfig;
+  verifier: AccessTokenVerifier;
+  log: McpRequestLog;
+}
+
 /** One stateless MCP exchange: a fresh server bound to the credential, closed with the response. */
 async function serve(
-  config: McpConfig,
-  credential: ApiCredential,
+  { config, log }: HttpContext,
+  { credential, caller }: ResolvedCredential,
   request: Request,
   response: Response,
 ): Promise<void> {
-  const server = createMcpServer(config.apiUrl, credential);
+  logJsonRpcRequest(log, caller, request.body);
+  const server = createMcpServer(config.apiUrl, credential, log.observerFor(caller));
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   response.on('close', () => {
     void transport.close();
@@ -52,12 +65,8 @@ async function serve(
  * Authenticates a request, then serves it. Without a usable credential the answer is a 401 whose
  * challenge points MCP clients to this server's metadata, where the OAuth sign-in starts.
  */
-async function handle(
-  config: McpConfig,
-  verifier: AccessTokenVerifier,
-  request: Request,
-  response: Response,
-): Promise<void> {
+async function handle(context: HttpContext, request: Request, response: Response): Promise<void> {
+  const { config, verifier } = context;
   const result = await resolveRequestCredential(request.headers, verifier);
   if (result.problem) {
     response.setHeader(
@@ -67,7 +76,7 @@ async function handle(
     reject(response, UNAUTHORIZED, UNAUTHORIZED_MESSAGES[result.problem]);
     return;
   }
-  await serve(config, result.credential, request, response);
+  await serve(context, result, request, response);
 }
 
 /**
@@ -76,7 +85,11 @@ async function handle(
  */
 export function serveHttp(config: McpConfig): void {
   const app = createMcpExpressApp({ host: '0.0.0.0' });
-  const verifier = new AccessTokenVerifier(config);
+  const context: HttpContext = {
+    config,
+    verifier: new AccessTokenVerifier(config),
+    log: new McpRequestLog(),
+  };
   const metadata = protectedResourceMetadata(config);
   for (const path of protectedResourceMetadataPaths(config.publicUrl)) {
     app.get(path, (_request, response) => {
@@ -84,11 +97,12 @@ export function serveHttp(config: McpConfig): void {
     });
   }
   app.post(MCP_HTTP_PATH, (request, response) => {
-    void handle(config, verifier, request, response);
+    void handle(context, request, response);
   });
   app.all(MCP_HTTP_PATH, (_request, response) => {
     reject(response, METHOD_NOT_ALLOWED, 'This server is stateless; send requests with POST');
   });
+  app.use(bodyParseErrorHandler(context.log));
   app.listen(config.port, () => {
     process.stdout.write(`Crossmart MCP server listening on port ${config.port}\n`);
   });

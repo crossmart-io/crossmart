@@ -2,6 +2,7 @@ import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { HttpMethod } from '../api/api-call.js';
 import { AgentToolName } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
+import { NO_STORES } from './next-step-hints.js';
 import { productStorePath, STORES_PATH, storePath } from './store-paths.js';
 import { ID_INPUT } from './tool-inputs.js';
 
@@ -16,15 +17,17 @@ const PUBLISH_READINESS_GUIDE =
 
 export const STORE_TOOLS = [
   defineTool({
-    name: 'list_stores',
+    name: AgentToolName.ListStores,
     title: 'List stores',
     description:
       'Connected stores (Shopify, eBay, Google) with their status, listing counts, failed ' +
       `listings and publish readiness. ${PUBLISH_READINESS_GUIDE} Connecting a store needs ` +
-      'the merchant’s own approval in the Crossmart app.',
+      `the merchant’s own approval in the Crossmart app; ${AgentToolName.GetStarted} gives ` +
+      'the links to send them.',
     input: {},
     readOnly: true,
     scope: AgentScope.CatalogRead,
+    emptyResult: NO_STORES,
     toCall: () => ({ method: HttpMethod.Get, path: STORES_PATH }),
   }),
   defineTool({

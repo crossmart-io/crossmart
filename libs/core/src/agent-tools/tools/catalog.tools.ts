@@ -14,6 +14,7 @@ import {
   WORKSPACE_PATH,
 } from '../agent-tools.constants.js';
 import { defineTool } from './api-tool.js';
+import { EMPTY_CATALOG } from './next-step-hints.js';
 import { AMOUNT_INPUT, ID_INPUT, PAGE_INPUT, SEARCH_INPUT } from './tool-inputs.js';
 
 const PRODUCTS_PATH = `${WORKSPACE_PATH}/products`;
@@ -61,12 +62,13 @@ const PRODUCT_INPUT = {
 
 export const CATALOG_TOOLS = [
   defineTool({
-    name: 'list_products',
+    name: AgentToolName.ListProducts,
     title: 'List products',
     description: 'Products in the catalog, by title, with their price range, stock and status.',
     input: { search: SEARCH_INPUT, status: z.enum(ProductStatus).optional(), ...PAGE_INPUT },
     readOnly: true,
     scope: AgentScope.CatalogRead,
+    emptyResult: EMPTY_CATALOG,
     toCall: (input) => ({ method: HttpMethod.Get, path: PRODUCTS_PATH, query: input }),
   }),
   defineTool({
@@ -83,7 +85,8 @@ export const CATALOG_TOOLS = [
     title: 'Create a product',
     description:
       'Add a product with its variants. Each variant needs a price; give options when there ' +
-      'are several variants. New products are drafts unless status is ACTIVE.',
+      'are several variants. New products are drafts unless status is ACTIVE. No store is ' +
+      'needed: a product can be published to stores once one is connected.',
     input: { ...PRODUCT_INPUT, handle: z.string().optional() },
     readOnly: false,
     scope: AgentScope.CatalogWrite,

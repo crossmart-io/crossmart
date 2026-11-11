@@ -31,7 +31,12 @@ export const WWW_AUTHENTICATE_HEADER = 'WWW-Authenticate';
 /** The access-token claim naming the agent's workspace (the API's `AGENT_WORKSPACE_CLAIM`). */
 export const SCOPE_CLAIM = 'scope';
 export const SCOPE_SEPARATOR = ' ';
+/** The access-token claims that may carry the OAuth client id, in order (the API's own). */
+export const CLIENT_ID_CLAIMS = ['client_id', 'azp'] as const;
 /** A JWT has three dot-separated parts; API keys have none. */
 export const JWT_PART_COUNT = 3;
 export const JWT_SEPARATOR = '.';
 export const RESOURCE_NAME = 'Crossmart';
+
+/** The JSON-RPC version every message carries. */
+export const JSON_RPC_VERSION = '2.0';

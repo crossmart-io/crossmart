@@ -23,6 +23,7 @@ interface ApiErrorBody {
  */
 export class CrossmartApiClient {
   private workspaceId: Promise<string> | undefined;
+  private resolvedWorkspaceId: string | undefined;
 
   constructor(
     private readonly baseUrl: string,
@@ -37,6 +38,12 @@ export class CrossmartApiClient {
     if (this.credential) return;
     this.credential = credential;
     this.workspaceId = undefined;
+    this.resolvedWorkspaceId = undefined;
+  }
+
+  /** The workspace calls go to, once known: named by the credential, or after a first call. */
+  get knownWorkspaceId(): string | undefined {
+    return this.credential?.workspaceId ?? this.resolvedWorkspaceId;
   }
 
   async call(call: ApiCall): Promise<unknown> {
@@ -50,9 +57,10 @@ export class CrossmartApiClient {
   private currentWorkspace(): Promise<string> {
     const named = this.credential?.workspaceId;
     if (named) return Promise.resolve(named);
-    this.workspaceId ??= this.send(HttpMethod.Get, this.toUrl(CURRENT_API_KEY_PATH)).then(
-      (key) => (key as CurrentApiKey).workspaceId,
-    );
+    this.workspaceId ??= this.send(HttpMethod.Get, this.toUrl(CURRENT_API_KEY_PATH)).then((key) => {
+      this.resolvedWorkspaceId = (key as CurrentApiKey).workspaceId;
+      return this.resolvedWorkspaceId;
+    });
     return this.workspaceId;
   }
 

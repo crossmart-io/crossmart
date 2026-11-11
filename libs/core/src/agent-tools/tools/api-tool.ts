@@ -4,6 +4,7 @@ import type { ApiCall } from '../api/api-call.js';
 import type { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { CrossmartApiError } from '../api/crossmart-api.error.js';
 import { JSON_INDENTATION, type RefusalStatus } from '../agent-tools.constants.js';
+import type { EmptyResultCheck, NextStepHint } from './next-step-hints.js';
 
 /**
  * One agent tool as data: its name, what it is for, its input, and the API call it makes. Every
@@ -56,6 +57,8 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   afterCall?: (result: unknown, client: CrossmartApiClient) => void;
   /** What the agent reads of the API's answer, such as the answer without a secret it holds. */
   toResult?: (result: unknown) => unknown;
+  /** The next step to suggest when the answer shows an empty account, such as no products. */
+  emptyResult?: EmptyResultCheck;
 }
 
 /** What a tool call gave the agent: the API's answer as text, or its refusal. */
@@ -66,6 +69,12 @@ export interface ApiToolResult {
   value?: unknown;
   /** The HTTP status of a refusal. */
   status?: number;
+  /** The API's machine-readable reason for a refusal, such as `sandbox_claim_required`. */
+  code?: string;
+  /** True when the change was stored as a proposal waiting for the seller (ADR 0028). */
+  proposed?: boolean;
+  /** What to do next, when the answer shows an empty account. */
+  next?: NextStepHint;
 }
 
 /**
@@ -107,9 +116,20 @@ export async function runApiTool(
     const value = await client.call(spec.toCall(input as never));
     spec.afterCall?.(value, client);
     const shown = spec.toResult ? spec.toResult(value) : value;
-    return { isError: false, text: toText(shown), value: shown };
+    const next = spec.emptyResult?.isEmpty(shown, input) ? spec.emptyResult.next : undefined;
+    return { isError: false, text: toText(shown), value: shown, ...(next ? { next } : {}) };
   } catch (error) {
     if (!(error instanceof CrossmartApiError)) throw error;
-    return { isError: true, text: toRefusalText(spec, error), status: error.status };
+    return toRefusalResult(spec, error);
   }
+}
+
+/** A refusal by the API as the agent reads it, with its status and reason for the logs. */
+export function toRefusalResult(spec: ApiToolSpec, error: CrossmartApiError): ApiToolResult {
+  return {
+    isError: true,
+    text: toRefusalText(spec, error),
+    status: error.status,
+    ...(error.code ? { code: error.code } : {}),
+  };
 }
