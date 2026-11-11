@@ -14,6 +14,7 @@ export {
   ListingStatus,
   ListingVisibility,
   OutOfStockPolicy,
+  ProductCondition,
   ProductStatus,
   SubscriptionStatus,
   SuggestionCreatorType,

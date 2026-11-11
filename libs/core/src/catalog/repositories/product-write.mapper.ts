@@ -25,6 +25,8 @@ export function toProductFields(draft: ProductDraft): ProductFields {
     productType: draft.productType ?? null,
     tags: draft.tags,
     status: draft.status,
+    // Absent keeps the stored condition on an update (none on a create); null clears it.
+    condition: draft.condition,
     optionNames: draft.optionNames,
   };
 }

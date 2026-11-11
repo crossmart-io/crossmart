@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type { MediaView, ProductDetail, VariantView } from '@crossmart/core';
-import { OutOfStockPolicy, ProductStatus } from '@crossmart/database';
+import { OutOfStockPolicy, ProductCondition, ProductStatus } from '@crossmart/database';
 import {
   OUT_OF_STOCK_POLICY_SCHEMA_NAME,
+  PRODUCT_CONDITION_SCHEMA_NAME,
   PRODUCT_STATUS_SCHEMA_NAME,
 } from '../catalog.constants.js';
 
@@ -93,6 +94,14 @@ export class ProductDto implements ProductDetail {
 
   @ApiProperty({ enum: ProductStatus, enumName: PRODUCT_STATUS_SCHEMA_NAME })
   status: ProductStatus;
+
+  @ApiProperty({
+    enum: ProductCondition,
+    enumName: PRODUCT_CONDITION_SCHEMA_NAME,
+    nullable: true,
+    description: 'The item’s condition; null lists it in each store’s default condition',
+  })
+  condition: ProductCondition | null;
 
   @ApiProperty({ type: [String], example: ['Size', 'Color'] })
   optionNames: string[];

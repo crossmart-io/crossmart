@@ -608,6 +608,33 @@ enum OutOfStockPolicy {
   @@map("out_of_stock_policy")
 }
 
+/// The state of the item for sale, as a reseller grades it. Each connector maps it to its
+/// channel's own conditions (ADR 0029); a product without one uses the store's default.
+enum ProductCondition {
+  /// Brand new and unused, with its tags or in its original, unopened packaging.
+  NEW
+  /// New and unused, without its tags or original packaging, or in an opened box.
+  NEW_OTHER
+  /// New and unused, with a flaw such as a scuff, a missing button or damaged packaging.
+  NEW_WITH_DEFECTS
+  /// Used once or twice at most, with no visible wear.
+  LIKE_NEW
+  /// Restored to working order by a seller or a refurbisher.
+  REFURBISHED
+  /// Used, with almost no signs of wear.
+  USED_EXCELLENT
+  /// Used, with light signs of wear.
+  USED_VERY_GOOD
+  /// Used, with visible wear that does not affect its use.
+  USED_GOOD
+  /// Used, with heavy wear or cosmetic damage, but working.
+  USED_FAIR
+  /// Does not work as intended, sold for parts or repair.
+  FOR_PARTS
+
+  @@map("product_condition")
+}
+
 /// A saved filter of the product list, shared by everyone in the workspace.
 model ProductView {
   id          String         @id @default(uuid()) @db.Uuid
@@ -626,24 +653,26 @@ model ProductView {
 
 /// A product with its base content. Per-channel overrides live on its listings.
 model Product {
-  id              String         @id @default(uuid()) @db.Uuid
-  workspaceId     String         @map("workspace_id") @db.Uuid
-  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id              String            @id @default(uuid()) @db.Uuid
+  workspaceId     String            @map("workspace_id") @db.Uuid
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   handle          String
   title           String
-  descriptionHtml String         @default("") @map("description_html")
+  descriptionHtml String            @default("") @map("description_html")
   vendor          String?
-  productType     String?        @map("product_type")
+  productType     String?           @map("product_type")
   tags            String[]
-  status          ProductStatus  @default(DRAFT)
+  status          ProductStatus     @default(DRAFT)
+  /// The item's condition; null uses each store's default condition.
+  condition       ProductCondition?
   /// Names of up to three options (Size, Color). Each variant holds one value per name, in order.
-  optionNames     String[]       @map("option_names")
+  optionNames     String[]          @map("option_names")
   variants        Variant[]
   media           ProductMedia[]
   listings        Listing[]
   suggestions     Suggestion[]
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
 
   @@unique([workspaceId, handle])
   @@index([workspaceId, title, id])

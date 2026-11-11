@@ -25,6 +25,7 @@ function record(listings: ProductSummaryRecord['listings']): ProductSummaryRecor
     productType: null,
     tags: [],
     status: ProductStatus.ACTIVE,
+    condition: null,
     optionNames: [],
     createdAt: AT,
     updatedAt: AT,

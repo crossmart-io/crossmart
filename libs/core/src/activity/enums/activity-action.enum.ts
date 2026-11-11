@@ -6,6 +6,11 @@ export enum ActivityAction {
   ProductCreated = 'product_created',
   ProductUpdated = 'product_updated',
   ProductDeleted = 'product_deleted',
+  /**
+   * A product was marked sold: its available stock went to 0, counted by `itemCount`, and it was
+   * taken off every store (each removal is logged on its own).
+   */
+  ProductMarkedSold = 'product_marked_sold',
   ProductsBulkUpdated = 'products_bulk_updated',
   ProductsBulkDeleted = 'products_bulk_deleted',
   /** A create import: new products from a file. */

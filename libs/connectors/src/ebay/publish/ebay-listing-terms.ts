@@ -3,6 +3,7 @@ import { ChannelType } from '../../sdk/channel-type.enum.js';
 import { ChannelError } from '../../sdk/errors/channel-error.js';
 import { isEbaySettings } from '../ebay-settings.js';
 import type { EbayCondition } from '../listing/ebay-condition.enum.js';
+import { ebayConditionOf } from '../listing/ebay-condition.mapper.js';
 import { resolveListingDefaults } from '../listing/ebay-listing-defaults.js';
 import type { EbayListingPolicies } from './ebay-offer.types.js';
 import {
@@ -32,8 +33,9 @@ function requireCompleteDefaults(draft: ListingDraft): CompleteListingDefaults {
 }
 
 /**
- * The connection's policies, ship-from location and condition. A connection without them
- * cannot list anything, so the listing fails with what to set instead of calling eBay.
+ * The connection's policies and ship-from location, and the product's condition (else the
+ * connection's default one). A connection without policies or a location cannot list anything,
+ * so the listing fails with what to set instead of calling eBay.
  */
 export function listingTermsOf(draft: ListingDraft): EbayListingTerms {
   const defaults = requireCompleteDefaults(draft);
@@ -41,6 +43,6 @@ export function listingTermsOf(draft: ListingDraft): EbayListingTerms {
   return {
     policies: { fulfillmentPolicyId, paymentPolicyId, returnPolicyId },
     merchantLocationKey: defaults.merchantLocationKey,
-    condition: defaults.condition,
+    condition: ebayConditionOf(draft.condition, defaults.condition),
   };
 }

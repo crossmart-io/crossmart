@@ -15,6 +15,7 @@ export function toProductDraft(record: ProductUpdateTargetRecord): ProductDraft 
     productType: record.productType ?? undefined,
     tags: record.tags,
     status: record.status,
+    condition: record.condition,
     optionNames: record.optionNames,
     variants: record.variants.map(toVariantDraft),
     media: record.media.map(toMediaDraft),

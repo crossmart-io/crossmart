@@ -1,5 +1,6 @@
 import type { ChannelSession } from '../auth/channel-session.js';
 import type { ChannelSettings } from '../channel-settings.js';
+import type { ItemCondition } from '../listings/item-condition.enum.js';
 import type { ExternalProduct, ExternalVariant } from './catalog.types.js';
 import type { PublishPrerequisites } from '../publishing/unmet-publish-requirement.js';
 import type { ChannelCategory } from './taxonomy-provider.js';
@@ -43,6 +44,11 @@ export interface ListingDraft {
    * take precedence over the ones the connector derives, except the variants' own options.
    */
   itemSpecifics?: ItemSpecific[];
+  /**
+   * The item's condition, when the merchant set one on the product. Channels with conditions
+   * map it to their own; without it they use the connection's default (eBay) or `new`.
+   */
+  condition?: ItemCondition | null;
 }
 
 /** The ids the channel gave a published listing, to store as `Listing` / `ListingVariant`. */

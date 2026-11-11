@@ -10,6 +10,7 @@ export const PRODUCT_SOURCE = z.object({
   productType: z.string().nullable(),
   tags: z.array(z.string()),
   status: z.string(),
+  condition: z.string().nullish(),
   variants: z.array(
     z.object({
       id: z.string(),

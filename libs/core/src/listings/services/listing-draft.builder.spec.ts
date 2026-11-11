@@ -1,5 +1,5 @@
-import { ChannelType } from '@crossmart/connectors';
-import { ListingVisibility, ProductStatus } from '@crossmart/database';
+import { ChannelType, ItemCondition } from '@crossmart/connectors';
+import { ListingVisibility, ProductCondition, ProductStatus } from '@crossmart/database';
 import { CompareAtMode } from '../../channels/enums/compare-at-mode.enum.js';
 import { PriceRounding } from '../../channels/enums/price-rounding.enum.js';
 import { mediaDigest } from '../rules/media-digest.js';
@@ -54,6 +54,14 @@ describe('ListingDraftBuilder', () => {
     expect(
       builder.build({ product: productDetail(), listing: null, pricing: USD }).draft.itemSpecifics,
     ).toEqual([]);
+  });
+
+  it('carries the product’s condition, or none so each store uses its default', () => {
+    const used = productDetail({ condition: ProductCondition.USED_GOOD });
+    const build = (product: typeof used) =>
+      builder.build({ product, listing: null, pricing: USD }).draft.condition;
+    expect(build(used)).toBe(ItemCondition.UsedGood);
+    expect(build(productDetail())).toBeNull();
   });
 
   it('sends the product as it is in the catalog when the listing has no overrides', () => {

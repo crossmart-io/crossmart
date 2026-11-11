@@ -15,6 +15,7 @@ import type {
   VariantPriceOverride,
 } from '../entities/price-resolution.js';
 import { PriceWarning } from '../enums/price-warning.enum.js';
+import { toItemCondition } from '../mappers/item-condition.mapper.js';
 import { toPriceOverrides } from '../mappers/listing.mapper.js';
 import { listingCategory, listingItemSpecifics } from '../rules/listing-category.js';
 import type { ListingSyncRecord } from '../repositories/listing-sync.queries.js';
@@ -77,6 +78,7 @@ export class ListingDraftBuilder {
         accountSettings: account ?? null,
         category: listingCategory(listing),
         itemSpecifics: listingItemSpecifics(listing),
+        condition: toItemCondition(product.condition),
       },
       mediaDigest: digest,
     };

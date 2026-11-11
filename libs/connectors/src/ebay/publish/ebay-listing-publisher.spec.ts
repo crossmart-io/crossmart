@@ -1,10 +1,12 @@
 import { ChannelError } from '../../sdk/errors/channel-error.js';
+import { ItemCondition } from '../../sdk/listings/item-condition.enum.js';
+import { EbayCondition } from '../listing/ebay-condition.enum.js';
 import { ChannelErrorCode } from '../../sdk/errors/channel-error-code.enum.js';
 import { PublishRequirement } from '../../sdk/publishing/publish-requirement.enum.js';
 import { HttpMethod } from '../../sdk/http/http-method.enum.js';
 import type { HttpRequest } from '../../sdk/http/http-transport.js';
 import { fakeChannelSession } from '../../sdk/testing/fake-channel-session.js';
-import { jsonResponse } from '../../sdk/testing/fake-http-transport.js';
+import { FakeHttpTransport, jsonResponse } from '../../sdk/testing/fake-http-transport.js';
 import { fixtureResponse } from '../../sdk/testing/fixtures.js';
 import { ACCOUNT_ID, createEbayTestKit, FIXTURES } from '../ebay.fixtures.js';
 import {
@@ -40,36 +42,41 @@ function requestTo(requests: readonly HttpRequest[], method: HttpMethod, url: st
   return requests.find((request) => request.method === method && request.url === url);
 }
 
+/** The calls a new single-variant listing makes, answered with the recorded fixtures. */
+function expectSingleListing(http: FakeHttpTransport): void {
+  http
+    .expect(
+      HttpMethod.Get,
+      `${API}/commerce/taxonomy/v1/get_default_category_tree_id?marketplace_id=EBAY_US`,
+      fixtureResponse(FIXTURES, 'category-tree.json'),
+    )
+    .expect(
+      HttpMethod.Get,
+      `${API}/commerce/taxonomy/v1/category_tree/0/get_category_suggestions?q=Stoneware+mug`,
+      fixtureResponse(FIXTURES, 'category-suggestions.json'),
+    )
+    .expect(HttpMethod.Put, `${INVENTORY}/inventory_item/${MUG_SKU}`, NO_CONTENT)
+    .expect(
+      HttpMethod.Get,
+      offersUrl(MUG_SKU),
+      fixtureResponse(FIXTURES, 'offer-not-found.json', 404),
+    )
+    .expect(
+      HttpMethod.Post,
+      `${INVENTORY}/offer`,
+      fixtureResponse(FIXTURES, 'offer-created.json', 201),
+    )
+    .expect(
+      HttpMethod.Post,
+      `${INVENTORY}/offer/9000000002/publish`,
+      fixtureResponse(FIXTURES, 'offer-published.json'),
+    );
+}
+
 describe('EbayListingPublisher', () => {
   it('publishes a single-variant product in the category eBay suggests', async () => {
     const { connector, http } = createEbayTestKit();
-    http
-      .expect(
-        HttpMethod.Get,
-        `${API}/commerce/taxonomy/v1/get_default_category_tree_id?marketplace_id=EBAY_US`,
-        fixtureResponse(FIXTURES, 'category-tree.json'),
-      )
-      .expect(
-        HttpMethod.Get,
-        `${API}/commerce/taxonomy/v1/category_tree/0/get_category_suggestions?q=Stoneware+mug`,
-        fixtureResponse(FIXTURES, 'category-suggestions.json'),
-      )
-      .expect(HttpMethod.Put, `${INVENTORY}/inventory_item/${MUG_SKU}`, NO_CONTENT)
-      .expect(
-        HttpMethod.Get,
-        offersUrl(MUG_SKU),
-        fixtureResponse(FIXTURES, 'offer-not-found.json', 404),
-      )
-      .expect(
-        HttpMethod.Post,
-        `${INVENTORY}/offer`,
-        fixtureResponse(FIXTURES, 'offer-created.json', 201),
-      )
-      .expect(
-        HttpMethod.Post,
-        `${INVENTORY}/offer/9000000002/publish`,
-        fixtureResponse(FIXTURES, 'offer-published.json'),
-      );
+    expectSingleListing(http);
 
     const published = await connector.publish(session, mugDraft());
 
@@ -122,6 +129,17 @@ describe('EbayListingPublisher', () => {
       pricingSummary: { price: { value: '12.00', currency: 'USD' } },
       merchantLocationKey: 'crossmart-default',
     });
+  });
+
+  it('lists the item in the product’s own condition, ahead of the store default', async () => {
+    const { connector, http } = createEbayTestKit();
+    expectSingleListing(http);
+
+    await connector.publish(session, mugDraft({ condition: ItemCondition.UsedFair }));
+
+    http.assertDone();
+    const item = requestTo(http.requests, HttpMethod.Put, `${INVENTORY}/inventory_item/${MUG_SKU}`);
+    expect(bodyOf(item)).toMatchObject({ condition: EbayCondition.UsedAcceptable });
   });
 
   it('publishes a multi-variant product as an inventory item group', async () => {

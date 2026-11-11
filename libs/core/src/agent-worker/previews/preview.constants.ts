@@ -18,6 +18,7 @@ export const PREVIEW_LABELS = {
   productType: 'Product type',
   tags: 'Tags',
   status: 'Status',
+  condition: 'Condition',
   images: 'Images',
   visibility: 'Visibility',
   onHand: 'On hand',
@@ -60,6 +61,7 @@ export const PREVIEW_HEADLINES = {
     `Write AI titles and descriptions for ${count} ${count === 1 ? 'product' : 'products'} on ${store}; they arrive as suggestions to review`,
   approveSuggestion: 'Apply an AI suggestion to its listing',
   variantPrice: (variant: string): string => `Change the catalog price of ${variant}`,
+  markSold: 'Mark this product sold: its stock goes to 0 and it is taken off every store',
   addStock: (units: number, reason: string): string =>
     `Add ${units} ${units === 1 ? 'unit' : 'units'} (${reason})`,
   removeStock: (units: number, reason: string): string =>

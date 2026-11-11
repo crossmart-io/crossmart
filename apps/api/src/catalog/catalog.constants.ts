@@ -9,6 +9,8 @@ export const PRODUCT_ID_PARAM = 'productId';
 export const VIEW_ID_PARAM = 'viewId';
 /** One variant of a product; named `variantId` in `VariantParamsDto`. */
 export const VARIANT_PATH = `:${PRODUCT_ID_PARAM}/variants/:variantId`;
+/** Marks one product sold: its stock goes to 0 and it leaves every store. */
+export const MARK_SOLD_PATH = `:${PRODUCT_ID_PARAM}/mark-sold`;
 /** Multipart field that carries an uploaded file (catalog import or image). */
 export const UPLOAD_FILE_FIELD = 'file';
 /** Browsers send file names as UTF-8; multer would otherwise read them as Latin-1. */
@@ -28,6 +30,7 @@ export const CATALOG_GAP_SCHEMA_NAME = 'CatalogGap';
 export const BULK_PRODUCT_ACTION_SCHEMA_NAME = 'BulkProductAction';
 export const PRODUCT_STATUS_SCHEMA_NAME = 'ProductStatus';
 export const OUT_OF_STOCK_POLICY_SCHEMA_NAME = 'OutOfStockPolicy';
+export const PRODUCT_CONDITION_SCHEMA_NAME = 'ProductCondition';
 export const CATALOG_IMPORT_FORMAT_SCHEMA_NAME = 'CatalogImportFormat';
 export const IMPORT_ISSUE_CODE_SCHEMA_NAME = 'ImportIssueCode';
 export const CATALOG_IMPORT_MODE_SCHEMA_NAME = 'CatalogImportMode';

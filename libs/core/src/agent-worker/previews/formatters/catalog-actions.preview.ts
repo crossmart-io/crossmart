@@ -18,6 +18,7 @@ const CREATE_INPUT = z.object({
   ),
 });
 const GENERATE_INPUT = z.object({ connectionId: z.string(), productIds: z.array(z.string()) });
+const PRODUCT_REF_INPUT = z.object({ productId: z.string() });
 const DRAFT_STATUS = 'DRAFT';
 
 /** `create_product`: its title, status and the price of each variant. */
@@ -75,5 +76,24 @@ export class SuggestionApprovalPreview implements ActionPreviewFormatter {
       details: [],
       changes: [],
     });
+  }
+}
+
+/** `mark_product_sold`: the product, and that its stock and every store listing go. */
+export class MarkSoldPreview implements ActionPreviewFormatter {
+  readonly tool = AgentToolName.MarkProductSold;
+
+  async preview(
+    input: Record<string, unknown>,
+    reader: PreviewReader,
+  ): Promise<AgentWorkerActionPreview> {
+    const { productId } = PRODUCT_REF_INPUT.parse(input);
+    const product = await reader.product(productId);
+    return {
+      target: product.title,
+      headline: PREVIEW_HEADLINES.markSold,
+      details: [],
+      changes: [],
+    };
   }
 }
