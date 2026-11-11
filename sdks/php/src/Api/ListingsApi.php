@@ -8,6 +8,7 @@ namespace Crossmart\Api;
 
 use Crossmart\Enum\ChannelProductSort;
 use Crossmart\Enum\ChannelProductState;
+use Crossmart\Enum\ChannelProductView;
 use Crossmart\Enum\ListingDisplayState;
 use Crossmart\Enum\ListingStatus;
 use Crossmart\Enum\SortDirection;
@@ -48,9 +49,10 @@ final class ListingsApi
     /**
      * The store’s products with their state on the channel
      *
-     * Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState` narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow `search`, so they can label filter tabs.
+     * Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState` narrows them to the state a merchant reads (`needs_details`, `ready`, …), and `view` to one tab of a store page (`live`, `needs_attention`, …). Counts per state, and of the products that need details or attention, follow `search`, so they can label filter tabs.
      *
      * @param ListingDisplayState|string|null $displayState Only products showing this display state. Without `state` it looks at every catalog product, so `draft` and `removed` find those not in the store.
+     * @param ChannelProductView|string|null $view Only the products of one view, so each tab of a store page is one request: `all` (in the store), `live` (listed), `needs_attention` (failed or needing details) or `not_listed` (pending, removing, removed by hand or excluded). It combines with `state` and `displayState`
      * @param string|null $search Matches title, handle or SKU
      * @param int|float|null $page 1-based page number, for tables with page numbers. It wins over `cursor`.
      *
@@ -61,6 +63,7 @@ final class ListingsApi
         string $connectionId,
         ChannelProductState|string|null $state = null,
         ListingDisplayState|string|null $displayState = null,
+        ChannelProductView|string|null $view = null,
         ?string $search = null,
         ChannelProductSort|string|null $sort = null,
         SortDirection|string|null $direction = null,
@@ -72,7 +75,7 @@ final class ListingsApi
             method: HttpMethod::Get,
             pathTemplate: '/api/v1/workspaces/{workspaceId}/channel-connections/{connectionId}/products',
             pathParameters: ['workspaceId' => $workspaceId, 'connectionId' => $connectionId],
-            query: ['state' => $state, 'displayState' => $displayState, 'search' => $search, 'sort' => $sort, 'direction' => $direction, 'cursor' => $cursor, 'page' => $page, 'limit' => $limit],
+            query: ['state' => $state, 'displayState' => $displayState, 'view' => $view, 'search' => $search, 'sort' => $sort, 'direction' => $direction, 'cursor' => $cursor, 'page' => $page, 'limit' => $limit],
         ));
 
         return ChannelProductPageDto::fromArray($response->object());

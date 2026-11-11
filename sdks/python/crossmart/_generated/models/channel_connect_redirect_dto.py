@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any, Self, TypeVar
+from uuid import UUID
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -18,11 +19,16 @@ class ChannelConnectRedirectDto:
     """
     Attributes:
         connected (ChannelType | Unset):
+        connection_id (UUID | Unset): Set with `connected`: the id of the connection that was connected
+        reconnected (bool | Unset): Set with `connected` to `true` when the account was connected before (a re-auth), so
+            the web app does not offer the new store setup
         error (ConnectFailure | Unset): Set when connecting failed
         channel (ChannelType | Unset):
     """
 
     connected: ChannelType | Unset = UNSET
+    connection_id: UUID | Unset = UNSET
+    reconnected: bool | Unset = UNSET
     error: ConnectFailure | Unset = UNSET
     channel: ChannelType | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -31,6 +37,12 @@ class ChannelConnectRedirectDto:
         connected: str | Unset = UNSET
         if not isinstance(self.connected, Unset):
             connected = self.connected.value
+
+        connection_id: str | Unset = UNSET
+        if not isinstance(self.connection_id, Unset):
+            connection_id = str(self.connection_id)
+
+        reconnected = self.reconnected
 
         error: str | Unset = UNSET
         if not isinstance(self.error, Unset):
@@ -45,6 +57,10 @@ class ChannelConnectRedirectDto:
         field_dict.update({})
         if connected is not UNSET:
             field_dict["connected"] = connected
+        if connection_id is not UNSET:
+            field_dict["connectionId"] = connection_id
+        if reconnected is not UNSET:
+            field_dict["reconnected"] = reconnected
         if error is not UNSET:
             field_dict["error"] = error
         if channel is not UNSET:
@@ -62,6 +78,15 @@ class ChannelConnectRedirectDto:
         else:
             connected = ChannelType(_connected)
 
+        _connection_id = d.pop("connectionId", UNSET)
+        connection_id: UUID | Unset
+        if isinstance(_connection_id, Unset):
+            connection_id = UNSET
+        else:
+            connection_id = UUID(_connection_id)
+
+        reconnected = d.pop("reconnected", UNSET)
+
         _error = d.pop("error", UNSET)
         error: ConnectFailure | Unset
         if isinstance(_error, Unset):
@@ -78,6 +103,8 @@ class ChannelConnectRedirectDto:
 
         channel_connect_redirect_dto = cls(
             connected=connected,
+            connection_id=connection_id,
+            reconnected=reconnected,
             error=error,
             channel=channel,
         )
