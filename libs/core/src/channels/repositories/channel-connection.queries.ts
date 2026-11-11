@@ -38,6 +38,13 @@ export interface ConnectedAccountRecord {
   connectedAt: Date;
 }
 
+/** A stored connection after the merchant approved the app, and whether its row existed. */
+export interface UpsertedConnection {
+  record: ChannelConnectionRecord;
+  /** True when the account was connected before (a re-auth), false for a new row. */
+  reconnected: boolean;
+}
+
 /** What wiping a connection's credentials writes. Settings stay so history reads well. */
 export function wipedCredentials(now: Date): Prisma.ChannelConnectionUpdateManyMutationInput {
   return { credentials: null, credentialsExpiresAt: null, disconnectedAt: now };

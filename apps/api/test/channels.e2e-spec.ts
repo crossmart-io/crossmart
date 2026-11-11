@@ -13,6 +13,11 @@ import {
 } from '@crossmart/connectors';
 import { ActivityAction, ConnectFailure, OAuthStateSigner } from '@crossmart/core';
 import { ChannelConnectionStatus, PrismaService, WorkspaceRole } from '@crossmart/database';
+import {
+  type ConnectedRedirect,
+  connectFailureRedirect,
+  readConnectedRedirect,
+} from './support/connect-redirect.js';
 import { browserCookies, createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
@@ -121,7 +126,10 @@ describe('Channels (e2e)', () => {
     return cookie ? call.set('Cookie', cookie) : call;
   }
 
-  async function connect(user: SignedUpUser, shop = newShop()): Promise<ConnectionBody> {
+  async function connectWithRedirect(
+    user: SignedUpUser,
+    shop: string,
+  ): Promise<{ connection: ConnectionBody; redirect: ConnectedRedirect }> {
     const started = await startAuthorization(user, shop);
     const state = new URL(started.body.authorizationUrl).searchParams.get('state') ?? '';
     expectShopifyCalls(shop);
@@ -129,15 +137,25 @@ describe('Channels (e2e)', () => {
       signQuery({ code: 'code', shop, state, timestamp: '1762164000' }),
       browserCookies(user, started),
     );
-    expect(response.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=shopify`);
+    const redirect = readConnectedRedirect(
+      response.headers.location,
+      env.WEB_APP_URL,
+      ChannelType.Shopify,
+    );
     const list = await request(app.getHttpServer())
       .get(`/api/v1/workspaces/${user.workspaceId}/channel-connections`)
       .set('Cookie', user.cookie);
-    return list.body.find((connection: ConnectionBody) => connection.externalAccountId === shop);
+    const connection = list.body.find((entry: ConnectionBody) => entry.externalAccountId === shop);
+    expect(connection.id).toBe(redirect.connectionId);
+    return { connection, redirect };
+  }
+
+  async function connect(user: SignedUpUser, shop = newShop()): Promise<ConnectionBody> {
+    return (await connectWithRedirect(user, shop)).connection;
   }
 
   function errorRedirect(failure: ConnectFailure): string {
-    return `${env.WEB_APP_URL}/channels?error=${failure}&channel=shopify`;
+    return connectFailureRedirect(env.WEB_APP_URL, failure, ChannelType.Shopify);
   }
 
   it('starts an install with a signed state and the API callback as redirect', async () => {
@@ -228,6 +246,18 @@ describe('Channels (e2e)', () => {
       action: ActivityAction.ChannelConnected,
       summary: 'Connected Shopify “E2E Store”',
     });
+  });
+
+  it('sends the merchant to the Stores page naming the connection, and flags a re-auth', async () => {
+    const owner = await signUp(app, 'Returning Owner');
+    const shop = newShop();
+
+    const first = await connectWithRedirect(owner, shop);
+    const again = await connectWithRedirect(owner, shop);
+
+    expect(first.redirect).toEqual({ connectionId: first.connection.id, reconnected: false });
+    expect(again.redirect).toEqual({ connectionId: first.connection.id, reconnected: true });
+    http.assertDone();
   });
 
   it('keeps each workspace’s connections to itself', async () => {
@@ -377,7 +407,7 @@ describe('Channels (e2e)', () => {
       const first = await callback(query, cookies);
       const replay = await callback(query, cookies);
 
-      expect(first.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=shopify`);
+      readConnectedRedirect(first.headers.location, env.WEB_APP_URL, ChannelType.Shopify);
       expect([first.headers['set-cookie']].flat().join()).toMatch(
         /^crossmart_oauth_nonce=;.*Expires=Thu, 01 Jan 1970/,
       );

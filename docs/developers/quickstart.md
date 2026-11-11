@@ -245,6 +245,11 @@ badge of the product list.
 A store's `publishReadiness` says whether it can publish at all, and lists what its setup lacks in
 `missing` (such as `shipping_policy` on eBay or `listing_setup` on Google).
 
+To list one store's products as a merchant reads them, call
+`GET /workspaces/{workspaceId}/channel-connections/{connectionId}/products` with `view`: `all`,
+`live`, `needs_attention` (failed or needing details) or `not_listed`. Each response's `counts`
+has a number per state and `needsDetails` and `needsAttention`, so one request labels every tab.
+
 ```bash
 curl "$CROSSMART_API/workspaces/$WORKSPACE_ID/products/$PRODUCT_ID/channels" -H "x-api-key: $CROSSMART_API_KEY"
 ```

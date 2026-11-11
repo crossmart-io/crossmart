@@ -11,6 +11,7 @@ import {
   type HttpResponse,
   jsonResponse,
 } from '@crossmart/connectors';
+import { readConnectedRedirect } from './connect-redirect.js';
 import { browserCookies, type SignedUpUser } from './test-app.js';
 
 /** Fake app settings, set before the app module reads its configuration. */
@@ -132,10 +133,12 @@ export async function connectShopifyStore(
   const state = new URL(started.body.authorizationUrl).searchParams.get('state') ?? '';
   expectTokenExchange(http, shop, scope);
   expectShopDetails(http, shop);
-  await request(server)
+  const callback = await request(server)
     .get('/api/v1/channels/shopify/oauth/callback')
     .query(signQuery({ code: 'code', shop, state, timestamp: '1762164000' }))
     .set('Cookie', browserCookies(user, started));
+  const webAppUrl = new URL(callback.headers.location ?? '').origin;
+  const redirect = readConnectedRedirect(callback.headers.location, webAppUrl, ChannelType.Shopify);
   const list = await request(server)
     .get(`/api/v1/workspaces/${user.workspaceId}/channel-connections`)
     .set('Cookie', user.cookie);
@@ -144,6 +147,7 @@ export async function connectShopifyStore(
     (entry) => entry.externalAccountId === shop,
   );
   if (!connection) throw new Error(`The store ${shop} was not connected`);
+  expect(connection.id).toBe(redirect.connectionId);
   return connection.id;
 }
 

@@ -11,6 +11,7 @@ import {
   type ChannelProductRow,
   ChannelProductSort,
   ChannelProductState,
+  ChannelProductView,
   ListingDisplayState,
 } from '@crossmart/core';
 import { SortDirection } from '@crossmart/common';
@@ -20,6 +21,7 @@ import { SORT_DIRECTION_SCHEMA_NAME } from '../../common/api.constants.js';
 import {
   CHANNEL_PRODUCT_SORT_SCHEMA_NAME,
   CHANNEL_PRODUCT_STATE_SCHEMA_NAME,
+  CHANNEL_PRODUCT_VIEW_SCHEMA_NAME,
   LISTING_DISPLAY_STATE_SCHEMA_NAME,
 } from '../listings.constants.js';
 import { ListingSummaryDto } from './channel-listing.dto.js';
@@ -48,6 +50,20 @@ export class ChannelProductCountsDto implements ChannelProductCounts {
 
   @ApiProperty({ description: 'Neither selected nor on the channel' })
   [ChannelProductState.Excluded]: number;
+
+  @ApiProperty({
+    description:
+      'Products whose display state is `needs_details`: selected, and the store setup or the ' +
+      'product lacks something publishing needs. Some may also be counted as `failed`',
+  })
+  needsDetails: number;
+
+  @ApiProperty({
+    description:
+      'Products that are failed or need details, each counted once: what `view=needs_attention` ' +
+      'lists. Its failed part is `failed`, the same listings the attention summary counts',
+  })
+  needsAttention: number;
 }
 
 export class ChannelProductDto implements ChannelProductRow {
@@ -120,6 +136,19 @@ export class ListChannelProductsQueryDto implements ChannelProductQuery {
   @IsOptional()
   @IsEnum(ListingDisplayState)
   displayState?: ListingDisplayState;
+
+  @ApiPropertyOptional({
+    enum: ChannelProductView,
+    enumName: CHANNEL_PRODUCT_VIEW_SCHEMA_NAME,
+    description:
+      'Only the products of one view, so each tab of a store page is one request: `all` (in ' +
+      'the store), `live` (listed), `needs_attention` (failed or needing details) or ' +
+      '`not_listed` (pending, removing, removed by hand or excluded). It combines with `state` ' +
+      'and `displayState`',
+  })
+  @IsOptional()
+  @IsEnum(ChannelProductView)
+  view?: ChannelProductView;
 
   @ApiPropertyOptional({ description: 'Matches title, handle or SKU' })
   @IsOptional()

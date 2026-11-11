@@ -3,6 +3,7 @@ import type {
   ChannelProductSort,
   ChannelProductState,
 } from '../enums/channel-product-state.enum.js';
+import type { ChannelProductView } from '../enums/channel-product-view.enum.js';
 import type { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import type { ListingDisplayFields, ListingSummary } from './listing-views.js';
 import type { DisplayedProductSummary } from './store-badge-display.js';
@@ -15,7 +16,13 @@ export interface ChannelProductRow extends ListingDisplayFields {
   listing: ListingSummary | null;
 }
 
-export type ChannelProductCounts = Record<ChannelProductState, number>;
+/** Products in each state, and in the two groups a merchant acts on. */
+export interface ChannelProductCounts extends Record<ChannelProductState, number> {
+  /** Products whose display state is `needs_details` (pending or failed ones). */
+  needsDetails: number;
+  /** Products failed or needing details, each once: the needs attention view. */
+  needsAttention: number;
+}
 
 export interface ChannelProductPage {
   items: ChannelProductRow[];
@@ -30,6 +37,8 @@ export interface ChannelProductQuery {
   state?: ChannelProductState;
   /** Only products showing this display state; it may combine with `state`. */
   displayState?: ListingDisplayState;
+  /** Only the products of this view; it may combine with `state` and `displayState`. */
+  view?: ChannelProductView;
   /** Matches title, handle or SKU. */
   search?: string;
   sort: ChannelProductSort;

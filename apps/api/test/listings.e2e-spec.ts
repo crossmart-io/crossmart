@@ -7,6 +7,7 @@ import { FakeHttpTransport, HttpTransport, PublishRequirement } from '@crossmart
 import {
   ActivityAction,
   ChannelProductState,
+  ChannelProductView,
   CompareAtMode,
   ListingDisplayState,
   ListingRetryErrorCode,
@@ -1050,6 +1051,67 @@ describe('Listings (e2e)', () => {
       expect(activity.body.items.map((entry: { action: string }) => entry.action)).toContain(
         ActivityAction.ListingRetryRequested,
       );
+    });
+
+    it('lists each store tab in one request, with counts for all four', async () => {
+      const owner = await signUp(app, 'Tab Seller');
+      const shop = newShop();
+      const connectionId = await connectShopifyStore(app, http, owner, shop);
+      const refused = await createProduct(owner, { title: 'A Refused Mug' });
+      const waiting = await createProduct(owner, { title: 'B Waiting Bowl' });
+      await createProduct(owner, { title: 'C Draft Cup' });
+      const add = (productId: string) =>
+        request(server())
+          .post(`${base(owner)}/products/${productId}/channels/${connectionId}`)
+          .set('Cookie', owner.cookie);
+      const tab = async (view: ChannelProductView) =>
+        (
+          await request(server())
+            .get(connectionPath(owner, connectionId, 'products'))
+            .query({ view })
+            .set('Cookie', owner.cookie)
+        ).body as { items: { product: { id: string } }[]; counts: Record<string, number> };
+      const ids = (page: { items: { product: { id: string } }[] }) =>
+        page.items.map((row) => row.product.id);
+
+      // 1. One product refused by Shopify, one waiting to be published, one not in the store.
+      await add(refused.id);
+      answerGraphql(http, shop, () => ({ data: { location: { id: TEST_LOCATION } } }));
+      answerGraphql(http, shop, rejectTitle);
+      await runQueued();
+      await add(waiting.id);
+      queue.drain();
+
+      const attention = await tab(ChannelProductView.NeedsAttention);
+      expect(ids(attention)).toEqual([refused.id]);
+      expect(attention.counts).toMatchObject({
+        [ChannelProductState.Failed]: 1,
+        [ChannelProductState.Pending]: 1,
+        needsDetails: 0,
+        needsAttention: 1,
+      });
+      expect(ids(await tab(ChannelProductView.Live))).toEqual([]);
+      expect(ids(await tab(ChannelProductView.NotListed))).toHaveLength(2);
+      expect(ids(await tab(ChannelProductView.All))).toEqual([refused.id, waiting.id]);
+      const summary = await request(server())
+        .get(`${base(owner)}/attention`)
+        .set('Cookie', owner.cookie);
+      expect(summary.body.listings.count).toBe(attention.counts[ChannelProductState.Failed]);
+
+      // 2. The store needs re-auth: both need details now, and each is counted once.
+      await app.get(PrismaService).channelConnection.update({
+        where: { id: connectionId },
+        data: { status: ChannelConnectionStatus.NEEDS_REAUTH },
+      });
+      const blocked = await tab(ChannelProductView.NeedsAttention);
+      expect(ids(blocked)).toEqual([refused.id, waiting.id]);
+      expect(blocked.counts).toMatchObject({ needsDetails: 2, needsAttention: 2 });
+      const other = await signUp(app, 'Tab Outsider');
+      const outsider = await request(server())
+        .get(connectionPath(other, connectionId, 'products'))
+        .query({ view: ChannelProductView.NeedsAttention })
+        .set('Cookie', other.cookie);
+      expect(outsider.status).toBe(HttpStatus.NOT_FOUND);
     });
 
     it('refuses a retry on a store that needs re-auth, a missing product, or a viewer', async () => {

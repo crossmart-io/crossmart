@@ -7,6 +7,7 @@ import {
   HttpMethod,
   jsonResponse,
 } from '@crossmart/connectors';
+import { readConnectedRedirect } from './connect-redirect.js';
 import { browserCookies, type SignedUpUser } from './test-app.js';
 
 /** Fake app settings, set before the app module reads its configuration. */
@@ -99,9 +100,14 @@ export async function connectEbayAccount(
     .get('/api/v1/channels/ebay/oauth/callback')
     .query({ code: 'v^1.1#code', state })
     .set('Cookie', browserCookies(user, started));
-  expect(callback.headers.location).toBe(`${EBAY_TEST_ENV.WEB_APP_URL}/channels?connected=ebay`);
+  const redirect = readConnectedRedirect(
+    callback.headers.location,
+    EBAY_TEST_ENV.WEB_APP_URL,
+    ChannelType.Ebay,
+  );
   http.assertDone();
   const list = await request(app.getHttpServer()).get(base).set('Cookie', user.cookie);
   expect(list.status).toBe(HttpStatus.OK);
-  return (list.body as { id: string }[])[0].id;
+  expect((list.body as { id: string }[])[0].id).toBe(redirect.connectionId);
+  return redirect.connectionId;
 }

@@ -1,7 +1,7 @@
 # Etsy
 
 Crossmart connects to Etsy through Etsy's **Open API v3** (`https://api.etsy.com/v3`) with OAuth
-2.0 and PKCE. The merchant types their Etsy shop name on the Channels page and signs in on Etsy.
+2.0 and PKCE. The merchant types their Etsy shop name on the Stores page and signs in on Etsy.
 Crossmart reads the shop and its shipping and processing profiles, the merchant saves a listing
 setup, and products are published as Etsy listings with their variations, images and stock.
 Crossmart reads the shop's receipts to move stock, and sends stock back to the listings. See

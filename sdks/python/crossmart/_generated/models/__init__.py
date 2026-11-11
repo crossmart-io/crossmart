@@ -108,6 +108,7 @@ from .channel_product_dto import ChannelProductDto
 from .channel_product_page_dto import ChannelProductPageDto
 from .channel_product_sort import ChannelProductSort
 from .channel_product_state import ChannelProductState
+from .channel_product_view import ChannelProductView
 from .channel_type import ChannelType
 from .channel_variant_dto import ChannelVariantDto
 from .choose_channel_category_dto import ChooseChannelCategoryDto
@@ -523,6 +524,7 @@ __all__ = (
     "ChannelProductPageDto",
     "ChannelProductSort",
     "ChannelProductState",
+    "ChannelProductView",
     "ChannelType",
     "ChannelVariantDto",
     "ChooseChannelCategoryDto",

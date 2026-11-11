@@ -1030,7 +1030,7 @@ export interface paths {
         };
         /**
          * The store’s products with their state on the channel
-         * @description Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState` narrows them to the state a merchant reads (`needs_details`, `ready`, …). Counts per state follow `search`, so they can label filter tabs.
+         * @description Products the store should have or still has: listed, pending (being published), failed or removing (being delisted). Pass `state=excluded` for the catalog products it does not have. `displayState` narrows them to the state a merchant reads (`needs_details`, `ready`, …), and `view` to one tab of a store page (`live`, `needs_attention`, …). Counts per state, and of the products that need details or attention, follow `search`, so they can label filter tabs.
          */
         get: operations["ChannelProductsController_listProducts_v1"];
         put?: never;
@@ -3465,6 +3465,13 @@ export interface components {
         ChannelConnectRedirectDto: {
             /** @description Set when the account was connected */
             connected?: components["schemas"]["ChannelType"];
+            /**
+             * Format: uuid
+             * @description Set with `connected`: the id of the connection that was connected
+             */
+            connectionId?: string;
+            /** @description Set with `connected` to `true` when the account was connected before (a re-auth), so the web app does not offer the new store setup */
+            reconnected?: boolean;
             /** @description Set when connecting failed */
             error?: components["schemas"]["ConnectFailure"];
             /** @description The channel an error is about */
@@ -3791,6 +3798,8 @@ export interface components {
         /** @enum {string} */
         ChannelProductState: ChannelProductState;
         /** @enum {string} */
+        ChannelProductView: ChannelProductView;
+        /** @enum {string} */
         ChannelProductSort: ChannelProductSort;
         ChannelCategoryDto: {
             /** @example 20625 */
@@ -3852,6 +3861,10 @@ export interface components {
             removed_by_hand: number;
             /** @description Neither selected nor on the channel */
             excluded: number;
+            /** @description Products whose display state is `needs_details`: selected, and the store setup or the product lacks something publishing needs. Some may also be counted as `failed` */
+            needsDetails: number;
+            /** @description Products that are failed or need details, each counted once: what `view=needs_attention` lists. Its failed part is `failed`, the same listings the attention summary counts */
+            needsAttention: number;
         };
         ChannelProductPageDto: {
             items: components["schemas"]["ChannelProductDto"][];
@@ -7542,6 +7555,8 @@ export interface operations {
                 state?: components["schemas"]["ChannelProductState"];
                 /** @description Only products showing this display state. Without `state` it looks at every catalog product, so `draft` and `removed` find those not in the store. */
                 displayState?: components["schemas"]["ListingDisplayState"];
+                /** @description Only the products of one view, so each tab of a store page is one request: `all` (in the store), `live` (listed), `needs_attention` (failed or needing details) or `not_listed` (pending, removing, removed by hand or excluded). It combines with `state` and `displayState` */
+                view?: components["schemas"]["ChannelProductView"];
                 /** @description Matches title, handle or SKU */
                 search?: string;
                 sort?: components["schemas"]["ChannelProductSort"];
@@ -10287,6 +10302,12 @@ export enum ChannelProductState {
     removing = "removing",
     removed_by_hand = "removed_by_hand",
     excluded = "excluded"
+}
+export enum ChannelProductView {
+    all = "all",
+    live = "live",
+    needs_attention = "needs_attention",
+    not_listed = "not_listed"
 }
 export enum ChannelProductSort {
     title = "title",

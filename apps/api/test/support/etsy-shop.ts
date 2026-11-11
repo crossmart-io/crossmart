@@ -8,6 +8,7 @@ import {
   HttpMethod,
   jsonResponse,
 } from '@crossmart/connectors';
+import { readConnectedRedirect } from './connect-redirect.js';
 import { browserCookies, type SignedUpUser } from './test-app.js';
 
 export const ETSY_API = 'https://api.etsy.com/v3';
@@ -107,8 +108,9 @@ export async function connectEtsy(
     .get('/api/v1/channels/etsy/oauth/callback')
     .query({ code: 'e2e-code', state: authorizeUrl.searchParams.get('state') ?? '' })
     .set('Cookie', browserCookies(user, started));
-  expect(callback.headers.location).toBe(`${webAppUrl}/channels?connected=etsy`);
+  const redirect = readConnectedRedirect(callback.headers.location, webAppUrl, ChannelType.Etsy);
   http.assertDone();
   const list = await request(app.getHttpServer()).get(base).set('Cookie', user.cookie);
-  return (list.body as { id: string }[])[0].id;
+  expect((list.body as { id: string }[])[0].id).toBe(redirect.connectionId);
+  return redirect.connectionId;
 }

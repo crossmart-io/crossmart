@@ -14,6 +14,8 @@ import type {
   DisplayCandidateRecord,
 } from '../repositories/channel-products.repository.js';
 import { CONNECTION_ID, connectionView, WORKSPACE_ID } from '../testing/listing.fixtures.js';
+import { channelProductViewMatch, displayStateMatch } from '../rules/channel-product-view.js';
+import { ChannelProductView } from '../enums/channel-product-view.enum.js';
 import { ChannelProductDisplays } from './channel-product-displays.js';
 import { ListingDisplayResolver } from './listing-display.resolver.js';
 
@@ -84,9 +86,8 @@ function setup() {
   return { filter, products, target };
 }
 
-function query(displayState: ListingDisplayState, page?: number) {
+function query(page?: number) {
   return {
-    displayState,
     sort: ChannelProductSort.Title,
     direction: SortDirection.Asc,
     limit: 1,
@@ -98,7 +99,12 @@ describe('ChannelProductDisplays', () => {
   it('keeps the products in the display state, in order, with how many match', async () => {
     const { filter, products, target } = setup();
 
-    const page = await filter.page(target, {}, query(ListingDisplayState.Ready));
+    const page = await filter.page(
+      target,
+      {},
+      query(),
+      displayStateMatch(ListingDisplayState.Ready),
+    );
 
     expect(page.total).toBe(1);
     expect(page.records.map((record) => record.id)).toEqual(['p-1']);
@@ -108,7 +114,12 @@ describe('ChannelProductDisplays', () => {
   it('asks the connector what each product lacks', async () => {
     const { filter, target } = setup();
 
-    const page = await filter.page(target, {}, query(ListingDisplayState.NeedsDetails));
+    const page = await filter.page(
+      target,
+      {},
+      query(),
+      displayStateMatch(ListingDisplayState.NeedsDetails),
+    );
 
     expect(page.records.map((record) => record.id)).toEqual(['p-2']);
   });
@@ -121,7 +132,12 @@ describe('ChannelProductDisplays', () => {
     );
     products.listIds.mockResolvedValue(new Set(['a', 'b', 'c']));
 
-    const page = await filter.page(target, {}, query(ListingDisplayState.Ready, 2));
+    const page = await filter.page(
+      target,
+      {},
+      query(2),
+      displayStateMatch(ListingDisplayState.Ready),
+    );
 
     expect(products.findByIds).toHaveBeenCalledWith(WORKSPACE_ID, ['b', 'c']);
     expect(page.total).toBe(3);
@@ -133,7 +149,12 @@ describe('ChannelProductDisplays', () => {
     elsewhere.listings = elsewhere.listings.map((entry) => ({ ...entry, connectionId: 'other' }));
     products.listDisplayCandidates.mockResolvedValue([elsewhere]);
 
-    const page = await filter.page(target, {}, query(ListingDisplayState.Ready));
+    const page = await filter.page(
+      target,
+      {},
+      query(),
+      displayStateMatch(ListingDisplayState.Ready),
+    );
 
     expect(page.records.map((record) => record.id)).toEqual(['p-1']);
   });
@@ -141,9 +162,41 @@ describe('ChannelProductDisplays', () => {
   it('reads the candidates and the selection in two queries, whatever the store’s size', async () => {
     const { filter, products, target } = setup();
 
-    await filter.page(target, { workspaceId: WORKSPACE_ID }, query(ListingDisplayState.Published));
+    await filter.page(
+      target,
+      { workspaceId: WORKSPACE_ID },
+      query(),
+      displayStateMatch(ListingDisplayState.Published),
+    );
 
     expect(products.listDisplayCandidates).toHaveBeenCalledTimes(1);
     expect(products.listIds).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps failed products and those that need details for the needs attention view', async () => {
+    const { filter, products, target } = setup();
+    products.listDisplayCandidates.mockResolvedValue([
+      ...CANDIDATES,
+      candidate('p-5', ['https://cdn.example.com/5.jpg'], ListingStatus.ERROR),
+    ]);
+    products.listIds.mockResolvedValue(new Set(['p-1', 'p-2', 'p-4']));
+    const matches = channelProductViewMatch(ChannelProductView.NeedsAttention);
+
+    const page = await filter.page(target, {}, { ...query(), limit: 10 }, matches ?? (() => false));
+
+    expect(page.records.map((record) => record.id)).toEqual(['p-2', 'p-5']);
+  });
+
+  it('leaves the paging to SQL when nothing needs each product’s display', async () => {
+    const { filter, products, target } = setup();
+    const listPage = vi
+      .fn<ChannelProductsRepository['listPage']>()
+      .mockResolvedValue({ records: [], total: 0 });
+    Object.assign(products, { listPage });
+
+    await filter.page(target, { workspaceId: WORKSPACE_ID }, query(), null);
+
+    expect(listPage).toHaveBeenCalledWith({ workspaceId: WORKSPACE_ID }, query());
+    expect(products.listDisplayCandidates).not.toHaveBeenCalled();
   });
 });

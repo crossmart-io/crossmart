@@ -5,6 +5,7 @@ import {
   type ConnectedAccountRecord,
   SEALED_CREDENTIALS_SELECT,
   type SealedCredentialsRecord,
+  type UpsertedConnection,
   WITHOUT_CREDENTIALS,
   wipedCredentials,
 } from './channel-connection.queries.js';
@@ -46,7 +47,7 @@ export class ChannelConnectionRepository {
    * merchant's rules (product selection, pricing): only the account part of settings changes,
    * merged with the stored account under a row lock (`mergeReconnectedAccount`).
    */
-  upsertConnected(record: ConnectedAccountRecord): Promise<ChannelConnectionRecord> {
+  upsertConnected(record: ConnectedAccountRecord): Promise<UpsertedConnection> {
     const { workspaceId, channel, externalAccountId, sealedCredentials, settings, ...fields } =
       record;
     const key = { workspaceId, channel, externalAccountId };
@@ -65,14 +66,15 @@ export class ChannelConnectionRepository {
         update: data,
         omit: WITHOUT_CREDENTIALS,
       });
-      if (!stored) return connection;
+      if (!stored) return { record: connection, reconnected: false };
       const account = mergeReconnectedAccount(stored.account, settings.account);
       const target = { workspaceId, connectionId: connection.id };
       await writeSettingsKey(client, target, ConnectionSettingsKey.Account, account);
-      return client.channelConnection.findUniqueOrThrow({
+      const merged = await client.channelConnection.findUniqueOrThrow({
         where: { id: connection.id },
         omit: WITHOUT_CREDENTIALS,
       });
+      return { record: merged, reconnected: true };
     });
   }
 
