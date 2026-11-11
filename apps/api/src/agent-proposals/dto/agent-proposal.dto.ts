@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  AgentApprovalExemption,
   AgentProposalOutcome,
   type AgentProposalPage,
   AgentProposalStatus,
@@ -14,6 +15,7 @@ import {
   AgentWorkerActionTargetsDto,
 } from '../../agent-worker/dto/agent-worker-message.dto.js';
 import {
+  AGENT_APPROVAL_EXEMPTION_SCHEMA_NAME,
   AGENT_PROPOSAL_OUTCOME_SCHEMA_NAME,
   AGENT_PROPOSAL_STATUS_SCHEMA_NAME,
   AGENT_PROPOSER_KIND_SCHEMA_NAME,
@@ -117,8 +119,9 @@ export class AgentProposalSubmissionDto implements AgentProposalSubmission {
     enum: AgentProposalOutcome,
     enumName: AGENT_PROPOSAL_OUTCOME_SCHEMA_NAME,
     description:
-      '`proposed`: it waits for the seller. `apply_directly`: the workspace lets agents make ' +
-      'changes at once, so make the call itself.',
+      '`proposed`: it waits for the seller. `apply_directly`: make the call itself, because ' +
+      'the workspace lets agents make changes at once or the call needs no approval ' +
+      '(`exemption`).',
   })
   outcome: AgentProposalOutcome;
 
@@ -127,6 +130,16 @@ export class AgentProposalSubmissionDto implements AgentProposalSubmission {
 
   @ApiProperty({ type: AgentProposalDto, nullable: true })
   proposal: AgentProposalDto | null;
+
+  @ApiProperty({
+    enum: AgentApprovalExemption,
+    enumName: AGENT_APPROVAL_EXEMPTION_SCHEMA_NAME,
+    nullable: true,
+    description:
+      'Set with `apply_directly` when the workspace approves agents’ changes but this call ' +
+      'needs none: `new_draft` for `create_product` with no status or DRAFT. Null otherwise.',
+  })
+  exemption: AgentApprovalExemption | null;
 
   static from(submission: AgentProposalSubmission): AgentProposalSubmissionDto {
     return Object.assign(new AgentProposalSubmissionDto(), {

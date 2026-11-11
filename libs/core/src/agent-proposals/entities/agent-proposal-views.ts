@@ -3,6 +3,7 @@ import type {
   AgentWorkerActionTargets,
 } from '../../agent-worker/entities/agent-worker-views.js';
 import type { AgentWorkerActionRisk } from '../../agent-worker/enums/agent-worker-action-risk.enum.js';
+import type { AgentApprovalExemption } from '../enums/agent-approval-exemption.enum.js';
 import type { AgentProposalOutcome } from '../enums/agent-proposal-outcome.enum.js';
 import type { AgentProposalStatus } from '../enums/agent-proposal-status.enum.js';
 import type { AgentProposerKind } from '../enums/agent-proposer-kind.enum.js';
@@ -45,6 +46,11 @@ export interface AgentProposalSubmission {
   message: string;
   /** The stored proposal; null when the change is to be made directly. */
   proposal: AgentProposalView | null;
+  /**
+   * Set when the workspace approves agents' changes but this call needs none, such as a new
+   * draft; null otherwise.
+   */
+  exemption: AgentApprovalExemption | null;
 }
 
 export interface AgentProposalListQuery {

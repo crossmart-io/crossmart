@@ -11,7 +11,8 @@ export const PROPOSAL_TOOLS = [
     title: 'Check a proposed change',
     description:
       'Where a change you proposed stands. When the workspace asks for approval, write tools ' +
-      'do not apply at once: they return a proposal id and wait for the seller. status is ' +
+      'do not apply at once (except create_product for a new draft): they return a proposal ' +
+      'id and wait for the seller. status is ' +
       'pending (waiting), applying, applied (result holds the answer), failed (result holds ' +
       'why), rejected (the seller said no) or expired (nobody decided within ' +
       `${AGENT_PROPOSAL_TTL_DAYS} days). Poll ` +

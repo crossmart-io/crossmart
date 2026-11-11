@@ -67,20 +67,24 @@ async function run(
 }
 
 /**
- * The answer as the API gave it, then, when it shows an empty account, a second block with the
- * next step (`{"next": ...}`). The first block never changes shape, so clients that parse it
- * keep working.
+ * The answer as the API gave it, then a block for each note: that it applied without the
+ * seller's approval (`{"status": "applied", ...}`, a new draft), and, when it shows an empty
+ * account, the next step (`{"next": ...}`). The first block never changes shape, so clients that
+ * parse it keep working.
  */
 function toContent(result: ApiToolResult): CallToolResult['content'] {
-  const answer = { type: 'text' as const, text: result.text };
-  if (!result.next) return [answer];
-  return [answer, { type: 'text' as const, text: toText({ next: result.next }) }];
+  const notes = [result.applied, result.next ? { next: result.next } : undefined];
+  return [result.text, ...notes.filter((note) => note !== undefined).map(toText)].map((text) => ({
+    type: 'text' as const,
+    text,
+  }));
 }
 
 /**
  * Offers one shared agent tool (`libs/core/src/agent-tools`) on the MCP server. A write in the
  * workspace is proposed first (ADR 0028): it waits for the seller's approval when the workspace
- * asks for it, whatever credential the session carries, and runs at once otherwise. The
+ * asks for it, whatever credential the session carries, and runs at once otherwise (or when it
+ * needs no approval, such as a new draft). The
  * observer, when given, hears how each call went (the remote server's request log).
  */
 export function registerApiTool(

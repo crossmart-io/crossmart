@@ -2,6 +2,7 @@ import { apiKeyCredential } from '../api/api-credential.js';
 import { CrossmartApiClient } from '../api/crossmart-api-client.js';
 import { CrossmartApiError } from '../api/crossmart-api.error.js';
 import { AgentToolName } from '../agent-tools.constants.js';
+import { AgentApprovalExemption } from '../../agent-proposals/enums/agent-approval-exemption.enum.js';
 import { AgentProposalOutcome } from '../../agent-proposals/enums/agent-proposal-outcome.enum.js';
 import { requiresApproval } from './api-tool.js';
 import { ALL_TOOLS, ANONYMOUS_TOOLS } from './index.js';
@@ -53,5 +54,54 @@ describe('proposeApiTool', () => {
     const result = await proposeApiTool(spec, api, input);
     expect(result).toMatchObject({ isError: true, status: 403 });
     expect(result.text).toBe('Crossmart refused (403): Not allowed');
+  });
+
+  describe('a new draft, while the workspace approves agents’ changes', () => {
+    const create = tool(AgentToolName.CreateProduct);
+    const draft = { title: 'Levi 501', variants: [{ price: '40.00' }] };
+    const product = { id: 'p-9', title: 'Levi 501', status: 'DRAFT' };
+
+    function answering(...answers: unknown[]): CrossmartApiClient {
+      const api = client();
+      const call = vi.spyOn(api, 'call');
+      for (const answer of answers) {
+        if (answer instanceof Error) call.mockRejectedValueOnce(answer);
+        else call.mockResolvedValueOnce(answer);
+      }
+      return api;
+    }
+
+    const exempt = {
+      outcome: AgentProposalOutcome.ApplyDirectly,
+      message: 'Make the call itself',
+      proposal: null,
+      exemption: AgentApprovalExemption.NewDraft,
+    };
+
+    it('creates it at once and tells the agent it is a draft that applied', async () => {
+      const result = await proposeApiTool(create, answering(exempt, product), draft);
+
+      expect(result.value).toEqual(product);
+      expect(result.proposed).toBeUndefined();
+      expect(result.applied).toMatchObject({
+        status: 'applied',
+        exemption: AgentApprovalExemption.NewDraft,
+      });
+      expect(result.applied?.message).toContain('draft');
+    });
+
+    it('passes a refusal of the create on, such as a full sandbox, without the note', async () => {
+      const full = new CrossmartApiError(403, 'Claim the account', 'sandbox_claim_required');
+      const result = await proposeApiTool(create, answering(exempt, full), draft);
+
+      expect(result).toMatchObject({ isError: true, code: 'sandbox_claim_required' });
+      expect(result.applied).toBeUndefined();
+    });
+
+    it('adds no note when the workspace applies every change directly', async () => {
+      const direct = { ...exempt, exemption: null };
+      const result = await proposeApiTool(create, answering(direct, product), draft);
+      expect(result.applied).toBeUndefined();
+    });
   });
 });

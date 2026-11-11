@@ -19,8 +19,9 @@ const INSTRUCTIONS =
   'connected; only the seller can connect a store (in the Crossmart app, from the links ' +
   'get_started gives), and publishing needs one. ' +
   'Read before you write: find ids with list_products, list_inventory or list_stores. ' +
-  'Changes wait for the seller: unless the workspace lets agents apply changes directly, a ' +
-  'write tool changes nothing yet. It answers status "proposed" with a proposalId, and the ' +
+  'New products created as drafts (create_product without status, or with DRAFT) apply at ' +
+  'once. Other changes wait for the seller: unless the workspace lets agents apply changes ' +
+  'directly, a write tool changes nothing yet. It answers status "proposed" with a proposalId, and the ' +
   'seller approves or rejects it in the Crossmart app (Agent proposals). Tell the user it is ' +
   'waiting for their approval, do not send the same change again, and check it later with ' +
   'get_proposal (pending, applied, failed, rejected, or expired after ' +

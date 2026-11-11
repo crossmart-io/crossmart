@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@crossmart/database';
 import type { ApiToolSpec } from '../../agent-tools/tools/api-tool.js';
-import { PROPOSAL_COPY } from '../../agent-tools/agent-tools.constants.js';
+import { APPROVAL_EXEMPTION_COPY, PROPOSAL_COPY } from '../../agent-tools/agent-tools.constants.js';
 import type { PreviewToolRunner } from '../../agent-worker/previews/preview-reader.js';
 import { ToolCallPreviewer } from '../../agent-worker/previews/tool-call-previewer.js';
 import { assessRisks } from '../../agent-worker/rules/action-risk.js';
@@ -19,6 +19,7 @@ import type {
   AgentProposalSubmission,
   AgentProposalView,
 } from '../entities/agent-proposal-views.js';
+import type { AgentApprovalExemption } from '../enums/agent-approval-exemption.enum.js';
 import { AgentProposalOutcome } from '../enums/agent-proposal-outcome.enum.js';
 import { AgentProposalStatus } from '../enums/agent-proposal-status.enum.js';
 import {
@@ -27,6 +28,7 @@ import {
 } from '../errors/agent-proposal.errors.js';
 import { toProposalView } from '../mappers/agent-proposal.mapper.js';
 import { AgentProposalRepository } from '../repositories/agent-proposal.repository.js';
+import { approvalExemptionFor } from '../rules/approval-exemptions.js';
 import {
   parseProposalInput,
   permitsTool,
@@ -44,7 +46,8 @@ interface PreparedProposal {
  * Outside agents' changes when the workspace wants to approve them (ADR 0028): a write tool call
  * is checked like any call (the tool, its input, the caller's permissions), previewed with
  * Crossmart Agent's formatters as its agent, and stored to wait for the seller. When the
- * workspace lets agents apply directly, nothing is stored and the agent makes the call itself.
+ * workspace lets agents apply directly, or the call qualifies for an exemption (a new draft),
+ * nothing is stored and the agent makes the call itself.
  */
 @Injectable()
 export class AgentProposalsService {
@@ -63,15 +66,15 @@ export class AgentProposalsService {
     const prepared = this.prepare(proposer, request);
     const policy = await this.settings.outsideAgentChanges(proposer.workspaceId);
     if (policy === OutsideAgentChanges.ApplyDirectly) {
-      const message = AGENT_PROPOSAL_COPY.applyDirectly;
-      return { outcome: AgentProposalOutcome.ApplyDirectly, message, proposal: null };
+      return this.applyDirectly(AGENT_PROPOSAL_COPY.applyDirectly, null);
+    }
+    const exemption = approvalExemptionFor(prepared.spec, prepared.input);
+    if (exemption) {
+      return this.applyDirectly(APPROVAL_EXEMPTION_COPY[exemption].applyDirectly, exemption);
     }
     const view = await this.store(proposer, prepared, run);
-    return {
-      outcome: AgentProposalOutcome.Proposed,
-      message: PROPOSAL_COPY.proposed,
-      proposal: view,
-    };
+    const message = this.proposedMessage(prepared.spec);
+    return { outcome: AgentProposalOutcome.Proposed, message, proposal: view, exemption: null };
   }
 
   async list(workspaceId: string, query: AgentProposalListQuery): Promise<AgentProposalPage> {
@@ -108,6 +111,20 @@ export class AgentProposalsService {
       throw new AgentProposalForbiddenError(AGENT_PROPOSAL_COPY.outOfScope(spec.name));
     }
     return { spec, input };
+  }
+
+  private applyDirectly(
+    message: string,
+    exemption: AgentApprovalExemption | null,
+  ): AgentProposalSubmission {
+    return { outcome: AgentProposalOutcome.ApplyDirectly, message, proposal: null, exemption };
+  }
+
+  /** Waiting for the seller; for a tool with an exemption, how to qualify for it next time. */
+  private proposedMessage(spec: ApiToolSpec): string {
+    const exemption = spec.approvalExemptWhen;
+    if (!exemption) return PROPOSAL_COPY.proposed;
+    return `${PROPOSAL_COPY.proposed} ${APPROVAL_EXEMPTION_COPY[exemption].proposedOtherwise}`;
   }
 
   private async store(

@@ -18,7 +18,7 @@ export const CONNECTABLE_CHANNELS: readonly ChannelType[] = [ChannelType.Shopify
 
 /**
  * The order the steps are listed in; the first one still to take is the next step. Proposals
- * come before more products: an agent's first products wait there until the seller approves.
+ * come before more products: changes waiting for the seller are settled before more are made.
  */
 export const GETTING_STARTED_STEP_ORDER: readonly GettingStartedStep[] = [
   GettingStartedStep.ClaimAccount,
@@ -58,13 +58,16 @@ export const GETTING_STARTED_STEP_COPY: Readonly<Record<GettingStartedStep, Step
     title: 'Add products',
     detail:
       'No store is needed for this. Ask the seller what they sell (title, condition, price, ' +
-      `quantity, photo URLs) and create each item with ${AgentToolName.CreateProduct}; new ` +
-      'products are drafts. Once a store is connected, the seller can also import its products.',
+      `quantity, photo URLs) and create each item with ${AgentToolName.CreateProduct}. New ` +
+      'products are drafts, created at once without the seller’s approval; making one active ' +
+      'or publishing it waits for approval. Once a store is connected, the seller can also ' +
+      'import its products.',
   },
   [GettingStartedStep.ReviewProposals]: {
     title: 'Approve the agent’s changes',
     detail:
-      'Changes made by agents wait for the seller’s approval under Agent proposals. Ask the ' +
+      'Changes made by agents, except new drafts, wait for the seller’s approval under Agent ' +
+      'proposals. Ask the ' +
       'seller to review them; they can also let agents apply changes directly in Settings > ' +
       `General. Check one with ${AgentToolName.GetProposal}.`,
   },
