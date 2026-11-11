@@ -85,6 +85,8 @@ final class CatalogApi
     /**
      * Create a product with its variants
      *
+     * A connected agent may create a draft (status left out or DRAFT) even while the workspace approves agents’ changes; any other status is refused with `agent_approval_required`, so the agent proposes it.
+     *
      * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
      */
     public function productsControllerCreateV1(

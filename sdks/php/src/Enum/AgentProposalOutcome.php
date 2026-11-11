@@ -7,7 +7,7 @@ declare(strict_types=1);
 namespace Crossmart\Enum;
 
 /**
- * `proposed`: it waits for the seller. `apply_directly`: the workspace lets agents make changes at once, so make the call itself.
+ * `proposed`: it waits for the seller. `apply_directly`: make the call itself, because the workspace lets agents make changes at once or the call needs no approval (`exemption`).
  */
 enum AgentProposalOutcome: string
 {

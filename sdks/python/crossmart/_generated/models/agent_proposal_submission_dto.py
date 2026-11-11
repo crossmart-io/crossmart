@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.agent_approval_exemption import AgentApprovalExemption
 from ..models.agent_proposal_outcome import AgentProposalOutcome
 
 if TYPE_CHECKING:
@@ -19,15 +20,18 @@ T = TypeVar("T", bound="AgentProposalSubmissionDto")
 class AgentProposalSubmissionDto:
     """
     Attributes:
-        outcome (AgentProposalOutcome): `proposed`: it waits for the seller. `apply_directly`: the workspace lets agents
-            make changes at once, so make the call itself.
+        outcome (AgentProposalOutcome): `proposed`: it waits for the seller. `apply_directly`: make the call itself,
+            because the workspace lets agents make changes at once or the call needs no approval (`exemption`).
         message (str): What to do next, or to tell the user
         proposal (AgentProposalDto | None):
+        exemption (AgentApprovalExemption | None): Set with `apply_directly` when the workspace approves agents’ changes
+            but this call needs none: `new_draft` for `create_product` with no status or DRAFT. Null otherwise.
     """
 
     outcome: AgentProposalOutcome
     message: str
     proposal: AgentProposalDto | None
+    exemption: AgentApprovalExemption | None
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -43,6 +47,12 @@ class AgentProposalSubmissionDto:
         else:
             proposal = self.proposal
 
+        exemption: None | str
+        if isinstance(self.exemption, AgentApprovalExemption):
+            exemption = self.exemption.value
+        else:
+            exemption = self.exemption
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -50,6 +60,7 @@ class AgentProposalSubmissionDto:
                 "outcome": outcome,
                 "message": message,
                 "proposal": proposal,
+                "exemption": exemption,
             }
         )
 
@@ -79,10 +90,26 @@ class AgentProposalSubmissionDto:
 
         proposal = _parse_proposal(d.pop("proposal"))
 
+        def _parse_exemption(data: object) -> AgentApprovalExemption | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, str):
+                    raise TypeError()
+                exemption_type_0 = AgentApprovalExemption(data)
+
+                return exemption_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(AgentApprovalExemption | None, data)
+
+        exemption = _parse_exemption(d.pop("exemption"))
+
         agent_proposal_submission_dto = cls(
             outcome=outcome,
             message=message,
             proposal=proposal,
+            exemption=exemption,
         )
 
         agent_proposal_submission_dto.additional_properties = d

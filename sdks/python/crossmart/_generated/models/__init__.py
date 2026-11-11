@@ -11,6 +11,7 @@ from .activity_page_dto import ActivityPageDto
 from .activity_subject_dto import ActivitySubjectDto
 from .activity_subject_type import ActivitySubjectType
 from .adjust_stock_dto import AdjustStockDto
+from .agent_approval_exemption import AgentApprovalExemption
 from .agent_client_dto import AgentClientDto
 from .agent_client_registration import AgentClientRegistration
 from .agent_connection_dto import AgentConnectionDto
@@ -433,6 +434,7 @@ __all__ = (
     "ActivitySubjectDto",
     "ActivitySubjectType",
     "AdjustStockDto",
+    "AgentApprovalExemption",
     "AgentClientDto",
     "AgentClientRegistration",
     "AgentConnectionDto",
