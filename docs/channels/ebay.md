@@ -1,9 +1,9 @@
 # eBay
 
 Crossmart connects to eBay with the OAuth authorization code grant for user tokens. The
-merchant picks an eBay marketplace (such as eBay US) on the Channels page and signs in on eBay.
+merchant picks an eBay marketplace (such as eBay US) on the Stores page and signs in on eBay.
 eBay then redirects to the API, which stores the connection and sends the merchant back to the
-Channels page.
+Stores page, naming the new connection.
 
 Crossmart connects the account, reads its details and business policies, publishes listings
 through eBay's Sell Inventory API, reads the account's orders through the Fulfillment API, and

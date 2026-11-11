@@ -54,7 +54,10 @@ function setup(role: BuiltInRole = WorkspaceRole.OWNER) {
   const vault = new ConnectionCredentialsVault(new AesGcmEnvelopeEncryption(ring, dataKeys));
   const connections = {
     upsertConnected: vi.fn<ChannelConnectionRepository['upsertConnected']>((record) =>
-      Promise.resolve(connectionRecord({ displayName: record.displayName })),
+      Promise.resolve({
+        record: connectionRecord({ displayName: record.displayName }),
+        reconnected: false,
+      }),
     ),
     holdsSlot: vi.fn<ChannelConnectionRepository['holdsSlot']>().mockResolvedValue(false),
     hasReconnectCandidate: vi
@@ -256,9 +259,10 @@ describe('ChannelAuthorizationService', () => {
     it('stores sealed credentials and records the connection', async () => {
       const { service, connector, connections, activity, vault, callback } = setup();
 
-      const view = await service.complete(ChannelType.Shopify, callback());
+      const { connection, reconnected } = await service.complete(ChannelType.Shopify, callback());
 
-      expect(view.displayName).toBe('Demo Store');
+      expect(connection.displayName).toBe('Demo Store');
+      expect(reconnected).toBe(false);
       expect(connector.completeAuthorization).toHaveBeenCalledWith(
         expect.objectContaining({
           accountHandle: FAKE_ACCOUNT,
@@ -281,6 +285,19 @@ describe('ChannelAuthorizationService', () => {
       expect(activity.entries).toEqual([
         expect.objectContaining({ action: ActivityAction.ChannelConnected, detail: 'Shopify' }),
       ]);
+    });
+
+    it('says when the account was connected before', async () => {
+      const { service, connections, callback } = setup();
+      connections.upsertConnected.mockResolvedValueOnce({
+        record: connectionRecord(),
+        reconnected: true,
+      });
+
+      const completed = await service.complete(ChannelType.Shopify, callback());
+
+      expect(completed.reconnected).toBe(true);
+      expect(completed.connection.id).toBe(connectionRecord().id);
     });
 
     it('rejects forged states without calling the channel or logging activity', async () => {

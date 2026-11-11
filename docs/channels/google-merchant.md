@@ -2,7 +2,7 @@
 
 Crossmart publishes products to Google Merchant Center (Google Shopping) through Google's
 **Merchant API** (`https://merchantapi.googleapis.com`, `v1`). The merchant types their Merchant
-Center account id on the Channels page and signs in with Google. Crossmart reads the account,
+Center account id on the Stores page and signs in with Google. Crossmart reads the account,
 the merchant saves a listing setup (country and product page address), and each variant is
 published as an offer. The connector declares `publish_listings` and `update_price`. See
 [ADR 0017](../decisions/0017-google-merchant-connector.md).

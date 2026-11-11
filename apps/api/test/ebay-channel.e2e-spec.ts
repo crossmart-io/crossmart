@@ -10,6 +10,7 @@ import {
 } from '@crossmart/connectors';
 import { ActivityAction, ConnectFailure } from '@crossmart/core';
 import { ChannelConnectionStatus, PrismaService } from '@crossmart/database';
+import { connectFailureRedirect, readConnectedRedirect } from './support/connect-redirect.js';
 import { browserCookies, createTestApp, signUp, type SignedUpUser } from './support/test-app.js';
 
 // Set before the app module loads its configuration. The values are fakes for this test only.
@@ -137,13 +138,19 @@ describe('eBay channel (e2e)', () => {
       .query({ code: 'v^1.1#code', state, expires_in: '299' })
       .set('Cookie', browserCookies(owner, started));
 
-    expect(response.headers.location).toBe(`${env.WEB_APP_URL}/channels?connected=ebay`);
+    const redirect = readConnectedRedirect(
+      response.headers.location,
+      env.WEB_APP_URL,
+      ChannelType.Ebay,
+    );
+    expect(redirect.reconnected).toBe(false);
     http.assertDone();
     const list = await request(app.getHttpServer())
       .get(`/api/v1/workspaces/${owner.workspaceId}/channel-connections`)
       .set('Cookie', owner.cookie);
     const [connection] = list.body as EbayConnectionBody[];
     expect(connection).toMatchObject({
+      id: redirect.connectionId,
       channel: ChannelType.Ebay,
       externalAccountId: 'e2eUser1:EBAY_GB',
       displayName: 'e2e_seller · eBay UK',
@@ -179,7 +186,7 @@ describe('eBay channel (e2e)', () => {
       .set('Cookie', browserCookies(owner, started));
 
     expect(response.headers.location).toBe(
-      `${env.WEB_APP_URL}/channels?error=${ConnectFailure.AccessDenied}&channel=ebay`,
+      connectFailureRedirect(env.WEB_APP_URL, ConnectFailure.AccessDenied, ChannelType.Ebay),
     );
     http.assertDone();
   });

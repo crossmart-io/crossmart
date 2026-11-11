@@ -16,16 +16,25 @@ export const EBAY_ACCOUNT_DELETION_ROUTE = 'webhooks/ebay/account-deletion';
 /** Longer challenge codes than this are refused; eBay's are short random strings. */
 export const EBAY_CHALLENGE_CODE_MAX_LENGTH = 512;
 
-/** Where the OAuth callback sends the merchant: the web app's Channels page. */
-export const WEB_CHANNELS_PATH = '/channels';
-export enum ChannelsPageQuery {
+/**
+ * Where the OAuth callback sends the merchant: the web app's Stores page. It was `/channels`
+ * before the web app renamed it; the web app still redirects that path here.
+ */
+export const WEB_STORES_PATH = '/stores';
+export enum StoresPageQuery {
   /** The channel that was connected. */
   Connected = 'connected',
+  /** The connection that was connected, so the web app opens its setup without guessing. */
+  ConnectionId = 'connectionId',
+  /** Present when the account was connected before (a re-auth), so no setup is offered. */
+  Reconnected = 'reconnected',
   /** A `ConnectFailure` value. */
   Error = 'error',
   /** The channel the error is about. */
   Channel = 'channel',
 }
+/** The value of a flag in the Stores page query, such as `reconnected=true`. */
+export const STORES_PAGE_FLAG = String(true);
 
 export const ACCOUNT_HANDLE_MAX_LENGTH = 255;
 

@@ -24,6 +24,12 @@ export interface ChannelConnectionView {
   updatedAt: Date;
 }
 
+/** An account the merchant just approved, and whether it was connected before (a re-auth). */
+export interface CompletedAuthorization {
+  connection: ChannelConnectionView;
+  reconnected: boolean;
+}
+
 export interface StartedAuthorization {
   /** Where to send the merchant to approve the app. */
   authorizationUrl: string;

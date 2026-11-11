@@ -7,6 +7,7 @@ import {
   HttpMethod,
   jsonResponse,
 } from '@crossmart/connectors';
+import { readConnectedRedirect } from './connect-redirect.js';
 import { browserCookies, type SignedUpUser } from './test-app.js';
 
 export const GOOGLE_API = 'https://merchantapi.googleapis.com';
@@ -65,8 +66,13 @@ export async function connectGoogleMerchant(
     .get('/api/v1/channels/google_merchant/oauth/callback')
     .query({ code: '4/e2e-code', state, scope: 'https://www.googleapis.com/auth/content' })
     .set('Cookie', browserCookies(user, started));
-  expect(callback.headers.location).toBe(`${webAppUrl}/channels?connected=google_merchant`);
+  const redirect = readConnectedRedirect(
+    callback.headers.location,
+    webAppUrl,
+    ChannelType.GoogleMerchant,
+  );
   http.assertDone();
   const list = await request(app.getHttpServer()).get(base).set('Cookie', user.cookie);
-  return (list.body as { id: string }[])[0].id;
+  expect((list.body as { id: string }[])[0].id).toBe(redirect.connectionId);
+  return redirect.connectionId;
 }

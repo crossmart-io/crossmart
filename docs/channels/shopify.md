@@ -1,9 +1,9 @@
 # Shopify
 
 Crossmart connects to Shopify as a non-embedded app using the OAuth authorization code grant.
-The merchant enters their store's `*.myshopify.com` domain on the Channels page and approves the
+The merchant enters their store's `*.myshopify.com` domain on the Stores page and approves the
 app on Shopify. Shopify then redirects to the API, which stores the connection and sends the
-merchant back to the Channels page.
+merchant back to the Stores page, naming the new connection.
 
 ## What Crossmart uses (Admin API 2026-10)
 

@@ -8,6 +8,7 @@ import { ActivityRecorder } from '../../activity/services/activity-recorder.js';
 import type {
   AuthorizationRequest,
   ChannelConnectionView,
+  CompletedAuthorization,
   StartedAuthorization,
 } from '../entities/channel-connection-view.js';
 import type { OAuthCallbackBrowser, OAuthStatePayload } from '../entities/oauth-state.js';
@@ -79,8 +80,11 @@ export class ChannelAuthorizationService {
     };
   }
 
-  /** Throws `ChannelConnectError`, whose `failure` the API passes back to the web app. */
-  async complete(channel: ChannelType, input: OAuthCallbackInput): Promise<ChannelConnectionView> {
+  /**
+   * Stores the approved account and says whether it was connected before. Throws
+   * `ChannelConnectError`, whose `failure` the API passes back to the web app.
+   */
+  async complete(channel: ChannelType, input: OAuthCallbackInput): Promise<CompletedAuthorization> {
     const state = await this.states.verify(channel, input.query[STATE_PARAM], input.browser);
     try {
       await this.states.assertCanManage(state);
@@ -95,7 +99,7 @@ export class ChannelAuthorizationService {
   private async connect(
     state: OAuthStatePayload,
     query: Readonly<Record<string, string>>,
-  ): Promise<ChannelConnectionView> {
+  ): Promise<CompletedAuthorization> {
     if (query[ERROR_PARAM]) {
       throw new ChannelConnectError(ConnectFailure.AccessDenied);
     }
@@ -107,9 +111,9 @@ export class ChannelAuthorizationService {
       accountHandle: state.accountHandle,
       codeVerifier: this.states.codeVerifierOf(state),
     });
-    const view = await this.accounts.save(state, connector, authorization);
-    await this.recordConnected(state, connector, view);
-    return view;
+    const completed = await this.accounts.save(state, connector, authorization);
+    await this.recordConnected(state, connector, completed.connection);
+    return completed;
   }
 
   private recordConnected(
