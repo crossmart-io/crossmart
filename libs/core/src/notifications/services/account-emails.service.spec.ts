@@ -24,6 +24,17 @@ describe('AccountEmailsService', () => {
     expect(message.text).toContain('https://api.crossmart.io/api/auth/reset-password/abc');
   });
 
+  it('sends the confirmation link with the three first steps', () => {
+    const { send, service } = setup();
+    service.sendEmailVerification({ to: 'ana@example.com', name: 'Ana', url: 'https://x.y/z' });
+    const message = sent(send);
+    expect(message.subject).toBe('Confirm your email for Crossmart');
+    expect(message.text).toContain('Confirm email: https://x.y/z');
+    expect(message.text).toContain('1. Add your products');
+    expect(message.text).toContain('2. Connect a store');
+    expect(message.text).toContain('3. Publish your products');
+  });
+
   it('never fails the caller when sending fails', async () => {
     const { send, service } = setup(
       vi.fn<MailSender['send']>().mockRejectedValue(new Error('down')),
