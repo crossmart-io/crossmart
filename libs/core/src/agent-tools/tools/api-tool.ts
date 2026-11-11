@@ -1,4 +1,6 @@
 import type { z } from 'zod';
+import type { AgentApprovalExemption } from '../../agent-proposals/enums/agent-approval-exemption.enum.js';
+import type { AgentProposalStatus } from '../../agent-proposals/enums/agent-proposal-status.enum.js';
 import type { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import type { ApiCall } from '../api/api-call.js';
 import type { CrossmartApiClient } from '../api/crossmart-api-client.js';
@@ -48,6 +50,11 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
    * seller's approval (ADR 0028), such as asking for AI content that arrives as suggestions.
    */
   approvalExempt?: boolean;
+  /**
+   * A write that waits for approval in general, but not when its input qualifies for this
+   * exemption (ADR 0028, amended): `create_product` for a new draft. Other input is proposed.
+   */
+  approvalExemptWhen?: AgentApprovalExemption;
   /** The scope an agent needs to see the tool; absent for tools every connection may use. */
   scope?: AgentScope;
   /** What the agent should do next when the API refuses the call with one of these statuses. */
@@ -59,6 +66,16 @@ export interface ApiToolSpec<Shape extends z.ZodRawShape = z.ZodRawShape> {
   toResult?: (result: unknown) => unknown;
   /** The next step to suggest when the answer shows an empty account, such as no products. */
   emptyResult?: EmptyResultCheck;
+}
+
+/**
+ * Told to the agent next to the answer when a write applied at once while the workspace approves
+ * agents' changes, because the call qualified for an exemption (a new draft).
+ */
+export interface AppliedWithoutApproval {
+  status: AgentProposalStatus.Applied;
+  exemption: AgentApprovalExemption;
+  message: string;
 }
 
 /** What a tool call gave the agent: the API's answer as text, or its refusal. */
@@ -73,6 +90,8 @@ export interface ApiToolResult {
   code?: string;
   /** True when the change was stored as a proposal waiting for the seller (ADR 0028). */
   proposed?: boolean;
+  /** Set when the write applied without approval thanks to an exemption, and what that means. */
+  applied?: AppliedWithoutApproval;
   /** What to do next, when the answer shows an empty account. */
   next?: NextStepHint;
 }

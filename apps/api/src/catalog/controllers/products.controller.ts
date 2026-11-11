@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import {
   type Actor,
+  AgentApprovalExemption,
   ProductSaleService,
   ProductStoreDisplays,
   ProductsService,
@@ -44,6 +45,7 @@ import { ProductSaleDto } from '../dto/product-sale.dto.js';
 import { UpdateProductContentDto } from '../dto/update-product-content.dto.js';
 import { UpdateVariantPriceDto, VariantParamsDto } from '../dto/variant-price.dto.js';
 import { UpdateProductDto } from '../dto/update-product.dto.js';
+import { AgentApprovalExemptWhen } from '../../agent-proposals/decorators/agent-approval-exempt-when.decorator.js';
 import { ApiSandboxRestrictedResponse } from '../../entitlements/decorators/api-sandbox-restricted-response.decorator.js';
 
 @ApiTags(CATALOG_TAG)
@@ -86,7 +88,14 @@ export class ProductsController {
 
   @Post()
   @RequirePermission(WorkspacePermission.EditProducts)
-  @ApiOperation({ summary: 'Create a product with its variants' })
+  @AgentApprovalExemptWhen(AgentApprovalExemption.NewDraft)
+  @ApiOperation({
+    summary: 'Create a product with its variants',
+    description:
+      'A connected agent may create a draft (status left out or DRAFT) even while the ' +
+      'workspace approves agents’ changes; any other status is refused with ' +
+      '`agent_approval_required`, so the agent proposes it.',
+  })
   @ApiCreatedResponse({ type: ProductDto })
   @ApiSandboxRestrictedResponse()
   async create(

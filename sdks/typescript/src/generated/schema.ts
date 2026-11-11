@@ -456,7 +456,10 @@ export interface paths {
          */
         get: operations["ProductsController_list_v1"];
         put?: never;
-        /** Create a product with its variants */
+        /**
+         * Create a product with its variants
+         * @description A connected agent may create a draft (status left out or DRAFT) even while the workspace approves agents’ changes; any other status is refused with `agent_approval_required`, so the agent proposes it.
+         */
         post: operations["ProductsController_create_v1"];
         delete?: never;
         options?: never;
@@ -5148,7 +5151,7 @@ export interface components {
             };
         };
         /**
-         * @description `proposed`: it waits for the seller. `apply_directly`: the workspace lets agents make changes at once, so make the call itself.
+         * @description `proposed`: it waits for the seller. `apply_directly`: make the call itself, because the workspace lets agents make changes at once or the call needs no approval (`exemption`).
          * @enum {string}
          */
         AgentProposalOutcome: AgentProposalOutcome;
@@ -5202,12 +5205,19 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        /**
+         * @description Set with `apply_directly` when the workspace approves agents’ changes but this call needs none: `new_draft` for `create_product` with no status or DRAFT. Null otherwise.
+         * @enum {string}
+         */
+        AgentApprovalExemption: AgentApprovalExemption;
         AgentProposalSubmissionDto: {
-            /** @description `proposed`: it waits for the seller. `apply_directly`: the workspace lets agents make changes at once, so make the call itself. */
+            /** @description `proposed`: it waits for the seller. `apply_directly`: make the call itself, because the workspace lets agents make changes at once or the call needs no approval (`exemption`). */
             outcome: components["schemas"]["AgentProposalOutcome"];
             /** @description What to do next, or to tell the user */
             message: string;
             proposal: components["schemas"]["AgentProposalDto"] | null;
+            /** @description Set with `apply_directly` when the workspace approves agents’ changes but this call needs none: `new_draft` for `create_product` with no status or DRAFT. Null otherwise. */
+            exemption: components["schemas"]["AgentApprovalExemption"] | null;
         };
         AgentProposalPageDto: {
             /** @description Newest first */
@@ -10591,6 +10601,9 @@ export enum AgentProposalStatus {
 export enum AgentProposerKind {
     oauth_agent = "oauth_agent",
     api_key = "api_key"
+}
+export enum AgentApprovalExemption {
+    new_draft = "new_draft"
 }
 export enum AgentClientRegistration {
     metadata_document = "metadata_document",

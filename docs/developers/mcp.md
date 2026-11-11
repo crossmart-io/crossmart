@@ -96,6 +96,12 @@ deletions, price changes and changes to more than 5 items need an extra confirma
 changes are made as the agent and logged as "Claude for Dana, approved by Lee". The agent can
 check a proposal with `get_proposal`; proposals nobody decides expire after 7 days.
 
+One change doesn't wait: **new products created as drafts**. A draft isn't listed or for sale
+anywhere, so `create_product` without a status (or with `DRAFT`) adds it at once and tells the
+agent it is a draft. It shows in your activity log, credited to the agent. Making it active,
+publishing it to a store, and any later change to it still wait for you. A product the agent
+creates as `ACTIVE` waits for your approval like any other change.
+
 This applies to every MCP session, whether the agent signed in with OAuth or uses an API key.
 Owners and Admins can turn it off under **Settings → General → Outside agents' changes**
 ("Apply directly"). Reading is never affected, and neither are scripts and integrations (such as
@@ -169,8 +175,8 @@ who does each step:
 
 1. **Add products.** The agent can do this at once with `create_product`; no store is needed. Tell
    it what you sell (titles, condition, prices, quantities, photo links) and it drafts the
-   listings. While the workspace approves agents' changes, they wait for you under **Agent >
-   Review**.
+   listings. New products are drafts and don't wait for your approval; making them active or
+   publishing them does.
 2. **Connect a store.** Only you can: the agent sends you a link such as
    `https://app.crossmart.io/stores?connect=shopify`, and you sign in to the channel there.
 3. **Publish.** With a product and a store, the agent lists it with `add_product_to_store`.

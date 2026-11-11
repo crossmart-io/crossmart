@@ -4,13 +4,14 @@ import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER } from '@crossmart/common';
 import {
   ActivityAction,
+  AgentApprovalExemption,
   AgentProposalExpiryService,
   AgentProposalOutcome,
   AgentProposalStatus,
   OutsideAgentChanges,
   WORKSPACE_EVENT_SETTLE_MS,
 } from '@crossmart/core';
-import { PrismaService, WorkspaceRole } from '@crossmart/database';
+import { PrismaService, ProductStatus, WorkspaceRole } from '@crossmart/database';
 import { type AgentTokens, connectAgent, registerAgent } from './support/agent-oauth.js';
 import { createTestApp, type SignedUpUser, signUp } from './support/test-app.js';
 
@@ -246,6 +247,81 @@ describe("Outside agents' changes wait for approval (ADR 0028)", () => {
     const approved = await decide(proposed.body.proposal.id as string, 'approve');
     expect(approved.body).toMatchObject({ status: AgentProposalStatus.Failed, isError: true });
     expect(approved.body.result).toContain('no longer connected');
+  });
+
+  describe('new drafts need no approval', () => {
+    const draft = { title: 'Vintage Levi 501', variants: [{ price: '40.00', quantity: 1 }] };
+
+    async function pendingCount(): Promise<number> {
+      const summary = await server()
+        .get(`${base()}/agent-proposals/summary`)
+        .set('Cookie', owner.cookie);
+      return summary.body.pendingCount as number;
+    }
+
+    it('creates a draft over REST at once, credited to the agent, with nothing to review', async () => {
+      const pendingBefore = await pendingCount();
+      const created = await server().post(`${base()}/products`).set(asAgent()).send(draft);
+
+      expect(created.status).toBe(HttpStatus.CREATED);
+      expect(created.body.status).toBe(ProductStatus.DRAFT);
+      expect(await pendingCount()).toBe(pendingBefore);
+      const activity = await server().get(`${base()}/activity`).set('Cookie', owner.cookie);
+      expect(activity.body.items[0]).toMatchObject({
+        action: ActivityAction.ProductCreated,
+        actor: { type: 'AGENT', agentName: 'Claude', name: 'Dana', approvedByName: null },
+      });
+    });
+
+    it('answers a proposed draft with apply_directly and the exemption, storing nothing', async () => {
+      const pendingBefore = await pendingCount();
+      const response = await propose('create_product', { ...draft, status: ProductStatus.DRAFT });
+
+      expect(response.status).toBe(HttpStatus.OK);
+      expect(response.body).toMatchObject({
+        outcome: AgentProposalOutcome.ApplyDirectly,
+        exemption: AgentApprovalExemption.NewDraft,
+        proposal: null,
+      });
+      expect(await pendingCount()).toBe(pendingBefore);
+    });
+
+    it('turns a direct ACTIVE create away, and proposes it for the seller', async () => {
+      const active = { ...draft, title: 'Active jeans', status: ProductStatus.ACTIVE };
+      const direct = await server().post(`${base()}/products`).set(asAgent()).send(active);
+      expect(direct.status).toBe(HttpStatus.FORBIDDEN);
+      expect(direct.body.code).toBe('agent_approval_required');
+
+      const proposed = await propose('create_product', active);
+      expect(proposed.body).toMatchObject({
+        outcome: AgentProposalOutcome.Proposed,
+        exemption: null,
+      });
+      expect(proposed.body.message).toContain('Only new drafts are created without approval');
+
+      const approved = await decide(proposed.body.proposal.id as string, 'approve');
+      expect(approved.body.status).toBe(AgentProposalStatus.Applied);
+      const list = await server()
+        .get(`${base()}/products`)
+        .query({ search: 'Active jeans' })
+        .set('Cookie', owner.cookie);
+      expect(list.body.items[0]?.status).toBe(ProductStatus.ACTIVE);
+    });
+
+    it('still proposes changes to the draft once it exists', async () => {
+      const later = { ...draft, title: 'Corduroy jacket' };
+      const created = await server().post(`${base()}/products`).set(asAgent()).send(later);
+      expect(created.status).toBe(HttpStatus.CREATED);
+      const productId = created.body.id as string;
+
+      const direct = await server()
+        .put(`${base()}/products/${productId}`)
+        .set(asAgent())
+        .send({ ...later, handle: created.body.handle, status: ProductStatus.ACTIVE });
+      expect(direct.status).toBe(HttpStatus.FORBIDDEN);
+      const proposed = await propose('update_product_text', { productId, title: 'Renamed' });
+      expect(proposed.body.outcome).toBe(AgentProposalOutcome.Proposed);
+    });
   });
 
   describe('API keys', () => {

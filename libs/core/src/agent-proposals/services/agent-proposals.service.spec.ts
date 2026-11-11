@@ -3,6 +3,7 @@ import { AgentWorkerActionRisk } from '../../agent-worker/enums/agent-worker-act
 import type { PreviewToolRunner } from '../../agent-worker/previews/preview-reader.js';
 import { OutsideAgentChanges } from '../../workspace-settings/enums/outside-agent-changes.enum.js';
 import type { WorkspaceSettingsRepository } from '../../workspace-settings/workspace-settings.repository.js';
+import { AgentApprovalExemption } from '../enums/agent-approval-exemption.enum.js';
 import { AgentProposalOutcome } from '../enums/agent-proposal-outcome.enum.js';
 import { AgentProposalStatus } from '../enums/agent-proposal-status.enum.js';
 import {
@@ -96,6 +97,64 @@ describe('AgentProposalsService', () => {
       proposal: null,
     });
     expect(repository.records).toHaveLength(0);
+  });
+
+  describe('create_product while approval is required', () => {
+    const draft = { title: 'Levi 501', variants: [{ price: '40.00' }] };
+
+    it('stores nothing for a new draft and says it needs no approval', async () => {
+      const { repository, service } = setup();
+      for (const input of [draft, { ...draft, status: 'DRAFT' }]) {
+        const submission = await service.propose(
+          claudeProposer(),
+          { tool: 'create_product', input },
+          run,
+        );
+        expect(submission).toMatchObject({
+          outcome: AgentProposalOutcome.ApplyDirectly,
+          proposal: null,
+          exemption: AgentApprovalExemption.NewDraft,
+        });
+        expect(submission.message).toContain('New drafts need no approval');
+      }
+      expect(repository.records).toHaveLength(0);
+    });
+
+    it('proposes an active product, saying how a draft would apply at once', async () => {
+      const { repository, service } = setup();
+      const input = { ...draft, status: 'ACTIVE' };
+      const submission = await service.propose(
+        claudeProposer(),
+        { tool: 'create_product', input },
+        run,
+      );
+
+      expect(submission).toMatchObject({ outcome: AgentProposalOutcome.Proposed, exemption: null });
+      expect(submission.message).toContain('Only new drafts are created without approval');
+      expect(repository.records).toHaveLength(1);
+    });
+
+    it('still refuses a draft from a connection that may not edit the catalog', async () => {
+      const { service } = setup();
+      const readOnly = claudeProposer({ permissions: new Set([WorkspacePermission.ViewProducts]) });
+      await expect(
+        service.propose(readOnly, { tool: 'create_product', input: draft }, run),
+      ).rejects.toThrow(AgentProposalForbiddenError);
+    });
+  });
+
+  it('marks no exemption when agents may apply everything directly', async () => {
+    const { service } = setup(OutsideAgentChanges.ApplyDirectly);
+    const input = { title: 'Levi 501', variants: [{ price: '40.00' }] };
+    const submission = await service.propose(
+      claudeProposer(),
+      { tool: 'create_product', input },
+      run,
+    );
+    expect(submission).toMatchObject({
+      outcome: AgentProposalOutcome.ApplyDirectly,
+      exemption: null,
+    });
   });
 
   it('refuses reads, exempt tools and unknown ones', async () => {

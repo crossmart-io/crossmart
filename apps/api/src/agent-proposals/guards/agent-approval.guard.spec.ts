@@ -1,6 +1,11 @@
 import { type ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { OutsideAgentChanges, type WorkspaceSettingsRepository } from '@crossmart/core';
+import {
+  AgentApprovalExemption,
+  OutsideAgentChanges,
+  type WorkspaceSettingsRepository,
+} from '@crossmart/core';
+import { ProductStatus } from '@crossmart/database';
 import type { AuthenticatedRequest, Principal } from '../../auth/entities/principal.js';
 import { PrincipalKind } from '../../auth/enums/principal-kind.enum.js';
 import { AgentApprovalGuard } from './agent-approval.guard.js';
@@ -11,10 +16,11 @@ const ACCESS = { role: 'EDITOR', customRole: null, permissions: new Set() };
 const AGENT = { kind: PrincipalKind.Agent, userId: 'u-1', clientId: 'c-1' } as unknown as Principal;
 const KEY = { kind: PrincipalKind.ApiKey, apiKeyId: 'k-1' } as unknown as Principal;
 
-function context(principal: Principal, method: string): ExecutionContext {
+function context(principal: Principal, method: string, body: unknown = {}): ExecutionContext {
   const request = {
     principal,
     method,
+    body,
     params: { workspaceId: WORKSPACE_ID },
     workspaceAccess: ACCESS,
   } as unknown as AuthenticatedRequest;
@@ -25,9 +31,10 @@ function context(principal: Principal, method: string): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-function guard(policy: OutsideAgentChanges, exempt = false) {
+function guard(policy: OutsideAgentChanges, exempt = false, exemptWhen?: AgentApprovalExemption) {
   const reflector = new Reflector();
   vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(exempt);
+  vi.spyOn(reflector, 'get').mockReturnValue(exemptWhen);
   const settings = { outsideAgentChanges: vi.fn(() => Promise.resolve(policy)) };
   const instance = new AgentApprovalGuard(
     reflector,
@@ -53,6 +60,29 @@ describe('AgentApprovalGuard', () => {
 
     const exempt = guard(OutsideAgentChanges.RequireApproval, true);
     await expect(exempt.instance.canActivate(context(AGENT, 'POST'))).resolves.toBe(true);
+  });
+
+  it('lets an agent create a draft product, and turns any other status away', async () => {
+    const { instance } = guard(
+      OutsideAgentChanges.RequireApproval,
+      false,
+      AgentApprovalExemption.NewDraft,
+    );
+    const create = (body: unknown) => instance.canActivate(context(AGENT, 'POST', body));
+
+    await expect(create({ title: 'Jeans' })).resolves.toBe(true);
+    await expect(create({ title: 'Jeans', status: ProductStatus.DRAFT })).resolves.toBe(true);
+    await expect(create({ title: 'Jeans', status: ProductStatus.ACTIVE })).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(create({ title: 'Jeans', status: null })).rejects.toThrow(ForbiddenException);
+  });
+
+  it('keeps refusing a draft-like body on a route without the exemption', async () => {
+    const { instance } = guard(OutsideAgentChanges.RequireApproval);
+    await expect(instance.canActivate(context(AGENT, 'PUT', { title: 'X' }))).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('lets agents write when the workspace applies their changes directly', async () => {

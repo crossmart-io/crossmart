@@ -1,3 +1,4 @@
+import { AgentApprovalExemption } from '../../agent-proposals/enums/agent-approval-exemption.enum.js';
 import { AgentScope } from '../../agents/enums/agent-scope.enum.js';
 import { z } from 'zod';
 import {
@@ -85,11 +86,14 @@ export const CATALOG_TOOLS = [
     title: 'Create a product',
     description:
       'Add a product with its variants. Each variant needs a price; give options when there ' +
-      'are several variants. New products are drafts unless status is ACTIVE. No store is ' +
-      'needed: a product can be published to stores once one is connected.',
+      'are several variants. New products are drafts unless status is ACTIVE. A draft is ' +
+      'created at once, even where the seller approves agents’ changes; status ACTIVE then ' +
+      'waits for approval. No store is needed: a product can be published to stores once one ' +
+      'is connected.',
     input: { ...PRODUCT_INPUT, handle: z.string().optional() },
     readOnly: false,
     scope: AgentScope.CatalogWrite,
+    approvalExemptWhen: AgentApprovalExemption.NewDraft,
     toCall: (input) => ({ method: HttpMethod.Post, path: PRODUCTS_PATH, body: input }),
   }),
   defineTool({

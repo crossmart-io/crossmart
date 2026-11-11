@@ -11,16 +11,20 @@ export const AGENT_PROPOSAL_STATUS_SCHEMA_NAME = 'AgentProposalStatus';
 export const AGENT_PROPOSER_KIND_SCHEMA_NAME = 'AgentProposerKind';
 export const AGENT_PROPOSAL_OUTCOME_SCHEMA_NAME = 'AgentProposalOutcome';
 export const OUTSIDE_AGENT_CHANGES_SCHEMA_NAME = 'OutsideAgentChanges';
+export const AGENT_APPROVAL_EXEMPTION_SCHEMA_NAME = 'AgentApprovalExemption';
 
 /** Marks a write route an outside agent may call even while its changes need approval. */
 export const AGENT_APPROVAL_EXEMPT_METADATA_KEY = 'crossmart:agent-approval-exempt';
+/** Marks a write route an outside agent may call when its body qualifies for an exemption. */
+export const AGENT_APPROVAL_EXEMPT_WHEN_METADATA_KEY = 'crossmart:agent-approval-exempt-when';
 
 /** The refusal a connected agent gets for a direct write that needs approval (ADR 0028). */
 export const AGENT_APPROVAL_REQUIRED_CODE = 'agent_approval_required';
 export const AGENT_APPROVAL_REQUIRED_MESSAGE =
   'This workspace approves changes made by AI agents. Propose the change instead: POST ' +
   '/api/v1/workspaces/{workspaceId}/agent-proposals with { "tool": "<MCP tool name>", ' +
-  '"input": { … } } (or call the tool over MCP), then check it with GET …/agent-proposals/{id}.';
+  '"input": { … } } (or call the tool over MCP), then check it with GET …/agent-proposals/{id}. ' +
+  'Only a new product created as a draft (status left out or DRAFT) needs no approval.';
 
 /** Only signed-in people may decide whether outside agents need approval. */
 export const OUTSIDE_AGENT_CHANGES_PEOPLE_ONLY =

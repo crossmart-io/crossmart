@@ -52,10 +52,12 @@ Bulk publish (no MCP tool): `POST /channel-connections/{connectionId}/products/a
 `{ "productIds": [...] }`. Confirm the list with the seller first.
 
 An API key over REST writes directly, like any integration. An OAuth agent token does not while
-the workspace approves agents' changes: writes answer `403` with `code: agent_approval_required`.
+the workspace approves agents' changes: writes answer `403` with `code: agent_approval_required`,
+except `POST /products` for a draft (no `status`, or `DRAFT`), which is created at once.
 Propose the change instead with `POST /agent-proposals` and `{ "tool": "<MCP tool>", "input": {…} }`;
 the answer's `outcome` is `proposed` (it waits for the seller; check it with
-`GET /agent-proposals/{id}`) or `apply_directly` (make the call yourself).
+`GET /agent-proposals/{id}`) or `apply_directly` (make the call yourself; `exemption: "new_draft"`
+means only this call skips approval).
 
 Lists return `{ items, nextCursor, total }`; pass `cursor=<nextCursor>` for the next page. Errors are
 `{ statusCode, error, message }`; `402` adds `code` (`plan_limit_reached`,

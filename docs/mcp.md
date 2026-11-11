@@ -78,7 +78,8 @@ or `x-api-key`. A key works in exactly one workspace, which the server finds wit
 ## Changes wait for the seller's approval
 
 By default every write tool **proposes** its change instead of making it
-([ADR 0028](decisions/0028-outside-agent-approvals.md)). The MCP server sends the call to
+([ADR 0028](decisions/0028-outside-agent-approvals.md)), except `create_product` for a new draft
+(below). The MCP server sends the call to
 `POST /api/v1/workspaces/{id}/agent-proposals` (`proposeApiTool` in
 `libs/core/src/agent-tools/tools/propose-api-tool.ts`), and the API stores a proposal with a
 before-and-after preview (Agent Worker's formatters, read with the agent's own credential). The
@@ -104,6 +105,30 @@ This holds for **every MCP session**, OAuth or API key. When the workspace sets 
 changes" to "Apply directly" (Settings > General, Owners and Admins), the API answers
 `apply_directly` and the server makes the call as before. Read tools, `generate_content` (its
 results already wait as suggestions), Ask and `create_account` never wait.
+
+### New drafts apply at once
+
+`create_product` with no `status`, or with `DRAFT`, is created at once even while changes need
+approval: a draft is not listed or for sale anywhere, and creating a product never publishes it.
+The proposal request answers `apply_directly` with `exemption: "new_draft"`, the server makes the
+call, and the tool answers with the product as usual, then a second block:
+
+```json
+{
+  "status": "applied",
+  "exemption": "new_draft",
+  "message": "Created at once as a draft: new drafts need no approval. …"
+}
+```
+
+`create_product` with `status: "ACTIVE"` (or `ARCHIVED`) is proposed like any other write, and its
+message says that a draft would have applied at once. Everything else still waits: making the draft
+active, publishing it (`add_product_to_store`), changing its price, stock or text, marking it sold
+and deleting it. The product is credited to the agent in the activity log (`product_created`), and
+nothing appears under Agent > Review. The sandbox's product limit and the plan's entitlements apply
+as to any create. Over REST, a connected agent's `POST …/products` passes the approval guard only
+with such a body (`@AgentApprovalExemptWhen(AgentApprovalExemption.NewDraft)`); any other status is
+refused with `agent_approval_required`.
 
 Existing MCP clients need no change: the tools, names and inputs are the same.
 
@@ -198,7 +223,7 @@ with the account's counts (`products`, `connectedStores`, `liveListings`, `pendi
 | ------------------ | -------- | ------------------------------- | ----------------------------------------------------------- |
 | `claim_account`    | merchant | (unclaimed sandbox only)        | The claim link in the email                                 |
 | `review_proposals` | merchant | no proposal is pending          | `/agent/review`; only while agents' changes need approval   |
-| `add_products`     | agent    | the catalog has a product       | `create_product`; no store is needed                        |
+| `add_products`     | agent    | the catalog has a product       | `create_product`; no store or approval needed for drafts    |
 | `connect_store`    | merchant | a store is connected            | `connectStoreLinks`: `/stores?connect=shopify` (or `ebay`)  |
 | `publish`          | agent    | a listing is live               | `add_product_to_store`; blocked until a product and a store |
 | `verify_email`     | merchant | the caller's email is confirmed | The confirmation email (not shown for a sandbox)            |
@@ -227,7 +252,7 @@ event=tool_call tool=list_products outcome=ok items=0 durationMs=59 caller=api_k
 event=tool_call tool=add_product_to_store outcome=refused status=403 code=sandbox_claim_required durationMs=7 ...
 ```
 
-`outcome` is `ok`, `proposed`, `refused` (with the API's `status` and `code`) or `failed` (the API
+`outcome` is `ok` (a new draft applied without approval included), `proposed`, `refused` (with the API's `status` and `code`) or `failed` (the API
 could not be reached). `items` counts what a list returned. A caller is named by ids only: the
 user an agent acts for and its OAuth client id, or an API key's visible prefix (the part the
 dashboard shows). **No content is logged:** never tool arguments or results, product data,

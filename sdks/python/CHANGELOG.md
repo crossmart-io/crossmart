@@ -8,6 +8,9 @@ All notable changes to the `crossmart` Python package are documented here. The f
 
 ### Added
 
+- `exemption` on `AgentProposalSubmissionDto` (enum `AgentApprovalExemption`, `new_draft`): set
+  with `apply_directly` when the workspace approves agents' changes but the call needs none, such
+  as `create_product` for a new draft.
 - A new account's next steps: `GET /workspaces/{workspaceId}/getting-started`
   (`GettingStartedDto`, `GettingStartedStepDto`, `StoreConnectLinkDto`, `GettingStartedStep`,
   `GettingStartedStepState`, `GettingStartedStepOwner`), the counts of products, stores and live

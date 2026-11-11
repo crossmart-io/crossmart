@@ -14,6 +14,9 @@
 - `quantity` on a variant is its opening stock.
 - `media` takes public image URLs; the first one is the main image. Most stores need at least one.
 - New products are `DRAFT` unless `status` is `ACTIVE`. Stores only sell active products.
+- A draft is created at once, even when the seller approves agents' changes. With
+  `status: "ACTIVE"` the create waits for the seller's approval instead, so leave `status` out
+  unless the seller asked for the product to be active.
 - A SKU or handle already in the workspace is refused with `409`.
 
 Before creating, summarize what you will create (title, variants, prices, stock) and confirm when

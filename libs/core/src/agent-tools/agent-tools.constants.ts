@@ -1,3 +1,5 @@
+import { AgentApprovalExemption } from '../agent-proposals/enums/agent-approval-exemption.enum.js';
+
 /**
  * The REST API as the agent tools call it (the MCP server and Agent Worker). Paths, headers and
  * input limits mirror the API's own; the API enforces its limits as well.
@@ -117,3 +119,31 @@ export const PROPOSAL_COPY = {
     'the user the change is waiting for them under Agent proposals in the Crossmart app, and ' +
     'check its status later with get_proposal. Do not send the same change again.',
 } as const;
+
+interface ApprovalExemptionCopy {
+  /** The API's answer to the proposal request: make the call yourself. */
+  applyDirectly: string;
+  /** What the agent reads next to the answer once the call applied. */
+  applied: string;
+  /** Added to the proposed message when the same tool was called with other input. */
+  proposedOtherwise: string;
+}
+
+/** What an agent reads about the writes that apply at once while approval is on (ADR 0028). */
+export const APPROVAL_EXEMPTION_COPY: Readonly<
+  Record<AgentApprovalExemption, ApprovalExemptionCopy>
+> = {
+  [AgentApprovalExemption.NewDraft]: {
+    applyDirectly:
+      'New drafts need no approval: make the call itself. Making the product active, ' +
+      'publishing it or changing it later still waits for the seller.',
+    applied:
+      'Created at once as a draft: new drafts need no approval. It is not listed or for sale ' +
+      'anywhere yet. Making it active, publishing it to a store or changing it later waits for ' +
+      'the seller\'s approval (those calls answer status "proposed"). Tell the user the draft ' +
+      'is under Products in the Crossmart app.',
+    proposedOtherwise:
+      'Only new drafts are created without approval: to add a product at once next time, leave ' +
+      'status out (or send DRAFT).',
+  },
+};

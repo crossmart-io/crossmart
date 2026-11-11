@@ -9,6 +9,7 @@ import {
   RefusalStatus,
   WEBHOOK_SECRET_WITHHELD,
 } from '@crossmart/core/agent-tools/agent-tools.constants.js';
+import { AgentApprovalExemption } from '@crossmart/core/agent-proposals/enums/agent-approval-exemption.enum.js';
 import { AgentProposalOutcome } from '@crossmart/core/agent-proposals/enums/agent-proposal-outcome.enum.js';
 import { HttpMethod } from '@crossmart/core/agent-tools/api/api-call.js';
 import { registerApiTool } from './register-api-tool.js';
@@ -105,6 +106,30 @@ describe('API tools on an empty account', () => {
     const result = await client.callTool({ name: AgentToolName.ListStores, arguments: {} });
 
     expect(texts(result)).toHaveLength(1);
+  });
+});
+
+describe('a new draft while the workspace approves agents’ changes', () => {
+  it('answers the product as the API gave it, then that it applied as a draft', async () => {
+    const product = { id: 'p-1', title: 'Levi 501', status: 'DRAFT' };
+    const apiClient = new CrossmartApiClient('https://api.example.com', apiKeyCredential('cm_key'));
+    const exempt = {
+      outcome: AgentProposalOutcome.ApplyDirectly,
+      message: '',
+      proposal: null,
+      exemption: AgentApprovalExemption.NewDraft,
+    };
+    vi.spyOn(apiClient, 'call').mockResolvedValueOnce(exempt).mockResolvedValueOnce(product);
+    const client = await connect(apiClient);
+
+    const result = await client.callTool({
+      name: AgentToolName.CreateProduct,
+      arguments: { title: 'Levi 501', variants: [{ price: '40.00' }] },
+    });
+
+    const [answer, note] = texts(result);
+    expect(JSON.parse(answer ?? '')).toEqual(product);
+    expect(JSON.parse(note ?? '')).toMatchObject({ status: 'applied', exemption: 'new_draft' });
   });
 });
 

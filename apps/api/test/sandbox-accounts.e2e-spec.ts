@@ -4,6 +4,8 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { API_KEY_HEADER, MailSender } from '@crossmart/common';
 import {
+  AgentApprovalExemption,
+  AgentProposalOutcome,
   EntitlementErrorCode,
   SANDBOX_CLAIM_REMINDER_AFTER_MS,
   SANDBOX_MAX_PRODUCTS,
@@ -166,6 +168,16 @@ describe('Sandbox accounts (e2e)', () => {
       await createProduct(sandbox, 'One too many'),
       SandboxRestriction.AddProducts,
     );
+    // A new draft needs no approval, but the sandbox's limit still holds for it.
+    const proposed = await request(server())
+      .post(`/api/v1/workspaces/${sandbox.workspaceId}/agent-proposals`)
+      .set(API_KEY_HEADER, sandbox.apiKey)
+      .send({ tool: 'create_product', input: { title: 'Draft', variants: [{ price: '12' }] } });
+    expect(proposed.body).toMatchObject({
+      outcome: AgentProposalOutcome.ApplyDirectly,
+      exemption: AgentApprovalExemption.NewDraft,
+    });
+    expectClaimRequired(await createProduct(sandbox, 'Draft'), SandboxRestriction.AddProducts);
   });
 
   it('refuses invitations and new workspaces to the owner until claimed', async () => {

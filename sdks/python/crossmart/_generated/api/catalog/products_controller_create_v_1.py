@@ -72,6 +72,10 @@ def sync_detailed(
 ) -> Response[ProductDto | SandboxRestrictedErrorDto]:
     """Create a product with its variants
 
+     A connected agent may create a draft (status left out or DRAFT) even while the workspace approves
+    agents’ changes; any other status is refused with `agent_approval_required`, so the agent proposes
+    it.
+
     Args:
         workspace_id (str):
         body (CreateProductDto):
@@ -104,6 +108,10 @@ def sync(
 ) -> ProductDto | SandboxRestrictedErrorDto | None:
     """Create a product with its variants
 
+     A connected agent may create a draft (status left out or DRAFT) even while the workspace approves
+    agents’ changes; any other status is refused with `agent_approval_required`, so the agent proposes
+    it.
+
     Args:
         workspace_id (str):
         body (CreateProductDto):
@@ -130,6 +138,10 @@ async def asyncio_detailed(
     body: CreateProductDto,
 ) -> Response[ProductDto | SandboxRestrictedErrorDto]:
     """Create a product with its variants
+
+     A connected agent may create a draft (status left out or DRAFT) even while the workspace approves
+    agents’ changes; any other status is refused with `agent_approval_required`, so the agent proposes
+    it.
 
     Args:
         workspace_id (str):
@@ -160,6 +172,10 @@ async def asyncio(
     body: CreateProductDto,
 ) -> ProductDto | SandboxRestrictedErrorDto | None:
     """Create a product with its variants
+
+     A connected agent may create a draft (status left out or DRAFT) even while the workspace approves
+    agents’ changes; any other status is refused with `agent_approval_required`, so the agent proposes
+    it.
 
     Args:
         workspace_id (str):
