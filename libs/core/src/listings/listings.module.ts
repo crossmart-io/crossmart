@@ -21,7 +21,9 @@ import { WebhookOutboxModule } from '../webhooks/webhook-outbox.module.js';
 import { ProductSelectionRepository } from './repositories/product-selection.repository.js';
 import { BullSyncJobQueue } from './services/bull-sync-job.queue.js';
 import { ChannelListingsService } from './services/channel-listings.service.js';
+import { ChannelProductCounter } from './services/channel-product-counter.js';
 import { ChannelProductDisplays } from './services/channel-product-displays.js';
+import { ChannelProductRows } from './services/channel-product-rows.js';
 import { ChannelProductsService } from './services/channel-products.service.js';
 import { StoreMembershipService } from './services/store-membership.service.js';
 import { StoreMembershipWriter } from './services/store-membership.writer.js';
@@ -112,7 +114,9 @@ import { SyncProductLoader } from './services/sync-product.loader.js';
     ListingEditorService,
     ChannelSyncService,
     ChannelListingsService,
+    ChannelProductCounter,
     ChannelProductDisplays,
+    ChannelProductRows,
     ChannelProductsService,
     StoreMembershipService,
     SelectionApplier,

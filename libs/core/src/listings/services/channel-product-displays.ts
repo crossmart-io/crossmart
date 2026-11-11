@@ -5,11 +5,10 @@ import {
   slicePageWindow,
   type SortDirection,
 } from '@crossmart/common';
-import type { Prisma } from '@crossmart/database';
+import { ListingStatus, type Prisma } from '@crossmart/database';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import type { DisplayedListing, ListingDisplay } from '../entities/listing-display.js';
 import type { ChannelProductSort } from '../enums/channel-product-state.enum.js';
-import type { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import { toDisplayedListing } from '../mappers/listing.mapper.js';
 import {
   type ChannelProductRecord,
@@ -19,6 +18,7 @@ import {
 import { type ChannelProductScope, shownListing } from '../rules/channel-product-state-where.js';
 import type { VisibleListing } from '../rules/listing-visibility.js';
 import { type CandidateProduct, publishCandidateOf } from '../rules/publish-candidate.js';
+import type { DisplayMatch } from '../rules/channel-product-view.js';
 import { selectionWhere } from '../rules/selection-where.js';
 import { ListingDisplayResolver, type ListingDisplaySubject } from './listing-display.resolver.js';
 
@@ -49,6 +49,11 @@ function displaySubjectOf(
   };
 }
 
+/** Whether the channel refused the product's listing on the store: the product is failed. */
+export function isRefused({ listing }: DisplayedStoreProduct): boolean {
+  return listing?.status === ListingStatus.ERROR;
+}
+
 export function toDisplayedStoreProduct(
   record: DisplayCandidateRecord,
   connectionId: string,
@@ -76,13 +81,12 @@ export interface DisplayFilterTarget {
 }
 
 export interface DisplayFilterQuery extends PageRequest {
-  displayState: ListingDisplayState;
   sort: ChannelProductSort;
   direction: SortDirection;
 }
 
 /**
- * The display states of a store's products, and the lists filtered by one. A filter narrows the
+ * The display states of a store's products, and the lists filtered by them. A filter narrows the
  * query to the product states the display state can come from; what blocks publishing is the
  * connector's to say, so the display of each remaining product is then resolved in code, from
  * one lean query for the candidates and one for which the selection includes. Only the page's
@@ -104,22 +108,29 @@ export class ChannelProductDisplays {
     return this.displays.resolve(connection, displaySubjectOf(product, membership));
   }
 
+  /**
+   * One page of the products of `where` that `matches` keeps, with how many it keeps. Without
+   * `matches`, SQL pages them alone.
+   */
   async page(
     target: DisplayFilterTarget,
     where: Prisma.ProductWhereInput,
     query: DisplayFilterQuery,
+    matches: DisplayMatch | null,
   ): Promise<CountedRecords<ChannelProductRecord>> {
-    const matching = await this.matchingIds(target, where, query);
+    if (!matches) return this.products.listPage(where, query);
+    const matching = await this.matchingIds(target, where, query, matches);
     const pageIds = slicePageWindow(matching, query);
     const records = await this.products.findByIds(target.scope.workspaceId, pageIds);
     return { records, total: matching.length };
   }
 
-  /** The ids of the products of `where` in the display state, in the list's order. */
+  /** The ids of the products of `where` that `matches` keeps, in the list's order. */
   private async matchingIds(
     { scope, connection }: DisplayFilterTarget,
     where: Prisma.ProductWhereInput,
     query: DisplayFilterQuery,
+    matches: DisplayMatch,
   ): Promise<string[]> {
     const [candidates, selected] = await Promise.all([
       this.products.listDisplayCandidates(where, query),
@@ -129,7 +140,7 @@ export class ChannelProductDisplays {
     return candidates
       .filter((record) => {
         const product = toDisplayedStoreProduct(record, scope.connectionId);
-        return this.resolve(connection, product, membership).state === query.displayState;
+        return matches(this.resolve(connection, product, membership), isRefused(product));
       })
       .map((record) => record.id);
   }

@@ -220,6 +220,13 @@ interface TaxonomyProvider   { searchCategories(...); requiredAttributes(categor
   - `contentLimits` (`ChannelContentLimits`, optional on `ChannelConnector`) declares the title limit, the hard
     description limit, the description length worth writing (eBay: 500,000 hard, 4,000 written), the
     `DescriptionFormat` and whether links are allowed. Core's AI content rules take their numbers from here.
+- **OAuth return:** after the channel calls `/api/v1/channels/:channel/oauth/callback`, the API redirects the browser to
+  the web app's Stores page. On success it is `/stores?connected=<channel>&connectionId=<id>`, plus `&reconnected=true`
+  when the account was connected before (a re-auth keeps the row, so the web app offers no new-store setup). On a
+  failure it is `/stores?error=<ConnectFailure>&channel=<channel>`. The keys are `StoresPageQuery` and are published as
+  `ChannelConnectRedirectDto`. Before the web app renamed Channels to Stores the path was `/channels` with only
+  `connected=<channel>`; the web app still redirects `/channels` and falls back to guessing the newest store when
+  `connectionId` is absent.
 - **Rate limiting:** each connector declares its rate-limit buckets, and the worker uses per-connection BullMQ limiters.
 - **Priority queues:** `inventory` > `orders` > `price` > `content` > `import` > `ai`. Each is its own BullMQ queue with its own worker concurrency, so stock never waits behind a publish, and AI agents never hold up a sync. Outgoing webhooks have their own `webhooks` queue.
 - **Credentials:** encrypted with envelope encryption: AES-256-GCM with a data key per workspace (`workspace_data_keys`), wrapped by `CREDENTIALS_MASTER_KEY` with a key version for rotation. Each value is bound to its workspace, channel and account. They are never logged and never returned by the API.
@@ -381,6 +388,13 @@ See [ADR 0016](decisions/0016-ai-layer.md).
 - `GET /workspaces/:id/attention` (`AttentionService`, ADR 0029) is the one source of "needs attention" counts for Home
   and the sidebar badge: stores to reconnect, failed listings, pending agent proposals and AI suggestions, each counted by
   the same query as its own page, and null without that page's permission.
+- `GET …/channel-connections/:id/products` lists a store's products for its Stores page. `view` picks one tab in one
+  request (`all`, `live`, `needs_attention`, `not_listed`), and `counts` label all four: per `ChannelProductState`, plus
+  `needsDetails` (display state `needs_details`) and `needsAttention` (failed or needing details, each product once).
+  The failed part is the products whose listing on the store is `ERROR`, the listings the attention summary and
+  `failedListings` count (those count listings, so an eBay product with several failed variations counts once here).
+  Needs details is resolved as the list resolves it (`StoreListingStates`): only selected products off the channel or
+  refused are read, in batches, and none while the store's setup blocks publishing.
 - Errors use NestJS's JSON shape, `application/json` (not RFC 9457 problem+json):
   `{ "statusCode": 404, "error": "Not Found", "message": "Product not found" }`. On a validation
   failure (400), `message` is a list with one entry per problem. Plan refusals (402) add a typed

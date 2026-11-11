@@ -102,4 +102,45 @@ describe('StoreListingStates', () => {
     expect(counts[ListingDisplayState.Failed]).toBe(3);
     expect(counts[ListingDisplayState.NeedsDetails]).toBe(0);
   });
+
+  describe('countNeedsDetails', () => {
+    const SEARCH = { title: { contains: 'mug' } };
+
+    it('counts the selected products that need details, and those never refused', async () => {
+      const { service, products, displays } = setup([
+        [candidate('p-1'), candidate('p-2', true), candidate('p-3')],
+      ]);
+      displays.resolve.mockImplementation((_connection, product) => ({
+        state:
+          product.product.id === 'p-3'
+            ? ListingDisplayState.Ready
+            : ListingDisplayState.NeedsDetails,
+        reason: null,
+        requirement: null,
+      }));
+
+      const counts = await service.countNeedsDetails(WORKSPACE_ID, connectionView(), SEARCH);
+
+      expect(counts).toEqual({ total: 2, unsent: 1 });
+      expect(products.listDisplayCandidateBatch.mock.calls[0]?.[0]).toEqual({
+        AND: [expect.anything(), SEARCH],
+      });
+    });
+
+    it('counts without reading products while the store’s setup blocks publishing', async () => {
+      const { service, products } = setup([]);
+      products.count.mockResolvedValueOnce(5).mockResolvedValueOnce(3);
+      const blocked = connectionView({
+        publishReadiness: {
+          ready: false,
+          unmet: [{ requirement: PublishRequirement.ShippingPolicy, reason: 'Pick a policy' }],
+        },
+      });
+
+      const counts = await service.countNeedsDetails(WORKSPACE_ID, blocked, SEARCH);
+
+      expect(counts).toEqual({ total: 5, unsent: 3 });
+      expect(products.listDisplayCandidateBatch).not.toHaveBeenCalled();
+    });
+  });
 });

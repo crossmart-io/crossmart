@@ -2,19 +2,29 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@crossmart/database';
 import type { ChannelConnectionView } from '../../channels/entities/channel-connection-view.js';
 import type { ListingStateCounts } from '../entities/listing-state-counts.js';
+import type { NeedsDetailsCounts } from '../entities/listing-state-counts.js';
+import { ChannelProductState } from '../enums/channel-product-state.enum.js';
 import { ListingDisplayState } from '../enums/listing-display-state.enum.js';
 import { SELECTION_BATCH_SIZE } from '../listings.constants.js';
 import {
   ChannelProductsRepository,
   type DisplayCandidateRecord,
 } from '../repositories/channel-products.repository.js';
-import type { ChannelProductScope } from '../rules/channel-product-state-where.js';
+import {
+  type ChannelProductScope,
+  channelProductStateWhere,
+} from '../rules/channel-product-state-where.js';
 import { settledStateConditions, unsettledWhere } from '../rules/listing-state-where.js';
 import {
   ChannelProductDisplays,
+  type DisplayedStoreProduct,
+  isRefused,
   type StoreMembership,
   toDisplayedStoreProduct,
 } from './channel-product-displays.js';
+
+/** Called with each unsettled product read, and the display state it resolved to. */
+type UnsettledVisitor = (product: DisplayedStoreProduct, state: ListingDisplayState) => void;
 
 const STATES = Object.values(ListingDisplayState);
 
@@ -56,6 +66,37 @@ export class StoreListingStates {
     return sumCounts(settled, unsettled);
   }
 
+  /**
+   * The products of `search` that need details on the store, by the same rule, and how many of
+   * them the channel never refused (pending ones; the rest are failed). Only selected products
+   * can need details, so only the unsettled ones are read.
+   */
+  async countNeedsDetails(
+    workspaceId: string,
+    connection: ChannelConnectionView,
+    search: Prisma.ProductWhereInput,
+  ): Promise<NeedsDetailsCounts> {
+    const scope = scopeOf(workspaceId, connection);
+    const where = { AND: [unsettledWhere(scope), search] };
+    if (connection.publishReadiness.unmet.length > 0) {
+      const pending = {
+        AND: [channelProductStateWhere(scope, ChannelProductState.Pending), search],
+      };
+      const [total, unsent] = await Promise.all([
+        this.products.count(where),
+        this.products.count(pending),
+      ]);
+      return { total, unsent };
+    }
+    const counts: NeedsDetailsCounts = { total: 0, unsent: 0 };
+    await this.scanUnsettled(connection, where, (product, state) => {
+      if (state !== ListingDisplayState.NeedsDetails) return;
+      counts.total += 1;
+      if (!isRefused(product)) counts.unsent += 1;
+    });
+    return counts;
+  }
+
   private async countSettled(scope: ChannelProductScope): Promise<ListingStateCounts> {
     const conditions = settledStateConditions(scope);
     const totals = await Promise.all(
@@ -89,14 +130,29 @@ export class StoreListingStates {
     where: Prisma.ProductWhereInput,
   ): Promise<ListingStateCounts> {
     const counts = emptyCounts();
+    await this.scanUnsettled(connection, where, (_product, state) => {
+      counts[state] += 1;
+    });
+    return counts;
+  }
+
+  /** Reads the unsettled products of `where` in batches and resolves each one's state. */
+  private async scanUnsettled(
+    connection: ChannelConnectionView,
+    where: Prisma.ProductWhereInput,
+    visit: UnsettledVisitor,
+  ): Promise<void> {
     let afterId: string | null = null;
     for (;;) {
       const batch: DisplayCandidateRecord[] = await this.products.listDisplayCandidateBatch(where, {
         afterId,
         size: SELECTION_BATCH_SIZE,
       });
-      for (const record of batch) counts[this.stateOf(connection, record)] += 1;
-      if (batch.length < SELECTION_BATCH_SIZE) return counts;
+      for (const record of batch) {
+        const product = toDisplayedStoreProduct(record, connection.id);
+        visit(product, this.stateOf(connection, product));
+      }
+      if (batch.length < SELECTION_BATCH_SIZE) return;
       afterId = batch[batch.length - 1]?.id ?? null;
     }
   }
@@ -107,11 +163,10 @@ export class StoreListingStates {
    */
   private stateOf(
     connection: ChannelConnectionView,
-    record: DisplayCandidateRecord,
+    product: DisplayedStoreProduct,
   ): ListingDisplayState {
-    const product = toDisplayedStoreProduct(record, connection.id);
     const membership: StoreMembership = {
-      selected: new Set([record.id]),
+      selected: new Set([product.product.id]),
       removedByHand: new Set(),
     };
     return this.displays.resolve(connection, product, membership).state;

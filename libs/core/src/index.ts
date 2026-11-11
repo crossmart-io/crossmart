@@ -128,6 +128,7 @@ export * from './listings/entities/product-sale.js';
 export * from './listings/services/selection-applier.js';
 export * from './listings/entities/channel-product.js';
 export * from './listings/enums/channel-product-state.enum.js';
+export * from './listings/enums/channel-product-view.enum.js';
 export * from './listings/enums/listing-display-state.enum.js';
 export * from './listings/entities/listing-display.js';
 export * from './listings/entities/store-badge-display.js';

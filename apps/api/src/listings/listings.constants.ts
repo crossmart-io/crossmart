@@ -39,6 +39,7 @@ export const LISTING_SOURCE_SCHEMA_NAME = 'ListingSource';
 export const CHANNEL_PRODUCT_STATE_SCHEMA_NAME = 'ChannelProductState';
 export const LISTING_DISPLAY_STATE_SCHEMA_NAME = 'ListingDisplayState';
 export const CHANNEL_PRODUCT_SORT_SCHEMA_NAME = 'ChannelProductSort';
+export const CHANNEL_PRODUCT_VIEW_SCHEMA_NAME = 'ChannelProductView';
 export const LISTING_VISIBILITY_SCHEMA_NAME = 'ListingVisibility';
 export const LISTING_RETRY_ERROR_CODE_SCHEMA_NAME = 'ListingRetryErrorCode';
 
