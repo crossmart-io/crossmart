@@ -16,12 +16,12 @@ on the way, from one dashboard or straight from Claude & ChatGPT.
 
 ![The Crossmart overview: sales over time, sales by store and top products](docs/images/01-dashboard.png)
 
-| | |
-|---|---|
+|                                                                                              |                                                                                                         |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | ![One catalog with Shopify and eBay listings, stock and prices](docs/images/02-products.png) | ![A product published to Shopify and eBay from the listing editor](docs/images/03-product-channels.png) |
-| One catalog for every channel | Publish a product to every store |
-| ![Channels: Shopify and eBay live, more coming](docs/images/04-channels.png) | ![AI agents such as Claude and Cursor connected over MCP](docs/images/05-connected-agents.png) |
-| Connect your stores | Let your AI agents work through MCP |
+| One catalog for every channel                                                                | Publish a product to every store                                                                        |
+| ![Channels: Shopify and eBay live, more coming](docs/images/04-channels.png)                 | ![AI agents such as Claude and Cursor connected over MCP](docs/images/05-connected-agents.png)          |
+| Connect your stores                                                                          | Let your AI agents work through MCP                                                                     |
 
 ## Why Crossmart
 
@@ -42,6 +42,7 @@ work end to end, but APIs and data models can still change between releases.
 | eBay                                | Live (a self-hosted instance uses eBay sandbox keys by default) |
 | Google Shopping (Merchant Center)   | Coming soon                                                     |
 | Etsy                                | Coming soon                                                     |
+| Falabella (Chile, Colombia, Peru)   | Preview                                                         |
 | Amazon, Walmart, TikTok Shop        | Planned                                                         |
 | WooCommerce, BigCommerce and others | Community contributions welcome                                 |
 
