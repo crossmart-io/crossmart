@@ -318,7 +318,8 @@ is delisted (or withdrawn when the channel never received it). Repeating it chan
 
 **Item condition:** `products.condition` (`ProductCondition`, nullable) reaches connectors as
 `ListingDraft.condition` (`ItemCondition`). eBay maps it to its Inventory API condition, falling back to the
-connection's default; Google Merchant to new, used or refurbished; Etsy and Shopify have no condition field.
+connection's default; Google Merchant to new, used or refurbished; Mercado Libre to new or used; Etsy and Shopify have
+no condition field.
 
 **Channel catalog import:** the API records an `ImportJob` (format `shopify_api`, mode `create_or_link`) and queues it on `import`. The worker reads the catalog through the connector's `CatalogSource` page by page, links or creates products, writes listings with their variant ids, sets new stock through the ledger, and stores the cursor with each page's counts, so retries resume. See [channels/shopify.md](channels/shopify.md#catalog-import).
 

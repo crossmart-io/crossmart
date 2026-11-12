@@ -16,12 +16,12 @@ on the way, from one dashboard or straight from Claude & ChatGPT.
 
 ![The Crossmart overview: sales over time, sales by store and top products](docs/images/01-dashboard.png)
 
-| | |
-|---|---|
+|                                                                                              |                                                                                                         |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | ![One catalog with Shopify and eBay listings, stock and prices](docs/images/02-products.png) | ![A product published to Shopify and eBay from the listing editor](docs/images/03-product-channels.png) |
-| One catalog for every channel | Publish a product to every store |
-| ![Channels: Shopify and eBay live, more coming](docs/images/04-channels.png) | ![AI agents such as Claude and Cursor connected over MCP](docs/images/05-connected-agents.png) |
-| Connect your stores | Let your AI agents work through MCP |
+| One catalog for every channel                                                                | Publish a product to every store                                                                        |
+| ![Channels: Shopify and eBay live, more coming](docs/images/04-channels.png)                 | ![AI agents such as Claude and Cursor connected over MCP](docs/images/05-connected-agents.png)          |
+| Connect your stores                                                                          | Let your AI agents work through MCP                                                                     |
 
 ## Why Crossmart
 
@@ -42,6 +42,7 @@ work end to end, but APIs and data models can still change between releases.
 | eBay                                | Live (a self-hosted instance uses eBay sandbox keys by default) |
 | Google Shopping (Merchant Center)   | Coming soon                                                     |
 | Etsy                                | Coming soon                                                     |
+| Mercado Libre                       | Coming soon                                                     |
 | Amazon, Walmart, TikTok Shop        | Planned                                                         |
 | WooCommerce, BigCommerce and others | Community contributions welcome                                 |
 
@@ -93,7 +94,8 @@ In `.env`, set:
 | `CREDENTIALS_MASTER_KEY`               | `openssl rand -base64 32`. It encrypts channel credentials; without it no store can be connected |
 
 Everything else is optional for running locally. The channel credentials (`SHOPIFY_*`, `EBAY_*`,
-`GOOGLE_*`, `ETSY_*`) only turn on connecting that channel; see [docs/channels](docs/channels).
+`GOOGLE_*`, `ETSY_*`, `MERCADOLIBRE_*`) only turn on connecting that channel; see
+[docs/channels](docs/channels).
 Without `ANTHROPIC_API_KEY` the app runs as usual and the AI features say AI is not configured.
 
 `GET /api/v1/health` reports whether the API is up. It checks the database connection only.
@@ -134,8 +136,8 @@ PostgreSQL and Redis require their passwords and publish their ports on `127.0.0
 they are not reachable from other machines.
 
 Compose also passes `CREDENTIALS_MASTER_KEY`, the channel credentials (`SHOPIFY_*`, `EBAY_*`,
-`GOOGLE_*`, `ETSY_*`), `ANTHROPIC_API_KEY` and `ENTITLEMENTS_ENFORCED` from the shell or `.env`
-to the API and worker. Set `CREDENTIALS_MASTER_KEY` before you connect a store.
+`GOOGLE_*`, `ETSY_*`, `MERCADOLIBRE_*`), `ANTHROPIC_API_KEY` and `ENTITLEMENTS_ENFORCED` from the
+shell or `.env` to the API and worker. Set `CREDENTIALS_MASTER_KEY` before you connect a store.
 
 What compose does not include:
 
