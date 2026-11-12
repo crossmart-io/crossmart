@@ -20,6 +20,8 @@ import { OAuthStateService } from './services/oauth-state.service.js';
 import { ConnectionCredentialsVault } from './services/connection-credentials.vault.js';
 import { OAuthStateSigner } from './services/oauth-state.signer.js';
 import { ConnectionAccountStore } from './services/connection-account.store.js';
+import { SellerCredentialsService } from './services/seller-credentials.service.js';
+import { SellerCredentialsConnectorResolver } from './services/seller-credentials-connector.resolver.js';
 import { EbayAccountPurger } from './ebay/services/ebay-account.purger.js';
 import { EbayAccountDeletionService } from './ebay/services/ebay-account-deletion.service.js';
 import { EbayAccountSetupService } from './ebay/services/ebay-account-setup.service.js';
@@ -56,6 +58,8 @@ import { EtsyShopSetupService } from './etsy/services/etsy-shop-setup.service.js
     ChannelWebhookDispatcher,
     ChannelWebhooksService,
     ConnectionAccountStore,
+    SellerCredentialsConnectorResolver,
+    SellerCredentialsService,
     EbayAccountSetupService,
     EbayAccountPurger,
     EbayAccountDeletionService,
@@ -65,6 +69,7 @@ import { EtsyShopSetupService } from './etsy/services/etsy-shop-setup.service.js
   ],
   exports: [
     ChannelAuthorizationService,
+    SellerCredentialsService,
     ChannelConnectionsService,
     ChannelWebhooksService,
     EbayAccountSetupService,
