@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuccessResponse>
+    <Head>
+        <RequestId/>
+        <RequestAction>GetMultipleOrderItems</RequestAction>
+        <ResponseType>Orders</ResponseType>
+        <Timestamp>2025-10-23T13:43:29.163Z</Timestamp>
+    </Head>
+    <Body>
+        <Orders>
+            <Order>
+                <OrderId>1127917111</OrderId>
+                <OrderNumber>3204390000</OrderNumber>
+                <OrderItems>
+                    <OrderItem>
+                        <OrderItemId>126930387</OrderItemId>
+                        <ShopId>2ac93993-bf8d-4fef-ba01-fe4732df77a2</ShopId>
+                        <OrderId>1127917497</OrderId>
+                        <Name>Zapatillas </Name>
+                        <Sku>test1</Sku>
+                        <Variation>{"color":{"name":"Blanco","code":"#FFFFFF"},"size":"36.5"}</Variation>
+                        <ShopSku>140604778</ShopSku>
+                        <ShippingType>Dropshipping</ShippingType>
+                        <Currency>CLP</Currency>
+                        <VoucherCode/>
+                        <Status>ready_to_ship</Status>
+                        <IsProcessable>1</IsProcessable>
+                        <ShipmentProvider>home delivery corp</ShipmentProvider>
+                        <IsDigital>0</IsDigital>
+                        <DigitalDeliveryInfo/>
+                        <TrackingCode>140111000010799985</TrackingCode>
+                        <TrackingCodePre/>
+                        <Reason/>
+                        <ReasonDetail/>
+                        <PurchaseOrderId/>
+                        <PurchaseOrderNumber/>
+                        <PackageId>PKG0059711638</PackageId>
+                        <PromisedShippingTime>2025-10-24 21:57:00</PromisedShippingTime>
+                        <ExtraAttributes>{"itemId":"1","originNode":"6146e548-08bb-47e0-8f11-8d44a70e553b","originNodeType":"SELLER","deliveryOrderGroupId":"149216054447"}</ExtraAttributes>
+                        <ShippingProviderType>regular</ShippingProviderType>
+                        <CreatedAt>2025-10-23 10:25:03</CreatedAt>
+                        <UpdatedAt>2025-10-23 10:42:11</UpdatedAt>
+                        <Vouchers/>
+                        <SalesType>TDR</SalesType>
+                        <ReturnStatus/>
+                        <RequiresDeviceIdentifiers>false</RequiresDeviceIdentifiers>
+                        <WalletCredits>0.00</WalletCredits>
+                        <ItemPrice>69990.00</ItemPrice>
+                        <PaidPrice>69990.00</PaidPrice>
+                        <TaxAmount>0.00</TaxAmount>
+                        <CodCollectableAmount>0.00</CodCollectableAmount>
+                        <ShippingAmount>0.00</ShippingAmount>
+                        <ShippingServiceCost>0.00</ShippingServiceCost>
+                        <ShippingTax>0.00</ShippingTax>
+                        <VoucherAmount>0.00</VoucherAmount>
+                    </OrderItem>
+                </OrderItems>
+            </Order>
+            <Order>
+                <OrderId>1127916333</OrderId>
+                <OrderNumber>3204390000</OrderNumber>
+                <OrderItems>
+                    <OrderItem>
+                        <OrderItemId>126927111</OrderItemId>
+                        <ShopId>0f20d229-2810-4f39-a439-bad280cd0f14</ShopId>
+                        <OrderId>1127916333</OrderId>
+                        <Name>Zapatillas Hombre</Name>
+                        <Sku>test1</Sku>
+                        <Variation>{"color":{"name":"Negro","code":"#000000"},"size":"37"}</Variation>
+                        <ShopSku>143080900</ShopSku>
+                        <ShippingType>Dropshipping</ShippingType>
+                        <Currency>CLP</Currency>
+                        <VoucherCode/>
+                        <Status>ready_to_ship</Status>
+                        <IsProcessable>1</IsProcessable>
+                        <ShipmentProvider>home delivery corp</ShipmentProvider>
+                        <IsDigital>0</IsDigital>
+                        <DigitalDeliveryInfo/>
+                        <TrackingCode>140111000010799785</TrackingCode>
+                        <TrackingCodePre/>
+                        <Reason/>
+                        <ReasonDetail/>
+                        <PurchaseOrderId/>
+                        <PurchaseOrderNumber/>
+                        <PackageId>PKG0059710887</PackageId>
+                        <PromisedShippingTime>2025-10-24 21:57:00</PromisedShippingTime>
+                        <ExtraAttributes>{"itemId":"1","originNode":"6146e548-08bb-47e0-8f11-8d44a70e553b","originNodeType":"SELLER","deliveryOrderGroupId":"149216053014"}</ExtraAttributes>
+                        <ShippingProviderType>regular</ShippingProviderType>
+                        <CreatedAt>2025-10-23 10:04:50</CreatedAt>
+                        <UpdatedAt>2025-10-23 10:10:49</UpdatedAt>
+                        <Vouchers/>
+                        <SalesType>TDR</SalesType>
+                        <ReturnStatus/>
+                        <RequiresDeviceIdentifiers>false</RequiresDeviceIdentifiers>
+                        <WalletCredits>0.00</WalletCredits>
+                        <ItemPrice>39990.00</ItemPrice>
+                        <PaidPrice>39990.00</PaidPrice>
+                        <TaxAmount>0.00</TaxAmount>
+                        <CodCollectableAmount>0.00</CodCollectableAmount>
+                        <ShippingAmount>0.00</ShippingAmount>
+                        <ShippingServiceCost>0.00</ShippingServiceCost>
+                        <ShippingTax>0.00</ShippingTax>
+                        <VoucherAmount>0.00</VoucherAmount>
+                    </OrderItem>
+                </OrderItems>
+            </Order>
+        </Orders>
+    </Body>
+</SuccessResponse>

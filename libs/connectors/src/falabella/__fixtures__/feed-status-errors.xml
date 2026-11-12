@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuccessResponse>
+  <Head>
+    <RequestId/>
+    <RequestAction>FeedStatus</RequestAction>
+    <ResponseType>FeedDetail</ResponseType>
+    <Timestamp>2015-07-01T11:11:11+0000</Timestamp>
+    <RequestParameters>
+      <FeedID>6a521aff-e74b-4fb6-b40f-d46b42f91652</FeedID>
+    </RequestParameters>
+  </Head>
+  <Body>
+    <FeedDetail>
+      <Feed>6a521aff-e74b-4fb6-b40f-d46b42f91652</Feed>
+      <Status>Finished</Status>
+      <Action>ProductCreate</Action>
+      <CreationDate>2015-07-01 11:11:11</CreationDate>
+      <UpdatedDate>2015-07-01 11:11:11</UpdatedDate>
+      <Source>api</Source>
+      <TotalRecords>1</TotalRecords>
+      <ProcessedRecords>1</ProcessedRecords>
+      <FailedRecords>1</FailedRecords>
+      <FeedErrors>
+        <Error>
+          <Code>0</Code>
+          <Message>Field PrimaryCategory with value '4' has a problem: Primary category Id is invalid</Message>
+        </Error>
+        <Error>
+          <Code>1</Code>
+          <Message>Field Brand with value 'ASM' has a problem: This brand does not exist in our database. Please contact our support.</Message>
+        </Error>
+        <Error>
+          <Code>2</Code>
+          <Message>Field TaxClass with value 'default' has a problem: 'default' is an invalid Tax Class</Message>
+        </Error>
+      </FeedErrors>
+    </FeedDetail>
+  </Body>
+</SuccessResponse>

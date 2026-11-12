@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuccessResponse>
+    <Head>
+        <RequestId/>
+        <RequestAction>GetProducts</RequestAction>
+        <ResponseType>Products</ResponseType>
+        <Timestamp>2025-12-02T15:30:24-0300</Timestamp>
+    </Head>
+    <Body>
+        <Products/>
+    </Body>
+</SuccessResponse>

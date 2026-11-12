@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ErrorResponse>
+  <Head>
+    <RequestAction>FeedCount</RequestAction>
+    <ErrorType>Sender</ErrorType>
+    <ErrorCode>7</ErrorCode>
+    <ErrorMessage>E007: Login failed. Signature mismatching</ErrorMessage>
+  </Head>
+  <Body/>
+</ErrorResponse>

@@ -1,6 +1,9 @@
 import { ChannelCapability } from '../channel-capability.enum.js';
 import type { ChannelConnector } from '../channel-connector.interface.js';
-import { isOAuthAppConnector } from '../capabilities/capability-contracts.js';
+import {
+  isOAuthAppConnector,
+  isSellerCredentialsConnector,
+} from '../capabilities/capability-contracts.js';
 
 /** The methods each capability's interface requires, checked at runtime by the contract. */
 const CAPABILITY_METHODS: Partial<Record<ChannelCapability, readonly string[]>> = {
@@ -62,6 +65,14 @@ function checkOAuth(connector: ChannelConnector, options: ConnectorContractOptio
   expect(url.searchParams.get(STATE_PARAM)).toBe(CONTRACT_STATE);
 }
 
+function checkSellerCredentials(connector: ChannelConnector): void {
+  if (!isSellerCredentialsConnector(connector)) return;
+  const keys = connector.credentialFields.map((field) => field.key);
+  expect(keys.length).toBeGreaterThan(0);
+  expect(new Set(keys).size).toBe(keys.length);
+  expect(connector.credentialFields.some((field) => field.secret)).toBe(true);
+}
+
 /**
  * The checks every connector must pass, whatever its channel. Call it from the connector's
  * spec: `describeConnectorContract(() => createConnector(), options)`.
@@ -78,5 +89,7 @@ export function describeConnectorContract(
     });
     it('validates account handles and signs the authorization URL with the state', () =>
       checkOAuth(createConnector(), options));
+    it('names the credentials a merchant pastes, at least one of them secret', () =>
+      checkSellerCredentials(createConnector()));
   });
 }

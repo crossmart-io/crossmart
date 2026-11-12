@@ -6,6 +6,11 @@ import type { ChannelType } from './channel-type.enum.js';
 import type { ChannelCredentials } from './auth/channel-credentials.js';
 import type { ChannelSession } from './auth/channel-session.js';
 import type {
+  SellerCredentialField,
+  SellerCredentialValues,
+  VerifiedSellerAccount,
+} from './auth/seller-credentials.js';
+import type {
   ChannelAuthorization,
   OAuthAuthorizeRequest,
   OAuthCallback,
@@ -69,10 +74,16 @@ export interface OAuthAppConnector extends ChannelConnector {
   revokeAccess(session: ChannelSession): Promise<void>;
 }
 
-/** The merchant pastes keys the channel issued them (Walmart, self-hosted installs). */
+/** The merchant pastes keys the channel issued them (Falabella, Mirakl, Walmart). */
 export interface SellerCredentialsConnector extends ChannelConnector {
   readonly authStrategy: ChannelAuthStrategy.SellerCredentials;
 
-  /** Checks the keys against the channel and returns the account they belong to. */
-  verifyCredentials(fields: Readonly<Record<string, string>>): Promise<ChannelAuthorization>;
+  /** What the merchant pastes, in the order a form shows it. At least one field is secret. */
+  readonly credentialFields: readonly SellerCredentialField[];
+
+  /**
+   * Checks the keys with a live call and returns the account they belong to. Throws
+   * `CredentialsRejected` when the channel refuses them. The keys never appear in errors.
+   */
+  verifyCredentials(values: SellerCredentialValues): Promise<VerifiedSellerAccount>;
 }
