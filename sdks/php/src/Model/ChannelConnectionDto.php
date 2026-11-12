@@ -24,6 +24,7 @@ final class ChannelConnectionDto implements JsonSerializable
      * @param EbaySettingsDto|null $ebay The account’s details on its marketplace, for eBay connections
      * @param GoogleMerchantSettingsDto|null $googleMerchant The Merchant Center account and its listing setup, for Google connections
      * @param EtsySettingsDto|null $etsy The Etsy shop, its profiles and its listing setup, for Etsy connections
+     * @param FalabellaSettingsDto|null $falabella The Falabella account’s country, seller and user, for Falabella connections
      * @param ProductSelectionRuleDto|null $productSelection Which products the connection lists; null lists every product
      * @param PricingRuleDto|null $pricing How the connection prices variants; null sends catalog prices
      * @param int|float $failedListings Listings in this store whose last sync failed
@@ -42,6 +43,7 @@ final class ChannelConnectionDto implements JsonSerializable
         public readonly ?EbaySettingsDto $ebay,
         public readonly ?GoogleMerchantSettingsDto $googleMerchant,
         public readonly ?EtsySettingsDto $etsy,
+        public readonly ?FalabellaSettingsDto $falabella,
         public readonly ?ProductSelectionRuleDto $productSelection,
         public readonly ?PricingRuleDto $pricing,
         public readonly DateTimeImmutable $connectedAt,
@@ -76,6 +78,7 @@ final class ChannelConnectionDto implements JsonSerializable
             ebay: $payload->isNull('ebay') ? null : $payload->model('ebay', EbaySettingsDto::fromArray(...)),
             googleMerchant: $payload->isNull('googleMerchant') ? null : $payload->model('googleMerchant', GoogleMerchantSettingsDto::fromArray(...)),
             etsy: $payload->isNull('etsy') ? null : $payload->model('etsy', EtsySettingsDto::fromArray(...)),
+            falabella: $payload->isNull('falabella') ? null : $payload->model('falabella', FalabellaSettingsDto::fromArray(...)),
             productSelection: $payload->isNull('productSelection') ? null : $payload->model('productSelection', ProductSelectionRuleDto::fromArray(...)),
             pricing: $payload->isNull('pricing') ? null : $payload->model('pricing', PricingRuleDto::fromArray(...)),
             connectedAt: $payload->dateTime('connectedAt'),
@@ -108,6 +111,7 @@ final class ChannelConnectionDto implements JsonSerializable
             'ebay' => $this->ebay?->toArray(),
             'googleMerchant' => $this->googleMerchant?->toArray(),
             'etsy' => $this->etsy?->toArray(),
+            'falabella' => $this->falabella?->toArray(),
             'productSelection' => $this->productSelection?->toArray(),
             'pricing' => $this->pricing?->toArray(),
             'connectedAt' => Payload::formatDateTime($this->connectedAt),

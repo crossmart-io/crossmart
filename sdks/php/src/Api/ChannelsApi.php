@@ -11,6 +11,8 @@ use Crossmart\Http\ApiRequest;
 use Crossmart\Http\HttpMethod;
 use Crossmart\Http\TransportInterface;
 use Crossmart\Model\ChannelConnectionDto;
+use Crossmart\Model\ConnectWithCredentialsDto;
+use Crossmart\Model\ConnectedChannelDto;
 use Crossmart\Model\ImportJobDetailDto;
 use Crossmart\Model\StartAuthorizationDto;
 use Crossmart\Model\StartedAuthorizationDto;
@@ -103,6 +105,27 @@ final class ChannelsApi
         ));
 
         return ChannelConnectionDto::fromArray($response->object());
+    }
+
+    /**
+     * Connect a channel account with credentials the channel issued
+     *
+     * For channels whose sellers paste keys instead of approving an app (Falabella). The credentials are checked with a live call to the channel, then stored encrypted; they are never returned or logged. Connecting the same account again replaces its keys. Needs a signed-in user.
+     *
+     * @throws CrossmartExceptionInterface When the API cannot be reached or answers with an error.
+     */
+    public function channelCredentialsControllerConnectV1(
+        string $workspaceId,
+        ConnectWithCredentialsDto $body,
+    ): ConnectedChannelDto {
+        $response = $this->transport->send(new ApiRequest(
+            method: HttpMethod::Post,
+            pathTemplate: '/api/v1/workspaces/{workspaceId}/channel-connections/credentials',
+            pathParameters: ['workspaceId' => $workspaceId],
+            body: $body->toArray(),
+        ));
+
+        return ConnectedChannelDto::fromArray($response->object());
     }
 
     /**

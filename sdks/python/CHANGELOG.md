@@ -8,6 +8,11 @@ All notable changes to the `crossmart` Python package are documented here. The f
 
 ### Added
 
+- Connecting a channel with the credentials it issued (Falabella):
+  `POST /workspaces/{workspaceId}/channel-connections/credentials` with `ConnectWithCredentialsDto`
+  (`credentials` is a `FalabellaCredentialsDto`), answering `ConnectedChannelDto`, or 422
+  `CredentialsRejectedErrorDto`. New `falabella` channel type, `FalabellaCountry` enum,
+  `falabella` settings on `ChannelConnectionDto`, and the `credentials_rejected` connect failure.
 - `exemption` on `AgentProposalSubmissionDto` (enum `AgentApprovalExemption`, `new_draft`): set
   with `apply_directly` when the workspace approves agents' changes but the call needs none, such
   as `create_product` for a new draft.
