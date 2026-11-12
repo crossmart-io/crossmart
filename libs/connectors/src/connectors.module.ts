@@ -6,6 +6,8 @@ import { EbayConnector } from './ebay/ebay.connector.js';
 import { EbayConnectorModule } from './ebay/ebay-connector.module.js';
 import { EtsyConnector } from './etsy/etsy.connector.js';
 import { EtsyConnectorModule } from './etsy/etsy-connector.module.js';
+import { MercadoLibreConnector } from './mercadolibre/mercadolibre.connector.js';
+import { MercadoLibreConnectorModule } from './mercadolibre/mercadolibre-connector.module.js';
 import { GoogleMerchantConnector } from './google-merchant/google-merchant.connector.js';
 import { GoogleMerchantConnectorModule } from './google-merchant/google-merchant-connector.module.js';
 import { ShopifyConnector } from './shopify/shopify.connector.js';
@@ -21,17 +23,19 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
     EbayConnectorModule,
     GoogleMerchantConnectorModule,
     EtsyConnectorModule,
+    MercadoLibreConnectorModule,
   ],
   providers: [
     {
       provide: CHANNEL_CONNECTORS,
-      inject: [ShopifyConnector, EbayConnector, GoogleMerchantConnector, EtsyConnector],
-      useFactory: (
-        shopify: ShopifyConnector,
-        ebay: EbayConnector,
-        google: GoogleMerchantConnector,
-        etsy: EtsyConnector,
-      ): ChannelConnector[] => [shopify, ebay, google, etsy],
+      inject: [
+        ShopifyConnector,
+        EbayConnector,
+        GoogleMerchantConnector,
+        EtsyConnector,
+        MercadoLibreConnector,
+      ],
+      useFactory: (...connectors: ChannelConnector[]): ChannelConnector[] => connectors,
     },
     ChannelConnectorRegistry,
   ],
@@ -41,6 +45,7 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
     EbayConnectorModule,
     GoogleMerchantConnectorModule,
     EtsyConnectorModule,
+    MercadoLibreConnectorModule,
   ],
 })
 export class ConnectorsModule {}

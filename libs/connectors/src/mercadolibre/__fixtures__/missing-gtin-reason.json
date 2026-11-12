@@ -1,0 +1,15 @@
+{
+  "message": "Validation error",
+  "error": "validation_error",
+  "status": 400,
+  "cause": [
+    {
+      "department": "supply",
+      "cause_id": 7810,
+      "type": "error",
+      "code": "item.attribute.missing_conditional_required",
+      "references": ["item.attributes"],
+      "message": "The attributes [EMPTY_GTIN_REASON] are required for category [MLA455058]. Check the attribute is present in the attributes list or in all variation's attributes_combination or attributes."
+    }
+  ]
+}

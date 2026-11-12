@@ -1,0 +1,131 @@
+{
+  "id": "MLB1548991737",
+  "site_id": "MLB",
+  "title": "Item De Teste - Não Comprar",
+  "seller_id": 419059118,
+  "category_id": "MLB437616",
+  "user_product_id": "MLAU1234567",
+  "official_store_id": null,
+  "price": 10,
+  "base_price": 10,
+  "original_price": null,
+  "inventory_id": null,
+  "currency_id": "BRL",
+  "initial_quantity": 1,
+  "available_quantity": 1,
+  "sold_quantity": 0,
+  "sale_terms": [
+    {
+      "id": "WARRANTY_TYPE",
+      "name": "Tipo de garantia",
+      "value_id": "2230280",
+      "value_name": "Garantia do vendedor"
+    },
+    {
+      "id": "WARRANTY_TIME",
+      "name": "Tempo de garantia",
+      "value_id": null,
+      "value_name": null
+    }
+  ],
+  "buying_mode": "buy_it_now",
+  "listing_type_id": "gold_special",
+  "start_time": "2020-06-05T13:48:44.964Z",
+  "stop_time": "2040-05-31T04:00:00.000Z",
+  "end_time": "2040-05-31T04:00:00.000Z",
+  "expiration_time": "2020-08-24T13:48:45.039Z",
+  "condition": "new",
+  "permalink": "http://produto.mercadolivre.com.br/MLB-1548991737-item-de-teste-no-comprar-_JM",
+  "pictures": [
+    {
+      "id": "830983-MLB42088778762_062020",
+      "url": "http://http2.mlstatic.com/resources/frontend/statics/processing-image/1.0.0/O-PT.jpg",
+      "secure_url": "https://http2.mlstatic.com/resources/frontend/statics/processing-image/1.0.0/O-PT.jpg",
+      "size": "500x500",
+      "max_size": "500x500",
+      "quality": ""
+    }
+  ],
+  "video_id": null,
+  "descriptions": [],
+  "accepts_mercadopago": true,
+  "non_mercado_pago_payment_methods": [],
+  "shipping": {
+    "mode": "me1",
+    "local_pick_up": false,
+    "free_shipping": false,
+    "methods": [],
+    "dimensions": null,
+    "tags": [],
+    "logistic_type": "default",
+    "store_pick_up": false
+  },
+  "international_delivery_mode": "none",
+  "seller_address": {
+    "id": 1032937241,
+    "comment": "",
+    "address_line": "Rua Exemplo 123",
+    "zip_code": "01234100",
+    "city": {
+      "id": "BR-SP-44",
+      "name": "São Paulo"
+    },
+    "state": {
+      "id": "BR-SP",
+      "name": "São Paulo"
+    },
+    "country": {
+      "id": "BR",
+      "name": "Brasil"
+    },
+    "latitude": -23.6251244,
+    "longitude": -46.7441422,
+    "search_location": {
+      "neighborhood": {
+        "id": "TUxCQlZJTDI1OTI",
+        "name": "Vila Andrade"
+      },
+      "city": {
+        "id": "TUxCQ1NQLTkxMjE",
+        "name": "São Paulo Zona Sul"
+      },
+      "state": {
+        "id": "TUxCUFNBT085N2E4",
+        "name": "São Paulo"
+      }
+    }
+  },
+  "seller_contact": null,
+  "location": {},
+  "geolocation": {
+    "latitude": -23.6251244,
+    "longitude": -46.7441422
+  },
+  "coverage_areas": [],
+  "attributes": [
+    {
+      "id": "ITEM_CONDITION",
+      "name": "Condição do item",
+      "value_id": "2230284",
+      "value_name": "Novo"
+    }
+  ],
+  "listing_source": "",
+  "variations": [],
+  "thumbnail": "http://http2.mlstatic.com/resources/frontend/statics/processing-image/1.0.0/I-PT.jpg",
+  "status": "active",
+  "sub_status": [],
+  "tags": ["cart_eligible", "immediate_payment", "test_item"],
+  "warranty": "Garantia do vendedor: 90 días",
+  "catalog_product_id": null,
+  "domain_id": null,
+  "seller_custom_field": null,
+  "parent_item_id": null,
+  "deal_ids": [],
+  "automatic_relist": false,
+  "date_created": "2020-06-05T13:48:45.176Z",
+  "last_updated": "2020-06-05T13:48:45.176Z",
+  "health": null,
+  "catalog_listing": false,
+  "item_relations": []
+}

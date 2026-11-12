@@ -1,0 +1,51 @@
+{
+  "id": 2000003508419013,
+  "status": "paid",
+  "status_detail": null,
+  "date_created": "2013-05-27T10:01:50.000-04:00",
+  "date_closed": "2013-05-27T10:04:07.000-04:00",
+  "order_items": [
+    {
+      "item": {
+        "id": "MLB12345678",
+        "title": "Samsung Galaxy",
+        "variation_id": null,
+        "variation_attributes": []
+      },
+      "quantity": 1,
+      "unit_price": 499,
+      "currency_id": "BRL"
+    }
+  ],
+  "total_amount": 499,
+  "currency_id": "BRL",
+  "buyer": {
+    "id": "123456789"
+  },
+  "seller": {
+    "id": "123456789"
+  },
+  "payments": [
+    {
+      "id": "596707837",
+      "transaction_amount": 499,
+      "currency_id": "BRL",
+      "status": "approved",
+      "date_created": null,
+      "date_last_modified": null
+    }
+  ],
+  "feedback": {
+    "purchase": null,
+    "sale": null
+  },
+  "context": {
+    "channel": "marketplace",
+    "site": "MLB",
+    "flows": []
+  },
+  "shipping": {
+    "id": 20676482441
+  },
+  "tags": ["paid", "not_delivered"]
+}

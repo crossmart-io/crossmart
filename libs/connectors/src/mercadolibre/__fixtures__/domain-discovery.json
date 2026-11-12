@@ -1,0 +1,13 @@
+[
+  {
+    "domain_id": "MLA-CELLPHONES",
+    "domain_name": "Celulares",
+    "category_id": "MLA1055",
+    "category_name": "Celulares y Smartphones",
+    "attributes": [
+      { "id": "BRAND", "name": "Marca", "value_id": "9344", "value_name": "Apple" },
+      { "id": "LINE", "name": "Línea", "value_id": "58993", "value_name": "iPhone" },
+      { "id": "MODEL", "name": "Modelo", "value_id": "14608", "value_name": "iPhone" }
+    ]
+  }
+]
