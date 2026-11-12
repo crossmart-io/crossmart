@@ -4,6 +4,7 @@ from enum import StrEnum
 class ConnectFailure(StrEnum):
     ACCESS_DENIED = "access_denied"
     CHANNEL_UNAVAILABLE = "channel_unavailable"
+    CREDENTIALS_REJECTED = "credentials_rejected"
     EXPIRED_STATE = "expired_state"
     INVALID_ACCOUNT = "invalid_account"
     INVALID_SIGNATURE = "invalid_signature"

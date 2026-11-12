@@ -63,3 +63,10 @@ export const DEFAULT_CURRENCY_CODE = 'USD';
 
 /** Why a store that is not connected cannot publish: the merchant must connect it again. */
 export const RECONNECT_TO_PUBLISH = 'Connect this store again to publish to it.';
+
+/** Why pasted credentials were refused before reaching the channel. */
+export const CREDENTIALS_FIELD_MISSING = 'is required';
+export const CREDENTIALS_FIELD_TOO_LONG = 'is too long';
+export const CREDENTIALS_FIELD_NOT_ALLOWED = 'is not one of the accepted values';
+export const CREDENTIALS_FIELD_UNKNOWN = 'is not a credential of this channel';
+export const CREDENTIALS_FIELD_SEPARATOR = '; ';

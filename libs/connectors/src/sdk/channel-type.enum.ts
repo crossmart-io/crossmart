@@ -3,6 +3,7 @@ export enum ChannelType {
   Ebay = 'ebay',
   GoogleMerchant = 'google_merchant',
   Etsy = 'etsy',
+  Falabella = 'falabella',
   Amazon = 'amazon',
   Walmart = 'walmart',
 }

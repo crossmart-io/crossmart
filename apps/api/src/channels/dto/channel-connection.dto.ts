@@ -5,6 +5,7 @@ import {
   ChannelType,
   isEbaySettings,
   isEtsySettings,
+  isFalabellaSettings,
   isGoogleMerchantSettings,
   isShopifySettings,
 } from '@crossmart/connectors';
@@ -19,20 +20,38 @@ import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
 import { EbaySettingsDto } from './ebay-settings.dto.js';
 import { EtsySettingsDto } from './etsy-settings.dto.js';
+import { FalabellaSettingsDto } from './falabella-settings.dto.js';
 import { GoogleMerchantSettingsDto } from './google-merchant-settings.dto.js';
 import { PublishReadinessDto } from './publish-readiness.dto.js';
 
-type AccountDtos = Pick<ChannelConnectionDto, 'shopify' | 'ebay' | 'googleMerchant' | 'etsy'>;
+type AccountDtos = Pick<
+  ChannelConnectionDto,
+  'shopify' | 'ebay' | 'googleMerchant' | 'etsy' | 'falabella'
+>;
+
+const NO_ACCOUNT: AccountDtos = {
+  shopify: null,
+  ebay: null,
+  googleMerchant: null,
+  etsy: null,
+  falabella: null,
+};
+
+/** The one channel field a connection's account details go under. */
+function accountDto(account: ChannelSettings): Partial<AccountDtos> {
+  if (isShopifySettings(account)) return { shopify: ShopifySettingsDto.from(account) };
+  if (isEbaySettings(account)) return { ebay: EbaySettingsDto.from(account) };
+  if (isGoogleMerchantSettings(account)) {
+    return { googleMerchant: GoogleMerchantSettingsDto.from(account) };
+  }
+  if (isEtsySettings(account)) return { etsy: EtsySettingsDto.from(account) };
+  if (isFalabellaSettings(account)) return { falabella: FalabellaSettingsDto.from(account) };
+  return {};
+}
 
 /** The account's details under its channel's field; the other channels' fields are null. */
 function accountDtos(account: ChannelSettings | null): AccountDtos {
-  return {
-    shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
-    ebay: account && isEbaySettings(account) ? EbaySettingsDto.from(account) : null,
-    googleMerchant:
-      account && isGoogleMerchantSettings(account) ? GoogleMerchantSettingsDto.from(account) : null,
-    etsy: account && isEtsySettings(account) ? EtsySettingsDto.from(account) : null,
-  };
+  return { ...NO_ACCOUNT, ...(account ? accountDto(account) : {}) };
 }
 
 /** A channel connection. Credentials are never part of it. */
@@ -93,6 +112,13 @@ export class ChannelConnectionDto {
     description: 'The Etsy shop, its profiles and its listing setup, for Etsy connections',
   })
   etsy: EtsySettingsDto | null;
+
+  @ApiProperty({
+    type: FalabellaSettingsDto,
+    nullable: true,
+    description: 'The Falabella account’s country, seller and user, for Falabella connections',
+  })
+  falabella: FalabellaSettingsDto | null;
 
   @ApiProperty({
     type: ProductSelectionRuleDto,

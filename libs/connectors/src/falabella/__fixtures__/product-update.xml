@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuccessResponse>
+	<Head>
+		<RequestId>f8bf8d09-1647-4136-b405-03c44f228cf5</RequestId>
+		<RequestAction>ProductUpdate</RequestAction>
+		<ResponseType/>
+		<Timestamp>2015-07-02T12:19:49+0200</Timestamp>
+	</Head>
+	<Body/>
+</SuccessResponse>

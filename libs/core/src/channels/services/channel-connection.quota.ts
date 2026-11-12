@@ -40,7 +40,8 @@ export class ChannelConnectionQuota {
     await this.entitlements.assertInWorkspace(workspaceId, Feature.ChannelConnections);
   }
 
-  private assertNotSandbox(workspaceId: string): Promise<void> {
+  /** An unclaimed sandbox account connects nothing; checked before calling the channel. */
+  assertNotSandbox(workspaceId: string): Promise<void> {
     return this.entitlements.assertSandboxAllows(workspaceId, SandboxRestriction.ConnectChannel);
   }
 }

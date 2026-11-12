@@ -16,6 +16,7 @@ const FAILURE_MESSAGES: Record<ConnectFailure, string> = {
   [ConnectFailure.ChannelUnavailable]: 'The channel is not responding. Try again in a moment.',
   [ConnectFailure.PlanLimitReached]: 'The plan has no room for another connected channel',
   [ConnectFailure.SandboxClaimRequired]: 'Claim this account before connecting a store',
+  [ConnectFailure.CredentialsRejected]: 'The channel rejected these credentials',
   [ConnectFailure.Unexpected]: 'The channel could not be connected',
 };
 
@@ -26,6 +27,7 @@ const CHANNEL_ERROR_FAILURES: Partial<Record<ChannelErrorCode, ConnectFailure>> 
   [ChannelErrorCode.MissingScopes]: ConnectFailure.MissingScopes,
   [ChannelErrorCode.ChannelUnavailable]: ConnectFailure.ChannelUnavailable,
   [ChannelErrorCode.RateLimited]: ConnectFailure.ChannelUnavailable,
+  [ChannelErrorCode.CredentialsRejected]: ConnectFailure.CredentialsRejected,
 };
 
 const DETAIL_SEPARATOR = ': ';
