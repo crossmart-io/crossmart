@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+          <SuccessResponse>
+              <Head>
+                  <RequestId/>
+                  <RequestAction>GetOrderItems</RequestAction>
+                  <ResponseType>OrderItems</ResponseType>
+                  <Timestamp>2026-09-23T15:35:29-03:00</Timestamp>
+              </Head>
+              <Body>
+                  <OrderItems>
+                      <OrderItem>
+                          <OrderItemId>59302656</OrderItemId>
+                          <ShopId>7c437a63-3a05-4d6e-9761-db32cdb016a4</ShopId>
+                          <OrderId>5005819247</OrderId>
+                          <Name>PRUEBA PRODUCTO NO REAL NO COMPRAR</Name>
+                          <Sku>234567892</Sku>
+                          <Variation>{}</Variation>
+                          <ShopSku>157987100</ShopSku>
+                          <ShippingType>Dropshipping</ShippingType>
+                          <Currency>PEN</Currency>
+                          <VoucherCode/>
+                          <Status>pending</Status>
+                          <IsProcessable>1</IsProcessable>
+                          <ShipmentProvider>mailamericas</ShipmentProvider>
+                          <DeliveryMethod>Home_delivery</DeliveryMethod>
+                          <IsDigital>0</IsDigital>
+                          <DigitalDeliveryInfo/>
+                          <TrackingCode/>
+                          <TrackingCodePre/>
+                          <Reason/>
+                          <ReasonDetail/>
+                          <PurchaseOrderId/>
+                          <PurchaseOrderNumber/>
+                          <PackageId/>
+                          <PromisedShippingTime>2026-09-29 23:30:00</PromisedShippingTime>
+                          <ExtraAttributes>{"itemId":"1","originNode":"944f3e34-084f-4a51-9031-65d9b3386d3b","originNodeType":"SELLER","deliveryOrderGroupId":"149247243779"}</ExtraAttributes>
+                          <ShippingProviderType>regular</ShippingProviderType>
+                          <CreatedAt>2026-09-23 13:49:58</CreatedAt>
+                          <UpdatedAt>2026-09-23 13:50:03</UpdatedAt>
+                          <Vouchers/>
+                          <SalesType>TDR</SalesType>
+                          <ReturnStatus/>
+                          <RequiresDeviceIdentifiers>false</RequiresDeviceIdentifiers>
+                          <WalletCredits>0.00</WalletCredits>
+                          <ItemPrice>100.00</ItemPrice>
+                          <PaidPrice>100.00</PaidPrice>
+                          <TaxAmount>0.00</TaxAmount>
+                          <CodCollectableAmount>0.00</CodCollectableAmount>
+                          <ShippingAmount>0.00</ShippingAmount>
+                          <ShippingServiceCost>0.00</ShippingServiceCost>
+                          <ShippingTax>0.00</ShippingTax>
+                          <VoucherAmount>0.00</VoucherAmount>
+                          <VoucherAmountDetails>
+                              <CmrDiscount>0.00</CmrDiscount>
+                              <CmrDiscountSellerFundedPct>0</CmrDiscountSellerFundedPct>
+                              <OtherDiscount>0.00</OtherDiscount>
+                          </VoucherAmountDetails>
+                      </OrderItem>
+                      <OrderItem>
+                          <OrderItemId>59302655</OrderItemId>
+                          <ShopId>9e41a9b0-4a7b-4b35-9486-62661e4460e8</ShopId>
+                          <OrderId>5005819247</OrderId>
+                          <Name>Iphone 16 pro max Prueba FBS 2 China NO COMPRAR</Name>
+                          <Sku>cellphonechinafbs2</Sku>
+                          <Variation>{"color":{"name":"Negro","code":"#000000"},"size":"32 GB"}</Variation>
+                          <ShopSku>157898368</ShopSku>
+                          <ShippingType>Dropshipping</ShippingType>
+                          <Currency>PEN</Currency>
+                          <VoucherCode/>
+                          <Status>pending</Status>
+                          <IsProcessable>1</IsProcessable>
+                          <ShipmentProvider>mailamericas</ShipmentProvider>
+                          <DeliveryMethod>Home_delivery</DeliveryMethod>
+                          <IsDigital>0</IsDigital>
+                          <DigitalDeliveryInfo/>
+                          <TrackingCode/>
+                          <TrackingCodePre/>
+                          <Reason/>
+                          <ReasonDetail/>
+                          <PurchaseOrderId/>
+                          <PurchaseOrderNumber/>
+                          <PackageId/>
+                          <PromisedShippingTime>2026-09-29 23:30:00</PromisedShippingTime>
+                          <ExtraAttributes>{"itemId":"1","originNode":"944f3e34-084f-4a51-9031-65d9b3386d3b","originNodeType":"SELLER","deliveryOrderGroupId":"149247243779"}</ExtraAttributes>
+                          <ShippingProviderType>regular</ShippingProviderType>
+                          <CreatedAt>2026-09-23 13:49:58</CreatedAt>
+                          <UpdatedAt>2026-09-23 13:50:03</UpdatedAt>
+                          <Vouchers/>
+                          <SalesType>TDR</SalesType>
+                          <ReturnStatus/>
+                          <RequiresDeviceIdentifiers>true</RequiresDeviceIdentifiers>
+                          <WalletCredits>0.00</WalletCredits>
+                          <ItemPrice>200.00</ItemPrice>
+                          <PaidPrice>200.00</PaidPrice>
+                          <TaxAmount>0.00</TaxAmount>
+                          <CodCollectableAmount>0.00</CodCollectableAmount>
+                          <ShippingAmount>0.00</ShippingAmount>
+                          <ShippingServiceCost>0.00</ShippingServiceCost>
+                          <ShippingTax>0.00</ShippingTax>
+                          <VoucherAmount>0.00</VoucherAmount>
+                          <VoucherAmountDetails>
+                              <CmrDiscount>0.00</CmrDiscount>
+                              <CmrDiscountSellerFundedPct>0</CmrDiscountSellerFundedPct>
+                              <OtherDiscount>0.00</OtherDiscount>
+                          </VoucherAmountDetails>
+                      </OrderItem>
+                  </OrderItems>
+              </Body>
+          </SuccessResponse>

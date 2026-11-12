@@ -117,6 +117,8 @@ from .claim_sandbox_dto import ClaimSandboxDto
 from .claimed_sandbox_dto import ClaimedSandboxDto
 from .compare_at_mode import CompareAtMode
 from .connect_failure import ConnectFailure
+from .connect_with_credentials_dto import ConnectWithCredentialsDto
+from .connected_channel_dto import ConnectedChannelDto
 from .connection_sales_dto import ConnectionSalesDto
 from .connection_summary_dto import ConnectionSummaryDto
 from .content_draft_dto import ContentDraftDto
@@ -133,6 +135,7 @@ from .create_sandbox_account_dto import CreateSandboxAccountDto
 from .create_variant_dto import CreateVariantDto
 from .create_webhook_endpoint_dto import CreateWebhookEndpointDto
 from .create_workspace_dto import CreateWorkspaceDto
+from .credentials_rejected_error_dto import CredentialsRejectedErrorDto
 from .current_api_key_dto import CurrentApiKeyDto
 from .custom_role_dto import CustomRoleDto
 from .custom_role_input_dto import CustomRoleInputDto
@@ -154,6 +157,9 @@ from .etsy_settings_dto import EtsySettingsDto
 from .etsy_shop_profiles_dto import EtsyShopProfilesDto
 from .etsy_when_made import EtsyWhenMade
 from .etsy_who_made import EtsyWhoMade
+from .falabella_country import FalabellaCountry
+from .falabella_credentials_dto import FalabellaCredentialsDto
+from .falabella_settings_dto import FalabellaSettingsDto
 from .feature import Feature
 from .feature_kind import FeatureKind
 from .feature_usage_dto import FeatureUsageDto
@@ -542,6 +548,8 @@ __all__ = (
     "ClaimedSandboxDto",
     "CompareAtMode",
     "ConnectFailure",
+    "ConnectWithCredentialsDto",
+    "ConnectedChannelDto",
     "ConnectionSalesDto",
     "ConnectionSummaryDto",
     "ContentDraftDto",
@@ -558,6 +566,7 @@ __all__ = (
     "CreateVariantDto",
     "CreateWebhookEndpointDto",
     "CreateWorkspaceDto",
+    "CredentialsRejectedErrorDto",
     "CurrentApiKeyDto",
     "CustomRoleDto",
     "CustomRoleInputDto",
@@ -579,6 +588,9 @@ __all__ = (
     "EtsyShopProfilesDto",
     "EtsyWhenMade",
     "EtsyWhoMade",
+    "FalabellaCountry",
+    "FalabellaCredentialsDto",
+    "FalabellaSettingsDto",
     "Feature",
     "FeatureKind",
     "FeatureUsageDto",

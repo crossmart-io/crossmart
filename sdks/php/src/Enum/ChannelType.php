@@ -13,6 +13,7 @@ enum ChannelType: string
     case GoogleMerchant = 'google_merchant';
     case Etsy = 'etsy';
     case MercadoLibre = 'mercado_libre';
+    case Falabella = 'falabella';
     case Amazon = 'amazon';
     case Walmart = 'walmart';
 }

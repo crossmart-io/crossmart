@@ -864,6 +864,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/channel-connections/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect a channel account with credentials the channel issued
+         * @description For channels whose sellers paste keys instead of approving an app (Falabella). The credentials are checked with a live call to the channel, then stored encrypted; they are never returned or logged. Connecting the same account again replaces its keys. Needs a signed-in user.
+         */
+        post: operations["ChannelCredentialsController_connect_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/channel-connections/{connectionId}/imports": {
         parameters: {
             query?: never;
@@ -3682,6 +3702,23 @@ export interface components {
             /** @description Whether the seller lists under User Products: one item per variant, each with its own price */
             userProductSeller: boolean;
         };
+        /** @enum {string} */
+        FalabellaCountry: FalabellaCountry;
+        FalabellaSettingsDto: {
+            country: components["schemas"]["FalabellaCountry"];
+            /** @example SC478FA */
+            sellerId: string;
+            /**
+             * @description The Seller Center user whose key is used
+             * @example seller@example.com
+             */
+            userId: string;
+            /**
+             * @description ISO 4217 code of the country’s currency
+             * @example CLP
+             */
+            currencyCode: string;
+        };
         ProductSelectionFilterDto: {
             /** @description Matches title, handle or SKU */
             search?: string;
@@ -3767,6 +3804,8 @@ export interface components {
             etsy: components["schemas"]["EtsySettingsDto"] | null;
             /** @description The seller and their country site, for Mercado Libre connections */
             mercadoLibre: components["schemas"]["MercadoLibreSettingsDto"] | null;
+            /** @description The Falabella account’s country, seller and user, for Falabella connections */
+            falabella: components["schemas"]["FalabellaSettingsDto"] | null;
             /** @description Which products the connection lists; null lists every product */
             productSelection: components["schemas"]["ProductSelectionRuleDto"] | null;
             /** @description How the connection prices variants; null sends catalog prices */
@@ -3808,6 +3847,42 @@ export interface components {
              * @example demo-store.myshopify.com
              */
             externalAccountId: string;
+        };
+        FalabellaCredentialsDto: {
+            /**
+             * @description The seller id, under Mi cuenta in Seller Center
+             * @example SC478FA
+             */
+            sellerId: string;
+            /**
+             * @description The Seller Center user’s email (Mi cuenta, Usuarios). See https://developers.falabella.com/docs/operate-with-apis
+             * @example seller@example.com
+             */
+            userId: string;
+            /** @description The user’s API key, from the Api Key column of Mi cuenta, Usuarios. Stored encrypted; never returned. */
+            apiKey: string;
+            /** @description The country the account sells in: facl Chile, faco Colombia, fape Peru */
+            country: components["schemas"]["FalabellaCountry"];
+        };
+        ConnectWithCredentialsDto: {
+            /** @description A channel connected with credentials: `falabella` */
+            channel: components["schemas"]["ChannelType"];
+            /** @description The credentials the channel issued, with the fields of its schema */
+            credentials: components["schemas"]["FalabellaCredentialsDto"];
+        };
+        ConnectedChannelDto: {
+            connection: components["schemas"]["ChannelConnectionDto"];
+            /** @description True when the account was connected before and got new keys */
+            reconnected: boolean;
+        };
+        CredentialsRejectedErrorDto: {
+            /** @example 422 */
+            statusCode: number;
+            /** @example Unprocessable Entity */
+            error: string;
+            failure: components["schemas"]["ConnectFailure"];
+            /** @example Falabella rejected the user id or API key. Copy them again from Seller Center.: E007: Login failed. Signature mismatching */
+            message: string;
         };
         UpdateEbayListingDefaultsDto: {
             /** @description Shipping policy; null uses the account’s only one, when it has exactly one */
@@ -7473,6 +7548,65 @@ export interface operations {
             };
         };
     };
+    ChannelCredentialsController_connect_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectWithCredentialsDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectedChannelDto"];
+                };
+            };
+            /** @description The organization’s plan does not allow this (`ENTITLEMENTS_ENFORCED` is on). `code` and `feature` say why; upgrading the plan resolves it. Where billing is on, `code: subscription_inactive` means the organization is read-only until a billing admin fixes its subscription (`state` says why). */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanLimitErrorDto"] | components["schemas"]["SubscriptionInactiveErrorDto"];
+                };
+            };
+            /** @description Missing permission, or (with `code: sandbox_claim_required`) the workspace is an unclaimed sandbox account an AI agent opened: the user must claim it from the emailed link first. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxRestrictedErrorDto"];
+                };
+            };
+            /** @description The channel refused the credentials, or the account they name. `message` is its explanation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialsRejectedErrorDto"];
+                };
+            };
+            /** @description The channel is not responding */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ChannelImportsController_start_v1: {
         parameters: {
             query?: never;
@@ -10120,6 +10254,7 @@ export enum ChannelType {
     google_merchant = "google_merchant",
     etsy = "etsy",
     mercado_libre = "mercado_libre",
+    falabella = "falabella",
     amazon = "amazon",
     walmart = "walmart"
 }
@@ -10342,6 +10477,7 @@ export enum ConnectFailure {
     channel_unavailable = "channel_unavailable",
     plan_limit_reached = "plan_limit_reached",
     sandbox_claim_required = "sandbox_claim_required",
+    credentials_rejected = "credentials_rejected",
     unexpected = "unexpected"
 }
 export enum ChannelConnectionStatus {
@@ -10425,6 +10561,11 @@ export enum MercadoLibreSiteId {
     MPE = "MPE",
     MLA = "MLA",
     MLB = "MLB"
+}
+export enum FalabellaCountry {
+    facl = "facl",
+    faco = "faco",
+    fape = "fape"
 }
 export enum PriceRounding {
     none = "none",

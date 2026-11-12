@@ -17,5 +17,7 @@ export enum ConnectFailure {
   PlanLimitReached = 'plan_limit_reached',
   /** The workspace is an unclaimed sandbox account, which connects no channel until claimed. */
   SandboxClaimRequired = 'sandbox_claim_required',
+  /** The channel refused the pasted credentials (a wrong key or user). */
+  CredentialsRejected = 'credentials_rejected',
   Unexpected = 'unexpected',
 }

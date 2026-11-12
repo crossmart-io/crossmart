@@ -15,6 +15,7 @@ from ..models.channel_type import ChannelType
 if TYPE_CHECKING:
     from ..models.ebay_settings_dto import EbaySettingsDto
     from ..models.etsy_settings_dto import EtsySettingsDto
+    from ..models.falabella_settings_dto import FalabellaSettingsDto
     from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
     from ..models.mercado_libre_settings_dto import MercadoLibreSettingsDto
     from ..models.pricing_rule_dto import PricingRuleDto
@@ -44,6 +45,8 @@ class ChannelConnectionDto:
             Google connections
         etsy (EtsySettingsDto | None): The Etsy shop, its profiles and its listing setup, for Etsy connections
         mercado_libre (MercadoLibreSettingsDto | None): The seller and their country site, for Mercado Libre connections
+        falabella (FalabellaSettingsDto | None): The Falabella account’s country, seller and user, for Falabella
+            connections
         product_selection (None | ProductSelectionRuleDto): Which products the connection lists; null lists every
             product
         pricing (None | PricingRuleDto): How the connection prices variants; null sends catalog prices
@@ -69,6 +72,7 @@ class ChannelConnectionDto:
     google_merchant: GoogleMerchantSettingsDto | None
     etsy: EtsySettingsDto | None
     mercado_libre: MercadoLibreSettingsDto | None
+    falabella: FalabellaSettingsDto | None
     product_selection: None | ProductSelectionRuleDto
     pricing: None | PricingRuleDto
     connected_at: datetime.datetime
@@ -83,6 +87,7 @@ class ChannelConnectionDto:
     def to_dict(self) -> dict[str, Any]:
         from ..models.ebay_settings_dto import EbaySettingsDto
         from ..models.etsy_settings_dto import EtsySettingsDto
+        from ..models.falabella_settings_dto import FalabellaSettingsDto
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
         from ..models.mercado_libre_settings_dto import MercadoLibreSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
@@ -139,6 +144,12 @@ class ChannelConnectionDto:
         else:
             mercado_libre = self.mercado_libre
 
+        falabella: dict[str, Any] | None
+        if isinstance(self.falabella, FalabellaSettingsDto):
+            falabella = self.falabella.to_dict()
+        else:
+            falabella = self.falabella
+
         product_selection: dict[str, Any] | None
         if isinstance(self.product_selection, ProductSelectionRuleDto):
             product_selection = self.product_selection.to_dict()
@@ -190,6 +201,7 @@ class ChannelConnectionDto:
                 "googleMerchant": google_merchant,
                 "etsy": etsy,
                 "mercadoLibre": mercado_libre,
+                "falabella": falabella,
                 "productSelection": product_selection,
                 "pricing": pricing,
                 "connectedAt": connected_at,
@@ -208,6 +220,7 @@ class ChannelConnectionDto:
     def from_dict(cls, src_dict: Mapping[str, Any]) -> Self:
         from ..models.ebay_settings_dto import EbaySettingsDto
         from ..models.etsy_settings_dto import EtsySettingsDto
+        from ..models.falabella_settings_dto import FalabellaSettingsDto
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
         from ..models.mercado_libre_settings_dto import MercadoLibreSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
@@ -317,6 +330,21 @@ class ChannelConnectionDto:
 
         mercado_libre = _parse_mercado_libre(d.pop("mercadoLibre"))
 
+        def _parse_falabella(data: object) -> FalabellaSettingsDto | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                falabella_type_0 = FalabellaSettingsDto.from_dict(data)
+
+                return falabella_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(FalabellaSettingsDto | None, data)
+
+        falabella = _parse_falabella(d.pop("falabella"))
+
         def _parse_product_selection(data: object) -> None | ProductSelectionRuleDto:
             if data is None:
                 return data
@@ -401,6 +429,7 @@ class ChannelConnectionDto:
             google_merchant=google_merchant,
             etsy=etsy,
             mercado_libre=mercado_libre,
+            falabella=falabella,
             product_selection=product_selection,
             pricing=pricing,
             connected_at=connected_at,

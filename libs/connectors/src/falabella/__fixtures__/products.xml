@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuccessResponse>
+    <Head>
+        <RequestId/>
+        <RequestAction>GetProducts</RequestAction>
+        <ResponseType>Products</ResponseType>
+        <Timestamp>2025-12-02T15:30:24-0300</Timestamp>
+    </Head>
+    <Body>
+        <Products>
+            <Product>
+                <SellerSku>test-seller-sku-001</SellerSku>
+                <ShopSku>test-shop-sku-001</ShopSku>
+                <Variant>test-seller-sku-001</Variant>
+                <Name>Zapatillas Marca Test Modelo X Negro Hombre</Name>
+                <ProductId/>
+                <Url>https://www.falabella.com/falabella-cl/product/test-product-001/Zapatillas-Test-Modelo-X-Negro-Hombre/test-variant-001</Url>
+                <MainImage>https://sellercenter-static.falabella.com/test/test-main-image-001.jpeg</MainImage>
+                <Images>
+                    <Image>https://sellercenter-static.falabella.com/test/test-image-001.jpeg</Image>
+                    <Image>https://sellercenter-static.falabella.com/test/test-image-002.jpeg</Image>
+                    <Image>https://sellercenter-static.falabella.com/test/test-image-003.jpeg</Image>
+                    <Image>https://sellercenter-static.falabella.com/test/test-image-004.jpeg</Image>
+                </Images>
+                <ContentScore>74</ContentScore>
+                <Description>Este es un producto de prueba con descripción ficticia para validar integraciones.</Description>
+                <TaxClass>IVA 19%</TaxClass>
+                <Brand>TEST BRAND</Brand>
+                <PrimaryCategory>Zapatillas deportivas</PrimaryCategory>
+                <QCStatus>approved</QCStatus>
+                <BusinessUnits>
+                    <BusinessUnit>
+                        <BusinessUnit>Falabella</BusinessUnit>
+                        <OperatorCode>facl</OperatorCode>
+                        <Price>64990.00</Price>
+                        <SpecialPrice/>
+                        <SpecialFromDate/>
+                        <SpecialToDate/>
+                        <Stock>14</Stock>
+                        <Status>active</Status>
+                        <IsPublished>1</IsPublished>
+                        <AvailableToSell>
+                            <Site>
+                                <Site>Product published in Falabella</Site>
+                            </Site>
+                        </AvailableToSell>
+                    </BusinessUnit>
+                </BusinessUnits>
+                <ProductData>
+                    <Sizechartname>test-sizechart</Sizechartname>
+                    <SizeChartUrl>https://catalog-reg.s3.amazonaws.com/repositorio/falabella_tallas/test-sizechart.html</SizeChartUrl>
+                    <ConditionType>Nuevo</ConditionType>
+                    <PackageWidth>25</PackageWidth>
+                    <PackageLength>38</PackageLength>
+                    <PackageHeight>15</PackageHeight>
+                    <PackageWeight>0.5</PackageWeight>
+                    <DisciplinaZapatillas>Running</DisciplinaZapatillas>
+                    <Genero>Hombre</Genero>
+                    <ImpermeabilidadDeLaTela>No</ImpermeabilidadDeLaTela>
+                    <MaterialPrincipal>Sintético</MaterialPrincipal>
+                    <TipoDeCana>Sin caña</TipoDeCana>
+                </ProductData>
+            </Product>
+        </Products>
+    </Body>
+</SuccessResponse>

@@ -5,6 +5,7 @@ import {
   ChannelType,
   isEbaySettings,
   isEtsySettings,
+  isFalabellaSettings,
   isGoogleMerchantSettings,
   isMercadoLibreSettings,
   isShopifySettings,
@@ -20,39 +21,43 @@ import { PricingRuleDto } from '../../listings/dto/pricing-rule.dto.js';
 import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.dto.js';
 import { EbaySettingsDto } from './ebay-settings.dto.js';
 import { EtsySettingsDto } from './etsy-settings.dto.js';
+import { FalabellaSettingsDto } from './falabella-settings.dto.js';
 import { GoogleMerchantSettingsDto } from './google-merchant-settings.dto.js';
 import { MercadoLibreSettingsDto } from './mercadolibre-settings.dto.js';
 import { PublishReadinessDto } from './publish-readiness.dto.js';
 
 type AccountDtos = Pick<
   ChannelConnectionDto,
-  'shopify' | 'ebay' | 'googleMerchant' | 'etsy' | 'mercadoLibre'
+  'shopify' | 'ebay' | 'googleMerchant' | 'etsy' | 'mercadoLibre' | 'falabella'
 >;
 
-/** The account's DTO when it is of the channel `isAccount` names; null otherwise. */
-function accountDto<TSettings extends ChannelSettings, TDto>(
-  account: ChannelSettings | null,
-  isAccount: (settings: ChannelSettings) => settings is TSettings,
-  toDto: (settings: TSettings) => TDto,
-): TDto | null {
-  return account && isAccount(account) ? toDto(account) : null;
+const NO_ACCOUNT: AccountDtos = {
+  shopify: null,
+  ebay: null,
+  googleMerchant: null,
+  etsy: null,
+  mercadoLibre: null,
+  falabella: null,
+};
+
+/** The one channel field a connection's account details go under. */
+function accountDto(account: ChannelSettings): Partial<AccountDtos> {
+  if (isShopifySettings(account)) return { shopify: ShopifySettingsDto.from(account) };
+  if (isEbaySettings(account)) return { ebay: EbaySettingsDto.from(account) };
+  if (isGoogleMerchantSettings(account)) {
+    return { googleMerchant: GoogleMerchantSettingsDto.from(account) };
+  }
+  if (isEtsySettings(account)) return { etsy: EtsySettingsDto.from(account) };
+  if (isMercadoLibreSettings(account)) {
+    return { mercadoLibre: MercadoLibreSettingsDto.from(account) };
+  }
+  if (isFalabellaSettings(account)) return { falabella: FalabellaSettingsDto.from(account) };
+  return {};
 }
 
 /** The account's details under its channel's field; the other channels' fields are null. */
 function accountDtos(account: ChannelSettings | null): AccountDtos {
-  return {
-    shopify: accountDto(account, isShopifySettings, (settings) =>
-      ShopifySettingsDto.from(settings),
-    ),
-    ebay: accountDto(account, isEbaySettings, (settings) => EbaySettingsDto.from(settings)),
-    googleMerchant: accountDto(account, isGoogleMerchantSettings, (settings) =>
-      GoogleMerchantSettingsDto.from(settings),
-    ),
-    etsy: accountDto(account, isEtsySettings, (settings) => EtsySettingsDto.from(settings)),
-    mercadoLibre: accountDto(account, isMercadoLibreSettings, (settings) =>
-      MercadoLibreSettingsDto.from(settings),
-    ),
-  };
+  return { ...NO_ACCOUNT, ...(account ? accountDto(account) : {}) };
 }
 
 /** A channel connection. Credentials are never part of it. */
@@ -120,6 +125,13 @@ export class ChannelConnectionDto {
     description: 'The seller and their country site, for Mercado Libre connections',
   })
   mercadoLibre: MercadoLibreSettingsDto | null;
+
+  @ApiProperty({
+    type: FalabellaSettingsDto,
+    nullable: true,
+    description: 'The Falabella account’s country, seller and user, for Falabella connections',
+  })
+  falabella: FalabellaSettingsDto | null;
 
   @ApiProperty({
     type: ProductSelectionRuleDto,

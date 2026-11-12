@@ -11,6 +11,11 @@ All notable changes to `crossmart/crossmart-php` are documented here. The format
 - Mercado Libre connections: `mercado_libre` in `ChannelType`, and `mercadoLibre` on
   `ChannelConnectionDto` (`MercadoLibreSettingsDto`, enum `MercadoLibreSiteId`: `MLM`, `MLC`,
   `MCO`, `MPE`, `MLA`, `MLB`). Start a connection with the site id as `accountHandle`.
+- Connecting a channel with the credentials it issued (Falabella):
+  `POST /workspaces/{workspaceId}/channel-connections/credentials` with `ConnectWithCredentialsDto`
+  (`credentials` is a `FalabellaCredentialsDto`), answering `ConnectedChannelDto`, or 422
+  `CredentialsRejectedErrorDto`. New `falabella` channel type, `FalabellaCountry` enum,
+  `falabella` settings on `ChannelConnectionDto`, and the `credentials_rejected` connect failure.
 - `exemption` on `AgentProposalSubmissionDto` (enum `AgentApprovalExemption`, `new_draft`): set
   with `apply_directly` when the workspace approves agents' changes but the call needs none, such
   as `create_product` for a new draft.

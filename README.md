@@ -43,6 +43,7 @@ work end to end, but APIs and data models can still change between releases.
 | Google Shopping (Merchant Center)   | Coming soon                                                     |
 | Etsy                                | Coming soon                                                     |
 | Mercado Libre                       | Coming soon                                                     |
+| Falabella (Chile, Colombia, Peru)   | Preview                                                         |
 | Amazon, Walmart, TikTok Shop        | Planned                                                         |
 | WooCommerce, BigCommerce and others | Community contributions welcome                                 |
 
