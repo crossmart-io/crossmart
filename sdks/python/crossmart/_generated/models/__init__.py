@@ -282,6 +282,8 @@ from .listing_summary_dto import ListingSummaryDto
 from .listing_visibility import ListingVisibility
 from .me_dto import MeDto
 from .media_dto import MediaDto
+from .mercado_libre_settings_dto import MercadoLibreSettingsDto
+from .mercado_libre_site_id import MercadoLibreSiteId
 from .opened_ask_escalation_dto import OpenedAskEscalationDto
 from .order_detail_dto import OrderDetailDto
 from .order_line_dto import OrderLineDto
@@ -665,6 +667,8 @@ __all__ = (
     "ListingVisibility",
     "MeDto",
     "MediaDto",
+    "MercadoLibreSettingsDto",
+    "MercadoLibreSiteId",
     "OpenedAskEscalationDto",
     "OrderDetailDto",
     "OrderLineDto",

@@ -3657,6 +3657,31 @@ export interface components {
             /** @description Whether the listing setup is complete, so products can be listed */
             readyToList: boolean;
         };
+        /**
+         * @description The country site the seller sells on
+         * @enum {string}
+         */
+        MercadoLibreSiteId: MercadoLibreSiteId;
+        MercadoLibreSettingsDto: {
+            /**
+             * @description The seller’s Mercado Libre user id
+             * @example 1008002397
+             */
+            userId: string;
+            /** @example TESTSELLER */
+            nickname: string;
+            /** @description The country site the seller sells on */
+            siteId: components["schemas"]["MercadoLibreSiteId"];
+            /**
+             * @description ISO 4217 code of the site’s currency
+             * @example MXN
+             */
+            currencyCode: string;
+            /** @example http://perfil.mercadolibre.com.mx/TESTSELLER */
+            permalink: string | null;
+            /** @description Whether the seller lists under User Products: one item per variant, each with its own price */
+            userProductSeller: boolean;
+        };
         ProductSelectionFilterDto: {
             /** @description Matches title, handle or SKU */
             search?: string;
@@ -3740,6 +3765,8 @@ export interface components {
             googleMerchant: components["schemas"]["GoogleMerchantSettingsDto"] | null;
             /** @description The Etsy shop, its profiles and its listing setup, for Etsy connections */
             etsy: components["schemas"]["EtsySettingsDto"] | null;
+            /** @description The seller and their country site, for Mercado Libre connections */
+            mercadoLibre: components["schemas"]["MercadoLibreSettingsDto"] | null;
             /** @description Which products the connection lists; null lists every product */
             productSelection: components["schemas"]["ProductSelectionRuleDto"] | null;
             /** @description How the connection prices variants; null sends catalog prices */
@@ -3762,7 +3789,7 @@ export interface components {
         StartAuthorizationDto: {
             channel: components["schemas"]["ChannelType"];
             /**
-             * @description The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`. For Etsy, the shop name (the merchant must sign in to that shop).
+             * @description The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`. For Etsy, the shop name (the merchant must sign in to that shop). For Mercado Libre, the country site id, such as `MLM`.
              * @example demo-store.myshopify.com
              */
             accountHandle: string;
@@ -3771,7 +3798,7 @@ export interface components {
             /** @description Send the merchant here to approve the app on the channel */
             authorizationUrl: string;
             /**
-             * @description The account handle, normalized: a myshopify.com domain, an eBay marketplace id, or a lower-cased Etsy shop name
+             * @description The account handle, normalized: a myshopify.com domain, an eBay marketplace id, a lower-cased Etsy shop name or a Mercado Libre site id
              * @example demo-store.myshopify.com
              */
             accountHandle: string;
@@ -10092,6 +10119,7 @@ export enum ChannelType {
     ebay = "ebay",
     google_merchant = "google_merchant",
     etsy = "etsy",
+    mercado_libre = "mercado_libre",
     amazon = "amazon",
     walmart = "walmart"
 }
@@ -10389,6 +10417,14 @@ export enum EtsyWhenMade {
     Value1800s = "1800s",
     Value1700s = "1700s",
     before_1700 = "before_1700"
+}
+export enum MercadoLibreSiteId {
+    MLM = "MLM",
+    MLC = "MLC",
+    MCO = "MCO",
+    MPE = "MPE",
+    MLA = "MLA",
+    MLB = "MLB"
 }
 export enum PriceRounding {
     none = "none",

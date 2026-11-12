@@ -8,6 +8,9 @@ All notable changes to `@crossmart/sdk` are documented here. The format follows
 
 ### Added
 
+- Mercado Libre connections: `mercado_libre` in `ChannelType`, and `mercadoLibre` on
+  `ChannelConnectionDto` (`MercadoLibreSettingsDto`, enum `MercadoLibreSiteId`: `MLM`, `MLC`,
+  `MCO`, `MPE`, `MLA`, `MLB`). Start a connection with the site id as `accountHandle`.
 - `exemption` on `AgentProposalSubmissionDto` (enum `AgentApprovalExemption`, `new_draft`): set
   with `apply_directly` when the workspace approves agents' changes but the call needs none, such
   as `create_product` for a new draft.

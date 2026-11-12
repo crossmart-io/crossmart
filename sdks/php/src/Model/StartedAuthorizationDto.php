@@ -13,7 +13,7 @@ final class StartedAuthorizationDto implements JsonSerializable
 {
     /**
      * @param string $authorizationUrl Send the merchant here to approve the app on the channel
-     * @param string $accountHandle The account handle, normalized: a myshopify.com domain, an eBay marketplace id, or a lower-cased Etsy shop name
+     * @param string $accountHandle The account handle, normalized: a myshopify.com domain, an eBay marketplace id, a lower-cased Etsy shop name or a Mercado Libre site id
      * @param string $externalAccountId The same value as `accountHandle`. Use `accountHandle` instead.
      */
     public function __construct(

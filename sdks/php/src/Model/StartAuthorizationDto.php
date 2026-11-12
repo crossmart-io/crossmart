@@ -13,7 +13,7 @@ use JsonSerializable;
 final class StartAuthorizationDto implements JsonSerializable
 {
     /**
-     * @param string $accountHandle The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`. For Etsy, the shop name (the merchant must sign in to that shop).
+     * @param string $accountHandle The account to connect. For Shopify, the store’s myshopify.com domain or handle. For eBay, the marketplace id, such as `EBAY_US`. For Etsy, the shop name (the merchant must sign in to that shop). For Mercado Libre, the country site id, such as `MLM`.
      */
     public function __construct(
         public readonly ChannelType|string $channel,

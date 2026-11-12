@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from ..models.ebay_settings_dto import EbaySettingsDto
     from ..models.etsy_settings_dto import EtsySettingsDto
     from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
+    from ..models.mercado_libre_settings_dto import MercadoLibreSettingsDto
     from ..models.pricing_rule_dto import PricingRuleDto
     from ..models.product_selection_rule_dto import ProductSelectionRuleDto
     from ..models.publish_readiness_dto import PublishReadinessDto
@@ -42,6 +43,7 @@ class ChannelConnectionDto:
         google_merchant (GoogleMerchantSettingsDto | None): The Merchant Center account and its listing setup, for
             Google connections
         etsy (EtsySettingsDto | None): The Etsy shop, its profiles and its listing setup, for Etsy connections
+        mercado_libre (MercadoLibreSettingsDto | None): The seller and their country site, for Mercado Libre connections
         product_selection (None | ProductSelectionRuleDto): Which products the connection lists; null lists every
             product
         pricing (None | PricingRuleDto): How the connection prices variants; null sends catalog prices
@@ -66,6 +68,7 @@ class ChannelConnectionDto:
     ebay: EbaySettingsDto | None
     google_merchant: GoogleMerchantSettingsDto | None
     etsy: EtsySettingsDto | None
+    mercado_libre: MercadoLibreSettingsDto | None
     product_selection: None | ProductSelectionRuleDto
     pricing: None | PricingRuleDto
     connected_at: datetime.datetime
@@ -81,6 +84,7 @@ class ChannelConnectionDto:
         from ..models.ebay_settings_dto import EbaySettingsDto
         from ..models.etsy_settings_dto import EtsySettingsDto
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
+        from ..models.mercado_libre_settings_dto import MercadoLibreSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
         from ..models.product_selection_rule_dto import ProductSelectionRuleDto
         from ..models.shopify_settings_dto import ShopifySettingsDto
@@ -128,6 +132,12 @@ class ChannelConnectionDto:
             etsy = self.etsy.to_dict()
         else:
             etsy = self.etsy
+
+        mercado_libre: dict[str, Any] | None
+        if isinstance(self.mercado_libre, MercadoLibreSettingsDto):
+            mercado_libre = self.mercado_libre.to_dict()
+        else:
+            mercado_libre = self.mercado_libre
 
         product_selection: dict[str, Any] | None
         if isinstance(self.product_selection, ProductSelectionRuleDto):
@@ -179,6 +189,7 @@ class ChannelConnectionDto:
                 "ebay": ebay,
                 "googleMerchant": google_merchant,
                 "etsy": etsy,
+                "mercadoLibre": mercado_libre,
                 "productSelection": product_selection,
                 "pricing": pricing,
                 "connectedAt": connected_at,
@@ -198,6 +209,7 @@ class ChannelConnectionDto:
         from ..models.ebay_settings_dto import EbaySettingsDto
         from ..models.etsy_settings_dto import EtsySettingsDto
         from ..models.google_merchant_settings_dto import GoogleMerchantSettingsDto
+        from ..models.mercado_libre_settings_dto import MercadoLibreSettingsDto
         from ..models.pricing_rule_dto import PricingRuleDto
         from ..models.product_selection_rule_dto import ProductSelectionRuleDto
         from ..models.publish_readiness_dto import PublishReadinessDto
@@ -290,6 +302,21 @@ class ChannelConnectionDto:
 
         etsy = _parse_etsy(d.pop("etsy"))
 
+        def _parse_mercado_libre(data: object) -> MercadoLibreSettingsDto | None:
+            if data is None:
+                return data
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                mercado_libre_type_0 = MercadoLibreSettingsDto.from_dict(data)
+
+                return mercado_libre_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            return cast(MercadoLibreSettingsDto | None, data)
+
+        mercado_libre = _parse_mercado_libre(d.pop("mercadoLibre"))
+
         def _parse_product_selection(data: object) -> None | ProductSelectionRuleDto:
             if data is None:
                 return data
@@ -373,6 +400,7 @@ class ChannelConnectionDto:
             ebay=ebay,
             google_merchant=google_merchant,
             etsy=etsy,
+            mercado_libre=mercado_libre,
             product_selection=product_selection,
             pricing=pricing,
             connected_at=connected_at,

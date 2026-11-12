@@ -8,6 +8,9 @@ All notable changes to the `crossmart` Python package are documented here. The f
 
 ### Added
 
+- Mercado Libre connections: `mercado_libre` in `ChannelType`, and `mercado_libre` on
+  `ChannelConnectionDto` (`MercadoLibreSettingsDto`, enum `MercadoLibreSiteId`: `MLM`, `MLC`,
+  `MCO`, `MPE`, `MLA`, `MLB`). Start a connection with the site id as `account_handle`.
 - `exemption` on `AgentProposalSubmissionDto` (enum `AgentApprovalExemption`, `new_draft`): set
   with `apply_directly` when the workspace approves agents' changes but the call needs none, such
   as `create_product` for a new draft.
