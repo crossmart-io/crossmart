@@ -58,6 +58,15 @@ const ETSY_GUIDANCE: ChannelContentGuidance = {
   ],
 };
 
+const MERCADO_LIBRE_GUIDANCE: ChannelContentGuidance = {
+  channelName: 'Mercado Libre (Latin America’s largest marketplace)',
+  guidance: [
+    'Write in the language of the seller’s Mercado Libre site: Spanish, or Portuguese on Mercado Livre Brazil.',
+    'Mercado Libre titles are at most 60 characters: product type, brand, model and the key attribute (size, colour, capacity). No promotional words, prices, shipping terms or ALL CAPS.',
+    'Mercado Libre shows the description as plain text with line breaks only: short paragraphs and simple lists, with no links, contact details, prices or shipping promises.',
+  ],
+};
+
 /**
  * The catalog: the merchant's own product content, which every store starts from. It is
  * written channel-neutral, for the merchant's site and as the base the stores adapt.
@@ -85,6 +94,7 @@ export const CHANNEL_CONTENT_GUIDANCE: Readonly<
   [ChannelType.Ebay]: EBAY_GUIDANCE,
   [ChannelType.GoogleMerchant]: GOOGLE_MERCHANT_GUIDANCE,
   [ChannelType.Etsy]: ETSY_GUIDANCE,
+  [ChannelType.MercadoLibre]: MERCADO_LIBRE_GUIDANCE,
 };
 
 /**

@@ -45,6 +45,7 @@ export const CHANNEL_CONNECTION_STATUS_SCHEMA_NAME = 'ChannelConnectionStatus';
 export const PUBLISH_REQUIREMENT_SCHEMA_NAME = 'PublishRequirement';
 export const CONNECT_FAILURE_SCHEMA_NAME = 'ConnectFailure';
 export const EBAY_MARKETPLACE_ID_SCHEMA_NAME = 'EbayMarketplaceId';
+export const MERCADOLIBRE_SITE_ID_SCHEMA_NAME = 'MercadoLibreSiteId';
 /** Imports of a connection's catalog, under the connection. */
 export const CHANNEL_IMPORTS_PATH = `:${CONNECTION_ID_PARAM}/imports`;
 /** eBay-only setup of a connection, under the connection. */

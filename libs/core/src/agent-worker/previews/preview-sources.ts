@@ -31,6 +31,7 @@ export const STORE_SOURCE = z.object({
   ebay: CHANNEL_CURRENCY,
   etsy: CHANNEL_CURRENCY,
   googleMerchant: CHANNEL_CURRENCY,
+  mercadoLibre: CHANNEL_CURRENCY,
 });
 export type StoreSource = z.infer<typeof STORE_SOURCE>;
 

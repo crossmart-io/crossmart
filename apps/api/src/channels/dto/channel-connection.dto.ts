@@ -6,6 +6,7 @@ import {
   isEbaySettings,
   isEtsySettings,
   isGoogleMerchantSettings,
+  isMercadoLibreSettings,
   isShopifySettings,
 } from '@crossmart/connectors';
 import type { ChannelConnectionView } from '@crossmart/core';
@@ -20,18 +21,37 @@ import { ProductSelectionRuleDto, ShopifySettingsDto } from './channel-settings.
 import { EbaySettingsDto } from './ebay-settings.dto.js';
 import { EtsySettingsDto } from './etsy-settings.dto.js';
 import { GoogleMerchantSettingsDto } from './google-merchant-settings.dto.js';
+import { MercadoLibreSettingsDto } from './mercadolibre-settings.dto.js';
 import { PublishReadinessDto } from './publish-readiness.dto.js';
 
-type AccountDtos = Pick<ChannelConnectionDto, 'shopify' | 'ebay' | 'googleMerchant' | 'etsy'>;
+type AccountDtos = Pick<
+  ChannelConnectionDto,
+  'shopify' | 'ebay' | 'googleMerchant' | 'etsy' | 'mercadoLibre'
+>;
+
+/** The account's DTO when it is of the channel `isAccount` names; null otherwise. */
+function accountDto<TSettings extends ChannelSettings, TDto>(
+  account: ChannelSettings | null,
+  isAccount: (settings: ChannelSettings) => settings is TSettings,
+  toDto: (settings: TSettings) => TDto,
+): TDto | null {
+  return account && isAccount(account) ? toDto(account) : null;
+}
 
 /** The account's details under its channel's field; the other channels' fields are null. */
 function accountDtos(account: ChannelSettings | null): AccountDtos {
   return {
-    shopify: account && isShopifySettings(account) ? ShopifySettingsDto.from(account) : null,
-    ebay: account && isEbaySettings(account) ? EbaySettingsDto.from(account) : null,
-    googleMerchant:
-      account && isGoogleMerchantSettings(account) ? GoogleMerchantSettingsDto.from(account) : null,
-    etsy: account && isEtsySettings(account) ? EtsySettingsDto.from(account) : null,
+    shopify: accountDto(account, isShopifySettings, (settings) =>
+      ShopifySettingsDto.from(settings),
+    ),
+    ebay: accountDto(account, isEbaySettings, (settings) => EbaySettingsDto.from(settings)),
+    googleMerchant: accountDto(account, isGoogleMerchantSettings, (settings) =>
+      GoogleMerchantSettingsDto.from(settings),
+    ),
+    etsy: accountDto(account, isEtsySettings, (settings) => EtsySettingsDto.from(settings)),
+    mercadoLibre: accountDto(account, isMercadoLibreSettings, (settings) =>
+      MercadoLibreSettingsDto.from(settings),
+    ),
   };
 }
 
@@ -93,6 +113,13 @@ export class ChannelConnectionDto {
     description: 'The Etsy shop, its profiles and its listing setup, for Etsy connections',
   })
   etsy: EtsySettingsDto | null;
+
+  @ApiProperty({
+    type: MercadoLibreSettingsDto,
+    nullable: true,
+    description: 'The seller and their country site, for Mercado Libre connections',
+  })
+  mercadoLibre: MercadoLibreSettingsDto | null;
 
   @ApiProperty({
     type: ProductSelectionRuleDto,

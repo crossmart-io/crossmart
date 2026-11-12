@@ -28,6 +28,9 @@ const env = vi.hoisted(() => {
     // No Etsy app on this instance: Etsy cannot be connected.
     ETSY_API_KEY: '',
     ETSY_SHARED_SECRET: '',
+    // Nor a Mercado Libre app.
+    MERCADOLIBRE_CLIENT_ID: '',
+    MERCADOLIBRE_CLIENT_SECRET: '',
     API_PUBLIC_URL: 'http://localhost:3004',
     WEB_APP_URL: 'http://localhost:5177',
     CREDENTIALS_MASTER_KEY: Buffer.from(Array.from({ length: 32 }, (_, index) => index)).toString(
@@ -190,6 +193,35 @@ describe('Channels (e2e)', () => {
 
     expect(response.status).toBe(HttpStatus.SERVICE_UNAVAILABLE);
     expect(response.body.message).toBe('Etsy is not configured on this Crossmart instance');
+  });
+
+  it('answers 503 for Mercado Libre until the instance has a Mercado Libre app', async () => {
+    const owner = await signUp(app, 'No Mercado Libre App');
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/workspaces/${owner.workspaceId}/channel-connections/authorizations`)
+      .set('Cookie', owner.cookie)
+      .send({ channel: ChannelType.MercadoLibre, accountHandle: 'MLM' });
+
+    expect(response.status).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+    expect(response.body.message).toBe(
+      'Mercado Libre is not configured on this Crossmart instance',
+    );
+  });
+
+  it('refuses Mercado Libre notifications that are not for this instance’s app', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/webhooks/${ChannelType.MercadoLibre}`)
+      .set('Content-Type', 'application/json')
+      .send({
+        _id: 'f9f08571-1f65-4c46-9e0a-c0f43faas1557e',
+        resource: '/orders/2195160686',
+        user_id: 468424240,
+        topic: 'orders_v2',
+        application_id: 5503910054141466,
+      });
+
+    expect(response.status).toBe(HttpStatus.UNAUTHORIZED);
   });
 
   it('rejects invalid shop domains and callers who cannot manage the workspace', async () => {

@@ -3,6 +3,7 @@ import {
   isEbaySettings,
   isEtsySettings,
   isGoogleMerchantSettings,
+  isMercadoLibreSettings,
   isShopifySettings,
 } from '@crossmart/connectors';
 import { DEFAULT_CURRENCY_CODE } from '../../channels/channels.constants.js';
@@ -14,7 +15,8 @@ function accountCurrency(account: ChannelSettings): string | null {
     isShopifySettings(account) ||
     isEbaySettings(account) ||
     isGoogleMerchantSettings(account) ||
-    isEtsySettings(account)
+    isEtsySettings(account) ||
+    isMercadoLibreSettings(account)
   ) {
     return account.currencyCode;
   }
@@ -23,7 +25,8 @@ function accountCurrency(account: ChannelSettings): string | null {
 
 /**
  * The currency the channel account sells in: the Shopify store's currency, the eBay
- * marketplace's, the Etsy shop's, or that of the country Google listings target. Falls back to the default before the account has been read.
+ * marketplace's, the Etsy shop's, the Mercado Libre site's, or that of the country Google
+ * listings target. Falls back to the default before the account has been read.
  */
 export function connectionCurrency(settings: ConnectionSettings): string {
   const { account } = settings;

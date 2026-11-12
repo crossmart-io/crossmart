@@ -80,7 +80,13 @@ export class PreviewReader {
   /** The store's currency, or the workspace's when the store's channel does not say. */
   async storeCurrency(connectionId: string): Promise<string> {
     const store = await this.store(connectionId);
-    const channels = [store.shopify, store.ebay, store.etsy, store.googleMerchant];
+    const channels = [
+      store.shopify,
+      store.ebay,
+      store.etsy,
+      store.googleMerchant,
+      store.mercadoLibre,
+    ];
     const currency = channels.find((settings) => settings)?.currencyCode;
     return currency ?? this.workspaceCurrency();
   }
