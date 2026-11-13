@@ -6,6 +6,8 @@ import { EbayConnector } from './ebay/ebay.connector.js';
 import { EbayConnectorModule } from './ebay/ebay-connector.module.js';
 import { EtsyConnector } from './etsy/etsy.connector.js';
 import { EtsyConnectorModule } from './etsy/etsy-connector.module.js';
+import { MercadoLibreConnector } from './mercadolibre/mercadolibre.connector.js';
+import { MercadoLibreConnectorModule } from './mercadolibre/mercadolibre-connector.module.js';
 import { FalabellaConnector } from './falabella/falabella.connector.js';
 import { FalabellaConnectorModule } from './falabella/falabella-connector.module.js';
 import { GoogleMerchantConnector } from './google-merchant/google-merchant.connector.js';
@@ -23,6 +25,7 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
     EbayConnectorModule,
     GoogleMerchantConnectorModule,
     EtsyConnectorModule,
+    MercadoLibreConnectorModule,
     FalabellaConnectorModule,
   ],
   providers: [
@@ -33,6 +36,7 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
         EbayConnector,
         GoogleMerchantConnector,
         EtsyConnector,
+        MercadoLibreConnector,
         FalabellaConnector,
       ],
       useFactory: (...connectors: ChannelConnector[]): ChannelConnector[] => connectors,
@@ -45,6 +49,7 @@ import { ShopifyConnectorModule } from './shopify/shopify-connector.module.js';
     EbayConnectorModule,
     GoogleMerchantConnectorModule,
     EtsyConnectorModule,
+    MercadoLibreConnectorModule,
     FalabellaConnectorModule,
   ],
 })

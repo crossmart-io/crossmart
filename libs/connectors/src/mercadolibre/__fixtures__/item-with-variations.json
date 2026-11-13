@@ -1,0 +1,176 @@
+{
+  "id": "MLA657381404",
+  "site_id": "MLA",
+  "title": "Item De Testeo",
+  "subtitle": null,
+  "seller_id": 222576250,
+  "category_id": "MLA378496",
+  "official_store_id": null,
+  "price": 100,
+  "base_price": 100,
+  "original_price": null,
+  "currency_id": "ARS",
+  "initial_quantity": 8,
+  "available_quantity": 8,
+  "sold_quantity": 0,
+  "buying_mode": "buy_it_now",
+  "listing_type_id": "gold_special",
+  "start_time": "2017-03-10T21:18:09.588Z",
+  "stop_time": "2037-03-05T21:18:09.588Z",
+  "end_time": "2037-03-05T21:18:09.588Z",
+  "expiration_time": "2017-05-29T21:18:09.651Z",
+  "condition": "not_specified",
+  "permalink": "http://articulo.mercadolibre.com.ar/MLA-657381404-item-de-testeo-_JM",
+  "thumbnail": "http://mla-s2-p.mlstatic.com/553111-MLA20482692355_112015-I.jpg",
+  "secure_thumbnail": "https://mla-s2-p.mlstatic.com/553111-MLA20482692355_112015-I.jpg",
+  "pictures": [
+    {
+      "id": "553111-MLA20482692355_112015",
+      "url": "http://mla-s2-p.mlstatic.com/553111-MLA20482692355_112015-O.jpg",
+      "secure_url": "https://mla-s2-p.mlstatic.com/553111-MLA20482692355_112015-O.jpg",
+      "size": "320x320",
+      "max_size": "320x320",
+      "quality": ""
+    }
+  ],
+  "video_id": null,
+  "descriptions": [],
+  "accepts_mercadopago": true,
+  "non_mercado_pago_payment_methods": [],
+  "shipping": {
+    "mode": "not_specified",
+    "local_pick_up": false,
+    "free_shipping": false,
+    "methods": [],
+    "dimensions": null,
+    "tags": ["me2_available"],
+    "logistic_type": "not_specified"
+  },
+  "international_delivery_mode": "none",
+  "seller_address": {
+    "id": 189626559,
+    "comment": "",
+    "address_line": "santa fe 1000",
+    "zip_code": "1641",
+    "city": {
+      "id": "",
+      "name": "Acassuso"
+    },
+    "state": {
+      "id": "AR-B",
+      "name": "Buenos Aires"
+    },
+    "country": {
+      "id": "AR",
+      "name": "Argentina"
+    },
+    "latitude": -34.4817565,
+    "longitude": -58.5056779,
+    "search_location": {
+      "neighborhood": {
+        "id": "TUxBQkFDQTMyNzNa",
+        "name": "Acassuso"
+      },
+      "city": {
+        "id": "TUxBQ1NBTjg4ZmJk",
+        "name": "San Isidro"
+      },
+      "state": {
+        "id": "TUxBUEdSQWU4ZDkz",
+        "name": "Bs.As. G.B.A. Norte"
+      }
+    }
+  },
+  "seller_contact": null,
+  "location": {},
+  "geolocation": {
+    "latitude": -34.4817565,
+    "longitude": -58.5056779
+  },
+  "coverage_areas": [],
+  "attributes": [
+    {
+      "id": "FAN_TYPE",
+      "name": "Tipo de Ventilador",
+      "value_id": "291719",
+      "value_name": "De Techo",
+      "attribute_group_id": "DFLT",
+      "attribute_group_name": "Otros"
+    },
+    {
+      "id": "BRAND",
+      "name": "Marca",
+      "value_id": "86416",
+      "value_name": "Eiffel",
+      "attribute_group_id": "MAIN",
+      "attribute_group_name": "Atributos Principales"
+    }
+  ],
+  "warnings": [],
+  "listing_source": "",
+  "variations": [
+    {
+      "id": 14979332589,
+      "attribute_combinations": [
+        {
+          "id": "COLOR",
+          "name": "Color",
+          "value_id": "52049",
+          "value_name": "Negro"
+        }
+      ],
+      "price": 100,
+      "available_quantity": 4,
+      "sold_quantity": 0,
+      "picture_ids": ["553111-MLA20482692355_112015"],
+      "seller_custom_field": null,
+      "catalog_product_id": null,
+      "attributes": [
+        {
+          "id": "EAN",
+          "name": "EAN",
+          "value_id": null,
+          "value_name": "4006381333931"
+        }
+      ]
+    },
+    {
+      "id": 14979332592,
+      "attribute_combinations": [
+        {
+          "id": "COLOR",
+          "name": "Color",
+          "value_id": "52005",
+          "value_name": "Marrón"
+        }
+      ],
+      "price": 100,
+      "available_quantity": 4,
+      "sold_quantity": 0,
+      "picture_ids": ["553111-MLA20482692355_112015"],
+      "seller_custom_field": null,
+      "catalog_product_id": null,
+      "attributes": [
+        {
+          "id": "EAN",
+          "name": "EAN",
+          "value_id": null,
+          "value_name": "9780471117094"
+        }
+      ]
+    }
+  ],
+  "status": "active",
+  "sub_status": [],
+  "tags": ["immediate_payment"],
+  "warranty": null,
+  "catalog_product_id": null,
+  "domain_id": null,
+  "seller_custom_field": null,
+  "parent_item_id": null,
+  "differential_pricing": null,
+  "deal_ids": [],
+  "automatic_relist": false,
+  "date_created": "2017-03-10T21:18:09.763Z",
+  "last_updated": "2017-03-10T21:18:09.763Z"
+}

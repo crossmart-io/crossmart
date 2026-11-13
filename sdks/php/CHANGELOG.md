@@ -8,6 +8,9 @@ All notable changes to `crossmart/crossmart-php` are documented here. The format
 
 ### Added
 
+- Mercado Libre connections: `mercado_libre` in `ChannelType`, and `mercadoLibre` on
+  `ChannelConnectionDto` (`MercadoLibreSettingsDto`, enum `MercadoLibreSiteId`: `MLM`, `MLC`,
+  `MCO`, `MPE`, `MLA`, `MLB`). Start a connection with the site id as `accountHandle`.
 - Connecting a channel with the credentials it issued (Falabella):
   `POST /workspaces/{workspaceId}/channel-connections/credentials` with `ConnectWithCredentialsDto`
   (`credentials` is a `FalabellaCredentialsDto`), answering `ConnectedChannelDto`, or 422

@@ -7,6 +7,7 @@ import {
   isEtsySettings,
   isFalabellaSettings,
   isGoogleMerchantSettings,
+  isMercadoLibreSettings,
   isShopifySettings,
 } from '@crossmart/connectors';
 import type { ChannelConnectionView } from '@crossmart/core';
@@ -22,11 +23,12 @@ import { EbaySettingsDto } from './ebay-settings.dto.js';
 import { EtsySettingsDto } from './etsy-settings.dto.js';
 import { FalabellaSettingsDto } from './falabella-settings.dto.js';
 import { GoogleMerchantSettingsDto } from './google-merchant-settings.dto.js';
+import { MercadoLibreSettingsDto } from './mercadolibre-settings.dto.js';
 import { PublishReadinessDto } from './publish-readiness.dto.js';
 
 type AccountDtos = Pick<
   ChannelConnectionDto,
-  'shopify' | 'ebay' | 'googleMerchant' | 'etsy' | 'falabella'
+  'shopify' | 'ebay' | 'googleMerchant' | 'etsy' | 'mercadoLibre' | 'falabella'
 >;
 
 const NO_ACCOUNT: AccountDtos = {
@@ -34,6 +36,7 @@ const NO_ACCOUNT: AccountDtos = {
   ebay: null,
   googleMerchant: null,
   etsy: null,
+  mercadoLibre: null,
   falabella: null,
 };
 
@@ -45,6 +48,9 @@ function accountDto(account: ChannelSettings): Partial<AccountDtos> {
     return { googleMerchant: GoogleMerchantSettingsDto.from(account) };
   }
   if (isEtsySettings(account)) return { etsy: EtsySettingsDto.from(account) };
+  if (isMercadoLibreSettings(account)) {
+    return { mercadoLibre: MercadoLibreSettingsDto.from(account) };
+  }
   if (isFalabellaSettings(account)) return { falabella: FalabellaSettingsDto.from(account) };
   return {};
 }
@@ -112,6 +118,13 @@ export class ChannelConnectionDto {
     description: 'The Etsy shop, its profiles and its listing setup, for Etsy connections',
   })
   etsy: EtsySettingsDto | null;
+
+  @ApiProperty({
+    type: MercadoLibreSettingsDto,
+    nullable: true,
+    description: 'The seller and their country site, for Mercado Libre connections',
+  })
+  mercadoLibre: MercadoLibreSettingsDto | null;
 
   @ApiProperty({
     type: FalabellaSettingsDto,

@@ -54,6 +54,27 @@ describe('AppConfigService', () => {
     });
   });
 
+  describe('mercadoLibreApp', () => {
+    const MERCADOLIBRE_VARIABLES = {
+      MERCADOLIBRE_CLIENT_ID: '1234567890123456',
+      MERCADOLIBRE_CLIENT_SECRET: 'test-secret',
+    };
+
+    it('returns the App ID and Secret Key when both are set', () => {
+      expect(appConfig(MERCADOLIBRE_VARIABLES).mercadoLibreApp).toEqual({
+        clientId: '1234567890123456',
+        clientSecret: 'test-secret',
+      });
+    });
+
+    it.each(['MERCADOLIBRE_CLIENT_ID', 'MERCADOLIBRE_CLIENT_SECRET'] as const)(
+      'is null without %s',
+      (missing) => {
+        expect(appConfig({ ...MERCADOLIBRE_VARIABLES, [missing]: '' }).mercadoLibreApp).toBeNull();
+      },
+    );
+  });
+
   describe('ebayVerificationToken', () => {
     it('returns the token, and null when it is unset or empty', () => {
       const token = 'Crossmart_verification-token_0123456789abcdef';

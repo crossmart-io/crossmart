@@ -196,6 +196,16 @@ export class EnvironmentVariables {
   @IsString()
   ETSY_SHARED_SECRET?: string;
 
+  /** The App ID of the Crossmart Mercado Libre app: its OAuth `client_id`. */
+  @IsOptional()
+  @IsString()
+  MERCADOLIBRE_CLIENT_ID?: string;
+
+  /** The Secret Key of the Mercado Libre app, sent only to its token endpoint; never logged. */
+  @IsOptional()
+  @IsString()
+  MERCADOLIBRE_CLIENT_SECRET?: string;
+
   /**
    * Whether plan limits block actions (`true`) or are only reported (default). Usage and limits
    * are computed either way; keep it off until billing lets merchants upgrade.

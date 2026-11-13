@@ -7,6 +7,7 @@ class ChannelType(StrEnum):
     ETSY = "etsy"
     FALABELLA = "falabella"
     GOOGLE_MERCHANT = "google_merchant"
+    MERCADO_LIBRE = "mercado_libre"
     SHOPIFY = "shopify"
     WALMART = "walmart"
 

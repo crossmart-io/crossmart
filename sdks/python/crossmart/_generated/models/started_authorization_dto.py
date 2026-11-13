@@ -14,8 +14,8 @@ class StartedAuthorizationDto:
     """
     Attributes:
         authorization_url (str): Send the merchant here to approve the app on the channel
-        account_handle (str): The account handle, normalized: a myshopify.com domain, an eBay marketplace id, or a
-            lower-cased Etsy shop name Example: demo-store.myshopify.com.
+        account_handle (str): The account handle, normalized: a myshopify.com domain, an eBay marketplace id, a lower-
+            cased Etsy shop name or a Mercado Libre site id Example: demo-store.myshopify.com.
         external_account_id (str): The same value as `accountHandle`. Use `accountHandle` instead. Example: demo-
             store.myshopify.com.
     """
