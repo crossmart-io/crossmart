@@ -42,7 +42,7 @@ Changelog = "https://github.com/crossmart-io/crossmart/blob/main/sdks/python/CHA
 [dependency-groups]
 # Pinned so regenerating the client gives the same output locally and in CI.
 dev = [
-  "openapi-python-client==0.29.1",
+  "openapi-python-client==0.30.0",
   "ruff==0.17.3",
   "mypy==2.4.1",
   "pytest==9.2.0",
