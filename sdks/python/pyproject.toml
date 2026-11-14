@@ -43,7 +43,7 @@ Changelog = "https://github.com/crossmart-io/crossmart/blob/main/sdks/python/CHA
 # Pinned so regenerating the client gives the same output locally and in CI.
 dev = [
   "openapi-python-client==0.29.1",
-  "ruff==0.17.3",
+  "ruff==0.17.4",
   "mypy==2.4.1",
   "pytest==9.2.0",
   "respx==0.23.1",
